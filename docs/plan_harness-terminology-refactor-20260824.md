@@ -1,6 +1,11 @@
 # harness用語統一・OS/ハーネス分離 campaign（2026-08-24）
 
-- **状態**: 進行中
+- **状態**: **完遂（2026-08-24）**。結果:
+  - aiterm-mcp 0.28.2: `src/vendors/`→`src/harnesses/`・内部識別子・現役docsをharnessへ統一。4環境CI green→tag CI green→npm publish→global install→MCP initialize smoke OK。wire互換field（`vendor`/`vendor_session_id`/`vendor_dependencies`/`AITERM.VENDOR_LAUNCHER_FAILED`）は不変。
+  - peertable 0.6.0: member素性の正本fieldを`harness`へ（DB列migration・旧`vendor`受理・応答mirror併記・`PEERTABLE_HARNESS`正本・`--vendor` flag互換alias）。npm publish→global install→diagnostics ready。本番room server（main-server）もimage `20260824-7360790`へ入替済み（旧image残置でrollback可・会話ログvolume不変）。
+  - Throughline / Spotter / Caveat: docs散文のみ置換（cross-harness等）。製品挙動変更なしのためnpm releaseは対象外。
+  - dotagents: 正典散文（codex delta・orchestrate skill・executor-adapters・02_models・製品契約台帳）を置換し生成物を再生成。生成test 6 pass・markdownlint 0 error。lib/factoryのwireキーは不変。
+  - 対象外確定: Lattice / aishell / codex-sidecar / gpt-connector / ServerManager / MarkItDown（AI分類のvendor使用なし）。
 - **レーン**: 統括（複数repoの書込みを調整）
 - **背景**: Cursorは複数AIモデルを載せる実行基盤であり、AIを「ベンダー」で分類する語彙が破綻した。オーナー裁定により、実行基盤の分類語を**harness（ハーネス）**へ全面置換する。実際のCursor対応は本campaignの対象外（aiterm-mcpは0.28.0で先行実装済み）。
 

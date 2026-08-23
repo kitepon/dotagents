@@ -8,7 +8,7 @@
 
 本書の根拠は次の4種を混ぜない。
 
-1. **一次事実**: vendor公式の価格、context、対応effort、live catalog。
+1. **一次事実**: model提供元公式の価格、context、対応effort、live catalog。
 2. **外部観測**: benchmark、Xの利用報告、独立評価。harness・標本数・再現条件を併記する。
 3. **dotagents実測**: 当工場のtask、監査通過率、配線実測。一般性能へ拡張しない。
 4. **運用判断**: 上記を踏まえた配置。客観的に確定した事実を「オーナー裁定」と呼ばない。
@@ -70,7 +70,7 @@ Anthropic（Claude Code本体・Agent/Workflow）／OpenAI Codex（Codex CLI・c
 
 ## 入口と使い分け
 
-- **Codex親の三入口を分ける**: ① native subagent＝repo密結合、② external execution＝codex-sidecar/aiterm、③ consultation＝gpt-connector。Grok/ComposerはAitermの別vendor入口であり、Codex→Codexの入口判断とは別契約。
+- **Codex親の三入口を分ける**: ① native subagent＝repo密結合、② external execution＝codex-sidecar/aiterm、③ consultation＝gpt-connector。Grok/ComposerはAitermの別harness入口であり、Codex→Codexの入口判断とは別契約。
 - Aitermの`codex_agent`/`grok_agent`/`claude_agent`はmodelとeffortを毎回明示する。live catalog不在・effort非対応は明示エラーにし、別modelへfallbackしない。
 - **委譲の安全・回収・受入契約は[委譲契約](../shared/orchestrate/delegation-contract.md)が正本**。Aitermの運用型は[aiterm-dispatch](../shared/orchestrate/aiterm-dispatch.md)を正とする。external writerはinstalled→registered→verified→execution-verifiedの最終段だけに置く。
 - codex-sidecarはmodel/effortを毎回明示するか`.codex-sidecar.yml` defaultsへ置く。現行schemaはlow〜xhighでmaxを渡せない。

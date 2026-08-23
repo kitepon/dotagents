@@ -37,7 +37,7 @@ sidecar recoveryは同じ`codex_work_recover` toolでも、既定のread-only in
 `confirmNoRunningProcesses=true`を要するquarantine mutationを別operationとして扱う。
 
 CodexのA配置は、親とtightに結合した作業では`codex-native`を既定にする。隔離worktree、durable work、
-vendor固有機能、独立capacityのいずれかが必要かつ適合する時だけ`codex-sidecar`または`aiterm`を選ぶ。
+harness固有機能、独立capacityのいずれかが必要かつ適合する時だけ`codex-sidecar`または`aiterm`を選ぶ。
 これは親のdispatch裁定であり、catalogやCLIが自動admission・自動dispatchすることはない。
 
 ## Adapter契約の追加・廃止とrollback

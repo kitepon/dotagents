@@ -12,4 +12,4 @@
   既定のまま、後者はnativeで満たせない隔離・durable external session・独立capacityの具体的利益が
   準備・回収コストを上回る時だけ例外的に選ぶ。単にaitermがCodexを起動できることや、慣性で
   external laneへ流れることは選定理由にしない。
-- Grok／Composer等の別vendorをaitermで使う判断と、Codex→Codexの入口判断は別契約である。
+- Grok／Composer等の別harnessをaitermで使う判断と、Codex→Codexの入口判断は別契約である。

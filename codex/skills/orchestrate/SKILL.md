@@ -10,10 +10,10 @@ description: 統括レーン（①計画に中断が組込済み②受入が多�
 ## Codex appendix
 
 - Control配下の書込みWorkerだけはrouting smokeの確認後に同一子へfollow-upし、必要時のみinterruptする。通常のnative audit・refuter・sorterはspawn時の任務をそのまま実行し、事前smokeを要求しない。external executionはsidecar/aitermの固有task/session/job handleでdispatch・observe・resumeし、Controlには参照と観測だけを記録する。aitermレーンの運用型（完了受信・レーン構成・親専任）は[aiterm-dispatch.md](../../../shared/orchestrate/aiterm-dispatch.md)を先に読む。
-- **Codex親→Codex子はnative sub-agentを既定にする。** nativeは同じ子へのfollow-upで対話とTask相関を保てるため、repo密結合の実装・調査・反証をaitermの`codex_agent`へ流さない。aitermを永続shellとして使うことはこの制約の対象外であり、Grok／Composer等の別vendor laneとも混同しない。
+- **Codex親→Codex子はnative sub-agentを既定にする。** nativeは同じ子へのfollow-upで対話とTask相関を保てるため、repo密結合の実装・調査・反証をaitermの`codex_agent`へ流さない。aitermを永続shellとして使うことはこの制約の対象外であり、Grok／Composer等の別harness laneとも混同しない。
 - Controlへ記録済みのnative Runを`agents.interrupt_agent`で止める時は、先に`worker-cancel-request`を記録する。interrupt receiptを回収してから`observe-worker=cancelled`へ進め、外部interruptを先行させない。
 - nativeへ実作業をfollow-upする前に、`delegation-packet`と`worker-report-skeleton`の出力をそれぞれ安全な一意pathへ保存し、follow-up本文で両方の実pathを明示する。schemaを親が要約転記したり、field一覧だけで代用したりしない。子には両原本を読んでskeletonのexact shapeを保ったまま埋めるよう指示し、pathを渡せない時はdispatchしない。
-- 統括レーンで委譲すると裁定したAは、tightに結合した作業ならCodex native、隔離、durable work、vendor固有機能、独立capacityが適合する時はsidecar/aitermを選ぶ。通常レーンは委譲を既定にしない。nativeでは`agent_type=<role>`と`fork_turns="none"`を指定する。Control配下の書込み Workerだけは最初のspawnをrouting smoke のみにする。
+- 統括レーンで委譲すると裁定したAは、tightに結合した作業ならCodex native、隔離、durable work、harness固有機能、独立capacityが適合する時はsidecar/aitermを選ぶ。通常レーンは委譲を既定にしない。nativeでは`agent_type=<role>`と`fork_turns="none"`を指定する。Control配下の書込み Workerだけは最初のspawnをrouting smoke のみにする。
 - Control配下の書込み Workerは、`verify-codex-agent-routing <role> <agent-path>` が role・model・effort・developer instructions の一致を確認してから、同じ子へ follow-up で実作業を渡す。
 - `implementer` は仕様固定の実装・テスト、`refuter` は書込み禁止の行動契約で敵対的検証、`sorter` は書込み禁止の行動契約で分類・抽出を担う。実効sandboxは親から継承し、role TOMLで別権限を保証しない。model と effort は role TOML によって決まり、呼び出し側が手指定しない。
 - native枠は工場全体の上限ではない。隔離・durable work・独立capacity・役割適合でexternal executionに具体的利益がある時は、`codex-sidecar`またはaitermの`grok_agent` / `composer_agent`を積極利用する。aitermの`codex_agent`は、nativeで満たせないdurable external session等の利益が準備・回収コストを上回る時だけ例外的に使い、単なるcapacity追加や起動可能性を理由に選ばない。Codex親から入れ子のCodexを起動してよいが、通常入口はnativeとする。
