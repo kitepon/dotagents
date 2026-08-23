@@ -61,6 +61,18 @@ EOF
 EOF
 }
 apply_config() { HOME="$1" CODEX_HOME="$1/.codex" "$PYTHON_BIN" "$1/.local/bin/apply-codex-config" "$2"; }
+apply_grok_config_on_windows() {
+  case "$(uname -s)" in
+    MINGW*|MSYS*) HOME="$1" "$PYTHON_BIN" "$1/.local/bin/apply-grok-config" --apply >/dev/null ;;
+  esac
+}
+count_archives() {
+  if [ -d "$1/Archives" ]; then
+    find "$1/Archives" -name '*.tar.gz' | wc -l | tr -d ' '
+  else
+    printf '0\n'
+  fi
+}
 FACTORY_TEST_BIN="$(mktemp -d)"
 UNKNOWN_OS_BIN="$(mktemp -d)"
 SUPPORTED_MAC_HOST_BIN="$(mktemp -d)"
@@ -186,6 +198,7 @@ grep -Fq 'FAIL: Grok 工場hook が欠落' <<<"$grok_hooks_missing_output" \
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
+apply_grok_config_on_windows "$OFFICIAL_HOME"
 mkdir -p "$OFFICIAL_HOME/.grok"
 cat >"$OFFICIAL_HOME/.grok/config.toml" <<'EOF'
 [compat.claude]
@@ -221,6 +234,7 @@ assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
   || fail 'Windows native内部helperの旧global CLI linkを除去しない'
 before_config="$(cat "$OFFICIAL_HOME/.codex/config.toml")"
 before_hooks="$(cat "$OFFICIAL_HOME/.codex/hooks.json")"
+archive_count_before="$(count_archives "$OFFICIAL_HOME")"
 if apply_config "$OFFICIAL_HOME" --unknown >/dev/null 2>&1; then
   fail 'applier が未知引数を受理した'
 fi
@@ -228,7 +242,8 @@ dry_run="$(apply_config "$OFFICIAL_HOME" --dry-run)"
 [ -n "$dry_run" ] || fail 'dry-run が差分を出さない'
 [ "$(cat "$OFFICIAL_HOME/.codex/config.toml")" = "$before_config" ] || fail 'dry-run が config を書き換えた'
 [ "$(cat "$OFFICIAL_HOME/.codex/hooks.json")" = "$before_hooks" ] || fail 'dry-run が hooks を書き換えた'
-[ ! -d "$OFFICIAL_HOME/Archives" ] || fail 'dry-run が backup を作った'
+[ "$(count_archives "$OFFICIAL_HOME")" = "$archive_count_before" ] \
+  || fail 'dry-run が backup を作った'
 apply_config "$OFFICIAL_HOME" --apply
 verify "$OFFICIAL_HOME" official
 if lattice_drift_output="$(LATTICE_HOOKS_TEST_MODE=drift verify "$OFFICIAL_HOME" official 2>&1)"; then
@@ -476,8 +491,8 @@ assert_hook("Stop", "codex-callout-hook", python_prefix, ["stop"], 10)
 matcher_entries = [entry for entry in data["hooks"]["Stop"] if entry.get("matcher") == "never-match"]
 assert matcher_entries and matcher_entries[0]["hooks"] == []
 PY
-archive_count="$(find "$OFFICIAL_HOME/Archives" -name '*.tar.gz' | wc -l | tr -d ' ')"
-[ "$archive_count" = 1 ] || fail 'apply の backup 数が期待と不一致'
+archive_count="$(count_archives "$OFFICIAL_HOME")"
+[ "$archive_count" = "$((archive_count_before + 1))" ] || fail 'apply の backup 数が期待と不一致'
 "$PYTHON_BIN" - "$OFFICIAL_HOME/Archives" 700 <<'PY' || fail 'Archives の権限が 0700 でない'
 import os
 import stat
@@ -487,7 +502,7 @@ if os.name == "nt":
     raise SystemExit(0)
 raise SystemExit(0 if stat.S_IMODE(Path(sys.argv[1]).stat().st_mode) == int(sys.argv[2], 8) else 1)
 PY
-archive_path="$(find "$OFFICIAL_HOME/Archives" -name '*.tar.gz' | head -n1)"
+archive_path="$(find "$OFFICIAL_HOME/Archives" -name 'dotagents-codex-config-*.tar.gz' | head -n1)"
 "$PYTHON_BIN" - "$archive_path" 600 <<'PY' || fail 'backup archive の権限が 0600 でない'
 import os
 import stat
@@ -504,7 +519,7 @@ with tarfile.open(sys.argv[1], "r:gz") as archive:
     raise SystemExit(0 if all(member.mode == 0o600 for member in archive.getmembers()) else 1)
 PY
 apply_config "$OFFICIAL_HOME" --apply | grep -Fq '変更なし' || fail '2回目 apply が冪等でない'
-[ "$(find "$OFFICIAL_HOME/Archives" -name '*.tar.gz' | wc -l | tr -d ' ')" = "$archive_count" ] || fail '冪等 apply が backup を作った'
+[ "$(count_archives "$OFFICIAL_HOME")" = "$archive_count" ] || fail '冪等 apply が backup を作った'
 cat >"$OFFICIAL_HOME/.codex/config.toml" <<'EOF'
 model = "keep-me"
 
@@ -610,6 +625,7 @@ assert_link "$LEGACY_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
 assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
+apply_grok_config_on_windows "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply
 verify "$LEGACY_HOME" legacy
 assert_link "$LEGACY_HOME/.codex/skills/orchestrate" "$ROOT/codex/skills/orchestrate"

@@ -13,6 +13,10 @@ STATE=$(mktemp -d)
 REPO=$(mktemp -d)
 HOOK_REPO=$REPO
 HOOK_STATE=$STATE
+if command -v cygpath >/dev/null 2>&1; then
+  HOOK_REPO=$(cygpath -m "$REPO")
+  HOOK_STATE=$(cygpath -m "$STATE")
+fi
 trap 'rm -rf "$STATE" "$REPO"' EXIT
 export XDG_CACHE_HOME="$HOOK_STATE"
 

@@ -4,6 +4,7 @@
 # 共通憲法の生成物はrendererがLF byte列を正本として照合する。
 claude/CLAUDE.md text eol=lf
 codex/AGENTS.md text eol=lf
+grok/AGENTS.md text eol=lf
 
 # Lattice storeはcanonical JSON+LFのバイト列契約。EOL変換されると
 # artifact_truncated_or_trailing_bytesでstore全体がfail closedする（Windows checkoutで実害）。

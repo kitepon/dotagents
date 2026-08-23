@@ -29,6 +29,15 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
   throw 'setup-windows-native-factory.ps1 is Windows-native only'
 }
 
+if ($PSVersionTable.PSEdition -eq 'Core') {
+  $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+  $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+  if ($ScheduledRun) { $arguments += '-ScheduledRun' }
+  if ($PlanOnly) { $arguments += '-PlanOnly' }
+  & $windowsPowerShell @arguments
+  exit $LASTEXITCODE
+}
+
 if ($PlanOnly) {
   [pscustomobject]@{
     schema = 'dotagents.windows-native-factory-setup-plan.v1'
@@ -135,6 +144,18 @@ function Set-OwnerOnlyAcl([string]$Path) {
   )
   [void]$acl.AddAccessRule($rule)
   $item.SetAccessControl($acl)
+
+  $check = Get-Acl -LiteralPath $Path
+  $ownerSid = ($check.GetOwner([Security.Principal.SecurityIdentifier])).Value
+  $rules = @($check.GetAccessRules($true, $true, [Security.Principal.SecurityIdentifier]))
+  $aclMatches = $ownerSid -eq $sid.Value -and $rules.Count -eq 1
+  if ($aclMatches) {
+    $actualRule = $rules[0]
+    $aclMatches = $actualRule.IdentityReference.Value -eq $sid.Value -and $actualRule.AccessControlType -eq 'Allow' -and -not $actualRule.IsInherited -and (($actualRule.FileSystemRights -band [Security.AccessControl.FileSystemRights]::FullControl) -eq [Security.AccessControl.FileSystemRights]::FullControl)
+  }
+  if (-not $aclMatches) {
+    throw "Owner-only ACL readback failed: $Path"
+  }
 }
 
 function Assert-ReporterConfig {
@@ -460,22 +481,24 @@ function Write-Receipt([object]$Delivery, [bool]$ScheduledSmoke, [string]$Verify
 
 function Wait-ScheduledSmoke([string]$PriorRunId) {
   Write-Step 'scheduled-task-smoke'
+  $priorLastRunTime = (Get-ScheduledTaskInfo -TaskName $TaskName).LastRunTime
   Start-ScheduledTask -TaskName $TaskName
   $deadline = [DateTimeOffset]::UtcNow.AddMinutes(20)
   while ([DateTimeOffset]::UtcNow -lt $deadline) {
     Start-Sleep -Seconds 2
     $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction Stop
-    if ($task.State -eq 'Ready' -and (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)) {
+    if ($task.State -eq 'Ready') {
+      $info = Get-ScheduledTaskInfo -TaskName $TaskName
+      if ($info.LastRunTime -le $priorLastRunTime) { continue }
+      if ($info.LastTaskResult -ne 0) { throw "scheduled task LastTaskResult=$($info.LastTaskResult)" }
+      if (-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)) { throw 'scheduled task completed without a receipt' }
       try {
         $receipt = Get-Content -Raw -LiteralPath $ReceiptPath | ConvertFrom-Json
         if ($receipt.run_id -ne $PriorRunId -and $receipt.scheduled_run -eq $true -and $receipt.delivery_acknowledged -eq $true) {
-          $info = Get-ScheduledTaskInfo -TaskName $TaskName
-          if ($info.LastTaskResult -ne 0) { throw "scheduled task LastTaskResult=$($info.LastTaskResult)" }
           return $receipt
         }
-      } catch {
-        if ($_.Exception.Message -like 'scheduled task LastTaskResult=*') { throw }
-      }
+      } catch {}
+      throw 'scheduled task completed without a fresh acknowledged receipt'
     }
   }
   throw 'The daily 02:00 task smoke did not complete within 20 minutes'

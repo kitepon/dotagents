@@ -4,6 +4,7 @@
 # 他端末セットアップで「実ファイル退避を忘れて正本化が静かに失敗」を検出する狙い。
 # 使い方: verify-install [--profile official|legacy]
 set -uo pipefail
+export PYTHONIOENCODING=utf-8
 
 profile=official
 profile_set=false

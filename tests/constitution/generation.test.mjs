@@ -78,6 +78,13 @@ test("不正な引数は入力エラーとして拒否する", () => {
   assert.match(result.stderr, /usage:/);
 });
 
+test("全host生成物はWindows checkoutでもLF byte列を維持する", async () => {
+  const attributes = await readFile(join(ROOT, ".gitattributes"), "utf8");
+  for (const output of ["claude/CLAUDE.md", "codex/AGENTS.md", "grok/AGENTS.md"]) {
+    assert.match(attributes, new RegExp(`^${output.replace(".", "\\.")} text eol=lf$`, "m"));
+  }
+});
+
 test("実repoの共通契約とhost固有契約を交差させず保持する", async () => {
   const common = await readFile(join(ROOT, "shared/constitution.md"), "utf8");
   const claudeDelta = await readFile(join(ROOT, "claude/CLAUDE.delta.md"), "utf8");

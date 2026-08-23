@@ -67,7 +67,13 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /checked_products -ne 14/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
   assert.match(source, /function Set-OwnerOnlyAcl.*DirectorySecurity.*FileSecurity.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
+  assert.match(source, /PSEdition -eq 'Core'.*System32\\WindowsPowerShell\\v1\.0\\powershell\.exe.*\$PSCommandPath.*-ScheduledRun.*-PlanOnly.*exit \$LASTEXITCODE/su);
+  assert.match(source, /\$item\.SetAccessControl\(\$acl\)/u);
+  assert.doesNotMatch(source, /\bSet-Acl\b/u);
+  assert.match(source, /Get-Acl -LiteralPath \$Path.*GetOwner.*GetAccessRules.*IsInherited.*Owner-only ACL readback failed/su);
+  assert.doesNotMatch(source, /FileSystemAclExtensions\]::SetAccessControl/u);
   assert.match(source, /THROUGHLINE_CODEX_THREAD_ID.*CODEX_THREAD_ID/su);
+  assert.match(source, /function Wait-ScheduledSmoke.*priorLastRunTime.*Start-ScheduledTask.*LastRunTime -le \$priorLastRunTime.*LastTaskResult -ne 0.*completed without a receipt.*fresh acknowledged receipt/su);
   assert.match(source, /-ScheduledRun/u);
   assert.doesNotMatch(source, /\bwsl(?:\.exe)?\b/iu);
 });
@@ -95,6 +101,20 @@ test('Windows native一撃setupのPlanOnlyは端末を書き換えず全工程�
     'all-product-smoke',
     'daily-0200-task',
   ]);
+});
+
+test('Windows native一撃setupはPowerShell 7からも同じPlanOnly契約で起動できる', { skip: process.platform !== 'win32' }, async (t) => {
+  const probe = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-Command', '$PSVersionTable.PSVersion.Major'], { encoding: 'utf8' });
+  if (probe.error?.code === 'ENOENT') {
+    t.skip('PowerShell 7が未導入');
+    return;
+  }
+  assert.equal(probe.status, 0, probe.stderr);
+  const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SETUP, '-PlanOnly'], { encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
+  assert.equal(value.schema, 'dotagents.windows-native-factory-setup-plan.v1');
+  assert.equal(value.platform, 'windows-native');
 });
 
 function passingProduct(checkIds) {

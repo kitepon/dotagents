@@ -38,15 +38,15 @@ assert data["hooks"]["Stop"][0] == {
     "hooks": [{"type": "command", "command": "/custom/keep"}],
 }
 expected = {
-    ("PreToolUse", "delegation-gate-hook"),
-    ("PreToolUse", "git-destroy-gate-hook"),
-    ("SessionStart", "todo-gate-hook session-start"),
-    ("SessionStart", "orchestrate-advisory-hook"),
-    ("SessionStart", "lattice-gantt-hook session-start"),
-    ("Stop", "todo-gate-hook stop"),
-    ("UserPromptSubmit", "onset-gate-hook"),
-    ("UserPromptSubmit", "lattice-gantt-hook user-prompt-submit"),
-    ("PostToolUse", "plan-gate-hook"),
+    ("PreToolUse", ("delegation-gate-hook",)),
+    ("PreToolUse", ("git-destroy-gate-hook",)),
+    ("SessionStart", ("todo-gate-hook", "session-start")),
+    ("SessionStart", ("orchestrate-advisory-hook",)),
+    ("SessionStart", ("lattice-gantt-hook", "session-start")),
+    ("Stop", ("todo-gate-hook", "stop")),
+    ("UserPromptSubmit", ("onset-gate-hook",)),
+    ("UserPromptSubmit", ("lattice-gantt-hook", "user-prompt-submit")),
+    ("PostToolUse", ("plan-gate-hook",)),
 }
 commands = [
     (event, hook["command"])
@@ -55,9 +55,9 @@ commands = [
     for hook in entry.get("hooks", []) if isinstance(hook, dict) and isinstance(hook.get("command"), str)
 ]
 missing = [
-    f"{event}: {needle}"
-    for event, needle in expected
-    if not any(item_event == event and needle in command for item_event, command in commands)
+    f"{event}: {' '.join(needles)}"
+    for event, needles in expected
+    if not any(item_event == event and all(needle in command for needle in needles) for item_event, command in commands)
 ]
 assert not missing, missing
 PY
