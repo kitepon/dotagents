@@ -92,6 +92,9 @@ if not any("cursor-git-destroy-gate-hook" in command for command in commands):
     raise SystemExit("git-destroy")
 if not any("cursor-constitution-hook" in command for command in commands):
     raise SystemExit("constitution")
+prompts = data["hooks"].get("beforeSubmitPrompt") or []
+if not any("cursor-constitution-hook" in entry.get("command", "") for entry in prompts):
+    raise SystemExit("constitution prompt")
 if any("spotter" in command.lower() or "throughline" in command.lower() for command in commands):
     raise SystemExit("product hook")
 if any("permissionDecision" in json.dumps(data) for _ in [0]):

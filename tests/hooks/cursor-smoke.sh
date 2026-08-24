@@ -138,6 +138,33 @@ else
   fail_case cursor-constitution-missing-file
 fi
 
+run cursor-constitution-before-submit env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"beforeSubmitPrompt","session_id":"c-const-prompt","prompt":"hi","cursor_version":"1.0.0"}
+EOF
+if json && [[ "$RUN_OUT" == *'"additional_context"'* && "$RUN_OUT" == *'ベルの共通憲法'* ]]; then
+  pass cursor-constitution-before-submit
+else
+  fail_case cursor-constitution-before-submit
+fi
+
+run cursor-constitution-before-submit-once env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"beforeSubmitPrompt","session_id":"c-const-prompt","prompt":"again","cursor_version":"1.0.0"}
+EOF
+if [ "$RUN_BYTES" -eq 0 ]; then
+  pass cursor-constitution-before-submit-once
+else
+  fail_case cursor-constitution-before-submit-once
+fi
+
+run cursor-constitution-session-start-after-prompt env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"sessionStart","session_id":"c-const-prompt","cursor_version":"1.0.0"}
+EOF
+if json && [[ "$RUN_OUT" == *'"additional_context"'* && "$RUN_OUT" == *'ベルの共通憲法'* ]]; then
+  pass cursor-constitution-session-start-after-prompt
+else
+  fail_case cursor-constitution-session-start-after-prompt
+fi
+
 run cursor-todo-stop-no-followup "$PYTHON_EXE" "$ROOT/bin/cursor-todo-gate-hook.sh" stop <<EOF
 {"hook_event_name":"stop","session_id":"c-stop","workspace_roots":["$HOOK_REPO"],"status":"completed","cursor_version":"1.0.0"}
 EOF
@@ -166,6 +193,9 @@ if not commands or any("cursor-" not in command for command in commands):
     raise SystemExit(1)
 starts = data["hooks"].get("sessionStart") or []
 if not starts or "cursor-constitution-hook" not in starts[0].get("command", ""):
+    raise SystemExit(1)
+prompts = data["hooks"].get("beforeSubmitPrompt") or []
+if not prompts or "cursor-constitution-hook" not in prompts[0].get("command", ""):
     raise SystemExit(1)
 if "PreToolUse" in data["hooks"] or "UserPromptSubmit" in data["hooks"]:
     raise SystemExit(1)

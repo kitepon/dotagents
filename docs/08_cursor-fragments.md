@@ -7,7 +7,7 @@
 ## 1. 工場が書く面
 
 - 工場MCP 6サーバ（stdio）。所有面は `~/.cursor/mcp.json` の `mcpServers`。個人MCP（Gmail等）は同じファイルに残してよい。工場は工場6だけを upsert する。
-- User Rules UI と `cli-config.json` は完成形にしない。グローバル憲法の正本ファイルは `~/.cursor/rules/factory.mdc`（Wave 1）。Cursor 3.17.8 Desktop の always-apply 注入は workspace 内の `.cursor/rules` に限るため、工場 `sessionStart` hook（`cursor-constitution-hook`）が同一本文を `additional_context` で届ける。
+- User Rules UI と `cli-config.json` は完成形にしない。グローバル憲法の正本ファイルは `~/.cursor/rules/factory.mdc`（Wave 1）。Cursor 3.17.8 Desktop の always-apply 注入は workspace 内の `.cursor/rules` に限るため、工場 `cursor-constitution-hook` が同一本文を `additional_context` で届ける。sessionStart は composer handle 未作成だと落とすので、awaited の beforeSubmitPrompt にも同じ hook を置く。
 
 | name | command | args / env |
 |---|---|---|
@@ -31,7 +31,7 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 - `~/.cursor/skills-cursor/`
 - 個人hook。所有面は `~/.cursor/hooks.json` と `bin/cursor-*-hook`。apply-cursor-config が工場hookを upsert し、個人hookは残す。
 
-工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読む。Claude 形（`permissionDecision`）へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。Throughline 0.10.3+ は `throughline install` が同じ `~/.cursor/hooks.json` へ絶対 node + `bin/throughline.mjs` を upsert する（工場 `cursor-*-hook` は残す。`apply-cursor-config` は Throughline コマンドを消さない）。Spotter / Caveat の Cursor 製品hookは無い。`cursor-constitution-hook` は `~/.cursor/rules/factory.mdc` の本文を sessionStart の `additional_context` へ載せる（Desktop が home mdc を always-apply しないための配達。正本は factory.mdc）。`beforeSubmitPrompt` は additional_context を持たないため onset INFO 注入は非採用（Throughline の handoff 注入は製品側が sessionStart の `additional_context` で行う）。Cursor に `exit_plan_mode` が無いため plan-gate も非採用。
+工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読む。Claude 形（`permissionDecision`）へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。Throughline 0.10.3+ は `throughline install` が同じ `~/.cursor/hooks.json` へ絶対 node + `bin/throughline.mjs` を upsert する（工場 `cursor-*-hook` は残す。`apply-cursor-config` は Throughline コマンドを消さない）。Spotter / Caveat の Cursor 製品hookは無い。`cursor-constitution-hook` は `~/.cursor/rules/factory.mdc` の本文を `additional_context` へ載せる（Desktop が home mdc を always-apply しないための配達。正本は factory.mdc）。sessionStart は fire-and-forget で handle 未作成だと落とすため、同一 hook を awaited の beforeSubmitPrompt にも置く（session ごとに1回）。onset INFO の beforeSubmitPrompt 注入は非採用（orchestrate-advisory は sessionStart のまま。Throughline の handoff 注入は製品側が sessionStart の `additional_context` で行う）。Cursor に `exit_plan_mode` が無いため plan-gate も非採用。
 
 ## 3. 受入
 

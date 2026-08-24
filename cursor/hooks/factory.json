@@ -20,6 +20,12 @@
         "timeout": 5
       }
     ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "${HOME}/.local/bin/cursor-constitution-hook",
+        "timeout": 10
+      }
+    ],
     "sessionStart": [
       {
         "command": "${HOME}/.local/bin/cursor-constitution-hook",

@@ -159,7 +159,7 @@ Wave 1〜5がdotagentsで閉じる範囲。Wave 6は製品repoであり、本計
 - 席への手作業の展開は、その席のdotagentsで親AIを起動して正規入口を走らせる。Macで解決した絶対パスを転送して置かない。
 - Cursor DesktopのGUI PATHとAgent CLIのPATHは別でありうる。Grok DesktopのGUI PATH欠落と同じクラス。適用器は席のPATHで解決し、未解決は名前のまま残してhandshakeをtyped失敗にする。
 - Aitermは曖昧な`agent`名を解決しない。工場も`cursor-agent`だけを見る。
-- Cursor 3.17.8 Desktop の `getGlobalRules` は workspace 内の alwaysApply だけを注入する。`~/.cursor/rules/*.mdc` は Customize に出ても Agent の always-apply には乗らない。User Rules UI 手貼りを完成形にせず、工場 sessionStart hook が `factory.mdc` 同一本文を `additional_context` で届ける。
+- Cursor 3.17.8 Desktop の `getGlobalRules` は workspace 内の alwaysApply だけを注入する。`~/.cursor/rules/*.mdc` は Customize に出ても Agent の always-apply には乗らない。User Rules UI 手貼りを完成形にせず、工場 `cursor-constitution-hook` が `factory.mdc` 同一本文を `additional_context` で届ける。sessionStart は fire-and-forget で `getHandleIfLoaded` が空だと additional_context を黙って落とす。beforeSubmitPrompt は待って system_reminder へ載せる（10k 超は spill）。同一 hook を両方に置く。
 
 ## 7. 検証
 
@@ -179,7 +179,7 @@ Phase完了時の重い監査はWave 5のあと1回。検証者は親と異な�
 
 - **F:** 4harness憲法、OS/harness分離の維持、共通→delta、host matrix Cursor列、工場4席は全部本線、工場MCPの失敗を丸めないこと。製品Cursor hostはWave 6。
 - **A:** generator拡張、`cursor/`エントリ、install/verify、apply-cursor-config、Cursor appendix、hook adapter。
-- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` は済。Wave 6の製品repoは Throughline 0.10.3 まで完了。Macの工場MCPは apply 後の Desktop 別project で tool 列挙、空workspaceの `agent mcp list` で工場6が `ready`。Throughline は `cursor:` session を DB に書いた。残Hは新規 Desktop Agent チャットで憲法が `factory.mdc` と同一本文で乗ること（Desktop 3.17.8 は home mdc を always-apply しないため配達は `cursor-constitution-hook`）と、工場skillが `~/.cursor/skills` から列挙されること（Claude skill の併記は Cursor 互換読込であり切断しない）。
+- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` は済。Wave 6の製品repoは Throughline 0.10.3 まで完了。Macの工場MCPは apply 後の Desktop 別project で tool 列挙、空workspaceの `agent mcp list` で工場6が `ready`。Throughline は `cursor:` session を DB に書いた。残Hは新規 Desktop Agent チャットで憲法が `factory.mdc` と同一本文で乗ること（Desktop 3.17.8 は home mdc を always-apply せず、sessionStart の additional_context は handle 未作成だと落とす。配達は `cursor-constitution-hook` の sessionStart **と** awaited beforeSubmitPrompt）と、工場skillが `~/.cursor/skills` から列挙されること（Claude skill の併記は Cursor 互換読込であり切断しない）。
 
 Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦役と同じく作らない。事後に`init`しない。
 
@@ -187,4 +187,4 @@ Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦
 
 Wave 6 実測完了（2026-08-24）。Throughline 0.10.3 を公開し、このMacへ registry 由来で global install、`throughline install` が `~/.cursor/hooks.json` へ sessionStart / beforeSubmitPrompt / stop を upsert（工場 `cursor-*-hook` は残存）。公開commit `88982ca`、証跡commit `4bf84f5`、GitHub CI green（`88982ca` 5 checks / `4bf84f5` 2 checks）、npm shasum `e1afa30d616ce18a3013ad564c85edc894d9039b`、tag `v0.10.3`。Caveat製品hook・Spotter・Lattice `--host cursor` は理由付き unsupported。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。dotagents `ada08b1` のあと `make ci` green。
 
-Mac live（2026-08-24）。`install.sh` のsymlinkは `~/.cursor/rules/factory.mdc` / skills 4 / agents 2 / runbooks。`apply-cursor-config` backup `20260824T032343Z` と `T033103Z`。apply 後の別project（`x-article-mcp`、metadata 12:28）で工場MCP 6が tool 列挙。空workspaceの `agent mcp list` は工場6すべて `ready`（caveat `list-tools` 6本）。このdotagents窓の `mcps/` は apply 前（11:46）の plugin だけ＝既存sessionは数えない。Throughline DB に `cursor:7face712-ef58-40d7-b71e-b71091dfee5c`。Cursor 3.17.8 は user skill として `~/.cursor/skills` に加え互換で `~/.claude/skills` も読む。CLI `agent` は未loginのため新規CLI sessionで憲法注入を測れず。Desktop `getGlobalRules` は workspace 内 alwaysApply だけを注入するため、`~/.cursor/rules/factory.mdc` は Customize に出ても Agent の always-apply には乗らない。配達は工場 `cursor-constitution-hook`（sessionStart `additional_context`、同一本文）。残Hは新規 Desktop Agent チャットでその本文と `~/.cursor/skills/orchestrate`。
+Mac live（2026-08-24）。`install.sh` のsymlinkは `~/.cursor/rules/factory.mdc` / skills 4 / agents 2 / runbooks。`apply-cursor-config` backup `20260824T032343Z` と `T033103Z`。apply 後の別project（`x-article-mcp`、metadata 12:28）で工場MCP 6が tool 列挙。空workspaceの `agent mcp list` は工場6すべて `ready`（caveat `list-tools` 6本）。このdotagents窓の `mcps/` は apply 前（11:46）の plugin だけ＝既存sessionは数えない。Throughline DB に `cursor:7face712-ef58-40d7-b71e-b71091dfee5c`。Cursor 3.17.8 は user skill として `~/.cursor/skills` に加え互換で `~/.claude/skills` も読む。CLI `agent` は未loginのため新規CLI sessionで憲法注入を測れず。Desktop `getGlobalRules` は workspace 内 alwaysApply だけを注入するため、`~/.cursor/rules/factory.mdc` は Customize に出ても Agent の always-apply には乗らない。sessionStart の additional_context は composer handle 未作成だと落ちる。配達は工場 `cursor-constitution-hook`（sessionStart と awaited beforeSubmitPrompt の `additional_context`、同一本文）。残Hは新規 Desktop Agent チャットでその本文と `~/.cursor/skills/orchestrate`。
