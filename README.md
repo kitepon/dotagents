@@ -312,7 +312,7 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 
 | 面 | Cursor所有 | やらないこと |
 |---|---|---|
-| 憲法 | `~/.cursor/rules/factory.mdc`（Desktop Agent へは `cursor-constitution-hook` が同一本文を sessionStart と beforeSubmitPrompt で配達） | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り |
+| 憲法 | `~/.cursor/rules/factory.mdc`（Desktop Agent へは `cursor-constitution-hook` が sessionStart と beforeSubmitPrompt で配達。10000 字以内なら同一本文、超過時は cap 内案内＋正本 Read） | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り |
 | runbook | `~/.cursor/runbooks` | |
 | skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
 | 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
@@ -327,7 +327,7 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 - 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／SpotterのUserPromptSubmit・Stop eventが記録される／極小タスクを implementer に委譲して契約どおりの報告が返る
 - 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotter 3 hookを対話Codex CLIの`/hooks`でreviewし、対象入口の新規sessionで`spotter.hook_event.v1`が記録される
 - 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／工場MCP 6のhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
-- 新しい Cursor セッションで（対話確認・H）: 憲法が `~/.cursor/rules/factory.mdc` と同じ本文で乗る（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない。sessionStart の additional_context は composer handle 未作成だと落ちるので、配達は工場 sessionStart **と** awaited の beforeSubmitPrompt。この既存sessionの見た目は数えない）／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／工場MCP 6のhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない。既存sessionの見た目は受入に数えない
+- 新しい Cursor セッションで（対話確認・H）: 憲法が `~/.cursor/rules/factory.mdc` と同じ本文で乗る（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない。sessionStart の additional_context は composer handle 未作成だと落ちるので、配達は工場 sessionStart **と** awaited の beforeSubmitPrompt。現行本文は 10000 字を超えるため、hook は cap 内の案内を inline し、同一本文は正本の Read で届く。この既存sessionの見た目は数えない）／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／工場MCP 6のhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない。既存sessionの見た目は受入に数えない
 
 ### 4. その端末のメモリ整理
 

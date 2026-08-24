@@ -88,7 +88,7 @@ src/  tests/  package.json（or pyproject 等）
 | Grok skill | `grok/skills/<name>/` | `~/.grok/skills/<name>` | `SKILL.md`必須のディレクトリ。入口はGrok appendix |
 | Grok サブエージェント | `grok/agents/<name>.md` | `~/.grok/agents/<name>.md` | Grok agent定義。bundled explore/planは置換えない |
 | Grok hook | `grok/hooks/*.json` | `~/.grok/hooks/*.json` | Grok hook JSON。commandは`~/.local/bin/grok-*-hook`。envelopeはcamelCase |
-| Cursor グローバル規範 | 正本: `shared/constitution.md`＋`cursor/AGENTS.delta.md`／生成物: `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | `~/.cursor/rules/factory.mdc` のみ（`~/.cursor/AGENTS.md` は置かない）。Desktop Agent への配達は工場 `cursor-constitution-hook` が同一本文を sessionStart と beforeSubmitPrompt の `additional_context` へ載せる | generatorが同一本文を mdc wrap した単一規則。User Rules UI 手貼りは完成形にしない |
+| Cursor グローバル規範 | 正本: `shared/constitution.md`＋`cursor/AGENTS.delta.md`／生成物: `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | `~/.cursor/rules/factory.mdc` のみ（`~/.cursor/AGENTS.md` は置かない）。Desktop Agent への配達は工場 `cursor-constitution-hook`（sessionStart と beforeSubmitPrompt）。10000 字以内なら同一本文を `additional_context` へ。超過時は cap 内案内＋正本 Read（Desktop の spill に頼らない） | generatorが同一本文を mdc wrap した単一規則。User Rules UI 手貼りは完成形にしない |
 | Cursor skill | `cursor/skills/<name>/` | `~/.cursor/skills/<name>` | `SKILL.md`必須のディレクトリ。入口はCursor appendix。`skills-cursor/`は触らない |
 | Cursor サブエージェント | `cursor/agents/<name>.md` | `~/.cursor/agents/<name>.md` | Cursor agent定義。bundled explore/planは置換えない |
 | Cursor hook | `cursor/hooks/factory.json` | `~/.cursor/hooks.json`（apply-cursor-config が upsert） | Cursor envelope。commandは`~/.local/bin/cursor-*-hook` |
