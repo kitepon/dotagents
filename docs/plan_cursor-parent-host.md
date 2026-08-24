@@ -1,6 +1,6 @@
 # Cursor harness 工場適用
 
-**状態:** Done（Mac新規session受入 2026-08-24。Wave 1〜6着地）
+**状態:** Done（Mac新規session受入 2026-08-24。Wave 1〜6着地。Wave 6 製品adapterは 2026-08-24 再開後にこのMacで実測）
 **開始:** 2026-08-24
 **工程正本:** 本ファイル（Lattice未適用。オーナーが指示した時だけ移管する）
 **親導線:** [開発工場 統合マスター計画](plan_factory-master.md)
@@ -131,9 +131,9 @@ Wave 1〜5がdotagentsで閉じる範囲。Wave 6は製品repoであり、本計
 |---|---|---|
 | aiterm-mcp | `src/harnesses/cursor.ts`（OSはresolver/runtime） | 0.28+で完了。本戦役は消費するだけ |
 | Throughline | `hosts/identity.mjs`＋`hosts/<host>.mjs`。OSは`src/os/` | 0.10.3公開。Cursor first-class host。npm / tag / このMacのglobal install済み。capture/handoffは新規session |
-| Caveat | `claudeInstall.ts` / `codexHookInstall.ts`＋`installShared.ts` / `hookShared.ts` | 製品hook unsupported（Cursor install pathなし。Grok precedent）。MCPはWave 3 |
-| Spotter | `src/host/adapters.mjs`。OSは`src/platform/` | unsupported（Cursor tool-dbなし。Grokと同様に正式hostを足さない） |
-| Lattice | `lattice hooks --host` | `claude\|codex`のみ。Grok hostを増やさない裁定と同じく `--host cursor` は増やさない。工場ganttはdotagents所有 |
+| Caveat | `claudeInstall.ts` / `codexHookInstall.ts`＋`installShared.ts` / `hookShared.ts` | 0.18.0公開。`caveat cursor-hook install` が `~/.cursor/hooks.json` へ flat upsert。工場 hook 残存。このMacへ global install 済み。connectors exact（claude/codex）は切らない |
+| Spotter | `src/host/adapters.mjs`。OSは`src/platform/` | 1.6.1公開。`tool-db.cursor.json` と `spotter cursor-hook`（sessionStart refresh）。工場 hook 残存。このMacへ global install 済み |
+| Lattice | `lattice hooks --host` | 0.64.0公開。`--host cursor` が `beforeSubmitPrompt` へ flat `{command, timeout: 5}`。工場ganttはdotagents所有のまま。このMacで `wired` |
 | peertable | 局所分岐のまま。必要になってから抽出 | 円卓は skill の HTTP API。工場MCPに room は持たない（Grokと同じ） |
 | その他MCP製品 | 工場MCP登録で足りる | Wave 3 |
 | ServerManager / MarkItDown | connector not_applicable またはCLIのみ | 列へ`not_applicable` |
@@ -180,13 +180,13 @@ Phase完了時の重い監査はWave 5のあと1回。検証者は親と異な�
 
 - **F:** 4harness憲法、OS/harness分離の維持、共通→delta、host matrix Cursor列、工場4席は全部本線、工場MCPの失敗を丸めないこと。製品Cursor hostはWave 6。
 - **A:** generator拡張、`cursor/`エントリ、install/verify、apply-cursor-config、Cursor appendix、hook adapter。
-- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` は済。Wave 6の製品repoは Throughline 0.10.3 まで完了。Macの工場MCPは apply 後の Desktop 別project で tool 列挙、空workspaceの `agent mcp list` で工場6が `ready`。Throughline は `cursor:` session を DB に書いた。工場skillは `~/.cursor/skills` から列挙できた。新規ローカル Agent `d4c055fa`（2026-08-24 20:06 JST、`is_background_agent: false`）で `cursor-constitution-hook` が sessionStart / beforeSubmitPrompt を `from user config` で実行、stamp 付き、モデルが cap 内案内を受けて `factory.mdc` を Read。人格はベル、日常shellは Cursor native、Claude delta 固有条文は無し。`bc-7face712` への人間プロンプト（18:49 JST）は stamp も `from user config` も付かず、受入に数えない。
+- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` は済。Wave 6の製品repoは Throughline 0.10.3 / Caveat 0.18.0 / Lattice 0.64.0 / Spotter 1.6.1 までこのMacで完了。Macの工場MCPは apply 後の Desktop 別project で tool 列挙、空workspaceの `agent mcp list` で工場6が `ready`。Throughline は `cursor:` session を DB に書いた。工場skillは `~/.cursor/skills` から列挙できた。新規ローカル Agent `d4c055fa`（2026-08-24 20:06 JST、`is_background_agent: false`）で `cursor-constitution-hook` が sessionStart / beforeSubmitPrompt を `from user config` で実行、stamp 付き、モデルが cap 内案内を受けて `factory.mdc` を Read。人格はベル、日常shellは Cursor native、Claude delta 固有条文は無し。`bc-7face712` への人間プロンプト（18:49 JST）は stamp も `from user config` も付かず、受入に数えない。
 
 Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦役と同じく作らない。事後に`init`しない。
 
 ## 9. 現在地
 
-Wave 6 実測完了（2026-08-24）。Throughline 0.10.3 を公開し、このMacへ registry 由来で global install、`throughline install` が `~/.cursor/hooks.json` へ sessionStart / beforeSubmitPrompt / stop を upsert（工場 `cursor-*-hook` は残存）。公開commit `88982ca`、証跡commit `4bf84f5`、GitHub CI green（`88982ca` 5 checks / `4bf84f5` 2 checks）、npm shasum `e1afa30d616ce18a3013ad564c85edc894d9039b`、tag `v0.10.3`。Caveat製品hook・Spotter・Lattice `--host cursor` は理由付き unsupported。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。dotagents `ada08b1` のあと `make ci` green。
+Wave 6 実測完了（2026-08-24）。Throughline 0.10.3、Caveat 0.18.0、Lattice 0.64.0、Spotter 1.6.1 を公開し、このMacへ registry 由来で global install。`~/.cursor/hooks.json` へ Throughline / Caveat / Lattice / Spotter が flat upsert（工場 `cursor-*-hook` は残存）。Lattice status は `wired`。Caveat diagnostics は 4 events installed。Spotter sessionStart は安定 Node path。前スレの製品 `unsupported` は詰まりであり、製品結論ではなかった。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。factory diagnostics の connectors exact（claude/codex）は切らない。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。
 
 Mac live（2026-08-24）。`install.sh` のsymlinkは `~/.cursor/rules/factory.mdc` / skills 4 / agents 2 / runbooks。`apply-cursor-config` backup `20260824T032343Z` と `T033103Z`。apply 後の別project（`x-article-mcp`、metadata 12:28）で工場MCP 6が tool 列挙。空workspaceの `agent mcp list` は工場6すべて `ready`（caveat `list-tools` 6本）。このdotagents窓の `mcps/` は apply 前（11:46）の plugin だけ＝既存sessionは数えない。Throughline DB に `cursor:7face712-ef58-40d7-b71e-b71091dfee5c`。この会話は Desktop 起点の private worker（`bc-7face712-…`、`usePrivateWorker: true`）。Cursor 3.17.8 は user skill として `~/.cursor/skills` に加え互換で `~/.claude/skills` も読む。CLI `agent` は未loginのため新規CLI sessionで憲法注入を測れず。Desktop `getGlobalRules` は workspace 内 alwaysApply だけを注入するため、`~/.cursor/rules/factory.mdc` は Customize に出ても Agent の always-apply には乗らない。home mdc へ `globs` を足す路は 3.17.8 の `toCursorRule` が alwaysApply を type=global にして globs を捨てるため閉じた（generator は `globs:` を出さない）。sessionStart の additional_context は composer handle 未作成だと落ちる。現行本文は 10000 字を超える（共通本文 10253）。配達は工場 `cursor-constitution-hook`（sessionStart・awaited beforeSubmitPrompt・次ターンへ載る preToolUse。超過時は cap 内に案内＋本文冒頭、末尾の Cursor delta は切らない。Desktop spill に頼らない）。`~/.cursor/factory-constitution` は同一正本の overlay（自動 `--add` なし）。隔離HOMEの超過本文は cap 内（実測 9910 字）でベル／Cursor native／`## Cursor固有差分` を返す。live の `hooks.json` は実ファイル（symlink ではない。worker は symlink 経路を拒否する）。sessionStart と beforeSubmitPrompt の先頭工場entryが constitution（preToolUse も先頭が constitution）。`bc-7face712` の workbench は 13 user hooks を load 済みでも、その exec-daemon は 11:46 に `hasUserHooks: false` で起動し、follow-up（18:49 JST）では stamp も `from user config` も付かなかった。
 

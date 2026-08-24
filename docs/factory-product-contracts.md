@@ -24,6 +24,7 @@
 - diagnostics/state正本: `caveat factory-diagnostics --json`（schema `caveat.native_factory_diagnostics.v1`）。Caveat repoのown DB/schema/migration、sync、connectorをread-onlyで返す。公開runtime errorは`caveat runtime-errors snapshot --after-cursor 0 --limit 256 --json`／`ack <cursor> --json`。
 - 現adapter: native JSONをexact allowlistで検証し、`ready`＋exit 0をpass/compatible、`not_ready`＋非0を固定fingerprintのfail/incompatible、`unverified`＋非0・schema不正をunverifiedへ射影する。DB schema/migrationと、明示opt-inされた公開runtime error snapshot/ackを接続済み。
 - 表現/禁止: 診断不能は`unverified`、CLI不在は`missing`。Caveat DB直接queryやhook推測は禁止。
+- Cursor: 製品hookは `caveat cursor-hook install` が `~/.cursor/hooks.json` へ flat `{command, timeout}` を upsert する（`beforeSubmitPrompt` / `postToolUse` / `postToolUseFailure` / `stop`。工場 hook は残す）。出力は `additional_context`。Cursor envelope を Claude 形へ変換しない。factory diagnostics の connectors exact（`claude`/`codex`）はこの面では切らない。
 
 ### `throughline`
 
@@ -40,6 +41,7 @@
 - diagnostics/state正本: `spotter diagnostics factory`（schema 1.0）。既存doctor inspectorとtool DB validatorを再利用するread-only JSON。
 - 現adapter: native JSONのversion、marker schema、overallと、明示opt-inされた公開runtime error snapshot/ackを接続済み。
 - 表現/禁止: 対象外projectは`not_applicable`、対象で診断不能は`unverified`。全project自動activation、tool DB直接読解は禁止。
+- Cursor: `hostAgent: 'cursor'` の adapter が `tool-db.cursor.json` を所有する。discovery は `~/.cursor/mcp.json` と Cursor skills/agents。`spotter cursor-hook install` が `~/.cursor/hooks.json` の `sessionStart` へ catalog refresh を upsert する（工場 hook は残す）。`~/.cursor/skills-cursor` はカタログに入れない。対象projectの明示installがrequiredである点は他hostと同じ。
 
 ### `lattice`
 
@@ -51,6 +53,7 @@
 - TODO↔runtime相関: `lattice todo bindings [--plan <key>] --json`（`lattice.todo_binding_projection.v1`）。`compile_binding`から`compiled_plan_digest`→`runtime_plan.v1`→`executor_packet.v1`→`executor_receipt.v1`を辿る。status面の現行wireは`todo_status_result.v6`（`audit_pending`に加えて`plan_notes`／`coordination`／`parallel_candidates`の工程3欄を持つ。監査待ちも工程に属する義務も、statusが答える——Lattice repoのADR 0159・0160）。dotagents側の消費者は`lib/orchestrate/lattice-projection.mjs`・`lib/orchestrate/lattice-control-saga.mjs`・`lib/lattice-hook.py`の3つで、いずれもexact key-setでv6だけを受理する。Control manifestの`external_source.contract_version`は束縛時点の履歴なので、照合はv4・v5・v6を受理する（観測schemaとは別軸。過去版は消さない）。
 - 互換: `codegraph_*` MCP tool名は入力互換名としてのみ残し、provider／sensor_owner=`lattice`とLattice系列versionを返す。独立Codegraph package、PATH command、MCP登録、daemon、SDK依存は禁止。
 - 表現/禁止: 生message・絶対path・repo/prompt内容をreportへ転記しない。診断のためにindex生成・run実行・provider起動を行わない。
+- Cursor: `lattice hooks install --host cursor` が `~/.cursor/hooks.json` の `beforeSubmitPrompt` へ flat `{command, timeout: 5}` を冪等マージする。Claude/Codex の入れ子 `UserPromptSubmit` は変えない。工場 `cursor-lattice-gantt-hook` はdotagents所有の案内のまま残す。emit は Cursor の `conversation_id` / `workspace_roots` を読み、`additional_context` を返す。
 
 ### `markitdown`
 
