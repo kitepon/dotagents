@@ -59,6 +59,10 @@ cat >"$FIXTURE_ROOT/bin/apply-grok-config.sh" <<'EOF'
 #!/usr/bin/env bash
 printf 'apply-grok-config %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 EOF
+cat >"$FIXTURE_ROOT/bin/apply-cursor-config.sh" <<'EOF'
+#!/usr/bin/env bash
+printf 'apply-cursor-config %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
+EOF
 cat >"$FIXTURE_ROOT/bin/verify-install.sh" <<'EOF'
 #!/usr/bin/env bash
 printf 'verify-install %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
@@ -277,6 +281,7 @@ grep -Fq 'apply-claude-config --apply' "$CALLS" || fail 'Claude設定を適用�
 if grep -Fq 'apply-grok-config' "$CALLS"; then
   fail 'Grok未loginでapply-grok-configを実行した'
 fi
+grep -Fq 'apply-cursor-config --apply' "$CALLS" || fail 'Cursor設定を適用しない'
 if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
   fail 'lattice hooks install --host grok を呼んだ'
 fi

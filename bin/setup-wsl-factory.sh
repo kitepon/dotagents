@@ -274,6 +274,10 @@ maybe_apply_grok_config() {
   "$ROOT/bin/apply-grok-config.sh" --apply
 }
 
+apply_cursor_config() {
+  "$ROOT/bin/apply-cursor-config.sh" --apply
+}
+
 ensure_mcp() {
   ensure_claude_mcp aiterm aiterm-mcp
   ensure_claude_mcp caveat caveat mcp-server
@@ -345,9 +349,10 @@ run_setup() {
   "$ROOT/bin/apply-codex-config.sh" --apply
   "$ROOT/bin/apply-claude-config.sh" --apply
   maybe_apply_grok_config
+  apply_cursor_config
   "$ROOT/install.sh" --profile official
   ensure_managed_commands
-  # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。
+  # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。Cursor は MCP＋工場hook（apply-cursor-config）。
   # init は TTY だと公開ミラー確認で止まるので stdin を閉じる。
   caveat init </dev/null
   ensure_caveat_sync

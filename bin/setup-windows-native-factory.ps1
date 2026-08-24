@@ -527,6 +527,7 @@ try {
   $applyCodex = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\apply-codex-config.sh')
   $applyClaude = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\apply-claude-config.sh')
   $applyGrok = Join-Path $RepoRoot 'bin\apply-grok-config.sh'
+  $applyCursor = Join-Path $RepoRoot 'bin\apply-cursor-config.sh'
   $verify = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\verify-install.sh')
   $deliveryRunner = Join-Path $RepoRoot 'bin\factory-reporter-v7-schedule-runner.mjs'
   $ledgerHelper = Join-Path $RepoRoot 'bin\factory-toolchain-ledger.mjs'
@@ -571,6 +572,13 @@ try {
     } finally {
       $env:HOME = $previousGrokHome
     }
+  }
+  $previousCursorHome = $env:HOME
+  $env:HOME = $env:USERPROFILE
+  try {
+    Invoke-Checked -File 'python' -Arguments @($applyCursor, '--apply') -Label 'cursor-config: apply-cursor-config.sh'
+  } finally {
+    $env:HOME = $previousCursorHome
   }
   $previousHome = $env:HOME
   $previousCodexHome = $env:CODEX_HOME

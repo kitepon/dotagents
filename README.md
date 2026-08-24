@@ -213,7 +213,7 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   codex mcp add lattice -- lattice-mcp
   codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
   ```
-  Grok親の工場MCP 6はClaude/Codexへ手挿しせず、`~/.grok/config.toml`が所有する。適用は`apply-grok-config`（login済み`--apply`はH）。個人MCPはClaude jsonに残してよい。`compat.claude.mcps`は切らない
+  Grok親の工場MCP 6はClaude/Codexへ手挿しせず、`~/.grok/config.toml`が所有する。適用は`apply-grok-config`（login済み`--apply`はH）。個人MCPはClaude jsonに残してよい。`compat.claude.mcps`は切らない。Cursor親の工場MCP 6と工場hookは`bin/apply-cursor-config.sh --apply`が`~/.cursor/mcp.json` / `hooks.json`を upsert する（Cursor CLI の `mcp add` は無い）。`cli-config.json`は触らない
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
 - **home-server ssh**: `kite@192.168.1.2` 直IP（固定IP・エイリアスは作らない）
 
@@ -249,6 +249,7 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 `verify-install`、fresh wire v7 reportとBugHub delivery receiptまでを一括検証する。
 Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。
 工場MCPと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
+Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 
 実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
 wire v7 reportingを有効にする。MCP login、GitHub認証、Docker稼働など「0. 前提」の外部状態は
@@ -274,6 +275,7 @@ config、hook、credential、scheduler、delivery receiptを共有しない。Wi
 ./bin/apply-codex-config.sh --dry-run
 ./bin/apply-claude-config.sh --dry-run
 ./bin/apply-grok-config.sh --dry-run
+./bin/apply-cursor-config.sh --dry-run
 ```
 
 既定は公式 user skill 面 `$HOME/.agents/skills`。`--dry-run` は一切書き込まず、routing の必須2キー、
@@ -283,6 +285,7 @@ callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`
 ./bin/apply-codex-config.sh --apply
 ./bin/apply-claude-config.sh --apply
 ./bin/apply-grok-config.sh --apply   # login済みだけ。未loginならスキップ（H）
+./bin/apply-cursor-config.sh --apply
 caveat init
 throughline install
 caveat codex-hook install
@@ -292,7 +295,7 @@ spotter install -y
 ./bin/verify-install.sh --profile official
 ```
 
-両方の `--apply` は `~/Archives/` に backup を作り、途中失敗時は rollbackする。`apply-claude-config` は本書のjq断片が正とするdotagents hookだけを追加し、model / effort / permissions / OAuth / trust / 他ツールのhookは変更しない。`apply-grok-config` は `[models]` / permission / login と個人MCPを触らず、`compat.claude.skills` と `compat.claude.mcps` は切らない。legacyを選ぶのは旧入口の検証時だけで、`--profile legacy`をinstall / verifyの両方へ付ける。
+両方の `--apply` は `~/Archives/` に backup を作り、途中失敗時は rollbackする。`apply-claude-config` は本書のjq断片が正とするdotagents hookだけを追加し、model / effort / permissions / OAuth / trust / 他ツールのhookは変更しない。`apply-grok-config` は `[models]` / permission / login と個人MCPを触らず、`compat.claude.skills` と `compat.claude.mcps` は切らない。`apply-cursor-config` は `cli-config.json` の model / permission / login と個人MCPを触らない。legacyを選ぶのは旧入口の検証時だけで、`--profile legacy`をinstall / verifyの両方へ付ける。
 
 Grok親の所有面は次だけである。Claude面を吸うことを完成形にしない。
 
@@ -305,15 +308,26 @@ Grok親の所有面は次だけである。Claude面を吸うことを完成形�
 | 工場hook | `~/.grok/hooks/factory.json` | `compat.claude.hooks=false`。工場hookに製品hookは載せない。Throughline製品hookは `~/.grok/hooks/throughline.json`（`throughline install`）。Spotter / Caveat 製品hookはGrokで起動しない |
 | Lattice工程表 | `grok-lattice-gantt-hook`（dotagents所有の案内） | `lattice hooks install --host` にGrokを足さない |
 
+Cursor親の所有面は次だけである。Claude面を吸うことを完成形にしない。
+
+| 面 | Cursor所有 | やらないこと |
+|---|---|---|
+| 憲法 | `~/.cursor/rules/factory.mdc` | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り |
+| runbook | `~/.cursor/runbooks` | |
+| skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
+| 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
+| 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せる |
+
 `spotter install -y` はSpotterの正規project-scoped入口である。dotagentsの `.claude/settings.json` と `.spotter/`（どちらも端末ローカル・gitignore）を作り、user-level Codex hook 3本をcanonical化し、Claude/Codex別catalogをseedする。PATH上のThroughlineを絶対実行パスへ解決できる時はauditor contextが既定ONになる。Spotter自身のCLI以外でmarkerやhookを複製・手書きしない。
 
 `lattice hooks install --host claude|codex` はLattice 0.40.0+の製品管理入口である。sensor気づかせ導線はLattice自身に管理させ、Claude/Codex設定へ手挿ししない。Codex未導入端末では`--host codex`を省略する。Grok hostは増やさない。
 
 - **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostで必要な工場管理製品CLI、Lattice製品管理hookの`wired`状態、Spotter marker v2、Throughline context、Claude 5 hook、Codex 3 hook、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSON、host別catalogをFAIL行で名指しする。Grok `config.toml` がある時だけ `compat.claude.agents` / `hooks` の切断を見る。未loginでtomlが無いことはFAILにしない。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
-- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。両方ともtrust承認は別途必要。
+- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
 - 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／SpotterのUserPromptSubmit・Stop eventが記録される／極小タスクを implementer に委譲して契約どおりの報告が返る
 - 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotter 3 hookを対話Codex CLIの`/hooks`でreviewし、対象入口の新規sessionで`spotter.hook_event.v1`が記録される
 - 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／工場MCP 6のhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
+- 新しい Cursor セッションで（対話確認・H）: user rulesが`~/.cursor/rules/factory.mdc`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`を工場所有に数えない）／工場MCP 6のhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない。既存sessionの見た目は受入に数えない
 
 ### 4. その端末のメモリ整理
 

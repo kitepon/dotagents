@@ -1,6 +1,6 @@
 # 工場 host × product 期待matrix
 
-更新日: 2026-08-16
+更新日: 2026-08-24
 正本: dotagents
 対象: Mac、main-server、FOX WSL2、FOX Windows native
 
@@ -41,19 +41,21 @@ presenceと分離してその面だけを理由付き`unsupported`にする（gp
 
 Grok親列はWave 1〜5の実測を書く。工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線。Mac新規session（2026-08-16 `01a0091e`）で工場MCP 6は session 面 connected。FOX WSL2（`01a00964`）・Windows native hook修正後（`01a009d3`）・Linux / main-server（`01a00a9c`）は工場5 connected、aishellはtyped `spawn_failed`（各席は製品どおりunsupported）。Windows nativeの配線・login済みapply・適用後新規session受入は着地。`required`はGrok所有が`install`で証明された面。handshakeの人の目は新規sessionだけを数え、`grok mcp doctor`成功をsession成功に読み替えない。2026-08-14のGF07 12製品matrix（`supported` / `partial` を含む）は到達性の履歴であり、本列へ写してgreenへ丸めない。既存Grok sessionの見た目は受入に数えない。
 
-| product | Claude親 | Codex親 | Grok親 |
-|---|---|---|---|
-| Caveat | MCP＋4 hooks required | native 3 hooks required（MCP不要） | MCP required（Wave 5 4席 session）。製品hook unsupported（Wave 4 / 8/14 no-op） |
-| Throughline | hook/CLI required | hook/skill/CLI required | hook/CLI required（Mac 実測: capture・handoff-context・Grok `/tl`→`grok-continue`。後継起動は macOS Terminal のみ。製品hookは `~/.grok/hooks/throughline.json`） |
-| Spotter | 対象projectで明示install required | 対象projectで明示install required | unsupported（8/14正式host棄却。製品hookは起動しない） |
-| MarkItDown | CLI required | CLI required | not_applicable（Grok固有connector面なし） |
-| gpt-connector | MCP `gpt_connector` required。専用Chrome非対応hostはconnectorだけunsupported | MCP `gpt_connector` required。timeout後は sessions 回収 | MCP required（Wave 5 4席 session） |
-| aiterm-mcp | MCP required | Codex/Grok/Composer用MCP required。native枠外の外部実行に使う | MCP required（Wave 5 4席 session）。日常shellはGrok native |
-| codex-sidecar | MCP required | MCP required。隔離worktreeの外部実行に使う | MCP required（Wave 5 4席 session）。隔離Codex実行用 |
-| Lattice | required。`lattice-mcp`のsensor 8 toolを配線。`codegraph_*`互換名はLattice提供者identityを返す | 同左。Windows nativeは親CLIを運用する端末だけMCP登録 | MCP required（Wave 5 4席 session）。`lattice-gantt`はdotagents所有の案内。`lattice hooks install --host` のGrok hostは増やさない＝製品host hook unsupported |
-| AIShell | MCP `aishell` required（Apple Silicon / macOS 15+のみ）。`AISHELL_CAPABILITY_SET=expanded-v1`で登録し、工場監視はpath非露出の`AISHELL_TOOL_PROFILE=factory`を使う | 同左 | MCP required（Apple Silicon / macOS 15+のみ。Wave 5 Mac `01a0091e` connected）。他hostはunsupported（WSL2 / Windows / Linux は typed `spawn_failed`） |
-| ServerManager | connector not_applicable | connector not_applicable | connector not_applicable |
-| peertable | team編成時（peertable setup）だけMCP `room` required。teardownで解除 | 同左 | 円卓は Windows native で利用可（2026-08-16 席対応修理後）。Grok親は room MCP を持たない（親は peertable skill の HTTP API で着卓）。room MCP は setup した席（Claude／Codex）だけ。Wave 2「roomはClaude面のまま」は失効 |
+Cursor親列はWave 1〜5の実測を書く。工場の4席は全部本線。このMacでは`install.sh`が`~/.cursor/rules/factory.mdc` / skills / agents / runbooks をsymlinkし、`apply-cursor-config --apply`が工場MCP 6と工場hookを`~/.cursor/mcp.json` / `hooks.json`へ書いた。handshakeの人の目は新規sessionだけを数える。既存Cursor sessionの見た目は受入に数えない。製品host adapter（Throughline / Caveat / Spotter / Lattice `--host cursor`）はWave 6。Wave 5では未実装面を`unsupported`のまま残し、greenへ丸めない。
+
+| product | Claude親 | Codex親 | Grok親 | Cursor親 |
+|---|---|---|---|---|
+| Caveat | MCP＋4 hooks required | native 3 hooks required（MCP不要） | MCP required（Wave 5 4席 session）。製品hook unsupported（Wave 4 / 8/14 no-op） | MCP required（Wave 3 apply）。製品hook unsupported（Wave 6まで adapter 未） |
+| Throughline | hook/CLI required | hook/skill/CLI required | hook/CLI required（Mac 実測: capture・handoff-context・Grok `/tl`→`grok-continue`。後継起動は macOS Terminal のみ。製品hookは `~/.grok/hooks/throughline.json`） | unsupported（capture / Cursor hook adapter は Wave 6） |
+| Spotter | 対象projectで明示install required | 対象projectで明示install required | unsupported（8/14正式host棄却。製品hookは起動しない） | unsupported（host adapter 未。Grokと同様、実測してから決める） |
+| MarkItDown | CLI required | CLI required | not_applicable（Grok固有connector面なし） | not_applicable（Cursor固有connector面なし） |
+| gpt-connector | MCP `gpt_connector` required。専用Chrome非対応hostはconnectorだけunsupported | MCP `gpt_connector` required。timeout後は sessions 回収 | MCP required（Wave 5 4席 session） | MCP required（Wave 3 apply） |
+| aiterm-mcp | MCP required | Codex/Grok/Composer用MCP required。native枠外の外部実行に使う | MCP required（Wave 5 4席 session）。日常shellはGrok native | MCP required（Wave 3 apply）。日常shellはCursor native。`cursor-cli` workerレーンは消費するだけ |
+| codex-sidecar | MCP required | MCP required。隔離worktreeの外部実行に使う | MCP required（Wave 5 4席 session）。隔離Codex実行用 | MCP required（Wave 3 apply）。隔離Codex実行用 |
+| Lattice | required。`lattice-mcp`のsensor 8 toolを配線。`codegraph_*`互換名はLattice提供者identityを返す | 同左。Windows nativeは親CLIを運用する端末だけMCP登録 | MCP required（Wave 5 4席 session）。`lattice-gantt`はdotagents所有の案内。`lattice hooks install --host` のGrok hostは増やさない＝製品host hook unsupported | MCP required（Wave 3 apply）。`cursor-lattice-gantt-hook`はdotagents所有の案内。`lattice hooks install --host cursor` は Wave 6 で入口要否を実測＝製品host hook は当面 unsupported |
+| AIShell | MCP `aishell` required（Apple Silicon / macOS 15+のみ）。`AISHELL_CAPABILITY_SET=expanded-v1`で登録し、工場監視はpath非露出の`AISHELL_TOOL_PROFILE=factory`を使う | 同左 | MCP required（Apple Silicon / macOS 15+のみ。Wave 5 Mac `01a0091e` connected）。他hostはunsupported（WSL2 / Windows / Linux は typed `spawn_failed`） | MCP required（Apple Silicon / macOS 15+のみ。Wave 3 apply）。他hostはunsupported |
+| ServerManager | connector not_applicable | connector not_applicable | connector not_applicable | connector not_applicable |
+| peertable | team編成時（peertable setup）だけMCP `room` required。teardownで解除 | 同左 | 円卓は Windows native で利用可（2026-08-16 席対応修理後）。Grok親は room MCP を持たない（親は peertable skill の HTTP API で着卓）。room MCP は setup した席（Claude／Codex）だけ。Wave 2「roomはClaude面のまま」は失効 | 円卓は peertable skill の HTTP API で着卓。Cursor親の工場MCPに room は持たない。room MCP は setup した席（Claude／Codex）だけ |
 
 独立Codegraphは全hostで退役済みであり、製品・connector期待matrixへ含めない。BugHubの既存履歴だけを
 `not_applicable`として保持する。Latticeの`codegraph_*` tool名はLattice所有の入力互換ABIであり、
@@ -61,6 +63,8 @@ Grok親列はWave 1〜5の実測を書く。工場の4席（Mac / Windows native
 wire v6/v7の必須キーからも削除した。現役の製品・connector期待matrixと`products.observer`へ含めない。
 
 Grok親列は工場の4席が対象である。Grok Buildの導入は4席とも`optional`（未loginで一撃展開を止めない。loginと`apply-grok-config`はH）。4席の新規session受入は2026-08-16に閉じた。製品または上流が正規入口を持たない面だけを`unsupported`にする。Grok親の憲法・skill・工場MCP・工場hookは`~/.grok`が所有し、`compat.claude.agents`と`compat.claude.hooks`は切る。`compat.claude.skills`と`compat.claude.mcps`は切らない。
+
+Cursor親列も工場の4席が対象である。Cursor Agent CLIは第4 toolchain IDにしない。憲法・skill・agent・runbookは`install.sh`、工場MCPと工場hookは`apply-cursor-config`が`~/.cursor`を所有する。`cli-config.json`のmodel/login/permissionは触らない。`skills-cursor/`は工場所有外。製品または上流が正規入口を持たない面だけを`unsupported`にする。
 
 Spotterは全projectへ無条件activationしない。dotagentsなど工場管理対象として明示したprojectではrequired、未指定projectでは未導入をissueにしない。peertableも同様にteam編成（`peertable setup`）した対象projectだけがMCP `room`のrequired対象で、未編成projectでの未導入をissueにしない。FOX WSL2／FOX Windows nativeのclient稼働は2026-08-10のwire v7 cutoverで実測済み（installed/compatible）となり、宣言どおり`required`へ昇格した。委譲レーン・相談レーン・Oracleの位置付けは[docs/02_models.md](02_models.md)と[factory-product-contracts.md](factory-product-contracts.md)が正典（本matrixへ複製しない）。
 

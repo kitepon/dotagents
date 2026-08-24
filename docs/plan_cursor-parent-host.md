@@ -1,6 +1,6 @@
 # Cursor harness 工場適用
 
-**状態:** Active（Wave 4）
+**状態:** Active（Wave 5 完了・Wave 6）
 **開始:** 2026-08-24
 **工程正本:** 本ファイル（Lattice未適用。オーナーが指示した時だけ移管する）
 **親導線:** [開発工場 統合マスター計画](plan_factory-master.md)
@@ -184,4 +184,4 @@ Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦
 
 ## 9. 現在地
 
-Wave 4。工場hookを `~/.cursor/hooks.json` へ upsert し、Cursor envelope をそのまま読む。製品hookは載せない。次はWave 5（host matrix / setup）。
+Wave 5 完了。host matrixにCursor親列を書き、4つのOS setup入口が`apply-cursor-config --apply`を呼ぶ。関連ゲート（`make ci`）は Wave 1–5 を閉じるとき 1 回。次はWave 6（製品repoのCursor adapter）。
