@@ -683,6 +683,53 @@ PY
     fail=1
   fi
 fi
+if [ -x "$HOME/.local/bin/cursor-constitution-hook" ] && [ -e "$HOME/.cursor/rules/factory.mdc" ]; then
+  const_probe="$(mktemp -d)"
+  mkdir -p "$const_probe/rules"
+  cp "$HOME/.cursor/rules/factory.mdc" "$const_probe/rules/factory.mdc"
+  const_out="$(CURSOR_HOME="$const_probe" "$HOME/.local/bin/cursor-constitution-hook" <<'EOF'
+{"hook_event_name":"beforeSubmitPrompt","session_id":"verify-install","prompt":"x","cursor_version":"1.0.0"}
+EOF
+)" || true
+  if ! python3 - "$const_out" "$const_probe/rules/factory.mdc" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+raw = sys.argv[1]
+path = Path(sys.argv[2])
+try:
+    data = json.loads(raw)
+except json.JSONDecodeError:
+    print("FAIL: cursor-constitution-hook が JSON を返さない")
+    raise SystemExit(1)
+ctx = data.get("additional_context") or ""
+if not isinstance(ctx, str) or not ctx.strip():
+    print("FAIL: cursor-constitution-hook が additional_context を返さない")
+    raise SystemExit(1)
+if len(ctx) > 10000:
+    print(f"FAIL: cursor-constitution-hook の additional_context が {len(ctx)} 字（cap 10000）")
+    raise SystemExit(1)
+if "ベルの共通憲法" not in ctx or "Cursor nativeの単発" not in ctx:
+    print("FAIL: cursor-constitution-hook がベル／Cursor native を配達しない")
+    raise SystemExit(1)
+if "mcp__aiterm__pty_" in ctx:
+    print("FAIL: cursor-constitution-hook が Claude の日常shell既定を混ぜた")
+    raise SystemExit(1)
+body = path.read_text(encoding="utf-8")
+if "alwaysApply" in ctx:
+    print("FAIL: cursor-constitution-hook が frontmatter を本文へ混ぜた")
+    raise SystemExit(1)
+if len(body) > 10000 and "## Cursor固有差分" not in ctx:
+    print("FAIL: 超過時配達が Cursor固有差分を切った")
+    raise SystemExit(1)
+PY
+  then
+    echo "FAIL: cursor-constitution-hook の cap 内配達が契約と違う"
+    fail=1
+  fi
+  rm -rf "$const_probe"
+fi
 grok_config="$HOME/.grok/config.toml"
 if [ -f "$grok_config" ]; then
   if ! python3 - "$grok_config" <<'PY'
