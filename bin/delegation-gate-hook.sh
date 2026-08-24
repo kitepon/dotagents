@@ -50,6 +50,9 @@ def hook_host():
 
 def deny(code, missing, example):
     message = f"{code}: {missing}\n正しい呼び方: {example}\n正典: shared/orchestrate/delegation-contract.md"
+    if hook_host() == "cursor":
+        emit({"permission": "deny", "user_message": message, "agent_message": message})
+        return
     if hook_host() == "grok":
         emit({"decision": "deny", "reason": message})
         return
@@ -164,7 +167,7 @@ def common_dir(cwd):
 
 def writer_record(data, tool_name, tool_input, cwd):
     hint = tool_input.get("session_name") or tool_input.get("sessionName") or tool_input.get("cwd") or str(cwd)
-    dispatch = data.get("sessionId") if hook_host() == "grok" else data.get("session_id", "unknown")
+    dispatch = data.get("conversation_id") or data.get("session_id") if hook_host() == "cursor" else data.get("sessionId") if hook_host() == "grok" else data.get("session_id", "unknown")
     return {"common_dir": common_dir(cwd), "tool": tool_name, "session_hint": str(hint), "created_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "dispatch_id": dispatch}
 
 
@@ -212,7 +215,25 @@ def main():
         return
     try:
         data = json.loads(raw)
-        if hook_host() == "grok":
+        if hook_host() == "cursor":
+            session_id = data.get("session_id") or data.get("conversation_id")
+            if data.get("hook_event_name") == "subagentStart" or "subagent_type" in data:
+                tool_name = "Task"
+                tool_input = {
+                    "model": data.get("subagent_model"),
+                    "subagent_type": data.get("subagent_type"),
+                }
+            else:
+                tool_name = data.get("tool_name")
+                tool_input = data.get("tool_input")
+                if isinstance(tool_input, str):
+                    try:
+                        tool_input = json.loads(tool_input)
+                    except json.JSONDecodeError:
+                        tool_input = None
+            if data.get("hook_event_name") not in {"preToolUse", "subagentStart"} and "subagent_type" not in data:
+                raise ValueError
+        elif hook_host() == "grok":
             session_id = data.get("sessionId")
             tool_name = data.get("toolName")
             tool_input = data.get("toolInput")

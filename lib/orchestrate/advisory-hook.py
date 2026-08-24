@@ -371,7 +371,14 @@ def main():
         if len(raw) > CAPTURE_LIMIT:
             return
         data = json.loads(raw.decode("utf-8", "strict"))
-        if os.environ.get("DOTAGENTS_HOOK_HOST") == "grok":
+        host = os.environ.get("DOTAGENTS_HOOK_HOST")
+        if host == "cursor":
+            session_id = (data.get("session_id") or data.get("conversation_id")) if isinstance(data, dict) else None
+            cwd = data.get("cwd") if isinstance(data, dict) else None
+            roots = data.get("workspace_roots") if isinstance(data, dict) else None
+            if not cwd and isinstance(roots, list) and roots and isinstance(roots[0], str):
+                cwd = roots[0]
+        elif host == "grok":
             session_id = data.get("sessionId") if isinstance(data, dict) else None
             cwd = (data.get("cwd") or data.get("workspaceRoot")) if isinstance(data, dict) else None
         else:
@@ -404,7 +411,11 @@ def main():
         context = format_context(snapshot, lattice_result) if snapshot is not None else None
         if context is None or time.monotonic() >= deadline:
             return
-        sys.stdout.write(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}, ensure_ascii=False) + "\n")
+        if os.environ.get("DOTAGENTS_HOOK_HOST") == "cursor":
+            payload = {"additional_context": context}
+        else:
+            payload = {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}
+        sys.stdout.write(json.dumps(payload, ensure_ascii=False) + "\n")
         sys.stdout.flush(); mark_shown(marker)
     except Exception:
         return

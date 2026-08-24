@@ -24,7 +24,9 @@ def emit_deny(frontend, target):
         "正しい手順: stash push または diff のpatch保存で退避してから再実行してください。\n"
         "正典: グローバル AGENTS.md「git・shell・ファイルの作法」"
     )
-    if frontend in {"codex", "grok"}:
+    if frontend == "cursor":
+        payload = {"permission": "deny", "user_message": message, "agent_message": message}
+    elif frontend in {"codex", "grok"}:
         payload = {"decision": "deny", "reason": message}
     else:
         payload = {
@@ -145,14 +147,37 @@ def has_changes(cwd, target):
     return result.returncode == 0 and bool(result.stdout.strip())
 
 
+def cursor_shell_command(data):
+    event = data.get("hook_event_name")
+    if event == "beforeShellExecution":
+        command = data.get("command")
+        cwd = data.get("cwd")
+        return command, cwd
+    if event == "preToolUse" and data.get("tool_name") in SHELL_TOOLS:
+        tool_input = data.get("tool_input")
+        if not isinstance(tool_input, dict):
+            return None, None
+        command = tool_input.get("command")
+        cwd = tool_input.get("working_directory") or tool_input.get("cwd") or data.get("cwd")
+        return command, cwd
+    return None, None
+
+
 def main(frontend):
-    if frontend not in {"claude", "codex", "grok"} or os.environ.get("DOTAGENTS_GIT_DESTROY_GATE") == "off":
+    if frontend not in {"claude", "codex", "grok", "cursor"} or os.environ.get("DOTAGENTS_GIT_DESTROY_GATE") == "off":
         return
     try:
         data = json.loads(sys.stdin.read())
         if not isinstance(data, dict):
             return
-        if frontend == "grok":
+        cwd = None
+        if frontend == "cursor":
+            command, cwd = cursor_shell_command(data)
+            if not isinstance(command, str):
+                return
+            tool_input = {"command": command, "cwd": cwd}
+            tool_name = "Shell"
+        elif frontend == "grok":
             tool_name = data.get("toolName")
             tool_input = data.get("toolInput")
         else:
@@ -163,7 +188,7 @@ def main(frontend):
         targets = detected_targets(tool_input.get("command"))
         if not targets:
             return
-        cwd = tool_input.get("cwd") or data.get("cwd")
+        cwd = tool_input.get("cwd") or data.get("cwd") or cwd
         for target in targets:
             if has_changes(cwd, target):
                 emit_deny(frontend, "対象pathspec" if target else "worktree全体")

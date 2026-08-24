@@ -91,6 +91,7 @@ src/  tests/  package.json（or pyproject 等）
 | Cursor グローバル規範 | 正本: `shared/constitution.md`＋`cursor/AGENTS.delta.md`／生成物: `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | `~/.cursor/rules/factory.mdc` のみ（`~/.cursor/AGENTS.md` は置かない） | generatorが同一本文を mdc wrap した単一規則。alwaysApply |
 | Cursor skill | `cursor/skills/<name>/` | `~/.cursor/skills/<name>` | `SKILL.md`必須のディレクトリ。入口はCursor appendix。`skills-cursor/`は触らない |
 | Cursor サブエージェント | `cursor/agents/<name>.md` | `~/.cursor/agents/<name>.md` | Cursor agent定義。bundled explore/planは置換えない |
+| Cursor hook | `cursor/hooks/factory.json` | `~/.cursor/hooks.json`（apply-cursor-config が upsert） | Cursor envelope。commandは`~/.local/bin/cursor-*-hook` |
 | Codex サブエージェント | `codex/agents/<name>.toml` | `~/.codex/agents/<name>.toml` | `name`/`description`/`developer_instructions`必須 |
 | 実行スクリプト | `bin/<name>.sh` / `bin/<name>.mjs` / `bin/<name>.ps1` | POSIXは`~/.local/bin/<name>`、Windows PowerShell入口はrepo内path | shebangまたはhost native shellに従う。POSIXの拡張子は配置時に外れる。`chmod +x`対象はPOSIX実行体 |
 

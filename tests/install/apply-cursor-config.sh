@@ -75,6 +75,26 @@ if aishell.get("env", {}).get("AISHELL_CAPABILITY_SET") != "expanded-v1":
 if "command" not in caveat or "command" not in servers["aiterm"]:
     raise SystemExit("command")
 PY
+[ -f "$HOME_FIXTURE/.cursor/hooks.json" ] || fail 'apply が hooks.json を書かない'
+python3 - "$HOME_FIXTURE/.cursor/hooks.json" <<'PY' || fail '工場hook の JSON 契約が違う'
+import json
+import sys
+from pathlib import Path
+
+data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if data.get("version") != 1:
+    raise SystemExit("version")
+commands = []
+for entries in data["hooks"].values():
+    for entry in entries:
+        commands.append(entry.get("command", ""))
+if not any("cursor-git-destroy-gate-hook" in command for command in commands):
+    raise SystemExit("git-destroy")
+if any("spotter" in command.lower() or "throughline" in command.lower() for command in commands):
+    raise SystemExit("product hook")
+if any("permissionDecision" in json.dumps(data) for _ in [0]):
+    raise SystemExit("claude shape")
+PY
 [ -d "$HOME_FIXTURE/Archives" ] || fail 'apply が backup を作らない'
 
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply | grep -Fq '変更なし' \

@@ -83,7 +83,9 @@ SESSION_CONTEXT_ABSENT = "session_context_absent"
 
 
 def emit(frontend, message, event="SessionStart"):
-    if frontend in {"codex", "grok"}:
+    if frontend == "cursor":
+        sys.stdout.write(json.dumps({"additional_context": message}, ensure_ascii=False) + "\n")
+    elif frontend in {"codex", "grok"}:
         payload = {
             "hookSpecificOutput": {
                 "hookEventName": event,
@@ -919,7 +921,7 @@ def consume_relay(frontend, session_id, root):
 
 
 def main(frontend):
-    if frontend not in {"claude", "codex", "grok"}:
+    if frontend not in {"claude", "codex", "grok", "cursor"}:
         return
     if os.environ.get("DOTAGENTS_LATTICE_HOOK") == "off":
         return
@@ -932,7 +934,14 @@ def main(frontend):
         data = json.loads(raw.decode("utf-8", "strict"))
         if not isinstance(data, dict):
             return
-        if frontend == "grok":
+        if frontend == "cursor":
+            session_id = data.get("session_id") or data.get("conversation_id")
+            roots = data.get("workspace_roots")
+            cwd = data.get("cwd")
+            if not cwd and isinstance(roots, list) and roots and isinstance(roots[0], str):
+                cwd = roots[0]
+            source = "startup"
+        elif frontend == "grok":
             session_id = data.get("sessionId")
             cwd = data.get("cwd") or data.get("workspaceRoot")
             source = data.get("source")

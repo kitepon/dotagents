@@ -43,10 +43,11 @@ canon-migration-gate: ## BASEとの差分にある正典削除行の移設被覆
 lint-skills: ## Codex skill の frontmatter と安全契約を静的検証
 	bash tests/skills/smoke.sh
 
-lint-hooks: ## Claude / Codex / Grok hook の空打ち smoke
+lint-hooks: ## Claude / Codex / Grok / Cursor hook の空打ち smoke
 	bash tests/hooks/smoke.sh
 	bash tests/hooks/codex-smoke.sh
 	bash tests/hooks/grok-smoke.sh
+	bash tests/hooks/cursor-smoke.sh
 
 test-constitution: ## 共通憲法generatorの冪等性とdrift拒否
 	node --test tests/constitution/generation.test.mjs

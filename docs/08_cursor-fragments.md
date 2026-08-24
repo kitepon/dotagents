@@ -29,9 +29,9 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 - `~/.cursor/cli-config.json` の `model` / `modelParameters` / permission / login
 - 工場6以外の MCP
 - `~/.cursor/skills-cursor/`
-- 個人hook。所有面は Wave 4 の `~/.cursor/hooks.json` と `~/.cursor/hooks/` だけ
+- 個人hook。所有面は `~/.cursor/hooks.json` と `bin/cursor-*-hook`。apply-cursor-config が工場hookを upsert し、個人hookは残す。
 
-工場hookはCursor envelopeをそのまま読む。Claude 形へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。
+工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読む。Claude 形（`permissionDecision`）へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。`beforeSubmitPrompt` は additional_context を持たないため onset INFO 注入は非採用。Cursor に `exit_plan_mode` が無いため plan-gate も非採用。
 
 ## 3. 受入
 

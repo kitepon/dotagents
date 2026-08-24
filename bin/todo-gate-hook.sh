@@ -105,8 +105,32 @@ def grok_host():
     return os.environ.get("DOTAGENTS_HOOK_HOST") == "grok"
 
 
+def cursor_host():
+    return os.environ.get("DOTAGENTS_HOOK_HOST") == "cursor"
+
+
+def cursor_cwd(data):
+    cwd = data.get("cwd")
+    if isinstance(cwd, str) and cwd:
+        return cwd
+    roots = data.get("workspace_roots")
+    if isinstance(roots, list) and roots and isinstance(roots[0], str):
+        return roots[0]
+    return None
+
+
+def emit_cursor_context(message):
+    sys.stdout.write(json.dumps({"additional_context": message}, ensure_ascii=False) + "\n")
+
+
 def session_start(data):
-    if grok_host():
+    if cursor_host():
+        session_id = data.get("session_id") or data.get("conversation_id")
+        source = data.get("composer_mode") or "startup"
+        cwd = cursor_cwd(data)
+        if source in {"agent", "ask", "edit"}:
+            source = "startup"
+    elif grok_host():
         session_id = data.get("sessionId")
         source = data.get("source") or "startup"
         cwd = data.get("cwd") or data.get("workspaceRoot")
@@ -156,11 +180,20 @@ def session_start(data):
     gc()
     if not safe_touch(stocktake):
         return
-    sys.stdout.write("INFO: docs/ のプラン状況: " + "・".join(fragments) + "。プランの維持・完了処理の方針は、グローバル CLAUDE.md / AGENTS.md「計画文書の作法」を参照。この一覧は現在の依頼範囲を変更しません。\n")
+    message = "INFO: docs/ のプラン状況: " + "・".join(fragments) + "。プランの維持・完了処理の方針は、グローバル CLAUDE.md / AGENTS.md「計画文書の作法」を参照。この一覧は現在の依頼範囲を変更しません。"
+    if cursor_host():
+        emit_cursor_context(message)
+        return
+    sys.stdout.write(message + "\n")
 
 
 def stop(data):
-    if grok_host():
+    if cursor_host():
+        session_id = data.get("session_id") or data.get("conversation_id")
+        cwd = cursor_cwd(data)
+        if data.get("status") not in (None, "completed"):
+            return
+    elif grok_host():
         session_id = data.get("sessionId")
         cwd = data.get("cwd") or data.get("workspaceRoot")
         if data.get("reason") not in (None, "end_turn"):
@@ -225,11 +258,17 @@ def main():
     except Exception:
         error_log()
         return
-    if grok_host():
+    if grok_host() or cursor_host():
         if sys.argv[1] == "session-start":
-            required_ok = isinstance(data.get("sessionId"), str) and isinstance(data.get("cwd") or data.get("workspaceRoot"), str)
+            if cursor_host():
+                required_ok = isinstance(data.get("session_id") or data.get("conversation_id"), str) and isinstance(cursor_cwd(data), str)
+            else:
+                required_ok = isinstance(data.get("sessionId"), str) and isinstance(data.get("cwd") or data.get("workspaceRoot"), str)
         else:
-            required_ok = isinstance(data.get("sessionId"), str) and isinstance(data.get("cwd") or data.get("workspaceRoot"), str)
+            if cursor_host():
+                required_ok = isinstance(data.get("session_id") or data.get("conversation_id"), str) and isinstance(cursor_cwd(data), str)
+            else:
+                required_ok = isinstance(data.get("sessionId"), str) and isinstance(data.get("cwd") or data.get("workspaceRoot"), str)
     else:
         required = ("session_id", "source", "cwd") if sys.argv[1] == "session-start" else ("session_id", "cwd", "stop_hook_active")
         required_ok = all(key in data for key in required)

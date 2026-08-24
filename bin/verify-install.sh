@@ -632,6 +632,52 @@ PY
     fail=1
   fi
 fi
+cursor_hooks="$HOME/.cursor/hooks.json"
+if [ -f "$cursor_hooks" ] || [ -L "$cursor_hooks" ]; then
+  if [ -L "$cursor_hooks" ]; then
+    echo "FAIL: $cursor_hooks は symlink（実ファイルの工場hook面が正）"
+    fail=1
+  elif ! python3 - "$cursor_hooks" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except json.JSONDecodeError as exc:
+    print(f"FAIL: {path} の JSON パース失敗: {exc}")
+    raise SystemExit(1)
+hooks = data.get("hooks") if isinstance(data, dict) else None
+if not isinstance(hooks, dict):
+    print(f"FAIL: {path} の hooks が object でない")
+    raise SystemExit(1)
+commands = []
+for entries in hooks.values():
+    if not isinstance(entries, list):
+        continue
+    for entry in entries:
+        if isinstance(entry, dict) and isinstance(entry.get("command"), str):
+            commands.append(entry["command"])
+required = (
+    "cursor-git-destroy-gate-hook",
+    "cursor-delegation-gate-hook",
+    "cursor-todo-gate-hook",
+    "cursor-lattice-gantt-hook",
+    "cursor-orchestrate-advisory-hook",
+)
+missing = [name for name in required if not any(name in command for command in commands)]
+if missing:
+    print("FAIL: Cursor 工場hook が欠落: " + "、".join(missing))
+    raise SystemExit(1)
+if any(token in " ".join(commands).lower() for token in ("spotter", "throughline")):
+    print("FAIL: Cursor 工場hook に製品hookが混入")
+    raise SystemExit(1)
+PY
+  then
+    fail=1
+  fi
+fi
 grok_config="$HOME/.grok/config.toml"
 if [ -f "$grok_config" ]; then
   if ! python3 - "$grok_config" <<'PY'
