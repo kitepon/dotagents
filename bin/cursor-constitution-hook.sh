@@ -10,8 +10,11 @@ globs を足しても本文は乗らない。User Rules UI 手貼りは完成形
 
 sessionStart は fire-and-forget で、composer handle 未作成だと
 additional_context を黙って落とす。beforeSubmitPrompt は待って注入する。
-preToolUse の additional_context も Desktop が次ターンへ載せるので、
-prompt を踏まない既存窓の最初の tool でも同じ配達を返す（session ごとに1回）。
+preToolUse の additional_context も Desktop workbench が次ターンへ載せる。
+ただし private worker の exec-daemon は起動時の hooks.json スナップショットだけを見る。
+hook 導入前に起きた worker の tool では factory hook は走らない。
+workbench の beforeSubmitPrompt は、人が送った文なら live reload 済みの
+user hooks を使う。session ごとに1回 stamp する。
 
 Desktop 3.17.8 の additional_context は 10000 字まで inline の
 system_reminder。超過分は agent-tools の uuid.txt へ spill し、
