@@ -272,6 +272,7 @@ grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを�
 grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
 grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
 grep -Fq 'lattice hooks install --host codex' "$CALLS" || fail 'Codex Lattice hookを配線しない'
+grep -Fq 'lattice hooks install --host cursor' "$CALLS" || fail 'Cursor Lattice hookを配線しない'
 grep -Fq 'spotter install -y' "$CALLS" || fail 'Spotterを配線しない'
 grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを実行しない'
 [ "$(grep -Fc 'claude-mcp-add gpt_connector gpt-connector-mcp' "$CALLS")" -eq 1 ] \

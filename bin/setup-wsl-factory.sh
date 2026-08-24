@@ -361,6 +361,7 @@ run_setup() {
   ensure_mcp
   lattice hooks install --host claude
   lattice hooks install --host codex
+  lattice hooks install --host cursor
   spotter install -y
   install_cron
   if [ "$HOST_PROFILE" = server ]; then
