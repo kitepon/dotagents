@@ -45,6 +45,8 @@ Tier 2機械境界wave（`fm-0687`〜`fm-0690`・2026-08-02起票・lane `canon-
 
 - [Grok 親host 全対応](plan_grok-parent-host.md)（2026-08-16開始。工程正本は当該Markdown。Lattice未適用）。
   Wave 0〜5着地。4席の新規session受入は2026-08-16に閉じた。Phase監査済み。2026-08-16裁定: Observerをコアから撤去、Spotterはコア維持かつ正式Grok host化、ThroughlineのGrok対応は必須。Wave 6はThroughlineとSpotter。Observer撤去は独立wave。
+- [Cursor harness 工場適用](plan_cursor-parent-host.md)（2026-08-24開始。工程正本は当該Markdown。Lattice未適用）。
+  [harness用語統一](plan_harness-terminology-refactor-20260824.md)完遂の上に乗る。OS層と既存3harness dirは壊さない。Aiterm `cursor-cli`は足場済み。Wave 0。
 
 ## maintenance queue
 

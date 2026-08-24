@@ -18,6 +18,7 @@ dotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**
 | [06_gpt-connector.md](06_gpt-connector.md) | ChatGPT接続の正規ランブック（`gpt_connector` / `gpt-connector-mcp`・専用Chrome・session回収） |
 | [06_oracle-mcp.md](06_oracle-mcp.md) | Oracleの互換・手動rollback記録（新規導入の正本ではない） |
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
+| [plan_cursor-parent-host.md](plan_cursor-parent-host.md) | Cursorを第4harnessにする進行中計画。OS/harness分離は壊さない |
 | [../README.md](../README.md#他端末セットアップランブック) | 工場4席（Mac / Windows native / WSL2 / Linux）の一撃展開と定期更新 |
 | [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
 | [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |
@@ -44,7 +45,7 @@ dotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**
 
 - 罠DB: [../caveat/](../caveat/)（own エントリの正本。caveat MCP が symlink 越しに読む）
 - 調査資産: [../rag/INDEX.md](../rag/INDEX.md)
-- 人格・全端末共通規範: [../shared/constitution.md](../shared/constitution.md)（唯一の共通正本。host固有差分と配布生成物は各hostディレクトリ。GrokをClaude / Codexと同格の親にし、工場4席を全部本線にする作業は[plan_grok-parent-host.md](plan_grok-parent-host.md)が所有）
+- 人格・全端末共通規範: [../shared/constitution.md](../shared/constitution.md)（唯一の共通正本。harness固有差分と配布生成物は各harnessディレクトリ。GrokをClaude / Codexと同格の親にする作業は[plan_grok-parent-host.md](plan_grok-parent-host.md)、Cursorを第4harnessにする作業は[plan_cursor-parent-host.md](plan_cursor-parent-host.md)が所有）
 - 規範の入口: ルート [../AGENTS.md](../AGENTS.md) は全AI向けのproject正典であり、Claude Code はルート [../CLAUDE.md](../CLAUDE.md) の `@AGENTS.md` 経由で取り込む。共通憲法は `shared/constitution.md`、host固有差分は各host delta、runtime配布物は生成物として管理する。
 - 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。
 - 文書は趣旨（憲章・正典）、統括レーンのプラン、役目を終えた文書の3種に分ける。完了した文書は `archive/` へ退避し、`docs/`直下には生きた文書だけを置く。
