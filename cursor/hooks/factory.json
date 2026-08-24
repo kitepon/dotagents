@@ -9,6 +9,10 @@
     ],
     "preToolUse": [
       {
+        "command": "${HOME}/.local/bin/cursor-constitution-hook",
+        "timeout": 10
+      },
+      {
         "command": "${HOME}/.local/bin/cursor-delegation-gate-hook",
         "matcher": "Task",
         "timeout": 5

@@ -516,6 +516,7 @@ for f in "$REPO/claude/agents"/*.md;   do [ -e "$f" ] && check "$HOME/.claude/ag
 [ -f "$REPO/grok/AGENTS.md" ] && check "$HOME/.grok/rules/AGENTS.md" "$REPO/grok/AGENTS.md"
 [ -d "$REPO/shared/runbooks" ] && check "$HOME/.grok/runbooks" "$REPO/shared/runbooks"
 [ -f "$REPO/cursor/rules/factory.mdc" ] && check "$HOME/.cursor/rules/factory.mdc" "$REPO/cursor/rules/factory.mdc"
+[ -f "$REPO/cursor/rules/factory.mdc" ] && check "$HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$REPO/cursor/rules/factory.mdc"
 [ -d "$REPO/shared/runbooks" ] && check "$HOME/.cursor/runbooks" "$REPO/shared/runbooks"
 if [ -e "$HOME/.cursor/AGENTS.md" ] || [ -L "$HOME/.cursor/AGENTS.md" ]; then
   echo "FAIL: $HOME/.cursor/AGENTS.md が存在する（Cursor憲法のmountは ~/.cursor/rules/factory.mdc のみ）"

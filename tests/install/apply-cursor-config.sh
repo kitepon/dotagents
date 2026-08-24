@@ -95,6 +95,9 @@ if not any("cursor-constitution-hook" in command for command in commands):
 prompts = data["hooks"].get("beforeSubmitPrompt") or []
 if not any("cursor-constitution-hook" in entry.get("command", "") for entry in prompts):
     raise SystemExit("constitution prompt")
+tools = data["hooks"].get("preToolUse") or []
+if not any("cursor-constitution-hook" in entry.get("command", "") for entry in tools):
+    raise SystemExit("constitution pretool")
 if any("spotter" in command.lower() or "throughline" in command.lower() for command in commands):
     raise SystemExit("product hook")
 if any("permissionDecision" in json.dumps(data) for _ in [0]):

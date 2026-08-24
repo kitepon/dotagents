@@ -6,8 +6,9 @@ Desktop 3.17.8 の getGlobalRules は workspace 内の alwaysApply だけを注�
 User Rules UI 手貼りは完成形にしない。正本ファイルは factory.mdc のまま。
 
 sessionStart は fire-and-forget で、composer handle 未作成だと
-additional_context を黙って落とす。beforeSubmitPrompt は待って注入するので
-同じ配達をそちらでも返す（session ごとに1回）。
+additional_context を黙って落とす。beforeSubmitPrompt は待って注入する。
+preToolUse の additional_context も Desktop が次ターンへ載せるので、
+prompt を踏まない既存窓の最初の tool でも同じ配達を返す（session ごとに1回）。
 
 Desktop 3.17.8 の additional_context は 10000 字まで inline の
 system_reminder。超過分は agent-tools の uuid.txt へ spill し、
@@ -24,7 +25,8 @@ import sys
 from pathlib import Path
 
 
-DELIVER_EVENTS = {"sessionStart", "beforeSubmitPrompt"}
+DELIVER_EVENTS = {"sessionStart", "beforeSubmitPrompt", "preToolUse"}
+STAMP_EVENTS = {"beforeSubmitPrompt", "preToolUse"}
 # Cursor Desktop 3.17.8 workbench: nft=1e4 in hook-additional-context-render.
 INLINE_CAP = 10000
 
@@ -97,7 +99,7 @@ def main() -> int:
     home = cursor_home()
     session_id = data.get("session_id") or data.get("conversation_id") or ""
     stamp = stamp_file(home, str(session_id)) if session_id else None
-    if event == "beforeSubmitPrompt" and stamp is not None and stamp.exists():
+    if event in STAMP_EVENTS and stamp is not None and stamp.exists():
         return 0
     path = home / "rules" / "factory.mdc"
     try:
@@ -109,7 +111,7 @@ def main() -> int:
         return 0
     context = delivery_context(path, body)
     sys.stdout.write(json.dumps({"additional_context": context}, ensure_ascii=False) + "\n")
-    if event == "beforeSubmitPrompt" and stamp is not None:
+    if event in STAMP_EVENTS and stamp is not None:
         try:
             stamp.parent.mkdir(parents=True, exist_ok=True)
             stamp.write_text("1\n", encoding="utf-8")

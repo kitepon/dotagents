@@ -181,6 +181,7 @@ assert_link "$OFFICIAL_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/impl
 assert_link "$OFFICIAL_HOME/.grok/agents/refuter.md" "$ROOT/grok/agents/refuter.md"
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 assert_link "$OFFICIAL_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
+assert_link "$OFFICIAL_HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
 assert_link "$OFFICIAL_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
@@ -644,6 +645,7 @@ assert_link "$LEGACY_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestra
 assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 assert_link "$LEGACY_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
+assert_link "$LEGACY_HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
 assert_link "$LEGACY_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"

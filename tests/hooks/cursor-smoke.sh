@@ -157,6 +157,33 @@ else
   fail_case cursor-constitution-before-submit-once
 fi
 
+run cursor-constitution-pretooluse-after-prompt env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"preToolUse","session_id":"c-const-prompt","tool_name":"Shell","cursor_version":"1.0.0"}
+EOF
+if [ "$RUN_BYTES" -eq 0 ]; then
+  pass cursor-constitution-pretooluse-after-prompt
+else
+  fail_case cursor-constitution-pretooluse-after-prompt
+fi
+
+run cursor-constitution-pretooluse env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"preToolUse","session_id":"c-const-tool","tool_name":"Shell","cursor_version":"1.0.0"}
+EOF
+if json && [[ "$RUN_OUT" == *'"additional_context"'* && "$RUN_OUT" == *'ベルの共通憲法'* ]]; then
+  pass cursor-constitution-pretooluse
+else
+  fail_case cursor-constitution-pretooluse
+fi
+
+run cursor-constitution-pretooluse-once env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"preToolUse","session_id":"c-const-tool","tool_name":"Read","cursor_version":"1.0.0"}
+EOF
+if [ "$RUN_BYTES" -eq 0 ]; then
+  pass cursor-constitution-pretooluse-once
+else
+  fail_case cursor-constitution-pretooluse-once
+fi
+
 run cursor-constitution-session-start-after-prompt env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
 {"hook_event_name":"sessionStart","session_id":"c-const-prompt","cursor_version":"1.0.0"}
 EOF
@@ -235,6 +262,9 @@ if not starts or "cursor-constitution-hook" not in starts[0].get("command", ""):
     raise SystemExit(1)
 prompts = data["hooks"].get("beforeSubmitPrompt") or []
 if not prompts or "cursor-constitution-hook" not in prompts[0].get("command", ""):
+    raise SystemExit(1)
+tools = data["hooks"].get("preToolUse") or []
+if not tools or "cursor-constitution-hook" not in tools[0].get("command", ""):
     raise SystemExit(1)
 if "PreToolUse" in data["hooks"] or "UserPromptSubmit" in data["hooks"]:
     raise SystemExit(1)

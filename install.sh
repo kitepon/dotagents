@@ -137,6 +137,10 @@ done
 mkdir -p "$HOME/.cursor/rules" "$HOME/.cursor/skills" "$HOME/.cursor/agents"
 if [ -e "$HERE/cursor/rules/factory.mdc" ]; then
   link_one "$HERE/cursor/rules/factory.mdc" "$HOME/.cursor/rules/factory.mdc"
+  # Desktop 3.17.8 の getGlobalRules は workspace 内 .cursor/rules だけ always-apply する。
+  # 同一正本の overlay。窓への --add はしない（last-active を誤る）。
+  mkdir -p "$HOME/.cursor/factory-constitution/.cursor/rules"
+  link_one "$HERE/cursor/rules/factory.mdc" "$HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc"
 fi
 if [ -d "$HERE/shared/runbooks" ]; then
   link_one "$HERE/shared/runbooks" "$HOME/.cursor/runbooks"
