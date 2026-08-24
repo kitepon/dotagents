@@ -16,6 +16,9 @@ const HOSTS = [
   },
 ];
 const COMMON = "shared/constitution.md";
+// Cursor 3.17.8 toCursorRule: alwaysApply:true → type=global で YAML globs を捨てる。
+// getRulesForFiles は alwaysApply かつ globs 空を除外。home mdc へ globs を足しても無効果。
+// alwaysApply を外すと overlay の getGlobalRules も死ぬ。配達は cursor-constitution-hook。
 const CURSOR_MDC_FRONTMATTER = [
   "---",
   "description: Factory global constitution for the Cursor harness. Always apply.",

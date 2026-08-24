@@ -7,7 +7,7 @@
 ## 1. 工場が書く面
 
 - 工場MCP 6サーバ（stdio）。所有面は `~/.cursor/mcp.json` の `mcpServers`。個人MCP（Gmail等）は同じファイルに残してよい。工場は工場6だけを upsert する。
-- User Rules UI と `cli-config.json` は完成形にしない。グローバル憲法の正本ファイルは `~/.cursor/rules/factory.mdc`（Wave 1）。Cursor 3.17.8 Desktop の always-apply 注入は workspace 内の `.cursor/rules` に限るため、工場 `cursor-constitution-hook` が配達する。本文が 10000 字以内なら `additional_context` に同一本文を載せる。超える場合 Desktop は spill して「uuid.txt を Read」に置換するため、hook 側で cap 内の案内（ベル・Cursor native shell・正本パス）と本文冒頭を inline し、末尾の Cursor delta は切らず、同一全文は `factory.mdc` の Read で届ける。sessionStart は composer handle 未作成だと落とすので、awaited の beforeSubmitPrompt と、次ターンへ載る preToolUse にも同じ hook を置く。`~/.cursor/factory-constitution` は同一正本の overlay。窓への `--add` はしない。
+- User Rules UI と `cli-config.json` は完成形にしない。グローバル憲法の正本ファイルは `~/.cursor/rules/factory.mdc`（Wave 1）。Cursor 3.17.8 Desktop の always-apply 注入は workspace 内の `.cursor/rules` に限るため、工場 `cursor-constitution-hook` が配達する。home mdc へ `globs` を足しても `alwaysApply: true` は type=global になり YAML globs は捨てられる。本文が 10000 字以内なら `additional_context` に同一本文を載せる。超える場合 Desktop は spill して「uuid.txt を Read」に置換するため、hook 側で cap 内の案内（ベル・Cursor native shell・正本パス）と本文冒頭を inline し、末尾の Cursor delta は切らず、同一全文は `factory.mdc` の Read で届ける。sessionStart は composer handle 未作成だと落とすので、awaited の beforeSubmitPrompt と、次ターンへ載る preToolUse にも同じ hook を置く。`~/.cursor/factory-constitution` は同一正本の overlay。窓への `--add` はしない。
 
 | name | command | args / env |
 |---|---|---|

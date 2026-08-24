@@ -3,7 +3,10 @@
 
 Desktop 3.17.8 の getGlobalRules は workspace 内の alwaysApply だけを注入し、
 公式の user rule files（~/.cursor/rules）を always-apply しない。
-User Rules UI 手貼りは完成形にしない。正本ファイルは factory.mdc のまま。
+toCursorRule は alwaysApply:true を type=global にし YAML globs を捨てる。
+getRulesForFiles は alwaysApply かつ globs 空を除外するので、home mdc へ
+globs を足しても本文は乗らない。User Rules UI 手貼りは完成形にしない。
+正本ファイルは factory.mdc のまま。
 
 sessionStart は fire-and-forget で、composer handle 未作成だと
 additional_context を黙って落とす。beforeSubmitPrompt は待って注入する。

@@ -42,6 +42,7 @@ test("共通正本とhost deltaから完全な生成物を冪等生成する", a
   assert.match(cursor, /shared\/constitution\.md \+ cursor\/AGENTS\.delta\.md/);
   assert.match(cursor, /共通本文[\s\S]*Cursor差分/);
   assert.match(cursorMdc, /^---\n[\s\S]*alwaysApply: true\n---\n/);
+  assert.doesNotMatch(cursorMdc, /^globs:/m);
   assert.match(cursorMdc, /共通本文[\s\S]*Cursor差分/);
   execFileSync(process.execPath, [RENDER, "--write", "--root", root]);
   assert.equal(await readFile(join(root, "claude/CLAUDE.md"), "utf8"), claude);
@@ -164,6 +165,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   assert.match(cursor, /Cursor nativeの単発・背景コマンド/);
   assert.doesNotMatch(cursor, /Claude Code固有差分/);
   assert.match(cursorMdc, /^---\n[\s\S]*alwaysApply: true\n---\n/);
+  assert.doesNotMatch(cursorMdc, /^globs:/m);
   assert.match(cursorMdc, /Cursor nativeの単発・背景コマンド/);
   assert.doesNotMatch(common, /Codex親がCodex子を呼ぶ時はnative sub-agentを既定/);
 
