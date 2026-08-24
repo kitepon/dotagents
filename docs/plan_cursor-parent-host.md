@@ -178,12 +178,12 @@ Phase完了時の重い監査はWave 5のあと1回。検証者は親と異な�
 
 - **F:** 4harness憲法、OS/harness分離の維持、共通→delta、host matrix Cursor列、工場4席は全部本線、工場MCPの失敗を丸めないこと。製品Cursor hostはWave 6。
 - **A:** generator拡張、`cursor/`エントリ、install/verify、apply-cursor-config、Cursor appendix、hook adapter。
-- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` / 新規session確認。Wave 6の製品repoは Throughline 0.10.3 まで完了。残Hは新規 Cursor session の handshake と Throughline capture。
+- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` は済。Wave 6の製品repoは Throughline 0.10.3 まで完了。Macの工場MCP handshakeは apply 後の別project session で tool 列挙済み。Throughline は `cursor:` session を DB に書いた。残Hは新規 Agent チャットで憲法が `factory.mdc` から乗ることと、工場skillが `~/.cursor/skills` から列挙されること。
 
 Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦役と同じく作らない。事後に`init`しない。
 
 ## 9. 現在地
 
-Wave 6 実測完了（2026-08-24）。Throughline 0.10.3 を公開し、このMacへ registry 由来で global install、`throughline install` が `~/.cursor/hooks.json` へ sessionStart / beforeSubmitPrompt / stop を upsert（工場 `cursor-*-hook` は残存）。公開commit `88982ca`、証跡commit `4bf84f5`、CI `32687818474`（macos/linux/windows/wsl2 green）、npm shasum `e1afa30d616ce18a3013ad564c85edc894d9039b`、tag `v0.10.3`。Caveat製品hook・Spotter・Lattice `--host cursor` は理由付き unsupported。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。
+Wave 6 実測完了（2026-08-24）。Throughline 0.10.3 を公開し、このMacへ registry 由来で global install、`throughline install` が `~/.cursor/hooks.json` へ sessionStart / beforeSubmitPrompt / stop を upsert（工場 `cursor-*-hook` は残存）。公開commit `88982ca`、証跡commit `4bf84f5`、GitHub CI green（`88982ca` 5 checks / `4bf84f5` 2 checks）、npm shasum `e1afa30d616ce18a3013ad564c85edc894d9039b`、tag `v0.10.3`。Caveat製品hook・Spotter・Lattice `--host cursor` は理由付き unsupported。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。dotagents `ada08b1` のあと `make ci` green。
 
-Wave 5 の関連ゲート（`make ci`）は canon-migration が Cursor 配置規約と hook 配線を追従したうえで 1 回。handshake と Throughline capture の人の目は新規 Cursor session だけを数える。この既存sessionの見た目は受入に数えない。
+Mac live（2026-08-24）。`install.sh` のsymlinkは `~/.cursor/rules/factory.mdc` / skills 4 / agents 2 / runbooks。`apply-cursor-config` backup `20260824T032343Z` と `T033103Z`。apply 後の別project（`x-article-mcp`、metadata 12:28）で工場MCP 6が tool 列挙された（caveat 6 / lattice 8 / aiterm 15 / aishell 11 / gpt_connector 7 / codex-sidecar 12）。このdotagents窓の `mcps/` は apply 前（11:46）の plugin だけで、工場6を持たない＝既存sessionは数えない。Throughline DB に `cursor:7face712-ef58-40d7-b71e-b71091dfee5c`（dotagents、sessionStart 12:56、process-turn で bodies 6）。capture は発火した。新規 Agent チャットでの憲法（`factory.mdc`）と工場skill（`~/.cursor/skills`。`skills-cursor` と `~/.claude/skills` を工場所有に数えない）は未測。
