@@ -19,7 +19,7 @@ dotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**
 | [06_oracle-mcp.md](06_oracle-mcp.md) | Oracleの互換・手動rollback記録（新規導入の正本ではない） |
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
-| [plan_cursor-parent-host.md](plan_cursor-parent-host.md) | Cursorを第4harnessにする進行中計画。OS/harness分離は壊さない |
+| [plan_cursor-parent-host.md](plan_cursor-parent-host.md) | Cursorを第4harnessにする計画。Mac新規session受入まで着地（2026-08-24） |
 | [../README.md](../README.md#他端末セットアップランブック) | 工場4席（Mac / Windows native / WSL2 / Linux）の一撃展開と定期更新 |
 | [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
 | [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |
