@@ -56,7 +56,6 @@ $TaskName = 'dotagents-agents-update'
 $ReporterTaskName = 'dotagents-factory-reporter'
 $RunId = [guid]::NewGuid().ToString()
 $RunLock = $null
-$LatticeUnsupported = @{}
 $TranscriptPath = Join-Path $StateDirectory "run-$RunId.log"
 
 function Write-Step([string]$Name) {
@@ -369,7 +368,6 @@ function Invoke-LatticeHookInstall([string]$HostName) {
     return
   }
   if ($text -match 'HOST_PLATFORM_UNSUPPORTED') {
-    $script:LatticeUnsupported[$HostName] = $true
     Write-Warning "${label}: native Windows is structurally unsupported; dotagents-owned hooks remain active"
     return
   }
@@ -431,18 +429,8 @@ function Invoke-VerifyInstall([string]$VerifyScript) {
     $ErrorActionPreference = $previousPreference
   }
   $output | ForEach-Object { Write-Host $_ }
-  if ($code -eq 0) { return 'passed' }
-  $text = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
-  $failureMarkers = [regex]::Matches($text, 'FAIL: ')
-  $latticeFailures = [regex]::Matches($text, 'FAIL: Lattice (claude|codex) hooks status ')
-  $latticeHosts = @($latticeFailures | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
-  if ($failureMarkers.Count -eq 2 -and $latticeFailures.Count -eq 2 -and
-      $latticeHosts.Count -eq 2 -and $latticeHosts -contains 'claude' -and $latticeHosts -contains 'codex' -and
-      $LatticeUnsupported.claude -eq $true -and $LatticeUnsupported.codex -eq $true) {
-    Write-Warning 'verify-install reported only the known Lattice native-Windows status/install contract mismatch; structural unsupported was independently observed'
-    return 'lattice-platform-unsupported'
-  }
-  throw "verify-install failed with exit $code"
+  if ($code -ne 0) { throw "verify-install failed with exit $code" }
+  return 'passed'
 }
 
 function Assert-DailyTask {
