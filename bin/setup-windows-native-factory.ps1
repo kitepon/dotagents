@@ -29,13 +29,8 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
   throw 'setup-windows-native-factory.ps1 is Windows-native only'
 }
 
-if ($PSVersionTable.PSEdition -eq 'Core') {
-  $windowsPowerShell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-  $arguments = @('-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
-  if ($ScheduledRun) { $arguments += '-ScheduledRun' }
-  if ($PlanOnly) { $arguments += '-PlanOnly' }
-  & $windowsPowerShell @arguments
-  exit $LASTEXITCODE
+if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) {
+  throw 'PowerShell 7が必要です。Microsoft公式経路で導入してください: winget install --id Microsoft.PowerShell --source winget'
 }
 
 if ($PlanOnly) {
@@ -142,7 +137,7 @@ function Set-OwnerOnlyAcl([string]$Path) {
     [Security.AccessControl.AccessControlType]::Allow
   )
   [void]$acl.AddAccessRule($rule)
-  $item.SetAccessControl($acl)
+  [IO.FileSystemAclExtensions]::SetAccessControl($item, $acl)
 
   $check = Get-Acl -LiteralPath $Path
   $ownerSid = ($check.GetOwner([Security.Principal.SecurityIdentifier])).Value
@@ -441,7 +436,7 @@ function Assert-DailyTask {
     throw "$TaskName is not scheduled daily at 02:00"
   }
   $action = @($task.Actions)[0]
-  if (@($task.Actions).Count -ne 1 -or $action.Execute -notmatch 'powershell\.exe$' -or $action.Arguments -notlike '*setup-windows-native-factory.ps1*' -or $action.Arguments -notlike '*-ScheduledRun*') {
+  if (@($task.Actions).Count -ne 1 -or $action.Execute -notmatch 'pwsh\.exe$' -or $action.Arguments -notlike '*setup-windows-native-factory.ps1*' -or $action.Arguments -notlike '*-ScheduledRun*') {
     throw "$TaskName action is not the Windows one-shot setup"
   }
 }

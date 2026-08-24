@@ -93,7 +93,7 @@ src/  tests/  package.json（or pyproject 等）
 | Cursor サブエージェント | `cursor/agents/<name>.md` | `~/.cursor/agents/<name>.md` | Cursor agent定義。bundled explore/planは置換えない |
 | Cursor hook | `cursor/hooks/factory.json` | `~/.cursor/hooks.json`（apply-cursor-config が upsert） | Cursor envelope。commandは`~/.local/bin/cursor-*-hook` |
 | Codex サブエージェント | `codex/agents/<name>.toml` | `~/.codex/agents/<name>.toml` | `name`/`description`/`developer_instructions`必須 |
-| 実行スクリプト | `bin/<name>.sh` / `bin/<name>.mjs` / `bin/<name>.ps1` | POSIXは`~/.local/bin/<name>`、Windows PowerShell入口はrepo内path | shebangまたはhost native shellに従う。POSIXの拡張子は配置時に外れる。`chmod +x`対象はPOSIX実行体 |
+| 実行スクリプト | `bin/<name>.sh` / `bin/<name>.mjs` / `bin/<name>.ps1` | POSIXは`~/.local/bin/<name>`、Windows PowerShell 7入口はrepo内path | shebangまたはhost native shellに従う。Windows nativeは`pwsh.exe`だけ。POSIXの拡張子は配置時に外れる。`chmod +x`対象はPOSIX実行体 |
 
 `install.sh`は配布対象を1階層だけ走査しsymlinkを張る。Codex skill面は`--profile official|legacy`の一方だけを選び、新規entryの追加・削除・改名後は`./install.sh --profile <面>`を再実行する。
 

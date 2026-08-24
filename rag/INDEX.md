@@ -25,6 +25,7 @@
 - [codex/codex-full-support-foundations.md](codex/codex-full-support-foundations.md) — dotagents Codex 全対応の公式仕様基盤: 9監査面、公式 skill 面 `$HOME/.agents/skills`、legacy `~/.codex/skills` 実測、import は同期でなく検出器、plugin は二重管理防止を実証後に裁定。Wave 2 のclean HOME受入れとCI parser固定も記録（2026-07-12・確度高）
 - [codex/subagent-thread-limits.md](codex/subagent-thread-limits.md) — Codex subagentの公開設定 `agents.max_threads`（既定6）／`max_depth`（既定1）と、Desktopセッション側の低い実効上限を分離。旧「max_threadsは起動エラー」説を公式仕様で訂正（2026-07-13・確度はclaim別）
 - [codex/windows-hook-shell-contract.md](codex/windows-hook-shell-contract.md) — Codex 0.144.6のhookはturn shell経由。Windows PowerShellでquoted executableを起動するにはcall operator `&` が必要という正規形と実機受入条件（2026-07-20・確度高）
+- [windows-powershell7/factory-shell-contract.md](windows-powershell7/factory-shell-contract.md) — Windows工場shellをPowerShell 7へ統一し、Aiterm／psmux／shellの責務を分離する契約。Microsoft公式WinGet導入経路付き（2026-08-25・確度高）
 - [codex/hook-trust-surface-2026.md](codex/hook-trust-surface-2026.md) — `/hooks`は対話Codex CLI専用のreview／trust入口。Codex App／IDEでは通常promptになり得るため、remote CLI trust後にApp新規threadで実火する（2026-07-21・公式manual＋実測）
 - [codex/raw/openai-codex-hook-trust-surfaces-20260721.md](codex/raw/openai-codex-hook-trust-surfaces-20260721.md) — OpenAI公式CLI／IDE slash commands・Hooksの一次ソースpointer（2026-07-21）
 - [codex/raw/openai-codex-hook-command-runner-0.144.6.md](codex/raw/openai-codex-hook-command-runner-0.144.6.md) — OpenAI Codex 0.144.6 hook command runner一次ソース verbatim（2026-07-20）

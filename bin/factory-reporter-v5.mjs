@@ -7,6 +7,7 @@ import { chmod, lstat, mkdir, readFile, readdir, rename, rm, stat, writeFile } f
 import { homedir, platform } from 'node:os';
 import { basename, join } from 'node:path';
 import process from 'node:process';
+import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 import {
   readAndValidateReportV5,
   readAndValidateReportV6,
@@ -92,13 +93,13 @@ if ($isDirectory) {
   $inherit = [Security.AccessControl.InheritanceFlags]::None
 }
 $item = Get-Item -LiteralPath $p
-$acl = $item.GetAccessControl('Access')
+$acl = [IO.FileSystemAclExtensions]::GetAccessControl($item, [Security.AccessControl.AccessControlSections]::Access)
 $acl.SetAccessRuleProtection($true, $false)
-foreach ($existing in @($acl.Access)) { [void]$acl.RemoveAccessRuleAll($existing) }
+foreach ($existing in @($acl.Access)) { if ($null -ne $existing) { [void]$acl.RemoveAccessRuleAll($existing) } }
 $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, [Security.AccessControl.FileSystemRights]::FullControl, $inherit, [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
 [void]$acl.AddAccessRule($rule)
-$item.SetAccessControl($acl)`;
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+[IO.FileSystemAclExtensions]::SetAccessControl($item, $acl)`;
+  const result = spawnSync(resolveWindowsPowerShell7(), ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], {
     encoding: 'utf8',
     env: { ...process.env, DOTAGENTS_FACTORY_ACL_TARGET: path },
   });

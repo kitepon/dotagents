@@ -262,7 +262,7 @@ wire v7 reportingを有効にする。MCP login、GitHub認証、Docker稼働な
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
 | Linux | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
 | WSL2 | `./bin/setup-wsl-factory.sh` | cron、毎日02:00。`systemd`と非対話`sudo`が必要 |
-| Windows native | PowerShell 7／Windows PowerShellのどちらからでも `& .\bin\setup-windows-native-factory.ps1` | Task Scheduler、毎日02:00。ユーザー権限。UAC は出さない |
+| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかなければ先に `winget install --id Microsoft.PowerShell --source winget` | Task Scheduler、毎日02:00。ユーザー権限。UAC は出さない。5.1／`cmd.exe` fallbackなし |
 
 macOSではAIShell（Apple Silicon／macOS 15+）も配備する。WSL2とWindows nativeは別hostであり、
 config、hook、credential、scheduler、delivery receiptを共有しない。Windows Codex DesktopからWSL2を使う時は、
@@ -365,7 +365,7 @@ setup-wsl-factory --scheduled-update                  # WSL2
 tail -5 ~/.local/state/agents-update/agents-update.log # "agents-update end" 行が出ること（実ログの完了行。旧記載 "Finished" は実装と不一致だった）
 ```
 
-Windows nativeの状態確認とrollbackはPowerShellから
+Windows nativeの状態確認とrollbackはPowerShell 7から
 `node .\bin\agents-update-scheduler.mjs status --apply`／
 `node .\bin\agents-update-scheduler.mjs uninstall --apply`を使う。解除はTaskと管理artifactだけを外し、
 report／outbox／credentialを削除しない。

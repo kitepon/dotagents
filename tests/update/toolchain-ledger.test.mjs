@@ -30,7 +30,7 @@ test('未知・不足引数は台帳を作らず拒否し、Windows ACL契約を
   const source = await readFile(CLI, 'utf8');
   assert.match(source, /DOTAGENTS_FACTORY_ACL_TARGET/); assert.match(source, /WindowsIdentity\]::GetCurrent\(\)\.User/); assert.match(source, /Get-Item -LiteralPath \$p/); assert.match(source, /RemoveAccessRuleAll/); assert.doesNotMatch(source, /New-Object Security\.AccessControl\.(?:Directory|File)Security/);
   assert.match(source, /SetAccessRuleProtection\(\$true, \$false\)/); assert.match(source, /FileSystemAccessRule\]::new\(\$sid, \[Security\.AccessControl\.FileSystemRights\]::FullControl/);
-  assert.match(source, /GetAccessControl\('Access'\)/); assert.match(source, /\$item\.SetAccessControl\(\$acl\)/); assert.doesNotMatch(source, /Set-Acl /); assert.doesNotMatch(source, /\[IO\.(?:Directory|File)\]::SetAccessControl/); assert.match(source, /timeout: 5_000/); assert.match(source, /acl_apply_failed/); assert.match(source, /ownerOnlyAcl\(path\)/);
+  assert.match(source, /FileSystemAclExtensions\]::GetAccessControl\(.*AccessControlSections\]::Access\)/); assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/); assert.doesNotMatch(source, /Set-Acl /); assert.doesNotMatch(source, /\[IO\.(?:Directory|File)\]::SetAccessControl/); assert.match(source, /timeout: 5_000/); assert.match(source, /acl_apply_failed/); assert.match(source, /ownerOnlyAcl\(path\)/);
   const afterRename = source.slice(source.indexOf('await rename(temporary, path)'), source.indexOf('} finally', source.indexOf('await rename(temporary, path)'))); assert.doesNotMatch(afterRename, /ownerOnlyAcl\(path\)/);
 });
 

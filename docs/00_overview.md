@@ -20,6 +20,7 @@ dotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
 | [plan_cursor-parent-host.md](plan_cursor-parent-host.md) | Cursorを第4harnessにする計画。Mac新規session受入まで着地（2026-08-24） |
+| [plan_windows-pwsh7-aiterm-psmux-normalization-20260825.md](plan_windows-pwsh7-aiterm-psmux-normalization-20260825.md) | Windows工場shellをPowerShell 7へ統一し、Aiterm／psmux責務と工場コア修理を配布面まで閉じる進行中campaign |
 | [../README.md](../README.md#他端末セットアップランブック) | 工場4席（Mac / Windows native / WSL2 / Linux）の一撃展開と定期更新 |
 | [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
 | [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |

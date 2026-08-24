@@ -8,6 +8,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { readConfig } from '../lib/factory/contract.mjs';
 import { windowsOwnerOnlyAclScript, windowsTaskExists, writeWindowsTaskXml } from '../lib/factory/windows-scheduler.mjs';
+import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 
 const LABEL = 'com.kite.factory-reporter';
 const TASK_NAME = 'dotagents-factory-reporter';
@@ -80,7 +81,9 @@ function artifact(target, config, location, wireMajor) {
   const argumentsText = `${windowsQuote(runner)} --config ${windowsQuote(config)}`;
   const content = `<?xml version="1.0" encoding="UTF-16"?><Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Triggers><CalendarTrigger><StartBoundary>2026-01-01T00:17:00</StartBoundary><Repetition><Interval>PT1H</Interval><Duration>P1D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger></Triggers><Principals><Principal id="Author"><RunLevel>LeastPrivilege</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><StartWhenAvailable>true</StartWhenAvailable></Settings><Actions Context="Author"><Exec><Command>${xml(node)}</Command><Arguments>${argumentsText}</Arguments><WorkingDirectory>${xml(location.home)}</WorkingDirectory></Exec></Actions></Task>`;
   const script = windowsOwnerOnlyAclScript();
-  return { file, content, runner, commands: [['schtasks.exe', '/Create', '/TN', TASK_NAME, '/XML', file, '/F']], uninstall: [['schtasks.exe', '/Delete', '/TN', TASK_NAME, '/F']], acl: [['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script]] };
+  const powershell = hostPlatform() === 'win32'
+    ? resolveWindowsPowerShell7() : 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
+  return { file, content, runner, commands: [['schtasks.exe', '/Create', '/TN', TASK_NAME, '/XML', file, '/F']], uninstall: [['schtasks.exe', '/Delete', '/TN', TASK_NAME, '/F']], acl: [[powershell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script]] };
 }
 
 async function ensurePrivateState(target, state, acl) {

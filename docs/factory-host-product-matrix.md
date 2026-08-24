@@ -91,4 +91,4 @@ WSL2とWindows nativeは同一物理端末でも別hostとして扱い、設定�
 | Mac | `setup-macos-factory.sh` | LaunchAgent `com.kite.agents-update`、毎週月曜04:00 | `verify-install`、14製品、fresh v7 delivery |
 | main-server | `setup-linux-factory.sh` | cron `# dotagents-agents-update-linux`、毎日02:00 | `server` profile、ServerManager local readiness/revision、14製品、fresh v7 delivery |
 | FOX WSL2 | `setup-wsl-factory.sh` | cron `# dotagents-agents-update-wsl`、毎日02:00 | batch token、14製品、fresh v7 delivery |
-| FOX Windows native | `setup-windows-native-factory.ps1` | Task `dotagents-agents-update`、毎日02:00 | 実Task smoke、終了code、14製品、fresh v7 delivery |
+| FOX Windows native | `pwsh.exe -File setup-windows-native-factory.ps1`（PowerShell 7必須） | Task `dotagents-agents-update`、毎日02:00。actionも`pwsh.exe` | 実Task smoke、終了code、14製品、fresh v7 delivery |

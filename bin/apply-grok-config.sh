@@ -178,11 +178,14 @@ def windows_node_dir() -> str | None:
 def default_gui_path_dirs() -> list[str]:
     if os.name == "nt":
         windir = Path(os.environ.get("WINDIR", r"C:\Windows"))
+        program_files = Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+        local_app_data = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
         dirs = [
             str(windir / "System32"),
             str(windir),
             str(windir / "System32" / "Wbem"),
-            str(windir / "System32" / "WindowsPowerShell" / "v1.0"),
+            str(program_files / "PowerShell" / "7"),
+            str(local_app_data / "Microsoft" / "WindowsApps"),
         ]
         node_dir = windows_node_dir()
         if node_dir and node_dir not in dirs:

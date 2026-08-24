@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { randomUUID } from 'node:crypto';
+import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 
 const PRODUCTS = new Set(['claude-code', 'codex-cli', 'grok-build']);
 const STATUS = new Set(['success', 'failed', 'skipped', 'pending']);
@@ -31,13 +32,13 @@ if ($isDirectory) {
   $inherit = [Security.AccessControl.InheritanceFlags]::None
 }
 $item = Get-Item -LiteralPath $p
-$acl = $item.GetAccessControl('Access')
+$acl = [IO.FileSystemAclExtensions]::GetAccessControl($item, [Security.AccessControl.AccessControlSections]::Access)
 $acl.SetAccessRuleProtection($true, $false)
-foreach ($existing in @($acl.Access)) { [void]$acl.RemoveAccessRuleAll($existing) }
+foreach ($existing in @($acl.Access)) { if ($null -ne $existing) { [void]$acl.RemoveAccessRuleAll($existing) } }
 $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, [Security.AccessControl.FileSystemRights]::FullControl, $inherit, [Security.AccessControl.PropagationFlags]::None, [Security.AccessControl.AccessControlType]::Allow)
 [void]$acl.AddAccessRule($rule)
-$item.SetAccessControl($acl)`;
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], {
+[IO.FileSystemAclExtensions]::SetAccessControl($item, $acl)`;
+  const result = spawnSync(resolveWindowsPowerShell7(), ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script], {
     encoding: 'utf8',
     env: { ...process.env, DOTAGENTS_FACTORY_ACL_TARGET: path },
     timeout: 5_000,

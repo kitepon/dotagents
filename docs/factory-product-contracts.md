@@ -8,6 +8,7 @@
 - 現役契約はLattice `docs/01_integration-package.md`と本台帳・[factory-host-product-matrix.md](factory-host-product-matrix.md)が正、導入経緯は[docs/archive/plan_lattice-factory-integration.md](archive/plan_lattice-factory-integration.md)と[docs/archive/plan_observer-core-integration.md](archive/plan_observer-core-integration.md)が正。
 - dotagents所有の導入・更新後gate・verify-install用の機械可読な単一契約は`lib/factory/deployment-contract.mjs`である。managed 11 IDとcurrent wire v7の14 IDを分け、v2-v5の履歴集合を変更しない。v6/v7の現行必須集合から`observer`は削除する。host projectionはmatrixの`required`／`unsupported`／`not_applicable`だけを返し、profile/OS/arch/macOS majorの未知値・不整合をfail-closedにする。ServerManagerはserver profileの公開readiness/revision検証に限定する。
 - 初回導入と再適用はMacの`setup-macos-factory.sh`、Linuxの`setup-linux-factory.sh`、WSL2の`setup-wsl-factory.sh`、Windows nativeの`setup-windows-native-factory.ps1`が所有する。4入口はdeployment contractの製品集合だけを共有し、OS固有のLaunchAgent／cron／Task Scheduler、config、hook、credential、delivery receiptを混同しない。各入口は定期更新を冪等登録し、`verify-install`、固定14製品のfresh wire v7 report、BugHub delivery receiptまでを受け入れる。
+- Windows nativeの工場shellはPowerShell 7（`pwsh.exe`）だけとし、一撃入口・定期Task・Windows adapterは同じ実体を使う。5.1しかないhostはMicrosoft公式installer／package managerで7を導入してから再実行し、5.1／`cmd.exe`へfallbackしない。
 - コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。release gateは「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とし、AIShellの`scripts/verify-release-commit.mjs`＋`prepublishOnly`をreference実装とする。gate未実装の製品は、次にrelease作業を行うwaveで同時に導入する。
 - 工場の再現欠陥の重大度分類（P0/P1即時修理の閾値）とmaintenance wave処理は[shared/orchestrate/contract.md](../shared/orchestrate/contract.md)「Phase maintenance」が正で、本台帳へ複製しない。dotagents固有の境界: 原因と修理所有者が第三者製品または基盤toolchain本体である欠陥はdotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とし、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする（外部製品名が入力に現れるだけで範囲外へ逃がさない）。権限外変更（第三者本体のfork/patch）は範囲外として記録する。自作製品の本番deploy・credential利用・意図的障害試験は目的・影響・戻し方を記録して同一waveで進め、H承認待ちへ分解しない。
 - 各製品のhost/connector期待状態は本台帳へ複製せず、[factory-host-product-matrix.md](factory-host-product-matrix.md)の親別connector matrixだけが持つ。
@@ -82,9 +83,9 @@
 
 - 所有/修正先: 自作 / `kitepon/aiterm-mcp`。version入口: native MCP `diagnostics` responseのpackage version。
 - diagnostics/state正本: stdio MCP initialize後のread-only `diagnostics` tool（schema `aiterm-mcp.factory-diagnostics.v1`）。PTY一覧は件数だけ、harness依存（wire名`vendor_dependencies`）は実行可能性だけを返す。
-- 現adapter: stdio MCP initialize→`diagnostics`と、明示opt-inされた公開runtime error snapshot/ackを接続済み。tmux不能やschema driftは`unverified`、native `not_ready`は固定fingerprintのfailへ写像する。診断toolは次回製品releaseまで現行registry版0.12.1には未収録。
-- 禁止: PTY/agent起動をhealth扱い。native Windowsの`agent_done`非対応は`unsupported`。
-- **Windows native更新の一時除外（2026-08-16・オーナー裁定）**: aiterm-mcpのWindows基盤をWSL橋からnative psmuxへ移行中（`kitepon/aiterm-mcp` branch `feat/windows-native-psmux`。前提となるpsmux忠実度修正は上流PR [psmux/psmux#577](https://github.com/psmux/psmux/pull/577) 審査中）。windows-workstationにはnative版ローカルビルドをtarball経由の実体installでglobal先行適用しており、`npmPackagesForHost`（deployment contract・commit 42a91d4d）でwin32だけaiterm-mcpを更新集合から除外している。POSIX各hostの更新は不変。**戻し条件**: PR #577 merge→aiterm native版release→windows-workstationへregistry版global install後に、除外とcron-env契約テストのWindows期待値を戻す（戻し忘れはwindows-workstationのwatch-psmux-pr-577監視タスクが追跡）。この間、Windows nativeの`agent_done`はnative psmux版で解消済みであり、release後に本台帳の上記「`agent_done`非対応は`unsupported`」も更新する。
+- 現adapter: stdio MCP initialize→`diagnostics`と、明示opt-inされた公開runtime error snapshot/ackを接続済み。PTY backend不能やschema driftは`unverified`、native `not_ready`は固定fingerprintのfailへ写像する。
+- Windows native契約: Aitermが永続PTYとsession lifecycleを所有し、backendはpsmux、PTY内shellはPowerShell 7だけを使う。psmuxはshellではない。他製品はpsmuxへ直接依存せず、必要な時だけAiterm公開APIを消費する。
+- 禁止: PTY/agent起動をhealth扱い。Windows PowerShell 5.1／`cmd.exe`へのfallback、他製品からのpsmux直接操作。
 
 ### `codex-sidecar`
 
