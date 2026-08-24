@@ -316,11 +316,11 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 | runbook | `~/.cursor/runbooks` | |
 | skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
 | 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
-| 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せる |
+| 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せる。Throughline製品hookは `throughline install` が同じ `hooks.json` へ upsert（絶対 node + `throughline.mjs`）。Spotter / Caveat 製品hookは起動しない |
 
 `spotter install -y` はSpotterの正規project-scoped入口である。dotagentsの `.claude/settings.json` と `.spotter/`（どちらも端末ローカル・gitignore）を作り、user-level Codex hook 3本をcanonical化し、Claude/Codex別catalogをseedする。PATH上のThroughlineを絶対実行パスへ解決できる時はauditor contextが既定ONになる。Spotter自身のCLI以外でmarkerやhookを複製・手書きしない。
 
-`lattice hooks install --host claude|codex` はLattice 0.40.0+の製品管理入口である。sensor気づかせ導線はLattice自身に管理させ、Claude/Codex設定へ手挿ししない。Codex未導入端末では`--host codex`を省略する。Grok hostは増やさない。
+`lattice hooks install --host claude|codex` はLattice 0.40.0+の製品管理入口である。sensor気づかせ導線はLattice自身に管理させ、Claude/Codex設定へ手挿ししない。Codex未導入端末では`--host codex`を省略する。Grok hostは増やさない。Cursor hostも増やさない。
 
 - **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostで必要な工場管理製品CLI、Lattice製品管理hookの`wired`状態、Spotter marker v2、Throughline context、Claude 5 hook、Codex 3 hook、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSON、host別catalogをFAIL行で名指しする。Grok `config.toml` がある時だけ `compat.claude.agents` / `hooks` の切断を見る。未loginでtomlが無いことはFAILにしない。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
 - **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。

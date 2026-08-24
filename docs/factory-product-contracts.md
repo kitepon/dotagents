@@ -30,6 +30,7 @@
 - 所有/修正先: 自作 / `kitepon/Throughline`。version入口: `throughline --version`。
 - diagnostics/state正本: `throughline factory-diagnostics --json`（schema `throughline.native_factory_diagnostics.v1`）。DB schema/migration、connector、capture/restore/handoffをread-onlyで返す。
 - Grok: 製品hookは `throughline install` が書く `~/.grok/hooks/throughline.json`（絶対 node + `bin/throughline.mjs`）。`/tl` 後の記憶再開は `throughline grok-continue --session grok:<id>`（源の `project_path`、macOS Terminal、初手末尾は待機）。stdout 再注入・aiterm・`--rules` は現行契約ではない。
+- Cursor: 製品hookは `throughline install` が `~/.cursor/hooks.json` へ upsert する（絶対 node + `bin/throughline.mjs`。工場 `cursor-*-hook` は残す）。session id は `cursor:<uuid>`。handoff 注入は sessionStart の `additional_context`（beforeSubmitPrompt は continue のみ）。`/tl` 後継の自動起動はしない。新規 Cursor session が baton を飲む。stdout 再注入・aiterm は現行契約ではない。
 - 現adapter: native JSONのversion、database schema/migration、overallと、明示opt-inされた公開runtime error snapshot/ackを接続済み。製品診断が示すClaude connector `unverified`等をgreenへ丸めない。
 - 表現/禁止: 正規JSON診断なしは`unverified`。session本文送信、破壊的restore、`.agents`直接解釈は禁止。
 

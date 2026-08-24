@@ -1,6 +1,6 @@
 # Cursor harness 工場適用
 
-**状態:** Active（Wave 5 完了・Wave 6）
+**状態:** Active（Wave 6 実測完了。新規session受入はH）
 **開始:** 2026-08-24
 **工程正本:** 本ファイル（Lattice未適用。オーナーが指示した時だけ移管する）
 **親導線:** [開発工場 統合マスター計画](plan_factory-master.md)
@@ -125,16 +125,16 @@ Wave 1〜5がdotagentsで閉じる範囲。Wave 6は製品repoであり、本計
 
 ### Wave 6 — 製品repo（本計画の外側、導線のみ）
 
-着手は別H。親面が無い状態で製品を正式host化しない。OS分岐は各製品の既存OS層、harness分岐は既存harness置き場へ足す。coreへCursorの`if`を散らさない。
+着手は別Hだった。親面が無い状態で製品を正式host化しない。OS分岐は各製品の既存OS層、harness分岐は既存harness置き場へ足す。coreへCursorの`if`を散らさない。2026-08-24に実測して閉じた。
 
 | 製品 | 既存の足し方 | 今の状態 |
 |---|---|---|
 | aiterm-mcp | `src/harnesses/cursor.ts`（OSはresolver/runtime） | 0.28+で完了。本戦役は消費するだけ |
-| Throughline | `hosts/identity.mjs`＋`hosts/<host>.mjs`。OSは`src/os/` | Cursor adapter未 |
-| Caveat | `claudeInstall.ts` / `codexHookInstall.ts`＋`installShared.ts` / `hookShared.ts` | Cursor install未 |
-| Spotter | `src/host/adapters.mjs`。OSは`src/platform/` | Cursor adapter未。Grokはunsupportedの履歴あり、実測で決める |
-| Lattice | `lattice hooks --host` | `claude\|codex`のみ。Grok hostは増やさない裁定あり。Cursorは別Hで入口の要否を実測 |
-| peertable | 局所分岐のまま。必要になってから抽出 | Cursor未 |
+| Throughline | `hosts/identity.mjs`＋`hosts/<host>.mjs`。OSは`src/os/` | 0.10.3公開。Cursor first-class host。npm / tag / このMacのglobal install済み。capture/handoffは新規session |
+| Caveat | `claudeInstall.ts` / `codexHookInstall.ts`＋`installShared.ts` / `hookShared.ts` | 製品hook unsupported（Cursor install pathなし。Grok precedent）。MCPはWave 3 |
+| Spotter | `src/host/adapters.mjs`。OSは`src/platform/` | unsupported（Cursor tool-dbなし。Grokと同様に正式hostを足さない） |
+| Lattice | `lattice hooks --host` | `claude\|codex`のみ。Grok hostを増やさない裁定と同じく `--host cursor` は増やさない。工場ganttはdotagents所有 |
+| peertable | 局所分岐のまま。必要になってから抽出 | 円卓は skill の HTTP API。工場MCPに room は持たない（Grokと同じ） |
 | その他MCP製品 | 工場MCP登録で足りる | Wave 3 |
 | ServerManager / MarkItDown | connector not_applicable またはCLIのみ | 列へ`not_applicable` |
 
@@ -178,10 +178,12 @@ Phase完了時の重い監査はWave 5のあと1回。検証者は親と異な�
 
 - **F:** 4harness憲法、OS/harness分離の維持、共通→delta、host matrix Cursor列、工場4席は全部本線、工場MCPの失敗を丸めないこと。製品Cursor hostはWave 6。
 - **A:** generator拡張、`cursor/`エントリ、install/verify、apply-cursor-config、Cursor appendix、hook adapter。
-- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` / 新規session確認。Wave 6の製品repo着手。
+- **H:** 実HOMEの`install.sh` / `apply-cursor-config --apply` / 新規session確認。Wave 6の製品repoは Throughline 0.10.3 まで完了。残Hは新規 Cursor session の handshake と Throughline capture。
 
 Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦役と同じく作らない。事後に`init`しない。
 
 ## 9. 現在地
 
-Wave 5 完了。host matrixにCursor親列を書き、4つのOS setup入口が`apply-cursor-config --apply`を呼ぶ。関連ゲート（`make ci`）は Wave 1–5 を閉じるとき 1 回。次はWave 6（製品repoのCursor adapter）。
+Wave 6 実測完了（2026-08-24）。Throughline 0.10.3 を公開し、このMacへ registry 由来で global install、`throughline install` が `~/.cursor/hooks.json` へ sessionStart / beforeSubmitPrompt / stop を upsert（工場 `cursor-*-hook` は残存）。公開commit `88982ca`、証跡commit `4bf84f5`、CI `32687818474`（macos/linux/windows/wsl2 green）、npm shasum `e1afa30d616ce18a3013ad564c85edc894d9039b`、tag `v0.10.3`。Caveat製品hook・Spotter・Lattice `--host cursor` は理由付き unsupported。aiterm-mcp は消費のみ。peertable は HTTP API（room MCP なし）。host matrix Cursor親列と製品契約台帳を実測どおり更新。Control Recordは作らない。
+
+Wave 5 の関連ゲート（`make ci`）は canon-migration が Cursor 配置規約と hook 配線を追従したうえで 1 回。handshake と Throughline capture の人の目は新規 Cursor session だけを数える。この既存sessionの見た目は受入に数えない。

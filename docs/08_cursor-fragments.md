@@ -31,7 +31,7 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 - `~/.cursor/skills-cursor/`
 - 個人hook。所有面は `~/.cursor/hooks.json` と `bin/cursor-*-hook`。apply-cursor-config が工場hookを upsert し、個人hookは残す。
 
-工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読む。Claude 形（`permissionDecision`）へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。`beforeSubmitPrompt` は additional_context を持たないため onset INFO 注入は非採用。Cursor に `exit_plan_mode` が無いため plan-gate も非採用。
+工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読む。Claude 形（`permissionDecision`）へ canonicalize しない。Spotter / Throughline / Caveat の製品hookは工場hookに載せない。Throughline 0.10.3+ は `throughline install` が同じ `~/.cursor/hooks.json` へ絶対 node + `bin/throughline.mjs` を upsert する（工場 `cursor-*-hook` は残す。`apply-cursor-config` は Throughline コマンドを消さない）。Spotter / Caveat の Cursor 製品hookは無い。`beforeSubmitPrompt` は additional_context を持たないため onset INFO 注入は非採用（Throughline の handoff 注入は製品側が sessionStart の `additional_context` で行う）。Cursor に `exit_plan_mode` が無いため plan-gate も非採用。
 
 ## 3. 受入
 
