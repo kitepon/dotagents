@@ -183,6 +183,13 @@ assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.
 assert_link "$OFFICIAL_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
+assert_link "$OFFICIAL_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
+assert_link "$OFFICIAL_HOME/.cursor/skills/auto-deploy-on-push" "$ROOT/cursor/skills/auto-deploy-on-push"
+assert_link "$OFFICIAL_HOME/.cursor/skills/gpt-connector" "$ROOT/cursor/skills/gpt-connector"
+assert_link "$OFFICIAL_HOME/.cursor/skills/polish-github" "$ROOT/cursor/skills/polish-github"
+assert_link "$OFFICIAL_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
+assert_link "$OFFICIAL_HOME/.cursor/agents/refuter.md" "$ROOT/cursor/agents/refuter.md"
+[ ! -e "$OFFICIAL_HOME/.cursor/skills-cursor/orchestrate" ] || fail '工場skillを skills-cursor へ置いた'
 rm "$OFFICIAL_HOME/.grok/runbooks"
 if grok_runbook_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok runbooks欠落をverifyが見逃した'
@@ -638,6 +645,8 @@ assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implem
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 assert_link "$LEGACY_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
+assert_link "$LEGACY_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
+assert_link "$LEGACY_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 [ ! -e "$LEGACY_HOME/.cursor/AGENTS.md" ] || fail 'legacy が Cursor AGENTS.md を ~/.cursor へ置いた'
 apply_grok_config_on_windows "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply

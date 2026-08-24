@@ -220,6 +220,26 @@ contains "$ROOT/claude/agents/implementer.md" 'git commit`・push は禁止'
 contains "$ROOT/claude/agents/refuter.md" '読み取り専用'
 contains "$ROOT/claude/agents/refuter.md" '書き込み禁止'
 
+for skill in orchestrate auto-deploy-on-push polish-github gpt-connector; do
+  file="$ROOT/cursor/skills/$skill/SKILL.md"
+  [ -f "$file" ] || fail "$file がない"
+  frontmatter_is_name_and_description_only "$file"
+done
+contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/contract.md)'
+contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/delegation-contract.md)'
+contains "$ROOT/cursor/skills/orchestrate/SKILL.md" 'GetDynamicTools'
+absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'mcp__aiterm__pty_'
+absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'spawn_agent'
+[ ! -e "$ROOT/cursor/skills-cursor" ] || fail 'cursor/skills-cursor を工場所有にした'
+for agent in implementer refuter; do
+  file="$ROOT/cursor/agents/$agent.md"
+  [ -f "$file" ] || fail "$file がない"
+  frontmatter_has_keys "$file" name description
+  contains "$file" "name: $agent"
+done
+contains "$ROOT/cursor/agents/implementer.md" 'git commit`・pushは禁止'
+contains "$ROOT/cursor/agents/refuter.md" '書き込み禁止'
+
 [ ! -e "$ROOT/claude/skills/audit-gauntlet" ] || fail 'retired Claude skill audit-gauntlet が残っている'
 [ ! -e "$ROOT/claude/commands/audit-gauntlet.md" ] || fail 'retired Claude command audit-gauntlet が残っている'
 [ ! -e "$ROOT/claude/agents/audit-gauntlet.md" ] || fail 'retired Claude agent audit-gauntlet が残っている'

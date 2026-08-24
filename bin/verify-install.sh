@@ -489,6 +489,22 @@ elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$grok_o
   fail=1
 fi
 
+cursor_orchestrate="$REPO/cursor/skills/orchestrate/SKILL.md"
+if [ ! -r "$cursor_orchestrate" ]; then
+  echo "FAIL: $cursor_orchestrate を読めない"
+  fail=1
+elif ! grep -Fq '](../../../shared/orchestrate/contract.md)' "$cursor_orchestrate"; then
+  echo "FAIL: $cursor_orchestrate が共通契約を参照していない"
+  fail=1
+elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$cursor_orchestrate"; then
+  echo "FAIL: $cursor_orchestrate が共有委譲契約を参照していない"
+  fail=1
+fi
+if [ -e "$REPO/cursor/skills-cursor" ] || [ -L "$REPO/cursor/skills-cursor" ]; then
+  echo "FAIL: $REPO/cursor/skills-cursor が存在する（Cursor内蔵面は工場所有外）"
+  fail=1
+fi
+
 # install.sh の配布グループと対称に検証
 [ -f "$REPO/claude/CLAUDE.md" ] && check "$HOME/.claude/CLAUDE.md" "$REPO/claude/CLAUDE.md"
 [ -d "$REPO/shared/runbooks" ] && check "$HOME/.claude/runbooks" "$REPO/shared/runbooks"

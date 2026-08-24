@@ -122,6 +122,8 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Codexグローバル規範 | `codex/AGENTS.delta.md` → `codex/AGENTS.md` | 共通憲法＋Codex固有deltaから合成する配布生成物。配置・配線の正典はdocs/02・docs/05 |
 | Grokグローバル規範 | `grok/AGENTS.delta.md` → `grok/AGENTS.md` | 共通憲法＋Grok固有deltaから合成する配布生成物。配置先は`~/.grok/rules/AGENTS.md` |
 | Cursorグローバル規範 | `cursor/AGENTS.delta.md` → `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | 共通憲法＋Cursor固有delta。runtime mountは`~/.cursor/rules/factory.mdc`のみ |
+| Cursor skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Cursor appendix。`~/.cursor/skills`。`skills-cursor/`は触らない |
+| Cursor agent | `implementer` / `refuter` | `~/.cursor/agents`。bundled explore/planは置換えない |
 | Grok skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Grok appendix。`~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |

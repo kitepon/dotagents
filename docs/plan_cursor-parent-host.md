@@ -1,6 +1,6 @@
 # Cursor harness 工場適用
 
-**状態:** Active（Wave 1）
+**状態:** Active（Wave 2）
 **開始:** 2026-08-24
 **工程正本:** 本ファイル（Lattice未適用。オーナーが指示した時だけ移管する）
 **親導線:** [開発工場 統合マスター計画](plan_factory-master.md)
@@ -184,4 +184,4 @@ Wave 1〜5はdocs正本とdotagents実装で進める。Control RecordはGrok戦
 
 ## 9. 現在地
 
-Wave 1。4harness憲法と`cursor/`骨格を置き、runtime mountは`~/.cursor/rules/factory.mdc`（alwaysApply）に固定した。`~/.cursor/AGENTS.md`は置かない。次はWave 2（Cursor skill / agent）。
+Wave 2。`cursor/skills`（orchestrate / auto-deploy-on-push / polish-github / gpt-connector）と`cursor/agents`（implementer / refuter）を置いた。`skills-cursor/`は工場所有外。次はWave 3（工場MCP）。
