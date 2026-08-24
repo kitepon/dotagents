@@ -13,8 +13,9 @@ prompt を踏まない既存窓の最初の tool でも同じ配達を返す（s
 Desktop 3.17.8 の additional_context は 10000 字まで inline の
 system_reminder。超過分は agent-tools の uuid.txt へ spill し、
 モデルへは「そのファイルを Read」という短文だけが残る。現行の生成憲法は
-10000 字を超えるため、超過時は spill に頼らず cap 内の案内を inline し、
-同一本文は正本ファイルの Read で届ける。
+10000 字を超えるため、超過時は spill に頼らず cap 内へ案内（ベル・
+Cursor native shell・正本パス）と本文冒頭を載せ、末尾の Cursor delta は
+切らず、同一全文は正本ファイルの Read で届ける。
 """
 
 from __future__ import annotations
@@ -58,9 +59,30 @@ def stamp_file(home: Path, session_id: str) -> Path | None:
     return home / "factory-hook-state" / "constitution-delivered" / safe
 
 
-def compact_delivery(path: Path) -> str:
-    """10000 字超の本文を Desktop spill に渡さない。identity と Cursor delta を inline し、同一本文は正本 Read。"""
-    return (
+def strip_html_comment_lines(text: str) -> str:
+    lines = [
+        line
+        for line in text.split("\n")
+        if not (line.startswith("<!--") and line.endswith("-->"))
+    ]
+    return "\n".join(lines).lstrip("\n")
+
+
+def split_cursor_delta(body: str) -> tuple[str, str]:
+    marker = "## Cursor固有差分"
+    index = body.find(marker)
+    if index < 0:
+        return body, ""
+    return body[:index], body[index:]
+
+
+def compact_delivery(path: Path, body: str) -> str:
+    """10000 字超の本文を Desktop spill に渡さない。
+
+    identity と Cursor delta を inline し、残り cap に本文冒頭を載せる。
+    同一全文は正本 Read。
+    """
+    header = (
         "【工場憲法】Cursor Desktop はホームの rules/*.mdc を Agent の always-apply に載せない。"
         "あなたはベル。クオの技術パートナー。応答は日本語。\n\n"
         "shell操作は、Cursor nativeの単発・背景コマンドを既定にする。"
@@ -69,12 +91,28 @@ def compact_delivery(path: Path) -> str:
         f"同一本文の正本は `{path}` である。応答する前に必ず Read し、以後その本文に従う。\n"
         "本文は「ベルの共通憲法」から始まる。Claude固有の日常shell既定は使わない。\n"
     )
+    packed = strip_html_comment_lines(body)
+    common, delta = split_cursor_delta(packed)
+    separator = "\n---\n"
+    budget = INLINE_CAP - len(header) - len(separator) - len(delta)
+    if budget < 0:
+        clipped = header + separator + delta
+        return clipped[:INLINE_CAP]
+    if len(common) <= budget:
+        prefix = common
+    else:
+        prefix = common[:budget]
+        if delta:
+            nl = prefix.rfind("\n")
+            if nl >= 0:
+                prefix = prefix[: nl + 1]
+    return header + separator + prefix + delta
 
 
 def delivery_context(path: Path, body: str) -> str:
     if len(body) <= INLINE_CAP:
         return body
-    compact = compact_delivery(path)
+    compact = compact_delivery(path, body)
     if len(compact) > INLINE_CAP:
         compact = compact[:INLINE_CAP]
     return compact

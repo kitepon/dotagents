@@ -312,7 +312,7 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 
 | 面 | Cursor所有 | やらないこと |
 |---|---|---|
-| 憲法 | `~/.cursor/rules/factory.mdc`（Desktop Agent へは `cursor-constitution-hook` が sessionStart・beforeSubmitPrompt・preToolUse で配達。10000 字以内なら同一本文、超過時は cap 内案内＋正本 Read。`~/.cursor/factory-constitution` は同一正本の overlay） | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り。窓への自動 `--add` |
+| 憲法 | `~/.cursor/rules/factory.mdc`（Desktop Agent へは `cursor-constitution-hook` が sessionStart・beforeSubmitPrompt・preToolUse で配達。10000 字以内なら同一本文、超過時は cap 内案内＋本文冒頭＋正本 Read。`~/.cursor/factory-constitution` は同一正本の overlay） | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り。窓への自動 `--add` |
 | runbook | `~/.cursor/runbooks` | |
 | skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
 | 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
