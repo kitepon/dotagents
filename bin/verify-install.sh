@@ -672,11 +672,11 @@ missing = [name for name in required if not any(name in command for command in c
 if missing:
     print("FAIL: Cursor 工場hook が欠落: " + "、".join(missing))
     raise SystemExit(1)
-if any("spotter" in command.lower() for command in commands):
-    print("FAIL: Cursor hooks.json に Spotter が混入")
-    raise SystemExit(1)
 if not any("throughline" in command.lower() for command in commands):
     print("FAIL: Cursor hooks.json に Throughline 製品hook が無い")
+    raise SystemExit(1)
+if not any("spotter" in command.lower() for command in commands):
+    print("FAIL: Cursor hooks.json に Spotter 製品hook が無い")
     raise SystemExit(1)
 PY
   then
