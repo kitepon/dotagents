@@ -16,7 +16,7 @@ dotagents/
 ├── docs/                … 00_overview.md（地図）・02_models.md（役割→モデル×effort順位表）・01_project-layout.md・進行中プラン／archive/（役目を終えた文書）
 ├── rag/                 … 調査・研究の再利用棚（INDEX.md＋topic/raw/ 一次ソース）
 ├── shared/
-│   └── constitution.md  … Claude/Codex/Grok共通憲法の唯一の手編集正本
+│   └── constitution.md  … Claude/Codex/Grok/Cursor共通憲法の唯一の手編集正本
 ├── claude/
 │   ├── CLAUDE.delta.md  … Claude固有差分の正本
 │   ├── CLAUDE.md        … 共通＋deltaの生成物（→ ~/.claude/CLAUDE.md）
@@ -34,6 +34,12 @@ dotagents/
 │   ├── AGENTS.md        … 共通＋deltaの生成物（→ ~/.grok/rules/AGENTS.md）
 │   ├── skills/          … → ~/.grok/skills/<name>
 │   └── agents/          … → ~/.grok/agents/<name>.md
+├── cursor/
+│   ├── AGENTS.delta.md  … Cursor固有差分の正本
+│   ├── AGENTS.md        … 共通＋deltaの生成物（リポ内保持。HOMEへは置かない）
+│   ├── rules/factory.mdc … 同一本文の alwaysApply 規則（→ ~/.cursor/rules/factory.mdc）
+│   ├── skills/          … → ~/.cursor/skills/<name>
+│   └── agents/          … → ~/.cursor/agents/<name>.md
 └── bin/                 … → ~/.local/bin/<name>（.sh / .mjs は外れる。実行言語は shebang）
 ```
 
@@ -44,6 +50,7 @@ flowchart LR
     cdelta["claude/CLAUDE.delta.md"]
     xdelta["codex/AGENTS.delta.md"]
     gdelta["grok/AGENTS.delta.md"]
+    kdelta["cursor/AGENTS.delta.md"]
     gcm["claude/CLAUDE.md (generated)"]
     cs["claude/skills/&lt;name&gt;/"]
     cc["claude/commands/&lt;name&gt;.md"]
@@ -53,6 +60,7 @@ flowchart LR
     xs["codex/skills/&lt;name&gt;/"]
     xr["codex/rules/&lt;file&gt;"]
     gam["grok/AGENTS.md (generated)"]
+    kam["cursor/rules/factory.mdc (generated)"]
     bin["bin/&lt;name&gt;.sh"]
   end
   subgraph home["$HOME (各端末)"]
@@ -66,6 +74,7 @@ flowchart LR
     hxsl["~/.codex/skills/&lt;name&gt; (legacy)"]
     hxr["~/.codex/rules/&lt;file&gt;"]
     hgam["~/.grok/rules/AGENTS.md"]
+    hkam["~/.cursor/rules/factory.mdc"]
     hbin["~/.local/bin/&lt;name&gt;"]
   end
   common --> gcm
@@ -74,6 +83,8 @@ flowchart LR
   xdelta --> xam
   common --> gam
   gdelta --> gam
+  common --> kam
+  kdelta --> kam
   gcm -. "install.sh が symlink" .-> hgcm
   cs -. symlink .-> hcs
   cc -. symlink .-> hcc
@@ -84,6 +95,7 @@ flowchart LR
   xs -. "--profile legacy (明示時のみ)" .-> hxsl
   xr -. symlink .-> hxr
   gam -. symlink .-> hgam
+  kam -. symlink .-> hkam
   bin -. "symlink (.sh は外れる)" .-> hbin
 ```
 
@@ -105,13 +117,14 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Claude command | `auto-deploy-on-push` / `polish-github` | 各スキルの入口 |
 | Codex skill | `polish-github` | GitHub presentation 整備（正本は Claude 版・Codex 版は薄いポインタ＝一本化済み） |
 | Codex rule | `default.rules` | Codex 常時適用ルール |
-| 共通憲法 | `shared/constitution.md` | Claude／Codex／Grokへ生成する人格・応対・安全・調査・計画・git・報告の唯一の共通正本 |
+| 共通憲法 | `shared/constitution.md` | Claude／Codex／Grok／Cursorへ生成する人格・応対・安全・調査・計画・git・報告の唯一の共通正本 |
 | Claudeグローバル規範 | `claude/CLAUDE.delta.md` → `claude/CLAUDE.md` | 共通憲法＋Claude固有deltaから合成する配布生成物 |
 | Codexグローバル規範 | `codex/AGENTS.delta.md` → `codex/AGENTS.md` | 共通憲法＋Codex固有deltaから合成する配布生成物。配置・配線の正典はdocs/02・docs/05 |
 | Grokグローバル規範 | `grok/AGENTS.delta.md` → `grok/AGENTS.md` | 共通憲法＋Grok固有deltaから合成する配布生成物。配置先は`~/.grok/rules/AGENTS.md` |
+| Cursorグローバル規範 | `cursor/AGENTS.delta.md` → `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | 共通憲法＋Cursor固有delta。runtime mountは`~/.cursor/rules/factory.mdc`のみ |
 | Grok skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Grok appendix。`~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
-| bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから3 runtime向け完全指示を冪等生成し、driftを検査 |
+| bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場MCP 6を dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、post-update gateとreportを実行 |
@@ -213,7 +226,7 @@ cd ~/Developer/dotagents
 `mkdir -p ~/Archives` してから:
 
 ```bash
-tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claude/CLAUDE.md .claude/skills .claude/agents .claude/commands .codex/AGENTS.md .grok/rules/AGENTS.md 2>/dev/null || true
+tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claude/CLAUDE.md .claude/skills .claude/agents .claude/commands .codex/AGENTS.md .grok/rules/AGENTS.md .cursor/rules/factory.mdc 2>/dev/null || true
 # グローバル CLAUDE.md / Codex AGENTS.md / Grok rules の実ファイルが残っていると正本化が静かに不成立になる
 [ -f ~/.claude/CLAUDE.md ] && [ ! -L ~/.claude/CLAUDE.md ] && rm ~/.claude/CLAUDE.md
 # ~/.codex/AGENTS.md が実ファイルなら先に中身を確認——価値ある行を共通正本／Codex deltaへ振り分け、生成物を更新してから退避・削除する

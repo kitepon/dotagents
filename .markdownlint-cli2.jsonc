@@ -29,6 +29,11 @@
     "grok/AGENTS.delta.md",
     "grok/skills/**/*.md",
     "grok/agents/*.md",
+    "cursor/AGENTS.md",
+    "cursor/AGENTS.delta.md",
+    "cursor/rules/factory.mdc",
+    "cursor/skills/**/*.md",
+    "cursor/agents/*.md",
     "shared/**/*.md",
     "docs/**/*.md"
   ],

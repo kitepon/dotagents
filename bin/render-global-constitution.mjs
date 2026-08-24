@@ -8,8 +8,21 @@ const HOSTS = [
   { delta: "claude/CLAUDE.delta.md", output: "claude/CLAUDE.md" },
   { delta: "codex/AGENTS.delta.md", output: "codex/AGENTS.md" },
   { delta: "grok/AGENTS.delta.md", output: "grok/AGENTS.md" },
+  { delta: "cursor/AGENTS.delta.md", output: "cursor/AGENTS.md" },
+  {
+    delta: "cursor/AGENTS.delta.md",
+    output: "cursor/rules/factory.mdc",
+    wrap: "cursor-mdc",
+  },
 ];
 const COMMON = "shared/constitution.md";
+const CURSOR_MDC_FRONTMATTER = [
+  "---",
+  "description: Factory global constitution for the Cursor harness. Always apply.",
+  "alwaysApply: true",
+  "---",
+  "",
+].join("\n");
 
 function usage() {
   return "usage: render-global-constitution (--write|--check) [--root <path>]";
@@ -48,7 +61,7 @@ function normalizeDelta(value, source) {
     .join("\n");
 }
 
-function render(common, delta, sources) {
+function render(common, delta, sources, wrap) {
   const header = [
     "<!-- GENERATED FILE: 直接編集禁止。 -->",
     `<!-- Sources: ${sources.join(" + ")} -->`,
@@ -56,8 +69,11 @@ function render(common, delta, sources) {
   ].join("\n");
   const normalizedDelta = normalizeDelta(delta, sources[1]);
   const deltaBody = normalizedDelta.split("\n").slice(1).join("\n").trim();
-  if (deltaBody === "") return `${header}\n\n${normalizeMarkdown(common)}`;
-  return `${header}\n\n${normalizeMarkdown(common).trimEnd()}\n\n${normalizedDelta}`;
+  const body = deltaBody === ""
+    ? `${header}\n\n${normalizeMarkdown(common)}`
+    : `${header}\n\n${normalizeMarkdown(common).trimEnd()}\n\n${normalizedDelta}`;
+  if (wrap === "cursor-mdc") return `${CURSOR_MDC_FRONTMATTER}${body}`;
+  return body;
 }
 
 async function atomicWrite(path, content) {
@@ -75,7 +91,7 @@ async function main() {
   for (const host of HOSTS) {
     const deltaPath = join(root, host.delta);
     const outputPath = join(root, host.output);
-    const expected = render(common, await readFile(deltaPath, "utf8"), [COMMON, host.delta]);
+    const expected = render(common, await readFile(deltaPath, "utf8"), [COMMON, host.delta], host.wrap);
     let actual = null;
     try {
       await access(outputPath, constants.F_OK);

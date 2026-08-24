@@ -5,6 +5,8 @@
 claude/CLAUDE.md text eol=lf
 codex/AGENTS.md text eol=lf
 grok/AGENTS.md text eol=lf
+cursor/AGENTS.md text eol=lf
+cursor/rules/factory.mdc text eol=lf
 
 # Lattice storeはcanonical JSON+LFのバイト列契約。EOL変換されると
 # artifact_truncated_or_trailing_bytesでstore全体がfail closedする（Windows checkoutで実害）。

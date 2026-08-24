@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Symlink dotagents entries into ~/.claude/{skills,commands}, a selected Codex skill surface, and ~/.grok/rules.
+# Symlink dotagents entries into ~/.claude/{skills,commands}, a selected Codex skill surface, ~/.grok/rules, and ~/.cursor/rules.
 # Idempotent: re-running overwrites existing symlinks but never removes unrelated files.
 set -euo pipefail
 
@@ -131,6 +131,23 @@ done
 for f in "$HERE/grok/hooks"/*.json; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.grok/hooks/$(basename "$f")"
+done
+
+# Cursor（憲法は native rules の factory.mdc のみ。AGENTS.md は生成物として保持し ~/.cursor へは置かない）
+mkdir -p "$HOME/.cursor/rules" "$HOME/.cursor/skills" "$HOME/.cursor/agents"
+if [ -e "$HERE/cursor/rules/factory.mdc" ]; then
+  link_one "$HERE/cursor/rules/factory.mdc" "$HOME/.cursor/rules/factory.mdc"
+fi
+if [ -d "$HERE/shared/runbooks" ]; then
+  link_one "$HERE/shared/runbooks" "$HOME/.cursor/runbooks"
+fi
+for d in "$HERE/cursor/skills"/*/; do
+  [ -d "$d" ] || continue
+  link_one "${d%/}" "$HOME/.cursor/skills/$(basename "$d")"
+done
+for f in "$HERE/cursor/agents"/*.md; do
+  [ -e "$f" ] || continue
+  link_one "$f" "$HOME/.cursor/agents/$(basename "$f")"
 done
 
 # caveat own entries — Caveat v0.15+ manages its own sync (dotagents no longer

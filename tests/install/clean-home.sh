@@ -180,6 +180,9 @@ assert_link "$OFFICIAL_HOME/.grok/skills/polish-github" "$ROOT/grok/skills/polis
 assert_link "$OFFICIAL_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$OFFICIAL_HOME/.grok/agents/refuter.md" "$ROOT/grok/agents/refuter.md"
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
+assert_link "$OFFICIAL_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
+assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
+[ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
 rm "$OFFICIAL_HOME/.grok/runbooks"
 if grok_runbook_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok runbooks欠落をverifyが見逃した'
@@ -188,6 +191,14 @@ grep -Fq "FAIL: $OFFICIAL_HOME/.grok/runbooks 不在" <<<"$grok_runbook_missing_
   || fail 'Grok runbooks欠落のFAILが対象pathを名指ししない'
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
+rm "$OFFICIAL_HOME/.cursor/runbooks"
+if cursor_runbook_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
+  fail 'Cursor runbooks欠落をverifyが見逃した'
+fi
+grep -Fq "FAIL: $OFFICIAL_HOME/.cursor/runbooks 不在" <<<"$cursor_runbook_missing_output" \
+  || fail 'Cursor runbooks欠落のFAILが対象pathを名指ししない'
+HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
+assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 printf '%s\n' '{"hooks":{}}' >"$OFFICIAL_HOME/.grok/hooks/factory.json"
 if grok_hooks_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
@@ -625,6 +636,9 @@ assert_link "$LEGACY_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
 assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
+assert_link "$LEGACY_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
+assert_link "$LEGACY_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
+[ ! -e "$LEGACY_HOME/.cursor/AGENTS.md" ] || fail 'legacy が Cursor AGENTS.md を ~/.cursor へ置いた'
 apply_grok_config_on_windows "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply
 verify "$LEGACY_HOME" legacy
