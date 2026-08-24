@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { randomUUID } from 'node:crypto';
+import { isWin32 } from '../lib/platform.mjs';
 import { chmod, lstat, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { homedir, platform } from 'node:os';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 import {
@@ -31,7 +32,7 @@ function fail(code, message) {
 }
 
 function defaultConfigPath() {
-  if (platform() === 'win32') {
+  if (isWin32()) {
     return join(
       process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'),
       'dotagents', 'factory-reporter', 'config.json',
@@ -41,7 +42,7 @@ function defaultConfigPath() {
 }
 
 function defaultStatePath() {
-  if (platform() === 'win32') {
+  if (isWin32()) {
     return join(
       process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'),
       'dotagents', 'factory-reporter',
@@ -67,7 +68,7 @@ async function ensureState(loc) {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const info = await lstat(directory);
     if (info.isSymbolicLink() || !info.isDirectory()) throw new Error('state pathが不正です');
-    if (platform() !== 'win32' && (info.mode & 0o077) !== 0) await chmod(directory, 0o700);
+    if (!isWin32() && (info.mode & 0o077) !== 0) await chmod(directory, 0o700);
   }
 }
 

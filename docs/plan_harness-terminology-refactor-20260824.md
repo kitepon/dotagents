@@ -1,6 +1,20 @@
 # harness用語統一・OS/ハーネス分離 campaign（2026-08-24）
 
-- **状態**: **完遂（2026-08-24）**。結果:
+- **状態**: **完遂（2026-08-24・P6拡張込み）**。
+- **P6（オーナー裁定による全量化）**: 「用語のあるrepoだけ」への絞り込みを撤回し、全11製品＋dotagentsをOS依存/ハーネス依存の分離と簡単化の対象として棚卸し→実装した。結果:
+  - **gpt-connector 0.4.17**: darwinゲート3重実装を`platform/darwin.ts`の`isDarwin()`へ、`state.ts`内のwin32判定を`isWindows()`へ、OS文字列検証を`safePlatform()`再利用へ集約。135 test green・publish・install・version smoke済み。
+  - **codex-sidecar 0.3.11**: POSIX専用ガード5箇所を新設`packages/core/src/platform.ts`の`isWin32()`へ、paths.tsの正規化2箇所をローカルヘルパへ統合。**0.3.10はnpm publish直叩きで`workspace:`依存が未解決のまま公開された導入不能版**（検出→deprecate→pnpm publishの0.3.11で修正）。install→factory-diagnostics ready。
+  - **Throughline 0.10.2**: XDGベースdir組み立て3重実装を新設`src/os/app-dirs.mjs`へ、hostリテラル比較6ファイルを`hosts/identity.mjs`定数へ、codex-auto-refresh/codex-sidecarのOS判定を`os/`層へ委譲。761 test green・publish・install・factory smoke済み。
+  - **Lattice 0.63.10**: 14ファイルへ複製されていたwin32ガード付きdirectory fsyncを新設`src/fs-dir-sync.mjs`へ一本化（名前付き9＋inline 6）。full test green・publish・install・factory-diagnostics ok。
+  - **Caveat 0.17.7→0.17.8**: env対応Windows判定を`platform.ts`の`isWindowsEnv()`へ集約（0.17.7）。公開後smokeで**0.17.6からの既存回帰**（診断のClaude hook canonical判定が`process.execPath`との文字列完全一致を要求し、installerの安定binパスと恒常不一致→macOSでfalse `not_installed`）を検出し、最小再現の回帰testを先行して0.17.8で根治。install後smokeはclaude/codexともready。
+  - **Spotter 1.5.14**: Windows絶対パス表記判定を`platform/paths.mjs`の`isWindowsAbsolutePath()`へ集約、`killWorkerTree`と`terminateProcessTree`の意図的差分（絶対にrejectしないbest-effort掃除）を明記。publish・install・smoke済み。
+  - **aiterm-mcp 0.28.3**: campaign 32のqueue項目（stop hook 2本とagent-sharedの`uid()`/`runtimeStateBase()`三重実装）を新設最下層`src/state-root.ts`へ一本化。355 test green（release連鎖は本plan末尾の証跡参照）。
+  - **peertable 0.6.1**: wake系harness知識は既に`wakeup-delivery.mjs`/`codex-dialog.mjs`へ分離済みと実測確認し、残っていたharness読取パターン4箇所を`memberHarness()`へ統合。publish・install・diagnostics ready。
+  - **dotagents**: 現行世代のOS判定・chmodガードを新設`lib/platform.mjs`（`isWin32()`/`chmodIfPosix()`）へ集約（external-events / factory-reporter / factory-toolchain-ledger / orchestrate control-record）。**wire版別凍結ファイル（lib/factory/v2〜v5とそのbin実行体ファミリー）は互換凍結のため意図的に対象外**（bin/factory-scan-v*・factory-reporter-v*の版別複製は凍結実行体であり重複統合しない、の裁定）。
+  - **AIShell**: OS分岐なし（macOS arm64専用ゲートのみ）・harness分岐なし（host非依存の単一実装）を実測確認。棚卸しが挙げた「tgz 5件がcommit済み」は実物確認で棄却（追跡ファイルも実体も無し）→変更なし。
+  - **ServerManager**: OS分岐はpi5/checks/layer0-self.jsの開発機ガード1ファイルに集約済み、ハーネス実行はCodex単一実装（pi5/codex-ssh.js）で分岐なし。Discord投稿の2実装（pi5/BugHub）は責務層が異なる意図的並存と裁定し統合しない→変更なし。
+  - **MarkItDown**: 第三者製品でfork/patch禁止（台帳恒久裁定）のためソース改変は対象外。
+- 初回scope（用語置換と初期release）の結果:
   - aiterm-mcp 0.28.2: `src/vendors/`→`src/harnesses/`・内部識別子・現役docsをharnessへ統一。4環境CI green→tag CI green→npm publish→global install→MCP initialize smoke OK。wire互換field（`vendor`/`vendor_session_id`/`vendor_dependencies`/`AITERM.VENDOR_LAUNCHER_FAILED`）は不変。
   - peertable 0.6.0: member素性の正本fieldを`harness`へ（DB列migration・旧`vendor`受理・応答mirror併記・`PEERTABLE_HARNESS`正本・`--vendor` flag互換alias）。npm publish→global install→diagnostics ready。本番room server（main-server）もimage `20260824-7360790`へ入替済み（旧image残置でrollback可・会話ログvolume不変）。
   - Throughline / Spotter / Caveat: docs散文のみ置換（cross-harness等）。製品挙動変更なしのためnpm releaseは対象外。

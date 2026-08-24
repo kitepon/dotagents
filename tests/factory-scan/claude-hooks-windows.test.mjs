@@ -11,7 +11,10 @@ test('Claude hook command は POSIX 形をそのまま受理する', () => {
   assert.equal(canonicalClaudeHookCommand('~/.local/bin/todo-gate-hook session-start', home, '~/.local/bin/todo-gate-hook session-start'), true);
 });
 
-test('Claude hook command は Windows の interpreter + 絶対 path を受理する', () => {
+// validator（canonicalClaudeHookCommand）はhost相対のpath.joinで期待hook pathを組む設計なので、
+// Windows形の受理はwin32 hostでだけ成立する。POSIX hostでの実行は仕様どおりfalseになるためskipする
+//（macOSローカルで恒常failしていた既存の欠陥testの修理。CIのWindows laneでは従来どおり検証される）。
+test('Claude hook command は Windows の interpreter + 絶対 path を受理する', { skip: process.platform !== 'win32' }, () => {
   assert.equal(
     canonicalClaudeHookCommand(
       `C:\\Users\\kite_\\AppData\\Local\\Programs\\Python\\Python312\\python3.exe ${hook('delegation-gate-hook')}`,
