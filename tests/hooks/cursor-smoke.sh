@@ -11,13 +11,15 @@ PYTHON_EXE=$(command -v "$PYTHON_COMMAND") || exit 1
 
 STATE=$(mktemp -d)
 REPO=$(mktemp -d)
+CONST_HOME=$(mktemp -d)
+MISS_HOME=$(mktemp -d)
 HOOK_REPO=$REPO
 HOOK_STATE=$STATE
 if command -v cygpath >/dev/null 2>&1; then
   HOOK_REPO=$(cygpath -m "$REPO")
   HOOK_STATE=$(cygpath -m "$STATE")
 fi
-trap 'rm -rf "$STATE" "$REPO"' EXIT
+trap 'rm -rf "$STATE" "$REPO" "$CONST_HOME" "$MISS_HOME"' EXIT
 export XDG_CACHE_HOME="$HOOK_STATE"
 
 fail=0
@@ -107,6 +109,35 @@ else
   fail_case cursor-delegation-grok-noop
 fi
 
+mkdir -p "$CONST_HOME/.cursor/rules"
+printf '%s\n' '---' 'alwaysApply: true' '---' '# ベルの共通憲法' 'Cursor nativeの単発' >"$CONST_HOME/.cursor/rules/factory.mdc"
+run cursor-constitution-session-start env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"sessionStart","session_id":"c-const","cwd":"$HOOK_REPO","cursor_version":"1.0.0"}
+EOF
+if json && [[ "$RUN_OUT" == *'"additional_context"'* && "$RUN_OUT" == *'ベルの共通憲法'* && "$RUN_OUT" == *'Cursor nativeの単発'* && "$RUN_OUT" != *mcp__aiterm__pty_* && "$RUN_OUT" != *alwaysApply* ]]; then
+  pass cursor-constitution-session-start
+else
+  fail_case cursor-constitution-session-start
+fi
+
+run cursor-constitution-grok-noop env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hookEventName":"sessionStart","sessionId":"c-const-grok","cwd":"$HOOK_REPO"}
+EOF
+if [ "$RUN_BYTES" -eq 0 ]; then
+  pass cursor-constitution-grok-noop
+else
+  fail_case cursor-constitution-grok-noop
+fi
+
+run cursor-constitution-missing-file env HOME="$MISS_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"sessionStart","session_id":"c-const-miss","cwd":"$HOOK_REPO"}
+EOF
+if [ "$RUN_BYTES" -eq 0 ]; then
+  pass cursor-constitution-missing-file
+else
+  fail_case cursor-constitution-missing-file
+fi
+
 run cursor-todo-stop-no-followup "$PYTHON_EXE" "$ROOT/bin/cursor-todo-gate-hook.sh" stop <<EOF
 {"hook_event_name":"stop","session_id":"c-stop","workspace_roots":["$HOOK_REPO"],"status":"completed","cursor_version":"1.0.0"}
 EOF
@@ -132,6 +163,9 @@ for event, entries in data["hooks"].items():
     for entry in entries:
         commands.append(entry["command"])
 if not commands or any("cursor-" not in command for command in commands):
+    raise SystemExit(1)
+starts = data["hooks"].get("sessionStart") or []
+if not starts or "cursor-constitution-hook" not in starts[0].get("command", ""):
     raise SystemExit(1)
 if "PreToolUse" in data["hooks"] or "UserPromptSubmit" in data["hooks"]:
     raise SystemExit(1)

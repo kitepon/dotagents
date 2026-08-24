@@ -90,6 +90,8 @@ for entries in data["hooks"].values():
         commands.append(entry.get("command", ""))
 if not any("cursor-git-destroy-gate-hook" in command for command in commands):
     raise SystemExit("git-destroy")
+if not any("cursor-constitution-hook" in command for command in commands):
+    raise SystemExit("constitution")
 if any("spotter" in command.lower() or "throughline" in command.lower() for command in commands):
     raise SystemExit("product hook")
 if any("permissionDecision" in json.dumps(data) for _ in [0]):

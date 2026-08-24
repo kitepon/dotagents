@@ -22,6 +22,10 @@
     ],
     "sessionStart": [
       {
+        "command": "${HOME}/.local/bin/cursor-constitution-hook",
+        "timeout": 10
+      },
+      {
         "command": "${HOME}/.local/bin/cursor-todo-gate-hook session-start",
         "timeout": 10
       },

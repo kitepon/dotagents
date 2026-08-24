@@ -660,6 +660,7 @@ for entries in hooks.values():
         if isinstance(entry, dict) and isinstance(entry.get("command"), str):
             commands.append(entry["command"])
 required = (
+    "cursor-constitution-hook",
     "cursor-git-destroy-gate-hook",
     "cursor-delegation-gate-hook",
     "cursor-todo-gate-hook",
