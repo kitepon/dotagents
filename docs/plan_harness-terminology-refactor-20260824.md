@@ -74,3 +74,10 @@ repo間は独立だが、統括1名の直列実行とする。理由: 置換の�
 - peertable: 既存test＋room server起動smoke＋新旧field互換のfocused test。
 - dotagents: `npm test`（factory-scan契約test）＋生成物diff確認。
 - 各repo: `rg -i vendor` 残存の全数確認（不変契約の残存だけが許容）。
+
+## maintenance queue（campaign外の持ち越し・理由付き）
+
+- **dotagents main CIのlinux-native lane赤（既存）**: `tests/install/clean-home.sh`内のverify-installがserver profileで`SERVERMANAGER_READY_URL`を要求するが、linux runner環境に未設定（実測: repo内で既定を渡すのはsetup-wsl-factory.shだけ）。加えてmain-serverの`/readyz`は現在503（`not_ready`・database/schemaはpass）。e4d93c1（Windows工場一撃展開wave）以降のposix laneはquoted-hook破壊で本件へ到達しておらず、本campaignの`lib/hook-command.py`修理（POSIX hostでのWindows path basename取り）でwsl2/macos laneはgreen復帰、linuxだけ本件が残る。**所有はWindows工場wave／runner運用（factory-ci runbook）**であり、本campaignのdiffとは独立。対処候補: linux runnerのenvへ`SERVERMANAGER_READY_URL=http://127.0.0.1:39310/readyz`を恒久設定（setup-linux-factory.shへの追補）＋readyz 503の原因（鮮度check）確認。
+- **Lattice**: `stableNodePath()`（bridge-executable）と`resolveStableNodePath()`（hooks-cli）が同一問題への非同一実装として並存（棚卸し検出）。統合は挙動差の裁定が要るため未実施。`rc1-v4-campaign.mjs`のproduction経路孤立も確証不足で保留。
+- **Spotter**: PATH実行体探索の3実装（platform/paths・install・codex-hook-cmd）は用途差（realpath照合等）があり無裁定統合を見送り。`envForMatrixHost`とhost-agent判定の対応表二重保持も同様。
+- **Caveat**: Windows ACL実装（runtimeErrors.ts）のplatform.tsへの移設は同一package内の配置整理であり、判定統合（isWindowsEnv・0.17.7）まで実施、実装本体の移動は見送り。O_NOFOLLOW openの2箇所は検証・読取が実質別物で重複でないと裁定。
