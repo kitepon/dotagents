@@ -604,6 +604,34 @@ PY
     fail=1
   fi
 fi
+cursor_mcp="$HOME/.cursor/mcp.json"
+if [ -f "$cursor_mcp" ] || [ -L "$cursor_mcp" ]; then
+  if [ -L "$cursor_mcp" ]; then
+    echo "FAIL: $cursor_mcp は symlink（実ファイルの工場MCP面が正）"
+    fail=1
+  elif ! python3 - "$cursor_mcp" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+try:
+    data = json.loads(path.read_text(encoding="utf-8"))
+except json.JSONDecodeError as exc:
+    print(f"FAIL: {path} の JSON パース失敗: {exc}")
+    raise SystemExit(1)
+if not isinstance(data, dict) or not isinstance(data.get("mcpServers"), dict):
+    print(f"FAIL: {path} の mcpServers が object でない")
+    raise SystemExit(1)
+missing = [name for name in ("aiterm", "caveat", "lattice", "codex-sidecar", "gpt_connector", "aishell") if name not in data["mcpServers"]]
+if missing:
+    print("FAIL: Cursor 工場MCP が欠落: " + "、".join(missing))
+    raise SystemExit(1)
+PY
+  then
+    fail=1
+  fi
+fi
 grok_config="$HOME/.grok/config.toml"
 if [ -f "$grok_config" ]; then
   if ! python3 - "$grok_config" <<'PY'
