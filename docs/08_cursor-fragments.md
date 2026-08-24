@@ -35,4 +35,4 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 
 ## 3. 受入
 
-適用後の新規 Cursor session で工場6の handshake を見る。失敗はtypedのまま残し、登録成功へ丸めない。既存sessionは config 変更を引き継がない。`cli-config.json` の model が適用前後で同じであること。
+適用後の新規 Cursor session で工場6の handshake を見る。失敗はtypedのまま残し、登録成功へ丸めない。既存sessionは config 変更を引き継がない。`cli-config.json` の model が適用前後で同じであること。Cursor は互換で `~/.claude/skills` も読む。工場所有は `~/.cursor/skills` であり、Claude 面の列挙を切断成功と読まない。
