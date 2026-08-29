@@ -109,7 +109,7 @@
 - runtime schema: `aishell.runtime_configuration.v2`。旧単一`allowedRootPath`は製品側のcompatible-on-readで解釈し、dotagentsは`runtime.json`や`activity.jsonl`を直接読まない。
 - update/rollback: Apple Silicon Macだけ`@quolu/aishell@latest`をglobal更新し、package内`AIShell.app`と`aishell-mcp`を同版で扱う。rollbackは旧npm versionへ戻してMCP processを再起動する。診断は`0.4.1`以降で公開されており、それ以前のversionは`unverified`になる。
 - 起動形式: adapterもMCP hostも`aishell-mcp`をbare command名で起動する。`verify-install`は対応Mac上のClaude/Codex両hostについて、user/enable状態、bare command、`AISHELL_CAPABILITY_SET=expanded-v1`、接続状態を検証し、CLI存在だけでは合格にしない。製品側はloaded executable pathからAIShell.app bundleを解決し、この起動形式をrelease gateが覆う。完全修飾pathでだけ検証してbare名起動を未検証のまま出さない。
-- wire: v2/v3/v4固定集合へ後付けせず、ServerManager optional sourceを先行し、Lattice wire v4完了後のwire v5で正式enroll済み。wire v6でも同じ製品契約を維持する。
+- wire: v2/v3/v4固定集合へ後付けせず、ServerManager optional sourceを先行し、Lattice wire v4完了後のwire v5で正式enroll済み。現役wire v8でも同じ製品契約を維持し、v7以前はrollback契約として保持する。
 - 禁止: 非対応hostへの導入、shell/AppleScript/JXA fallback、`runtime_status`のpathをfactory reportへ転記、pauseを製品故障へ丸めること。
 
 ### `observer`
@@ -124,7 +124,7 @@
 - 所有/修正先: 自作 / `kitepon/peertable`。version入口: `peertable-client diagnostics --json`の`product.version`（`package.json`と`room/client.mjs`の`MCP_VERSION`一致を`version_consistency` checkが検証。別途`--version`は無い）。
 - diagnostics/state正本: `peertable-client diagnostics --json`（schema `peertable.native_factory_diagnostics.v1`。決定45契約）。`version_consistency`・`bin_integrity`・`node_runtime`・`skill_bundle`・`room_reachability`をread-onlyで返す。room DB・member state・message本文は解釈しない。`room_reachability`は`PEERTABLE_URL`未設定時`not_applicable`（npm単体利用の平常状態）、設定時は到達fetchの`pass`/`fail`。overallは`ready`（全pass/not_applicable）/`not_ready`（fail含む）/`unverified`（判定不能含む）。
 - 現adapter: `lib/factory/v7.mjs`の`projectPeertableFactory`/`peertableProduct`がnative JSONをexact allowlistで検証し、`ready`をpass/compatible、`not_ready`を固定fingerprintのfail/incompatible、schema不正・CLI不在をunverified/missingへ射影する。`room_reachability`はLAN room到達性と製品健全性を結合させないため、scan時は常に`PEERTABLE_URL=''`で空へ倒す（不可侵原則：ServerManager server profileパターンの踏襲）。runtime errorは製品側に未実装のため契約対象外。
-- wire: v6の13製品（v5集合。observerなし）へpeertableを加えた`V7_PRODUCT_IDS`固定14製品（`lib/factory/v7.mjs`・[wire v7設計](wire-v7-design.md)・[ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)）。ServerManager/BugHubのv7 ingestはserver-firstでdeploy・`FACTORY_V7_INGEST_ENABLED=true`済みで、2026-08-10に全4現役hostのcutoverが完了した。v6はhost別rollback先として維持する。
+- wire: v6の13製品（v5集合。observerなし）へpeertableを加えた`V7_PRODUCT_IDS`固定14製品（`lib/factory/v7.mjs`・[wire v7設計](wire-v7-design.md)・[ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)）。2026-08-10に全4現役hostのv7 cutoverを完了し、現役wire v8でもpeertable契約を維持する。v7以前はrollback契約として保持する。
 - release gate: `scripts/verify-release-commit.mjs`（aishell reference実装からの移植）を`prepublishOnly`へ連結済み。publish対象は既定ブランチ祖先のcleanなcommitだけに限定する。
 - 表現/禁止: room server URL・投稿token・room DB・message本文をreportへ転記しない。room DBの直接query、adapterによるmember state推測を禁止。`skill/`はpeertable repoが所有しnpm同梱で配る——dotagentsの`claude/skills/`や`install.sh`へ複製しない。
 

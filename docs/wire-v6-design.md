@@ -6,7 +6,7 @@
 > `observer`キーは出さない。Observer編入後の固定14製品が全hostで現役だったのは2026-07-26〜2026-08-10。
 > 以下のv5記述はv6へ移行する設計時点のpredecessor契約として保持する。
 
-**状態:** Active（[Observerコア編入記録](archive/plan_observer-core-integration.md)の設計成果物）
+**状態:** Historical／二段目rollback維持（[Observerコア編入記録](archive/plan_observer-core-integration.md)の設計成果物）
 **工程正本:** Lattice plan `observer-core-integration`  
 **対象:** dotagents reporter、ServerManager / BugHub ingest、4 active host  
 **決定:** [ADR 0124](adr/0124-wire-v6-observer-enrollment.md)

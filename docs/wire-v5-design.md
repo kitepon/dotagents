@@ -1,6 +1,9 @@
 # wire v5 設計正本 — AIShellの固定集合編入
 
-**状態:** Active（[AIShell編入計画](plan_aishell-factory-integration.md) Phase A5-P0の成果物）
+> **現在状態（2026-08-29）:** 現役は[wire v8](wire-v8-design.md)で、v5は現役入口ではない。
+> v7・v6より前のrollback契約としてendpoint・schema・state/outboxを維持する。
+
+**状態:** Historical／rollback維持（[AIShell編入計画](plan_aishell-factory-integration.md) Phase A5-P0の設計成果物）
 **工程正本:** Lattice plan `aishell-factory-integration`
 **対象:** dotagents reporter、ServerManager / BugHub ingest、4 active host
 

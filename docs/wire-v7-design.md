@@ -1,6 +1,6 @@
 # wire v7 設計正本 — peertableの固定集合編入
 
-**状態:** Active（[peertable編入記録](archive/2026-08_peertable-onboarding.md)の設計成果物）
+**状態:** Historical／一段目rollback維持（[peertable編入記録](archive/2026-08_peertable-onboarding.md)の設計成果物）
 **工程正本:** Lattice plan `peertable-onboarding`（設計）／`peertable-wire-v7-execution`・`peertable-wire-v7-cutover-deploy`（実行）
 **対象:** dotagents reporter、ServerManager / BugHub ingest、4 active host
 **決定:** [ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)
