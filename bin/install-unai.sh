@@ -13,16 +13,24 @@ case "${OS:-$(uname -s)}" in
     curl -fsSL "$installer_base/install.ps1" -o "$temporary_dir/install.ps1"
     windows_installer="$(cygpath -w "$temporary_dir/install.ps1")"
     pwsh.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$windows_installer"
+    unai_script="$HOME/.local/bin/unai.ps1"
+    [ -f "$unai_script" ] && [ ! -L "$unai_script" ] \
+      || { echo 'FAIL: unai公式installer後も固定配置のCLIが見つかりません' >&2; exit 1; }
+    windows_unai_script="$(cygpath -w "$unai_script")"
+    run_unai() {
+      pwsh.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$windows_unai_script" "$@"
+    }
     ;;
   *)
     command -v curl >/dev/null 2>&1 || { echo 'FAIL: unai公式installer取得にcurlが必要です' >&2; exit 1; }
     curl -fsSL "$installer_base/install.sh" -o "$temporary_dir/install.sh"
     "$BASH" "$temporary_dir/install.sh"
+    command -v unai >/dev/null 2>&1 || { echo 'FAIL: unai公式installer後もCLIが見つかりません' >&2; exit 1; }
+    run_unai() { unai "$@"; }
     ;;
 esac
 
-command -v unai >/dev/null 2>&1 || { echo 'FAIL: unai公式installer後もCLIが見つかりません' >&2; exit 1; }
-diagnostic="$(unai factory-diagnostics --json)"
+diagnostic="$(run_unai factory-diagnostics --json)"
 printf '%s' "$diagnostic" | node -e '
   let value;
   try { value = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
@@ -34,4 +42,4 @@ printf '%s' "$diagnostic" | node -e '
     && checks?.node_runtime === "pass"
     && checks?.skill_bundle === "pass" ? 0 : 1);
 ' || { echo 'FAIL: unai native diagnosticsがreadyではありません' >&2; exit 1; }
-printf 'unai: %s / ready\n' "$(unai --version)"
+printf 'unai: %s / ready\n' "$(run_unai --version)"

@@ -101,6 +101,23 @@ test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影す�
   assert.equal(installed.compatibility_status, 'compatible');
 });
 
+test('Windowsのunai診断は公式固定配置だけをPowerShell 7経由で読む', async () => {
+  const calls = [];
+  const installed = await unaiProduct({
+    cwd: 'C:\\work', now: NOW, platform: 'win32', home: 'C:\\Users\\kite',
+    runCommand: async () => { throw new Error('bare commandを使ってはいけません'); },
+    runPowerShellScript: async (script, args, options) => {
+      calls.push({ script, args, options });
+      return { ok: true, code: 0, reason: null, stdout: JSON.stringify(readyDiagnostic()), stderr: '' };
+    },
+  });
+  assert.equal(installed.presence_status, 'installed');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].script, 'C:\\Users\\kite\\.local\\bin\\unai.ps1');
+  assert.deepEqual(calls[0].args, ['factory-diagnostics', '--json']);
+  assert.equal(calls[0].options.cwd, 'C:\\work');
+});
+
 test('v8 reporterはv8 reportだけを専用stateで受理する', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'wire-v8-reporter-')); t.after(() => rm(root, { recursive: true, force: true }));
   const reportPath = join(root, 'report.json'); const configPath = join(root, 'config.json');
