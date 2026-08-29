@@ -266,6 +266,11 @@ grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$SOURCE" \
   || fail 'setupが ~/.local/bin を PATH 先頭へ置かない'
 grep -Fq "[ \"\$node_major\" -ge 24 ]" "$SOURCE" \
   || fail 'setupがNode.js 24契約を強制しない'
+node - "$SOURCE" <<'NODE'
+const source = require('fs').readFileSync(process.argv[2], 'utf8');
+if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('"$ROOT/bin/apply-codex-config.sh" --apply'))
+  || !source.includes('npm install -g @openai/codex@latest')) process.exit(1);
+NODE
 
 "$FIXTURE_ROOT/bin/setup-macos-factory.sh"
 "$FIXTURE_ROOT/bin/setup-macos-factory.sh"

@@ -241,6 +241,11 @@ grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-wsl-f
   || fail 'setupが ~/.local/bin と公式Snap NodeをPATH先頭側へ置かない'
 grep -Fq "[ \"\$node_major\" -ge 24 ]" "$ROOT/bin/setup-wsl-factory.sh" \
   || fail 'setupがNode.js 24契約を強制しない'
+node - "$ROOT/bin/setup-wsl-factory.sh" <<'NODE'
+const source = require('fs').readFileSync(process.argv[2], 'utf8');
+if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('"$ROOT/bin/apply-codex-config.sh" --apply'))
+  || !source.includes('npm install -g @openai/codex@latest')) process.exit(1);
+NODE
 
 export HOME="$HOME_DIR"
 export PATH="$STUB_BIN:/usr/bin:/bin"

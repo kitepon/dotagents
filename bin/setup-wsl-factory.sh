@@ -253,6 +253,17 @@ ensure_managed_commands() {
   done
 }
 
+ensure_toolchain_bootstrap() {
+  if ! claude --version >/dev/null 2>&1; then
+    npm install -g @anthropic-ai/claude-code@latest
+  fi
+  if ! codex --version >/dev/null 2>&1; then
+    npm install -g @openai/codex@latest
+  fi
+  claude --version >/dev/null 2>&1 || die 'Claude Codeを公式npm経路で復旧できない'
+  codex --version >/dev/null 2>&1 || die 'Codex CLIを公式npm経路で復旧できない'
+}
+
 ensure_caveat_sync() {
   if [ -d "$HOME/.caveat/own/.git" ]; then
     caveat sync
@@ -347,6 +358,7 @@ run_setup() {
 
   backup_managed_config
   ensure_git_identity
+  ensure_toolchain_bootstrap
   "$ROOT/bin/apply-codex-config.sh" --apply
   "$ROOT/bin/apply-claude-config.sh" --apply
   maybe_apply_grok_config
