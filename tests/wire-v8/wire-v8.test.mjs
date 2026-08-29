@@ -52,6 +52,15 @@ test('v8はv7順序を保持してunaiを15番目へ追加する', () => {
   assert.equal(new Set(V8_PRODUCT_IDS).size, 15);
 });
 
+test('v7/v8の追加製品failure時刻はreport観測時刻を越えない', async () => {
+  const v7Source = await readFile(resolve(import.meta.dirname, '../../lib/factory/v7.mjs'), 'utf8');
+  const v8Source = await readFile(resolve(import.meta.dirname, '../../lib/factory/v8.mjs'), 'utf8');
+  assert.match(v7Source, /peertableProduct\(\{ \.\.\.options, now: prior\.report\.observed_at \}\)/u);
+  assert.match(v8Source, /unaiProduct\(\{ \.\.\.options, now: prior\.report\.observed_at \}\)/u);
+  assert.doesNotMatch(v7Source, /peertableProduct\(\{ \.\.\.options, now: new Date/u);
+  assert.doesNotMatch(v8Source, /unaiProduct\(\{ \.\.\.options, now: new Date/u);
+});
+
 test('v8 validatorは固定15製品だけを受理し、v7を変更しない', () => {
   const report = reportV8();
   assert.doesNotThrow(() => validateReportV8(report));
