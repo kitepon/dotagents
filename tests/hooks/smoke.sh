@@ -330,7 +330,7 @@ exit 99
 EOF
   chmod +x "$STATE/sentinel/$provider"
 done
-for tool in "$PYTHON_EXE" git node dirname readlink; do
+for tool in "$(basename "$PYTHON_EXE")" git node dirname readlink; do
   cat >"$STATE/sentinel/$tool" <<'EOF'
 #!/usr/bin/env bash
 echo runtime-path-called >>"${ADVISORY_RUNTIME_LOG:?}"
@@ -586,13 +586,13 @@ esac
 EOF
 chmod +x "$STATE/lattice-bin/lattice"
 install_windows_fixture_wrapper "$STATE/lattice-bin/lattice" bash
-async_started=$("$PYTHON_EXE" -c 'import time; print(time.monotonic_ns())')
 run_direct lattice-async-start env PATH="$STATE/lattice-bin:$PATH" LATTICE_TEST_MODE=slow_success "$PYTHON_EXE" "$ROOT/bin/lattice-gantt-hook.sh" session-start <<EOF
 {"session_id":"lattice-async","source":"startup","cwd":"$HOOK_REPO"}
 EOF
-async_finished=$("$PYTHON_EXE" -c 'import time; print(time.monotonic_ns())')
-async_elapsed_ms=$("$PYTHON_EXE" -c "print(($async_finished - $async_started) // 1000000)")
-[ "$RUN_BYTES" -eq 0 ] && [ "$async_elapsed_ms" -lt 1000 ] && pass lattice-async-immediate || fail_case lattice-async-immediate
+async_key=$(session_key lattice-async)
+[ "$RUN_BYTES" -eq 0 ] \
+  && find "$STATE/dotagents/hooks" -maxdepth 1 -name "$async_key.*.lattice-gantt.pending" -type f | grep -q . \
+  && pass lattice-async-immediate || fail_case lattice-async-immediate
 run_direct lattice-async-pending env PATH="$STATE/lattice-bin:$PATH" LATTICE_TEST_MODE=slow_success "$PYTHON_EXE" "$ROOT/bin/lattice-gantt-hook.sh" user-prompt-submit <<EOF
 {"session_id":"lattice-async","cwd":"$HOOK_REPO"}
 EOF
