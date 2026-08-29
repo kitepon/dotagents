@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { delimiter, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import process from 'node:process';
 import test from 'node:test';
 
@@ -88,17 +88,24 @@ test('projectUnaiFactoryはfailを固定fingerprintへ投影し、exit不一致�
   assert.throws(() => projectUnaiFactory(readyDiagnostic(), false, NOW), /unai_exit_mismatch/u);
 });
 
-test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影する', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'wire-v8-unai-')); const bin = join(root, 'bin'); await mkdir(bin);
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const previous = process.env.PATH; process.env.PATH = bin; t.after(() => { process.env.PATH = previous; });
-  const missing = await unaiProduct({ cwd: root, now: NOW, platform: 'darwin' });
+test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影する', async () => {
+  const calls = []; let available = false;
+  const runCommand = async (command, args, options) => {
+    calls.push({ command, args, options });
+    return available
+      ? { ok: true, code: 0, reason: null, stdout: JSON.stringify(readyDiagnostic()), stderr: '' }
+      : { ok: false, code: null, reason: 'spawn', error: { code: 'ENOENT' }, stdout: '', stderr: '' };
+  };
+  const missing = await unaiProduct({ cwd: '/work', now: NOW, platform: 'darwin', runCommand });
   assert.equal(missing.presence_status, 'missing');
-  const cli = join(bin, 'unai'); await writeFile(cli, `#!/bin/sh\necho '${JSON.stringify(readyDiagnostic())}'\n`); await chmod(cli, 0o755);
-  process.env.PATH = `${bin}${delimiter}${previous}`;
-  const installed = await unaiProduct({ cwd: root, now: NOW, platform: 'darwin' });
+  available = true;
+  const installed = await unaiProduct({ cwd: '/work', now: NOW, platform: 'darwin', runCommand });
   assert.equal(installed.presence_status, 'installed');
   assert.equal(installed.compatibility_status, 'compatible');
+  assert.deepEqual(calls, [
+    { command: 'unai', args: ['factory-diagnostics', '--json'], options: { cwd: '/work' } },
+    { command: 'unai', args: ['factory-diagnostics', '--json'], options: { cwd: '/work' } },
+  ]);
 });
 
 test('Windowsのunai診断は公式固定配置だけをPowerShell 7経由で読む', async () => {
