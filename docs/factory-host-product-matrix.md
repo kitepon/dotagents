@@ -86,6 +86,8 @@ BugHub serverはhost credentialにprofileを結び付け、このmatrixから期
 製品集合は上表とdeployment contractが共有するが、host配線は次の入口が個別に所有する。
 WSL2とWindows nativeは同一物理端末でも別hostとして扱い、設定・credential・scheduler・receiptを共有しない。
 
+FOX WSL2のGitHub Actions runner標準Nodeは、OpenJS Foundation公式Snapの`node` 24/stableとし、runner rootの`.path`は`/snap/bin`を先頭に置く。Ubuntu resoluteのapt `nodejs`は22系のため、工場製品のNode 24契約には使わない。版数更新後はrunner serviceを再起動し、runnerの`.path`を適用した環境で`node --version`と`npm --version`を実測する。
+
 | host | 一撃展開 | 定期更新 | 実host受入 |
 |---|---|---|---|
 | Mac | `setup-macos-factory.sh` | LaunchAgent `com.kite.agents-update`、毎週月曜04:00 | `verify-install`、14製品、fresh v7 delivery |
