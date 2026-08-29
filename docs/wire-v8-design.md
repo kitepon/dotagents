@@ -9,7 +9,7 @@
 
 ## 1. major更新の理由
 
-wire v7は`additionalProperties: false`とexact-key検証を持つ固定14製品契約である。unaiを同じversionへ後付けすると同一schemaの意味が変わるため、新しいwire v8で編入する。
+wire v7は`additionalProperties: false`とexact-key検証を持つ固定14製品契約である。unaiを同じversionへ後付けすると同一schemaの意味が変わるため、新しいwire v8で編入した。
 
 ## 2. 固定15製品
 
