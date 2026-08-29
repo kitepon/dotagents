@@ -42,7 +42,7 @@ codex mcp add gpt_connector -- gpt-connector-mcp
 
 1. v1 clientはOracleを `not_applicable` として明示し、必要なresolutionを送る。
 2. MCP登録を `gpt_connector` へ切り替える。
-3. 現役wire v8の固定15製品full snapshotを送る。v7はhost別rollback、v6は二段目rollback、旧v2／v4は履歴契約としてだけ維持する。`products.observer`は出さない。
+3. [工場の現行状態](factory-current-state.md)が示すwireのfull snapshotを送る。過去majorは同ページのrollback先と各wire契約に従って維持し、`products.observer`は出さない。
 4. timeout等では `sessions` によりgpt-connector側を回収する。自動fallbackはしない。
 
 必要なOracle一時切戻しは手動・期限付きのrollbackであり、H承認後にだけ行う。Oracleをコア製品や新規導入推奨へ戻さない。

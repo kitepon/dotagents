@@ -10,7 +10,7 @@
 - token、実config、outboxはgitへ入れない。tokenを引数、query parameter、通常JSON出力へ出さない。
 - host identityはtop-level `host.id / host.profile`で固定し、tokenのserver-side bindingと一致させる。
 - credential fileは所有者限定。POSIXはdirectory `0700`・file `0600`、Windowsは継承ACLを除去して現在userだけにする。
-- **本番BugHubの入口はwire v8**。`mac-kite`・`main-server`・`fox-wsl`・`windows-workstation`はいずれも`/api/factory/v8/reports`を使う。`FACTORY_V<N>_INGEST_ENABLED=true`を明示するまで各majorの入口は404にする。host別rollback用のv7以前の入口と履歴は独立して維持し、wire majorを暗黙変換しない。作業前にhost configの`reporting.endpoint`を確認する（§4cを参照）。
+- **本番BugHubの入口は[工場の現行状態](factory-current-state.md)に生成する**。4 hostはいずれも同ページのendpointを使う。`FACTORY_V<N>_INGEST_ENABLED=true`を明示するまで各majorの入口は404にする。host別rollback用の入口と履歴は独立して維持し、wire majorを暗黙変換しない。作業前にhost configの`reporting.endpoint`を同ページと照合する。
 - Pi5からのServerManager outageは、main-server上の`factory-external-event`だけで記録する。任意本文・path・URLは受け取らず、固定`check`/`reason`とcanonical UTCだけを保存する。
 
 ## 1. 送信OFFでconfigを配置
@@ -79,12 +79,12 @@ reporter configの`reporting`を次の形へ編集する。tokenが存在する�
 ```json
 {
   "enabled": true,
-  "endpoint": "http://192.168.1.2:39310/api/factory/v8/reports",
+  "endpoint": "http://192.168.1.2:39310<factory-current-stateのendpoint>",
   "credential_file": "/home/kite/.config/dotagents/credentials/factory.token"
 }
 ```
 
-Windowsでは`credential_file`にWindows nativeの絶対pathをJSON escapingして指定する。host clientをONにする前に、次のserver-first順序を完了する。v7入口は現役v8のhost別rollback先として独立して維持し、v6以前も履歴として残す。
+Windowsでは`credential_file`にWindows nativeの絶対pathをJSON escapingして指定する。`endpoint`のplaceholderは[工場の現行状態](factory-current-state.md)の本番BugHub endpointへ置換する。host clientをONにする前に、次のserver-first順序を完了する。rollback入口と履歴はmajorごとに独立して残す。
 
 ## 4a. 旧wireのserver-first履歴とhost別rollback
 
@@ -115,9 +115,9 @@ host別cutoverの順序（全4現役hostで実測済みの形）:
 
 v6へ戻す時は退避configを書き戻し、`--wire-major v6`で再installする（state/outboxが無傷なら即再開できる。v6経路のpayloadは`schema_version="6.0"`・endpoint `/api/factory/v6/reports`のまま変えない）。§4aと同じく、全hostを一括切替しない。
 
-## 4c. 現役wire v8とunai編入
+## 4c. wire v8とunaiの編入記録
 
-unai編入のwire v8は、v7 endpointを維持したままserver-firstで配備する。現行必須集合は固定15製品で、契約は[wire v8設計](wire-v8-design.md)が正である。
+unai編入のwire v8は、v7 endpointを維持したままserver-firstで配備した。編入時の必須集合は固定15製品で、契約は[wire v8設計](wire-v8-design.md)が正である。現在の入口は[工場の現行状態](factory-current-state.md)から読む。
 
 host別cutoverは次の順序で行う。
 
@@ -206,17 +206,17 @@ factory-external-event resolve --check availability --reason unreachable \
 
 ## 8. 定期scheduler（dry-runから開始）
 
-`factory-reporter-scheduler` は毎時17分に起動するOS別schedulerを管理する。本番登録では`--wire-major v8`を明示し、`factory-reporter-v8-schedule-runner`と`factory-reporter-v8` stateを使う。引数省略時のv4は既存利用者向け互換であり、新規登録には使わない。手動rollback時だけ旧majorを指定する。runnerは該当wireの契約に従ってscan → enqueue → flush を行い、設定を作成・変更せず、`collection.enabled`／`reporting.enabled`をONにしない。送信OFFならrunnerのenqueue/flushはnetwork I/Oをしない。
+`factory-reporter-scheduler` は毎時17分に起動するOS別schedulerを管理する。本番登録では[工場の現行状態](factory-current-state.md)のmajorを`--wire-major v<N>`へ明示し、同じmajorのschedule runnerとstateを使う。引数省略時のv4は既存利用者向け互換であり、新規登録には使わない。手動rollback時だけ旧majorを指定する。runnerは該当wireの契約に従ってscan → enqueue → flush を行い、設定を作成・変更せず、`collection.enabled`／`reporting.enabled`をONにしない。送信OFFならrunnerのenqueue/flushはnetwork I/Oをしない。
 
 最初は必ずdry-runで生成物・登録commandを確認する。実登録は明示`--apply`だけであり、通常のinstall/updateはschedulerを登録しない。configが未配置または不正ならinstall/runnerはfail closedで、scheduler登録もscanも行わない。停止のためのuninstallだけはconfigなしでも実行できる。
 
 ```bash
 # macOS
-factory-reporter-scheduler install --dry-run --platform darwin --wire-major v8
+factory-reporter-scheduler install --dry-run --platform darwin --wire-major v<N>
 # Linux / WSL2
-factory-reporter-scheduler install --dry-run --platform linux --wire-major v8
+factory-reporter-scheduler install --dry-run --platform linux --wire-major v<N>
 # Windows native PowerShell
-factory-reporter-scheduler install --dry-run --platform win32 --wire-major v8
+factory-reporter-scheduler install --dry-run --platform win32 --wire-major v<N>
 ```
 
 承認済みの対象hostだけで、dry-runの出力を確認してから同じcommandに`--apply`を付ける。`--apply`は実行中OSと一致するplatformだけを受け付ける。uninstallは登録済みの共通launchd label / cron marker / Task Scheduler名を外すためwire-major非依存である。
@@ -283,16 +283,16 @@ runner全体へ別の強制timeoutは重ねない。各外部境界を上表でb
 
 ## 11. BugHub wire schema major互換matrix
 
-通常経路はpayload `schema_version="8.0"`、`report_mode="full"`、endpoint `/api/factory/v8/reports`である。v7 command/state/endpointはhost別手動rollback、それ以前は多段rollbackとretention対象である。未知major/minor、未知field、deltaを推測・黙示変換しない。
+通常経路のschema・endpoint・rollback先は[工場の現行状態](factory-current-state.md)から読む。payloadは`report_mode="full"`である。旧majorのcommand/state/endpointは手動rollbackとretention対象であり、未知major/minor、未知field、deltaを推測・黙示変換しない。
 
 | client | server入口 | 結果 | rollout可否 |
 |---|---|---|---|
-| v8 | v8 endpoint | v8 schema/semantic fixtureとcredential契約がgreenの時だけ受理 | 現行本番 |
+| v8 | v8 endpoint | v8 schema/semantic fixtureとcredential契約がgreenの時だけ受理 | v8 cutover完了時の本番 |
 | v7 | v7 endpoint | v7契約のまま受理 | host別rollback時だけ |
 | v6 | v6 endpoint | v6契約のまま受理 | v7からの二段目rollback時だけ |
 | v5 | v5 endpoint | v5契約のまま受理 | v6からの二段目rollback時だけ |
 | v8 payload | v7 endpoint | `422`、clientはdead-letter。v7へ自動downgradeしない | 本番送信禁止 |
-| v7 payload | v8 endpoint | 明示reject。v8へ自動upgradeしない | 本番送信禁止 |
+| v7 payload | v8 endpoint | 明示reject。v8へ自動upgradeしない | v8 cutover中の送信禁止 |
 | v1 / v4 | 対応する旧endpoint | 履歴・既存outbox保持用。新規登録しない | retentionだけ |
 | 未知major | 任意の既知endpoint | 明示reject。fallback、field削除、再serializeをしない | 不可 |
 

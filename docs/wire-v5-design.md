@@ -1,7 +1,7 @@
 # wire v5 設計正本 — AIShellの固定集合編入
 
-> **現在状態（2026-08-29）:** 現役は[wire v8](wire-v8-design.md)で、v5は現役入口ではない。
-> v7・v6より前のrollback契約としてendpoint・schema・state/outboxを維持する。
+> **現在状態:** 現役とrollback先は[工場の現行状態](factory-current-state.md)を参照する。
+> v5は現役入口ではなく、過去majorのrollback契約としてendpoint・schema・state/outboxを維持する。
 
 **状態:** Historical／rollback維持（[AIShell編入計画](plan_aishell-factory-integration.md) Phase A5-P0の設計成果物）
 **工程正本:** Lattice plan `aishell-factory-integration`
@@ -25,7 +25,7 @@ AIShellをBugHubの観測面へ載せる方法は、着手時点では2つある
 | BugHub v4 schema | 12キー定義、`additionalProperties: false`。`aishell`のスロットが**無い** |
 | dotagents client | `lib/factory/contract.mjs`の`exactKeys(report.products, V4_PRODUCT_IDS)`が13個目のキーを拒否する |
 
-つまり現役wire v4では、`aishell`を送ろうとしても**client / server両端で拒否される**。
+つまり設計時点の現役wire v4では、`aishell`を送ろうとしても**client / server両端で拒否される**。
 「optionalだから報告が無いだけ」ではなく、構造的に席が無い。
 
 A3で入れたserver-first optional登録はv2 schemaにだけ存在し、v4 cutoverの時点で

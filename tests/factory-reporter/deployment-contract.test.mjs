@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CURRENT_WIRE_PRODUCT_IDS, MANAGED_PRODUCT_IDS, hostProjection, postUpdateFailures } from '../../lib/factory/deployment-contract.mjs';
+import {
+  CORE_PRODUCT_IDS,
+  CURRENT_WIRE_ENDPOINT,
+  CURRENT_WIRE_MAJOR,
+  CURRENT_WIRE_PRODUCT_IDS,
+  CURRENT_WIRE_SCHEMA_VERSION,
+  MANAGED_PRODUCT_IDS,
+  ROLLBACK_WIRE_MAJOR,
+  THIRD_PARTY_PRODUCT_IDS,
+  hostProjection,
+  postUpdateFailures,
+} from '../../lib/factory/deployment-contract.mjs';
 import { V8_PRODUCT_IDS } from '../../lib/factory/v8.mjs';
 
 test('deployment contractは管理12製品とv8 wire 15 IDを固定する', () => {
@@ -8,6 +19,12 @@ test('deployment contractは管理12製品とv8 wire 15 IDを固定する', () =
     'caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector',
     'aiterm-mcp', 'codex-sidecar', 'aishell', 'servermanager', 'peertable', 'unai',
   ]);
+  assert.deepEqual(CORE_PRODUCT_IDS, MANAGED_PRODUCT_IDS.filter((id) => id !== 'markitdown'));
+  assert.deepEqual(THIRD_PARTY_PRODUCT_IDS, ['markitdown']);
+  assert.equal(CURRENT_WIRE_MAJOR, 8);
+  assert.equal(CURRENT_WIRE_SCHEMA_VERSION, '8.0');
+  assert.equal(CURRENT_WIRE_ENDPOINT, '/api/factory/v8/reports');
+  assert.equal(ROLLBACK_WIRE_MAJOR, 7);
   assert.deepEqual(CURRENT_WIRE_PRODUCT_IDS, V8_PRODUCT_IDS);
   assert.deepEqual(hostProjection({ profile: 'mac', os: 'darwin', arch: 'arm64', macosMajor: 15 }).required, ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'aishell', 'peertable', 'unai']);
   assert.deepEqual(hostProjection({ profile: 'server', os: 'linux', arch: 'arm64' }).required, ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'servermanager', 'peertable', 'unai']);

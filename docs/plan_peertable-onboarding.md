@@ -1,6 +1,6 @@
 # peertable編入計画は完了・archive済み
 
-peertableは工場管理12製品目（自作コア11製品目）として2026-08-10に編入を完了した。設計・実装の正本は
+peertableは2026-08-10に自作コアへ編入を完了した。設計・実装の正本は
 [archive版](archive/2026-08_peertable-onboarding.md)、H承認4件の実行は
 [wire v7実行計画](archive/2026-08_peertable-wire-v7-execution.md)に保存している。
 

@@ -1,8 +1,7 @@
 # wire v6 設計正本 — Observerの固定集合編入
 
-> **現在状態（2026-08-29 更新）:** wire v6は[wire v7](wire-v7-design.md)、続いて[wire v8](wire-v8-design.md)へ引き継がれた。
-> **v6は現役入口ではなくv7からの二段目rollback先**として維持する（endpoint・schema・
-> 各hostのv6 state/outboxは削除しない）。現行v6 scan/validatorの必須集合はv5と同じ13製品で、
+> **現在状態:** 現役とrollback先は[工場の現行状態](factory-current-state.md)を参照する。
+> **v6は現役入口ではない過去major**として維持する（endpoint・schema・各hostのv6 state/outboxは削除しない）。v6 scan/validatorの必須集合はv5と同じ13製品で、
 > `observer`キーは出さない。Observer編入後の固定14製品が全hostで現役だったのは2026-07-26〜2026-08-10。
 > 以下のv5記述はv6へ移行する設計時点のpredecessor契約として保持する。
 
@@ -16,7 +15,7 @@
 
 ## 1. 新しいwire majorが必要な理由
 
-現役wire v5は固定13製品を完全報告する契約であり、`additionalProperties: false`と
+設計時点の現役wire v5は固定13製品を完全報告する契約であり、`additionalProperties: false`と
 exact-key検証により未知の製品キーを拒否する。Observerをv5へ暗黙追加することは、
 同じversion文字列のschemaを事後変更する契約破壊になる。
 

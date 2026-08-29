@@ -1,6 +1,6 @@
 # Grok Build Community overlay（工場所有の差分面）
 
-更新日: 2026-08-17。正本はdotagents。これは自作コア12製品目でも基盤toolchainの新IDでもない。公式 `grok` CLI（product `grok-build`）はそのまま black-box 管理する。本面は、自前 Desktop（Mac / Windows / Linux）と main-server の自前 AFK Pilot だけを工場が追従する。
+更新日: 2026-08-17。正本はdotagents。これは新しい自作コア製品でも基盤toolchainの新IDでもない。公式 `grok` CLI（product `grok-build`）はそのまま black-box 管理する。本面は、自前 Desktop（Mac / Windows / Linux）と main-server の自前 AFK Pilot だけを工場が追従する。
 
 ## 所有
 

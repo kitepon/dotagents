@@ -30,7 +30,7 @@
 
 dotagentsセッションからコア製品repoへ直接手を届かせるのは、この断片を dotagents の `.claude/settings.local.json` へ貼った端末だけとする。`.claude/` はこのリポの gitignore 対象＝端末ごとに貼る。
 
-対象は[製品契約台帳](factory-product-contracts.md)の自作コア11製品の正規repoだけとし、MarkItDown（第三者・repoなし）、基盤toolchain、`*-wt-*` / `*-worktrees` の作業ツリーは含めない。`<HOME>` は各端末の home 絶対パスへ置換する:
+対象は[工場の現行状態](factory-current-state.md)で自作コアに分類された製品の正規repoだけとし、MarkItDown（第三者・repoなし）、基盤toolchain、`*-wt-*` / `*-worktrees` の作業ツリーは含めない。`<HOME>` は各端末の home 絶対パスへ置換する:
 
 ```json
 {

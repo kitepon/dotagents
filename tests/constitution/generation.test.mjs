@@ -131,10 +131,11 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   assert.match(common, /repo内の変更はpush（push既定の判定はgit鉄則に従う）/);
   assert.equal(commonLines.filter((line) => line === unaiRule).length, 1);
   assert.match(common, /通常のpushを完遂に含めるのは、project正典または恒久裁定がpush既定を定めるrepoだけ/);
-  assert.match(common, /^- push既定を認定できるのは、\(a\)適用中のrepo直下のAGENTS\.md／CLAUDE\.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、\(b\)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと自作コア11製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、\(c\)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。$/m);
+  assert.match(common, /^- push既定を認定できるのは、\(a\)適用中のrepo直下のAGENTS\.md／CLAUDE\.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、\(b\)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと製品契約台帳で自作コアに分類された製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、\(c\)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。$/m);
   assert.match(common, /^- 本節の還流・正典反映の書込みは、書込みを含む依頼・進行中campaign・明示の知識還流Phaseだけで行い、read-only指定の依頼では提案として返す。$/m);
   assert.ok(commonLines.includes("本書の「<name> runbook」は `~/.claude/runbooks/<name>.md`（Codexは `~/.codex/runbooks/<name>.md`、Grokは `~/.grok/runbooks/<name>.md`、Cursorは `~/.cursor/runbooks/<name>.md`・実体はdotagents `shared/runbooks/`）を指す。"));
   assert.ok(commonLines.includes("- **調査と出力を還流させる**: 調べた外部仕様・文献は`rag/`へ、価値ある出力（回答・監査ダイジェスト・図解）は内容に応じて`rag/`または`docs/`へ還流して複利で育てる。保存手順（MarkItDown化・raw/コンパイル分離・出典/取得日/確度・INDEX追記）と月次衛生は knowledge-return runbook に従う。"));
+  assert.ok(commonLines.includes("- **変動する現行値を散文へ複製しない**: 製品集合・現役version・endpointなど変更で動く値は、所有repoの構造化正本か、そこから作る生成物だけに置く。現行案内は生成物を参照し、履歴・証拠を現在の案内として使わない。文書分類・生成・drift検証を持つrepoでは、文書変更と同じcommitでそのgateを通す。"));
   assert.match(common, /判定後の運用（uninitializedの導入・Markdown正本の条件・散文の所有・cutover・archive）は lattice-workflow runbook に従う。/);
   assert.doesNotMatch(common, /還流の書込みを行うのは/);
   assert.match(common, /\*\*方針級の発見はその場で正典へ\*\*:/);

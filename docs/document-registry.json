@@ -1,0 +1,44 @@
+{
+  "schema": "dotagents.document-registry.v1",
+  "fact_sources": {
+    "factory_current_state": "lib/factory/deployment-contract.mjs",
+    "global_policy": "shared/constitution.md"
+  },
+  "generated_current_state": "docs/factory-current-state.md",
+  "document_extensions": [
+    ".md",
+    ".mdc"
+  ],
+  "rules": [
+    {
+      "id": "factory-current-state",
+      "kind": "generated",
+      "path_regex": "^docs/factory-current-state\\.md$"
+    },
+    {
+      "id": "host-constitution",
+      "kind": "generated",
+      "path_regex": "^(?:claude/CLAUDE\\.md|codex/AGENTS\\.md|grok/AGENTS\\.md|cursor/AGENTS\\.md|cursor/rules/factory\\.mdc)$"
+    },
+    {
+      "id": "immutable-evidence",
+      "kind": "evidence",
+      "path_regex": "^(?:docs/evidence/|docs/r2-.*(?:receipt|baseline)-).*\\.md$"
+    },
+    {
+      "id": "historical-record",
+      "kind": "history",
+      "path_regex": "^(?:docs/archive/|docs/adr/|docs/migration/|docs/wire-v[1-7]-design\\.md$|docs/handoff_).*"
+    },
+    {
+      "id": "versioned-wire-contract",
+      "kind": "contract",
+      "path_regex": "^docs/wire-v[0-9]+-design\\.md$"
+    },
+    {
+      "id": "current-guidance",
+      "kind": "current",
+      "path_regex": ".*\\.(?:md|mdc)$"
+    }
+  ]
+}

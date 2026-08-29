@@ -9,13 +9,10 @@ Lattice storeが唯一の正本であり、Markdown checkboxや旧queueへ二重
 ## 現在の工場
 
 - 開発工場: dotagents
-- 自作コア11製品: Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／
-  codex-sidecar／AIShell／ServerManager／peertable／unai。Observerは2026-08-16に工場コアから撤去
-- 第三者管理製品: MarkItDown（公開CLIだけをblack-box管理）
+- 現行の製品集合・区分・wire・rollback先: [工場の現行状態](factory-current-state.md)
+- Observerは2026-08-16に工場コアから撤去。独立Codegraphはretired／not_applicable
 - 基盤toolchain: Claude Code CLI／Codex CLI／Grok Build
-- 現役factory wire: **v8・固定15製品（v7集合＋unai）**。v7はhost別rollback先として維持
-  （[wire v8設計](wire-v8-design.md)・[reporter runbook §4c](factory-reporter-runbook.md)が正）
-- 独立Codegraph: retired／not_applicable。Lattice sensorが正式後継
+- wire各版の固定契約: `wire-vN-design.md`。Lattice sensorが独立Codegraphの正式後継
 
 所有境界と恒久規則は[AGENTS.md](../AGENTS.md)、趣旨は[PLAN.md](../PLAN.md)、有限契約は
 [factory-product-contracts.md](factory-product-contracts.md)、host別受入は

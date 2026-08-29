@@ -127,6 +127,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Grok skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Grok appendix。`~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
+| bin | `render-current-docs.mjs` | 配備契約から工場の現行状態を生成し、全document分類とcurrent文書の手書き現行値を検査 |
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場MCP 6を dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | bin | `apply-cursor-config` | Cursor の工場MCP 6を `~/.cursor/mcp.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
@@ -138,11 +139,11 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `verify-codex-agent-routing.sh` | Control配下の書込みWorkerのspawn後、role/model/effort/developer instructionsを検証し、親継承のsandbox実効値を観測表示 |
 | bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
 | データ | `~/.caveat/own`（dotagents 外） | 外部仕様の罠DB（caveat MCP が参照）。**v0.15+ で Caveat 自身が管理**——`~/.caveat/own` は独立 git repo で remote は private の `Caveat-Private`（全端末同期）。public 部分集合は `caveat publish` で `Caveat-Public` にミラー。dotagents は所有しない |
-| 自作コア11製品 | Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／ServerManager／peertable／unai（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。peertableはwire v7、unaiはwire v8で全4現役hostへ編入済み |
+| 自作コア製品 | [工場の現行状態](docs/factory-current-state.md)に列挙（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。各製品の編入版は[製品契約台帳](docs/factory-product-contracts.md)が持つ |
 | 第三者管理製品 | MarkItDown | 自作コアではなく、公開CLIだけをblack-box管理する資料変換器。fork・内部patchは行わない |
 | 基盤toolchain | Claude Code CLI／Codex CLI／Grok Build | コア製品とは別区分。Oracleはv1互換・rollback専用。Mac自前 Desktop と main-server 自前 AFK は overlay で、正典は [docs/factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md) |
-| 中央管理コア | ServerManager（dotagents 外） | 自作コア11製品に含まれる中央運用管理製品。内部のBugHubをversion・bug・compatibility結果の統括に使い、BugHubを独立製品へ分離しない |
-| コード構造・工程graph | Lattice（dotagents外） | 自作コア11製品の1つ。Codegraphを完全吸収した正式後継で、`lattice-mcp`と同梱sensorを所有する。独立Codegraphはretired／not_applicable履歴だけを保持。[導入完了記録](docs/archive/plan_lattice-factory-integration.md) |
+| 中央管理コア | ServerManager（dotagents 外） | 自作コア一覧に含まれる中央運用管理製品。内部のBugHubをversion・bug・compatibility結果の統括に使い、BugHubを独立製品へ分離しない |
+| コード構造・工程graph | Lattice（dotagents外） | 自作コア一覧に含まれる。Codegraphを完全吸収した正式後継で、`lattice-mcp`と同梱sensorを所有する。独立Codegraphはretired／not_applicable履歴だけを保持。[導入完了記録](docs/archive/plan_lattice-factory-integration.md) |
 | 知識 | `rag/` | 調査の一次ソース＋結論（第二の脳。人間用の窓は Obsidian） |
 | 設定 | `.codex-sidecar.yml` | codex-sidecar 委譲のプロジェクト既定（model/effort・readonly。正典 docs/05_codex-fragments.md） |
 
@@ -155,7 +156,7 @@ Claude command の Codex 正規入口は slash command の模造ではなく、�
 
 ### 工場コア製品の変更管理
 
-工場管理対象12製品の追加・削除・第三者化・所有移管は、`PRODUCT_IDS`や表の1行だけを変えて終わりにしない。変更前に対象repo、所有者、自作コア/第三者管理区分、version入口、正規diagnostics、state/schema/migration、runtime error、host/connector期待、修正先repoを [有限契約台帳](docs/factory-product-contracts.md) へ記録する。
+[工場の現行状態](docs/factory-current-state.md)に列挙された管理製品の追加・削除・第三者化・所有移管は、`PRODUCT_IDS`や表の1行だけを変えて終わりにしない。変更前に対象repo、所有者、自作コア/第三者管理区分、version入口、正規diagnostics、state/schema/migration、runtime error、host/connector期待、修正先repoを [有限契約台帳](docs/factory-product-contracts.md) へ記録する。
 
 1. 追加は、製品側の正規入口（第三者は公開CLI/APIだけ）を確定し、host matrix、更新経路、adapter、BugHubの固定product集合と期待matrix、privacy fixture、install/verifyを同じ独立waveで追加する。自作製品はnative diagnosticsを先に作り、dotagentsが内部DBを推測しない。
 2. 削除は、`rg -a`とLattice sensorでconsumerを確認し、scheduler/outbox/runtime cursorを停止・drainしてから行う。BugHubの履歴を物理削除せず、移行中の旧clientは対象を`not_applicable`で報告し、server期待matrixから外す時期とclient/server双方が旧reportを扱う期間を明示する。
@@ -194,7 +195,7 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   ```
 - **WSL2 の場合**: WSL2 内の Claude/Codex を対象とする（Windows 側とは別環境）。`install.sh` は WSL の `$HOME` に symlink を張り、Windowsの既存 `~/.ssh/id_ed25519.pub` を WSLへ登録して、Windows `~/.ssh/config` にdotagents管理の `fox-wsl`（`localhost:2222`）を冪等生成する。同時にWSLの `~/.codex/hooks.json` をWindows Codex Desktopの `~/.codex/hooks.json` へ投影し、DesktopのWSL実行がWindows commandを `/bin/bash` へ渡す事故を防ぐ。Windows Codex DesktopではWindows側projectを流用せず、このSSH host上の `/home/kite/Developer/dotagents` を開く。cron の起動は下の「自動アップデート」節参照
 - **ランタイム**: node>=24＋corepack・docker・python3（`command -v node docker` で存在確認、`node --version` が v24+、`docker info` が通ること。WSLはUbuntu aptの22系でなくOpenJS公式Snapの24/stableを使い、`/snap/bin`をPATH先頭側へ置く。**python3 だけは実行判定 `python3 -c "print(1)"` で確認**——Windows のストア偽エイリアスは存在チェックを通り、黙って exit 0 を返す〔罠DB `windows-python3-store-exit-0`〕）
-- **CLI（必須）**: 管理12製品はCaveat／Throughline／Spotter／Lattice／MarkItDown／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／ServerManager／peertable／unai。共通requiredは基礎8＋`peertable-client`＋`unai`、macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
+- **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。
 - **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場MCP適用（`apply-grok-config --apply`）はH。工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。4席の新規session受入は2026-08-16に閉じた。
@@ -246,13 +247,13 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 初回導入と再適用の正規入口はhost別の一撃展開スクリプトである。4入口は同じ
 `lib/factory/deployment-contract.mjs`を消費し、既存のWindows native／WSL2固有配線を共有実装へ
 押し込まない。いずれも公式skill面、現役製品、MCP、Lattice／Spotter hook、定期更新、
-`verify-install`、fresh wire v8 reportとBugHub delivery receiptまでを一括検証する。
+`verify-install`、[工場の現行状態](docs/factory-current-state.md)が示すwireのfresh reportとBugHub delivery receiptまでを一括検証する。
 Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。
 工場MCPと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
 Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 
 実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
-wire v8 reportingを有効にする。MCP login、GitHub認証、Docker稼働など「0. 前提」の外部状態は
+[工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。MCP login、GitHub認証、Docker稼働など「0. 前提」の外部状態は
 スクリプトが捏造せず、欠けていれば名指しで停止する。
 
 工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線で、各席に独立した正規入口を持つ。

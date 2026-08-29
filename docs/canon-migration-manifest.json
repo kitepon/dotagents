@@ -107,7 +107,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- 工場の現役管理対象は計11製品。自作コア10製品（Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／Observer／ServerManager）と、公開CLIだけをblack-box管理する第三者製品MarkItDownである。端末能力を担う10製品のうちAIShellはmacOS arm64専用、ObserverはmacOS専用であり、非対応hostでは構造的な`unsupported`として扱う。LatticeはCodegraphを完全吸収した正式後継であり、独立Codegraphはretired／not_applicableの履歴だけを保持して現役製品・依存・配線に含めない。Claude Code CLI／Codex CLI／Grok Buildは別区分の基盤toolchainとして管理し、Oracleはv1互換・rollback専用とする。現役契約はLattice `docs/01_integration-package.md`と本repoの製品契約台帳・host matrix、導入経緯は[完了plan](docs/archive/plan_lattice-factory-integration.md)および[Observer編入plan](docs/archive/plan_observer-core-integration.md)が正。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 現役管理対象は自作コア11製品（Caveat、Throughline、Spotter、Lattice、gpt-connector、aiterm-mcp、codex-sidecar、AIShell、ServerManager、peertable、unai）と、公開CLIだけをblack-box管理する第三者製品MarkItDownの計12製品である。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
+      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は各製品のversion入口・診断・adapter・禁止事項を所有する。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -170,7 +170,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "3. **趣旨・原則・残件は [PLAN.md](PLAN.md)（憲章＝聖典 v4）が正**。文書は3分類で管理する——①趣旨 ②プラン（docs/ に作る。目的・判断理由・受入条件と工程正本への導線を持つ） ③役目を終えたら [docs/archive/](docs/archive/) へ退避。環境まわりの作業はまず PLAN.md の残件と docs/ の進行中プランで現在地を拾い、判断に迷ったら原則に立ち返る。調査の前に [rag/INDEX.md](rag/INDEX.md) と caveat を検索する（同じ調査を繰り返さない）。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 文書は趣旨（憲章・正典）、統括レーンのプラン、役目を終えた文書の3種に分ける。完了した文書は `archive/` へ退避し、`docs/`直下には生きた文書だけを置く。"
+      "receiver_text": "- 文書はregistry上の5種へ機械分類する。変動する現行値は構造化正本から生成し、current文書は[工場の現行状態](factory-current-state.md)を参照する。完了した文書は `archive/` へ退避し、証拠は`evidence/`へ固定する。"
     },
     {
       "receiver_path": "docs/01_project-layout.md",
@@ -197,7 +197,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "- **規範**: ベルの共通憲法（`shared/constitution.md`正本＋host delta）・本憲章の原則・orchestrate（統括の型）・02_models.md（役割→モデル対応の唯一の参照点）・01_project-layout.md（フォルダ構成標準）\n- **同期ハブ**: install.sh が skill / command / agents / rule / bin / 罠DB を全端末へ symlink 配布。GitHub が真実の源\n- **知識台帳**: rag/（調査の複利棚）・docs/（決定と計画）。罠DB は Caveat 自身が管理（`~/.caveat/own` → private の Caveat-Private・v0.15+。dotagents 外）",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
+      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する。Latticeがdigestで束縛した既存のroot receiptだけはpathを動かさず`evidence`へ分類し、新しい証拠は`docs/evidence/`へ置く（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
     },
     {
       "receiver_path": "docs/00_overview.md",
@@ -215,7 +215,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "- **役目を終えた文書は docs/archive/ へ退避**し、docs/ 直下は生きた文書だけに保つ。本憲章の旧版は [docs/archive/2026-07_plan-v3-fable-era.md](docs/archive/2026-07_plan-v3-fable-era.md)。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
+      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する。Latticeがdigestで束縛した既存のroot receiptだけはpathを動かさず`evidence`へ分類し、新しい証拠は`docs/evidence/`へ置く（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -224,7 +224,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- **工場管理対象11製品**: 自作コア10製品＝Caveat（罠知識）・Throughline（セッション継続）・Spotter（未使用ツール監査）・Lattice（工程graphとコード構造理解）・gpt-connector（ChatGPT接続）・aiterm-mcp（PTYと外部モデル枠）・codex-sidecar（Claude親からのCodex実行）・AIShell（macOS native開発面）・Observer（親watchと監査）・ServerManager（中央運用管理）。MarkItDownは自作コアではなく、公開CLIだけを使う第三者管理製品。LatticeはCodegraphを完全吸収した正式後継で、独立Codegraphはretired／not_applicableの履歴だけを保持する。Claude Code CLI・Codex CLI・Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用。BugHubはServerManager内部コンポーネント（[Lattice編入記録](docs/archive/plan_lattice-factory-integration.md)・[Observer編入記録](docs/archive/plan_observer-core-integration.md)）。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 現役管理対象は自作コア11製品（Caveat、Throughline、Spotter、Lattice、gpt-connector、aiterm-mcp、codex-sidecar、AIShell、ServerManager、peertable、unai）と、公開CLIだけをblack-box管理する第三者製品MarkItDownの計12製品である。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
+      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は各製品のversion入口・診断・adapter・禁止事項を所有する。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
     },
     {
       "receiver_path": "docs/02_models.md",

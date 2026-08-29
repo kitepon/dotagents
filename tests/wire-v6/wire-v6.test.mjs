@@ -14,7 +14,7 @@ const EXPECTED = [...V5_PRODUCT_IDS];
 test('v6正典はObserverをwire必須キーから外し、MarkItDownを第三者管理として固定する', async () => {
   const contracts = await readFile(resolve(import.meta.dirname, '../../docs/factory-product-contracts.md'), 'utf8');
   const matrix = await readFile(resolve(import.meta.dirname, '../../docs/factory-host-product-matrix.md'), 'utf8');
-  assert.match(contracts, /^# 工場管理\d+製品＋基盤toolchain 3製品/mu);
+  assert.match(contracts, /^# 工場管理製品と基盤toolchainの有限契約台帳$/mu);
   assert.match(contracts, /### `markitdown`[\s\S]*所有\/修正先: 第三者/u);
   assert.match(contracts, /### `observer`[\s\S]*wire v6\/v7の製品キーから削除/u);
   assert.doesNotMatch(matrix, /^\| Observer \|/mu);
@@ -22,7 +22,7 @@ test('v6正典はObserverをwire必須キーから外し、MarkItDownを第三�
   assert.doesNotMatch(contracts, /Observerは予約枠のまま未編入/u);
 });
 
-test('agents-updateのpost-update gateはconfigのwire majorへ追従し、解決不能時は現役v8で明示失敗させる', async () => {
+test('agents-updateのpost-update gateはconfigのwire majorへ追従し、生成された現役v8で明示失敗させる', async () => {
   const source = await readFile(resolve(import.meta.dirname, '../../bin/agents-update.sh'), 'utf8');
   // hostの実configのendpointからmajorを解決する（host別段階cutover中のendpoint/runner食い違い対策）
   assert.match(source, /api\\\/factory\\\/\(v\[0-9\]\+\)\\\/reports/u);
@@ -34,11 +34,16 @@ test('agents-updateのpost-update gateはconfigのwire majorへ追従し、解�
     resolve(import.meta.dirname, '../../docs/factory-reporter-runbook.md'),
     'utf8',
   );
+  const currentState = await readFile(
+    resolve(import.meta.dirname, '../../docs/factory-current-state.md'),
+    'utf8',
+  );
   // 全hostのv8 cutover後も、実configのendpoint確認とv7/v6 rollback手順を維持する。
   // updaterのmajor解決は固定majorでなくconfigに追従するため、この両面を検証する。
-  assert.match(runbook, /本番BugHubの入口はwire v8/u);
-  assert.match(runbook, /いずれも`\/api\/factory\/v8\/reports`を使う/u);
-  assert.match(runbook, /`reporting\.endpoint`を確認する/u);
+  assert.match(currentState, /\| 現役wire \| v8（schema `8\.0`、15製品） \|/u);
+  assert.match(currentState, /\| 本番BugHub endpoint \| `\/api\/factory\/v8\/reports` \|/u);
+  assert.match(runbook, /本番BugHubの入口は\[工場の現行状態\]/u);
+  assert.match(runbook, /`reporting\.endpoint`を同ページと照合する/u);
   assert.match(runbook, /--wire-major v6/u);
   assert.match(runbook, /schema_version="6\.0"/u);
   assert.doesNotMatch(runbook, /通常経路はpayload `schema_version="4\.0"`/u);

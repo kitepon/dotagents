@@ -6,7 +6,7 @@
 **決定:** [ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)
 **契約:** [s1合意（決定45、peertable repo `docs/plan.md`）](https://github.com/kitepon-rgb/peertable)
 
-> **現在状態（2026-08-29）:** 現役は[wire v8](wire-v8-design.md)の固定15製品で、v7はhost別rollback先である。
+> **現在状態:** 現役とrollback先は[工場の現行状態](factory-current-state.md)を参照する。
 > v7の必須集合は固定14製品（v5の13＋`peertable`、`observer`なし）のまま凍結し、
 > `FACTORY_V7_INGEST_ENABLED=true`とendpoint・state/outboxをrollback用に維持する。
 > [wire v6](wire-v6-design.md)はv7からの二段目rollback先として維持する。
@@ -17,7 +17,7 @@
 
 ## 1. 新しいwire majorが必要な理由
 
-現役wire v6は固定14製品を完全報告する契約であり、`additionalProperties: false`とexact-key検証により
+設計時点の現役wire v6は固定14製品を完全報告する契約であり、`additionalProperties: false`とexact-key検証により
 未知の製品キーを拒否する。peertableをv6へ暗黙追加することは、同じversion文字列のschemaを事後変更する
 契約破壊になる（Observer編入時にwire v5へ足さずwire v6を起こした理由と同型）。よってpeertableは
 新しいwire v7へ編入し、v6は履歴として凍結する。

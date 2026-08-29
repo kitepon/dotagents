@@ -53,6 +53,7 @@ Claude と Codex と Grok と Cursor が全端末・全プロジェクトで従�
 - **外部サービスの可用性・到達性の断定は、単一経路・単一試行を根拠にせず、再試行または独立経路の確認だけを根拠にする。**
 - **テストは薄く速く**: 実装中は変更に直結するfocused testだけを回し、完了時に関連testを1回確認して閉じる。full regressionは統括レーンのPhase gateとCI必須gateだけ。変わっていないgreen testを「念のため」再実行しない。
 - **調査と出力を還流させる**: 調べた外部仕様・文献は`rag/`へ、価値ある出力（回答・監査ダイジェスト・図解）は内容に応じて`rag/`または`docs/`へ還流して複利で育てる。保存手順（MarkItDown化・raw/コンパイル分離・出典/取得日/確度・INDEX追記）と月次衛生は knowledge-return runbook に従う。
+- **変動する現行値を散文へ複製しない**: 製品集合・現役version・endpointなど変更で動く値は、所有repoの構造化正本か、そこから作る生成物だけに置く。現行案内は生成物を参照し、履歴・証拠を現在の案内として使わない。文書分類・生成・drift検証を持つrepoでは、文書変更と同じcommitでそのgateを通す。
 - **方針級の発見はその場で正典へ**: 作業中に見つけた規約・作法・罠対処は、会話や端末メモリに置いて終わらせず、その場でプロジェクトの AGENTS.md／CLAUDE.md／docsへ反映する。全project共通の規範はdotagentsの`shared/constitution.md`またはhost deltaへ反映する。端末メモリには端末固有情報とポインタだけ残す。
 - **規範文書は判断だけを正本化する**: 規則は「XはYだけ／それ以外はZ」の肯定制限文で書き、共通事項は共通正本・host固有はdeltaだけに置く。書き方の詳細（置かないもの・受け皿の選び方・読者面の実測）は canon-authoring runbook に従う。
 - **ルールを作るのは系統的欠陥だけ**: ルールは問題を防ぐ対価に自由と最高性能の発揮を削る。作ってよいのは、複数の優秀な個体が独立に同じ失敗をした時（＝モデル共通の欠陥）だけ。機械・配線の欠陥はルールでなく実装を直し、個別の判断ミスは記録（申し送り・罠DB）までとする。機械的な閾値・形式基準でAIの判断を代行しない——正典が与えるのは判断の語彙と基準の言葉まで（オーナー裁定 2026-08-09。判定の詳細は canon-authoring runbook）。
@@ -87,7 +88,7 @@ Claude と Codex と Grok と Cursor が全端末・全プロジェクトで従�
 - **並行エージェント作業中の commit は必ず pathspec 明示**（対象だけ `git add` して直後に `git status` 確認、または `git commit -- <paths>`）。裸の `git commit` は他エージェントが stage した変更を巻き込む。
 - コミットメッセージの渡し方・自作repositoryのowner区分（quolu→kitepon移管）は git-hygiene runbook に従う。
 - 通常のpushを完遂に含めるのは、project正典または恒久裁定がpush既定を定めるrepoだけ。それ以外のrepoでのpushと、force系・履歴改変・共有ブランチの巻き戻しは、目的・影響・戻し方を短く説明してから行う。黙って・復旧反射では使わない。
-- push既定を認定できるのは、(a)適用中のrepo直下のAGENTS.md／CLAUDE.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、(b)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと自作コア11製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、(c)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。
+- push既定を認定できるのは、(a)適用中のrepo直下のAGENTS.md／CLAUDE.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、(b)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと製品契約台帳で自作コアに分類された製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、(c)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。
 - **publish・本番deployの対象commitは、所有repoの既定ブランチの祖先だけとする**。祖先でない成果は先に既定ブランチへ着地させてから出す（実行前に `git merge-base --is-ancestor <commit> origin/<既定>` で確認）。着地しないまま出すと、そのブランチが取り残された時点で公開物が後続releaseから消え、統合契約だけが存在しない面を指し続ける。
 - **未commit差分が乗ったpathへのworktree破棄形git操作（`checkout --`／`checkout .`／`restore`／`clean -f`系／`--hard`系reset／`stash drop|clear`）は、patch保存またはstash退避を済ませた後だけ**。一時変更の復元にworktree破棄形を反射で使わない（実被弾 2026-08-15: 復元反射の`checkout --`で未commit実装を消失。物理ゲートはdotagentsのgit-destroy-gate hook）。
 - **`rsync --delete` の前に必ず `-n -v` の dry-run**（削除一覧と秘密混入の確認。gitignore済み資産の扱いは git-hygiene runbook）。
