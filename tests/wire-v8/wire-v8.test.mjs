@@ -92,11 +92,11 @@ test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影す�
   const root = await mkdtemp(join(tmpdir(), 'wire-v8-unai-')); const bin = join(root, 'bin'); await mkdir(bin);
   t.after(() => rm(root, { recursive: true, force: true }));
   const previous = process.env.PATH; process.env.PATH = bin; t.after(() => { process.env.PATH = previous; });
-  const missing = await unaiProduct({ cwd: root, now: NOW });
+  const missing = await unaiProduct({ cwd: root, now: NOW, platform: 'darwin' });
   assert.equal(missing.presence_status, 'missing');
   const cli = join(bin, 'unai'); await writeFile(cli, `#!/bin/sh\necho '${JSON.stringify(readyDiagnostic())}'\n`); await chmod(cli, 0o755);
   process.env.PATH = `${bin}${delimiter}${previous}`;
-  const installed = await unaiProduct({ cwd: root, now: NOW });
+  const installed = await unaiProduct({ cwd: root, now: NOW, platform: 'darwin' });
   assert.equal(installed.presence_status, 'installed');
   assert.equal(installed.compatibility_status, 'compatible');
 });
