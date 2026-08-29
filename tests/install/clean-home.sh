@@ -138,6 +138,7 @@ for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mc
   ln -s "$FACTORY_TEST_BIN/$factory_cli" "$SUPPORTED_WINDOWS_HOST_BIN/$factory_cli"
 done
 ln -s "$(command -v node)" "$SUPPORTED_WINDOWS_HOST_BIN/node"
+ln -s "$(command -v python3)" "$SUPPORTED_WINDOWS_HOST_BIN/python3"
 chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/uname"
 mkdir -p "$WINDOWS_UNAI_HOME/.local/bin"
 printf 'Write-Output "unai fixture"\n' >"$WINDOWS_UNAI_HOME/.local/bin/unai.ps1"
