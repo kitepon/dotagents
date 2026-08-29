@@ -44,12 +44,13 @@ canon migration verifierは56 entries pass。
 - bounded command runnerが停止命令の直後に結果を返し、子プロセスの終了を確定していなかった。最初に観測した`output_limit`／`timeout`を固定し、プロセスの`close`まで待ってから返すよう修正した。
 - POSIXで親プロセスだけを停止して子を残す欠陥を修正し、外部commandを独立process groupで起動してgroup全体を停止する契約へ揃えた。
 - Windowsの子プロセス停止を`200ms以内`の副作用有無で判定していた試験を廃止した。実CLIと同じNode親子で子PIDの消滅を直接確認し、Git Bashの擬似forkを製品挙動と混同しないfixtureへ直した。Mac・Windowsでfocused testを10回連続、factory scan関連testを各1回実行し、いずれも失敗ゼロだった。
+- POSIXの終了確認がPIDの消滅だけを合格とし、WSL2で終了済みprocessが一時的にzombieとして残る状態を実行中と誤判定していた。PIDの有無に加えてprocess stateを確認し、不存在またはzombieだけを終了済みとして受理するよう修正した。Mac・WSL2でfocused testを20回連続、Macでfactory scan関連92 testを1回実行し、失敗ゼロだった。
 
 ## 反証と受入
 
 - 旧wire、旧製品数、Observerを含む記述を再検索した。ADR、完了済みhandoff、互換試験など、
   当時の事実として明示された履歴は改変せず、現行入口だけをv8へ揃えた。
-- dotagents 4 host full CI: <https://github.com/kitepon/dotagents/actions/runs/33259822035>
+- dotagents 4 host full CI: <https://github.com/kitepon/dotagents/actions/runs/33261743180>
 - 30分上限の正典追記に対する文書CI: <https://github.com/kitepon/dotagents/actions/runs/33251000305>
 - 最終Windows実配布後にBugHub readinessとdelivery更新を再確認した。
 - Windows正規入口の実行ID`d97c594a-1522-4edc-b649-e346ac3a5bf8`と、そこから実際に
@@ -57,10 +58,10 @@ canon migration verifierは56 entries pass。
   定期実行後のAiterm 0.29.6を含む15製品smokeはpassした。
 - 4 hostのreportを同じ鮮度窓へ同期し、BugHub readinessのdatabase、schema、pull poll、
   factory ingest、factory delivery、source revisionがすべてpassすることを確認した。
-- 最終report IDはMac `8e35d147-a1a7-4c1d-beb2-927518688891`、main-server
-  `99d8f3b1-5f64-47ed-9fcc-dfc6d2198867`、FOX WSL2
-  `4046d2a7-5cc1-4cdb-8d58-648e9d251e3f`、FOX Windows native
-  `10c8bd84-0053-444e-b3d9-01a393a9420d`で、全て送信・delivery受理済み。
+- 最終report IDはMac `bb26c4fe-d6f8-4b98-8b6e-2e67dd03798a`、main-server
+  `6f0032c5-74f0-402a-bc90-5c3db5ac0ff2`、FOX WSL2
+  `1bffeec5-0e74-4307-ba54-b08e17ca2e4d`、FOX Windows native
+  `d35c81c4-6a24-4273-9c38-23b72ea1aa45`で、全て送信・delivery受理済み。
 
 ## 結論
 
