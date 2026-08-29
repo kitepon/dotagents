@@ -21,7 +21,20 @@ core="$source_dir/../lib/orchestrate/advisory-hook.py"
 [ -f "$core" ] && [ ! -L "$core" ] || exit 0
 
 if [ "${OS:-}" = "Windows_NT" ]; then
-  python=$(command -v python 2>/dev/null) || exit 0
+  local_app_data=$(/usr/bin/cygpath -u "${LOCALAPPDATA:-}" 2>/dev/null) || exit 0
+  program_files=$(/usr/bin/cygpath -u "${ProgramFiles:-C:\\Program Files}" 2>/dev/null) || exit 0
+  program_files_x86=$(/usr/bin/cygpath -u "${ProgramFiles_x86:-C:\\Program Files (x86)}" 2>/dev/null) || exit 0
+  python=
+  for candidate in \
+    "$local_app_data"/Programs/Python/Python*/python.exe \
+    "$program_files"/Python*/python.exe \
+    "$program_files_x86"/Python*/python.exe; do
+    if [ -f "$candidate" ] && [ ! -d "$candidate" ] && [ -x "$candidate" ]; then
+      python=$candidate
+      break
+    fi
+  done
+  [ -n "$python" ] || exit 0
   core=$(cygpath -m "$core") || exit 0
   invoked_dir=$(cygpath -m "$invoked_dir") || exit 0
   source_dir=$(cygpath -m "$source_dir") || exit 0
