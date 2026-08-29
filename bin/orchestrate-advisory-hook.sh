@@ -25,6 +25,7 @@ if [ "${OS:-}" = "Windows_NT" ]; then
   program_files=$(/usr/bin/cygpath -u "${ProgramFiles:-C:\\Program Files}" 2>/dev/null) || exit 0
   program_files_x86=$(/usr/bin/cygpath -u "${ProgramFiles_x86:-C:\\Program Files (x86)}" 2>/dev/null) || exit 0
   python=
+  set +f
   for candidate in \
     "$local_app_data"/Programs/Python/Python*/python.exe \
     "$program_files"/Python*/python.exe \
@@ -34,6 +35,7 @@ if [ "${OS:-}" = "Windows_NT" ]; then
       break
     fi
   done
+  set -f
   [ -n "$python" ] || exit 0
   core=$(cygpath -m "$core") || exit 0
   invoked_dir=$(cygpath -m "$invoked_dir") || exit 0
