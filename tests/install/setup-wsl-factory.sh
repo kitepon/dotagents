@@ -219,6 +219,13 @@ for command_name in npm uv gpt-connector aiterm-mcp codex-sidecar-mcp peertable-
 exit 0
 EOF
 done
+cat >"$STUB_BIN/npm" <<'EOF'
+#!/usr/bin/env bash
+if [ "${1:-}" = prefix ] && [ "${2:-}" = -g ]; then
+  CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd
+fi
+exit 0
+EOF
 cat >"$STUB_BIN/throughline" <<'EOF'
 #!/usr/bin/env bash
 printf 'throughline %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"

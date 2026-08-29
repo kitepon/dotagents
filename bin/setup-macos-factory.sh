@@ -278,16 +278,30 @@ ensure_managed_commands() {
   local -a commands=(caveat throughline spotter lattice markitdown gpt-connector
     aiterm-mcp codex-sidecar-mcp peertable-client unai)
   supports_aishell && commands+=(aishell-mcp)
-  local command_name missing=0
+  local command_name package_name npm_bin npm_prefix
   for command_name in "${commands[@]}"; do
-    if ! command -v "$command_name" >/dev/null 2>&1; then
-      echo "INFO: factory managed commandを更新で補完する: $command_name"
-      missing=1
-    fi
+    command -v "$command_name" >/dev/null 2>&1 && continue
+    echo "INFO: factory managed commandを公式経路で補完する: $command_name"
+    case "$command_name" in
+      caveat) package_name=caveat-cli ;;
+      throughline) package_name=throughline ;;
+      spotter) package_name=claude-spotter ;;
+      lattice) package_name=@quolu/lattice ;;
+      gpt-connector) package_name=gpt-connector ;;
+      aiterm-mcp) package_name=aiterm-mcp ;;
+      codex-sidecar-mcp) package_name=codex-sidecar-mcp ;;
+      peertable-client) package_name=peertable ;;
+      aishell-mcp) package_name=@quolu/aishell ;;
+      markitdown) uv tool install markitdown; continue ;;
+      unai) "$ROOT/bin/install-unai.sh"; continue ;;
+    esac
+    npm install -g "$package_name"
   done
-  if [ "$missing" -eq 1 ]; then
-    "$ROOT/bin/agents-update.sh"
-  fi
+  npm_prefix="$(npm prefix -g)" || die 'npm global prefixを取得できない'
+  case "$npm_prefix" in /*) ;; *) die 'npm global prefixが絶対pathでない' ;; esac
+  npm_bin="$npm_prefix/bin"
+  [ -d "$npm_bin" ] || die "npm global binがない: $npm_bin"
+  export PATH="$npm_bin:$PATH"
   for command_name in "${commands[@]}"; do
     need "$command_name"
   done
