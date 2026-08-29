@@ -466,12 +466,26 @@ test('command出力上限とtimeoutは固定reasonで失敗し、生出力を返
   const box = await sandbox(t);
   await box.script('noisy', 'while :; do echo x; done');
   await box.script('slow', 'while :; do :; done');
-  const marker = join(box.root, 'late-marker');
-  const shellMarker = process.platform === 'win32'
-    ? marker.replace(/^([A-Za-z]):\\/u, (_, drive) => `/${drive.toLowerCase()}/`).replaceAll('\\', '/')
-    : marker;
-  await box.script('late', `sleep 0.2; echo late > '${shellMarker}'`);
+  const childPidFile = join(box.root, 'child.pid');
   const env = { ...process.env, PATH: `${box.bin}${delimiter}${process.env.PATH}` };
+  let lateCommand = 'late';
+  let lateEnv = env;
+  if (process.platform === 'win32') {
+    const native = await windowsCommandFixture(t);
+    const childCode = `require('node:fs').writeFileSync(${JSON.stringify(childPidFile)}, String(process.pid)); process.stdout.write('ready'); setInterval(() => {}, 1000);`;
+    await native.entry('late-tree.js', `import { spawn } from 'node:child_process';
+const child = spawn(process.execPath, ['-e', ${JSON.stringify(childCode)}], { stdio: ['ignore', 'pipe', 'ignore'] });
+child.stdout.once('data', () => {
+  process.stdout.write('x'.repeat(4096));
+  setInterval(() => {}, 1000);
+});
+`);
+    await native.cmd('late-tree', 'node_modules\\safe-package\\bin\\late-tree.js');
+    lateCommand = 'late-tree';
+    lateEnv = native.env;
+  } else {
+    await box.script('late', `sleep 60 & child=$!; echo "$child" > '${childPidFile}'; while :; do echo x; done`);
+  }
 
   const noisy = await runCommand('noisy', [], { env, maxOutputBytes: 128, timeoutMs: 1000 });
   assert.deepEqual({ reason: noisy.reason, stdout: noisy.stdout, stderr: noisy.stderr }, {
@@ -481,10 +495,12 @@ test('command出力上限とtimeoutは固定reasonで失敗し、生出力を返
   assert.deepEqual({ reason: slow.reason, stdout: slow.stdout, stderr: slow.stderr }, {
     reason: 'timeout', stdout: '', stderr: '',
   });
-  const late = await runCommand('late', [], { env, timeoutMs: 50 });
-  assert.equal(late.reason, 'timeout');
-  await new Promise((resolveDelay) => setTimeout(resolveDelay, 300));
-  await assert.rejects(stat(marker), { code: 'ENOENT' });
+  const late = await runCommand(lateCommand, [], { env: lateEnv, maxOutputBytes: 128, timeoutMs: 5000 });
+  assert.equal(late.reason, 'output_limit');
+  const childPid = Number.parseInt(await readFile(childPidFile, 'utf8'), 10);
+  assert.ok(Number.isSafeInteger(childPid) && childPid > 0);
+  t.after(() => { try { process.kill(childPid, 'SIGKILL'); } catch (error) { if (error?.code !== 'ESRCH') throw error; } });
+  assert.throws(() => process.kill(childPid, 0), { code: 'ESRCH' });
 });
 
 async function windowsCommandFixture(t) {
