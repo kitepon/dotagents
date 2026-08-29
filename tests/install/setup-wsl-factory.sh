@@ -246,8 +246,10 @@ printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"end
 # shellcheck disable=SC2016 # setup側へ literal `$HOME` が書かれていることを検査する＝展開させない。
 grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh" \
   || fail 'setupが ~/.local/bin をPATH先頭へ置かない'
+# shellcheck disable=SC2016 # setup側のliteral変数名を含む射影行を検査するため展開させない。
 grep -Fq 'ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"' "$ROOT/bin/setup-wsl-factory.sh" \
   || fail 'setupが公式SnapのNode系commandだけを専用dirへ射影しない'
+# shellcheck disable=SC2016 # 禁止するliteral PATH行を検査するため展開させない。
 if grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh"; then
   fail 'setupが/snap/bin全体をPATH先頭へ出す'
 fi
