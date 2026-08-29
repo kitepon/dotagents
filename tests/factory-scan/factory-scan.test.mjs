@@ -222,6 +222,11 @@ test('Caveat native diagnosticsはexitとの組合せ、DB射影、exact schema�
   }
 });
 
+test('scanはwall clockが後退してもcreated_atをobserved_atより前へ置かない', async () => {
+  const source = await readFile(resolve(import.meta.dirname, '../../lib/factory/scan.mjs'), 'utf8');
+  assert.match(source, /created_at: createdCandidate < observedAt \? observedAt : createdCandidate/u);
+});
+
 test('Caveat native diagnosticsのschema drift・追加field・path漏洩をreportへ通さない', async (t) => {
   for (const [name, mutate] of [
     ['schema', (value) => { value.schema = 'caveat.native_factory_diagnostics.v2'; }],
