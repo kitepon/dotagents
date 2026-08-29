@@ -3,7 +3,8 @@
 set -euo pipefail
 
 # install.sh 外で作る symlink fixture も Windows では native symlink にする。
-case "$(uname -s)" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict ;; esac
+TEST_HOST_OS=$(uname -s)
+case "$TEST_HOST_OS" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict ;; esac
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OFFICIAL_HOME="$(mktemp -d)"
@@ -138,15 +139,24 @@ for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mc
   ln -s "$FACTORY_TEST_BIN/$factory_cli" "$SUPPORTED_WINDOWS_HOST_BIN/$factory_cli"
 done
 ln -s "$(command -v node)" "$SUPPORTED_WINDOWS_HOST_BIN/node"
-ln -s "$(command -v python3)" "$SUPPORTED_WINDOWS_HOST_BIN/python3"
+# Git for Windowsで作るsymlinkはrunner設定により実体copyになり、python3.exeだけを
+# DLL群から切り離して起動不能にする。Pythonは公式install directoryをPATHへ残す。
+WINDOWS_VERIFY_PATH="$SUPPORTED_WINDOWS_HOST_BIN:$LATTICE_TEST_BIN:/usr/bin:/bin"
+case "$TEST_HOST_OS" in
+  MINGW*|MSYS*)
+    WINDOWS_PYTHON_BIN_DIR=$(dirname "$(command -v python3)")
+    WINDOWS_VERIFY_PATH="$SUPPORTED_WINDOWS_HOST_BIN:$WINDOWS_PYTHON_BIN_DIR:$LATTICE_TEST_BIN:/usr/bin:/bin"
+    ;;
+  *) ln -s "$(command -v python3)" "$SUPPORTED_WINDOWS_HOST_BIN/python3" ;;
+esac
 chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/uname"
 mkdir -p "$WINDOWS_UNAI_HOME/.local/bin"
 printf 'Write-Output "unai fixture"\n' >"$WINDOWS_UNAI_HOME/.local/bin/unai.ps1"
 printf '#!/usr/bin/env bash\nexit 0\n' >"$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
 chmod +x "$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
-if ! PATH="$SUPPORTED_WINDOWS_HOST_BIN:$LATTICE_TEST_BIN:/usr/bin:/bin" HOME="$WINDOWS_UNAI_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_CORE_ONLY=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$WINDOWS_UNAI_HOME/windows-unai-ps1.out" 2>&1; then
+if ! PATH="$WINDOWS_VERIFY_PATH" HOME="$WINDOWS_UNAI_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_CORE_ONLY=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$WINDOWS_UNAI_HOME/windows-unai-ps1.out" 2>&1; then
   sed -n '1,120p' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" >&2
-  fail 'Windows公式installerの固定unai.ps1をverify-installが認識しない'
+  fail 'Windows公式installer fixtureのverify-installが不合格'
 fi
 grep -Fq "factory core CLI: unai → $WINDOWS_UNAI_HOME/.local/bin/unai.ps1" "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" \
   || fail 'Windows固定unai.ps1の検出結果を表示しない'
