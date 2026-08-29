@@ -76,7 +76,9 @@ count_archives() {
 FACTORY_TEST_BIN="$(mktemp -d)"
 UNKNOWN_OS_BIN="$(mktemp -d)"
 SUPPORTED_MAC_HOST_BIN="$(mktemp -d)"
-trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN" "$FACTORY_TEST_BIN" "$UNKNOWN_OS_BIN" "$SUPPORTED_MAC_HOST_BIN"' EXIT
+SUPPORTED_WINDOWS_HOST_BIN="$(mktemp -d)"
+WINDOWS_UNAI_HOME="$(mktemp -d)"
+trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN" "$FACTORY_TEST_BIN" "$UNKNOWN_OS_BIN" "$SUPPORTED_MAC_HOST_BIN" "$SUPPORTED_WINDOWS_HOST_BIN" "$WINDOWS_UNAI_HOME"' EXIT
 for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client unai aishell-mcp; do
   printf '#!/usr/bin/env bash\nexit 0\n' >"$FACTORY_TEST_BIN/$factory_cli"
   chmod +x "$FACTORY_TEST_BIN/$factory_cli"
@@ -128,6 +130,25 @@ for missing_cli in peertable-client unai; do
   fi
   grep -q "'$missing_cli' 不在" "$OFFICIAL_HOME/$missing_cli.out" || fail "$missing_cli 欠落理由を出さない"
 done
+cat >"$SUPPORTED_WINDOWS_HOST_BIN/uname" <<'EOF'
+#!/usr/bin/env bash
+case "$1" in -s) printf 'MINGW64_NT-10.0\n' ;; -m) printf 'x86_64\n' ;; *) exit 64 ;; esac
+EOF
+for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client uv; do
+  ln -s "$FACTORY_TEST_BIN/$factory_cli" "$SUPPORTED_WINDOWS_HOST_BIN/$factory_cli"
+done
+ln -s "$(command -v node)" "$SUPPORTED_WINDOWS_HOST_BIN/node"
+chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/uname"
+mkdir -p "$WINDOWS_UNAI_HOME/.local/bin"
+printf 'Write-Output "unai fixture"\n' >"$WINDOWS_UNAI_HOME/.local/bin/unai.ps1"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
+chmod +x "$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
+if ! PATH="$SUPPORTED_WINDOWS_HOST_BIN:$LATTICE_TEST_BIN:/usr/bin:/bin" HOME="$WINDOWS_UNAI_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_CORE_ONLY=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$WINDOWS_UNAI_HOME/windows-unai-ps1.out" 2>&1; then
+  sed -n '1,120p' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" >&2
+  fail 'Windows公式installerの固定unai.ps1をverify-installが認識しない'
+fi
+grep -Fq "factory core CLI: unai → $WINDOWS_UNAI_HOME/.local/bin/unai.ps1" "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" \
+  || fail 'Windows固定unai.ps1の検出結果を表示しない'
 assert_stop_count() {
   "$PYTHON_BIN" - "$1" <<'PY'
 import json

@@ -119,8 +119,23 @@ raise SystemExit(0 if valid else 1)
 verify_factory_core() {
   local project_root="${DOTAGENTS_FACTORY_PROJECT_ROOT:-$REPO}"
   local aishell_supported=false
-  local cli host_profile required_product required_products runtime_os runtime_arch contract_os macos_major
-  factory_cli_present() { [ "${DOTAGENTS_FACTORY_CORE_TEST:-0}" = 1 ] && [ "${DOTAGENTS_FACTORY_MISSING_CLI:-}" = "$1" ] && return 1; command -v "$1" >/dev/null 2>&1; }
+  local cli cli_path host_profile required_product required_products runtime_os runtime_arch contract_os macos_major
+  factory_cli_path() {
+    local candidate="$1"
+    if [ "${DOTAGENTS_FACTORY_CORE_TEST:-0}" = 1 ] && [ "${DOTAGENTS_FACTORY_MISSING_CLI:-}" = "$candidate" ]; then
+      return 1
+    fi
+    if command -v "$candidate" >/dev/null 2>&1; then
+      command -v "$candidate"
+      return 0
+    fi
+    if [ "$candidate" = unai ] && [ "$host_profile" = windows-native ] \
+      && [ -f "$HOME/.local/bin/unai.ps1" ] && [ ! -L "$HOME/.local/bin/unai.ps1" ]; then
+      printf '%s\n' "$HOME/.local/bin/unai.ps1"
+      return 0
+    fi
+    return 1
+  }
   case "$(uname -s 2>/dev/null || true)" in
     Darwin) host_profile=mac ;;
     MINGW*|MSYS*|Windows_NT) host_profile=windows-native ;;
@@ -164,8 +179,8 @@ verify_factory_core() {
       servermanager) continue ;;
       *) echo "FAIL: deployment contract product が未対応: $required_product"; fail=1; continue ;;
     esac
-    if factory_cli_present "$cli"; then
-      echo "OK  factory core CLI: $cli → $(command -v "$cli")"
+    if cli_path="$(factory_cli_path "$cli")"; then
+      echo "OK  factory core CLI: $cli → $cli_path"
     else
       echo "FAIL: factory managed product CLI '$cli' 不在（host projectionでrequired）"
       fail=1
