@@ -103,6 +103,29 @@ fi`);
 echo '{"schema_version":"dotagents.bughub-external-probe.v1","product_version":"0.1.0","source_revision":"0123456789abcdef0123456789abcdef01234567","status":"ready","reason_code":"ready","checks":[{"id":"database","status":"pass","reason_code":"ready"},{"id":"schema","status":"pass","reason_code":"ready"},{"id":"pull_poll","status":"pass","reason_code":"ready"},{"id":"factory_ingest","status":"pass","reason_code":"ready"},{"id":"factory_delivery","status":"pass","reason_code":"ready"},{"id":"source_revision","status":"pass","reason_code":"revision_match"}]}'`);
 }
 
+function processState(pid) {
+  try {
+    return execFileSync('ps', ['-o', 'state=', '-p', String(pid)], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch (error) {
+    if (error?.status === 1) return '';
+    throw error;
+  }
+}
+
+function assertProcessNotRunning(pid) {
+  try {
+    process.kill(pid, 0);
+  } catch (error) {
+    if (error?.code === 'ESRCH') return;
+    throw error;
+  }
+  const state = processState(pid);
+  assert.ok(!state || state.startsWith('Z'), `子processが実行中です: state=${state}`);
+}
+
 function runScanner(box, extraEnv = {}, extraArgs = []) {
   return new Promise((done) => {
     const child = spawn(process.execPath, [
@@ -500,7 +523,11 @@ child.stdout.once('data', () => {
   const childPid = Number.parseInt(await readFile(childPidFile, 'utf8'), 10);
   assert.ok(Number.isSafeInteger(childPid) && childPid > 0);
   t.after(() => { try { process.kill(childPid, 'SIGKILL'); } catch (error) { if (error?.code !== 'ESRCH') throw error; } });
-  assert.throws(() => process.kill(childPid, 0), { code: 'ESRCH' });
+  if (process.platform === 'win32') {
+    assert.throws(() => process.kill(childPid, 0), { code: 'ESRCH' });
+  } else {
+    assertProcessNotRunning(childPid);
+  }
 });
 
 async function windowsCommandFixture(t) {
