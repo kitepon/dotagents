@@ -138,7 +138,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `verify-codex-agent-routing.sh` | Control配下の書込みWorkerのspawn後、role/model/effort/developer instructionsを検証し、親継承のsandbox実効値を観測表示 |
 | bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
 | データ | `~/.caveat/own`（dotagents 外） | 外部仕様の罠DB（caveat MCP が参照）。**v0.15+ で Caveat 自身が管理**——`~/.caveat/own` は独立 git repo で remote は private の `Caveat-Private`（全端末同期）。public 部分集合は `caveat publish` で `Caveat-Public` にミラー。dotagents は所有しない |
-| 自作コア11製品 | Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／ServerManager／peertable／unai（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。peertableはwire v7、unaiはwire v8で全4現役hostへ編入する |
+| 自作コア11製品 | Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／ServerManager／peertable／unai（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。peertableはwire v7、unaiはwire v8で全4現役hostへ編入済み |
 | 第三者管理製品 | MarkItDown | 自作コアではなく、公開CLIだけをblack-box管理する資料変換器。fork・内部patchは行わない |
 | 基盤toolchain | Claude Code CLI／Codex CLI／Grok Build | コア製品とは別区分。Oracleはv1互換・rollback専用。Mac自前 Desktop と main-server 自前 AFK は overlay で、正典は [docs/factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md) |
 | 中央管理コア | ServerManager（dotagents 外） | 自作コア11製品に含まれる中央運用管理製品。内部のBugHubをversion・bug・compatibility結果の統括に使い、BugHubを独立製品へ分離しない |
