@@ -609,11 +609,13 @@ try {
   Ensure-CodexMcp -Name 'gpt_connector' -Command 'gpt-connector-mcp'
   Ensure-CodexMcp -Name 'lattice' -Command 'lattice-mcp'
 
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'kitepon-rgb') -Label 'github-auth-switch'
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
   $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'
   if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
     Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'
   } else {
-    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'git@github.com:kitepon-rgb/Caveat-Private.git') -Label 'caveat-sync-init'
+    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'https://github.com/kitepon-rgb/Caveat-Private.git') -Label 'caveat-sync-init'
   }
 
   # verify-install.sh

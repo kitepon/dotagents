@@ -308,10 +308,12 @@ ensure_managed_commands() {
 }
 
 ensure_caveat_sync() {
+  gh auth switch --hostname github.com --user kitepon-rgb
+  gh auth setup-git
   if [ -d "$HOME/.caveat/own/.git" ]; then
     caveat sync
   else
-    caveat sync --init --repo git@github.com:kitepon-rgb/Caveat-Private.git
+    caveat sync --init --repo https://github.com/kitepon-rgb/Caveat-Private.git
   fi
 }
 

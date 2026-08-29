@@ -131,7 +131,11 @@ cat >"$STUB_BIN/docker" <<'EOF'
 EOF
 cat >"$STUB_BIN/gh" <<'EOF'
 #!/usr/bin/env bash
-[ "${1:-} ${2:-}" = 'auth status' ]
+printf 'gh %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
+case "${1:-} ${2:-}" in
+  'auth status'|'auth switch'|'auth setup-git') exit 0 ;;
+  *) exit 1 ;;
+esac
 EOF
 cat >"$STUB_BIN/sw_vers" <<'EOF'
 #!/usr/bin/env bash
@@ -313,8 +317,12 @@ grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展�
 grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
 grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
 grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-macos-factory.sh" || fail 'caveat init を非対話にしない'
-grep -Fq 'caveat sync --init --repo git@github.com:kitepon-rgb/Caveat-Private.git' "$ROOT/bin/setup-macos-factory.sh" \
-  || fail 'Caveat-Privateの初回同期が非対話SSH経路でない'
+grep -Fq 'gh auth switch --hostname github.com --user kitepon-rgb' "$ROOT/bin/setup-macos-factory.sh" \
+  || fail 'Caveat-Private同期前に工場ownerへ切り替えない'
+grep -Fq 'gh auth setup-git' "$ROOT/bin/setup-macos-factory.sh" \
+  || fail 'Caveat-Private同期前にGitHub HTTPS credential helperを配線しない'
+grep -Fq 'caveat sync --init --repo https://github.com/kitepon-rgb/Caveat-Private.git' "$ROOT/bin/setup-macos-factory.sh" \
+  || fail 'Caveat-Privateの初回同期が公式HTTPS経路でない'
 grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
 grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
 grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
