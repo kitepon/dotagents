@@ -20,6 +20,8 @@
   できた製品に限り、そのpackage managerの標準キャッシュを使う。
 - 共通workflowは実行環境の論理CPU数を`FACTORY_CI_JOBS`として渡す。製品の標準test runnerが
   自身の並列度を決め、工場側は製品固有の並列flagを強制しない。
+- 共通workflowのjob上限は30分とする。Windows nativeでは同じfull commandが20分を超えることを
+  実測済みであり、全環境一律20分の上限を性能gateとして使わない。
 - runnerに必要な標準toolchainを常備し、個人用PATHや特殊な端末状態を前提にしない。runnerが
   見えない時やtoolchainが欠けた時に別の実行面へ迂回せず、工場側の失敗として明示する。
 
