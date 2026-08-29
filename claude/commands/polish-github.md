@@ -2,13 +2,15 @@
 description: GitHub OSS の見栄え（メタデータ / README / Release / 画像 / 図 / CI バッジ）を整える。最初に監査だけして選択肢を提示し、ユーザーの GO 後に着手。
 ---
 
-<!-- 前提: 2026-07 検証。依存は gh CLI・GitHub 仕様が主。画像生成は実行時の MCP/Skill 検出ベース（固定名依存なし）。Codex 版 codex/skills/polish-github は本ファイル（正本）を読む薄いポインタ＝一本化済み（2026-07-04） -->
+<!-- 前提: 2026-07 検証、2026-08-29 改訂（主言語判断点・topics基準・仕上げ確認・AI読者入口・Cursor Origin）。依存は gh CLI・GitHub 仕様が主。画像生成は実行時の MCP/Skill 検出ベース（固定名依存なし）。Codex 版 codex/skills/polish-github は本ファイル（正本）を読む薄いポインタ＝一本化済み（2026-07-04） -->
 
 このリポジトリの GitHub 上の見栄えを整え、最初の訪問者が「何で何が嬉しいか」を 5 秒で掴めるようにする。
 
 ## 進め方
 
-最初に **現状監査** だけ実行し、結果と「何を直すか」の選択肢を効果 / コスト表でユーザーに提示する。
+**最初に主言語を決める**: README・説明文の主言語（英語か日本語か）はスキルが決め打ちしない。ユーザー指定があればそれに従い、無ければ対象読者から推定して監査提示時に確認を取る（世界向けなら英語主、日本語話者向けの製品なら日本語主）。主言語で本 README を書き、他言語版は `README.<lang>.md` をサブとして相互リンクする。以降の「多言語版」は決めた主言語を前提に読み替える。
+
+次に **現状監査** だけ実行し、結果と「何を直すか」の選択肢を効果 / コスト表でユーザーに提示する。
 ユーザーが GO サインを出してから着手する。「全部やれ」と来たらまとめて進めて良い。
 不可逆操作（push / Release 作成 / repo 設定変更 / tag push / Settings 書き換え）は事前に一言告知してから実行。
 
@@ -21,7 +23,7 @@ gh repo view --json nameWithOwner,defaultBranchRef,description,homepageUrl,repos
 ```
 
 - `description` が古いバージョンの説明で止まっていないか
-- `topics` が付いているか（最低 8〜13 個推奨、検索流入のため）
+- `topics` が付いているか（検索キーワードとして機能する語で、ドメイン・言語・カテゴリ・関連エコシステムを覆えているかで判断する。数の下限基準は置かない。上限 20）
 - `homepageUrl` が空欄でないか（npm / docs サイト / デモ等）
 - `latestRelease` の tag が実装の最新と乖離していないか
 - Custom OG image があるか（無ければ作成提案）
@@ -42,12 +44,19 @@ gh api repos/{owner}/{repo} --jq '{visibility,has_issues,has_projects,has_wiki,h
 - Projects / Wiki / Discussionsは空の入口を惰性で有効化せず、READMEから案内できる運用先だけを残す
 - 公開repoでlicenseが無い状態は「利用条件未提示」として見栄えより先に明示する。license種類は推測せずユーザー裁定を得る
 
+### 1.7. AI 読者の入口
+
+README は人間だけでなく AI（要約・評価・導入判断を行うアシスタント）が読む対象になっている（2026 現在の公式・業界共通認識）。
+
+- AI エージェント向けの機械可読な入口（`AGENTS.md` / `CLAUDE.md` / `.github/copilot-instructions.md` 等）が、そのプロジェクトの利用形態に照らして必要かを判断する。agent skill・MCP サーバー・開発ツールは効果が大きく、純粋なライブラリは README が正確なら不要なことも多い
+- 冒頭の 1 行 pitch が「AI が要約しても誤らない」記述か（比喩だけの pitch は AI 経由の紹介で歪む）
+
 ### 2. README の構造
 
 - 冒頭が長文ステータス段落で始まっていないか（5 秒で掴める 1 行 pitch があるか）
 - 「30 秒で何ができるか」の使用例があるか
 - 競合との比較表（似たツール / 既存手段との差分）があるか
-- 主作者の母語に応じた多言語版（例: `README.ja.md` / `README.zh.md`）があるか
+- 主言語（冒頭で決めたもの）以外の読者向けサブ版（例: `README.ja.md` / `README.en.md`）があるか、相互リンクされているか
 - 過去のバージョン履歴やレガシーな長文が hero を圧迫していないか（折りたたむべきか）
 
 ### 3. README 内の図
@@ -87,6 +96,14 @@ git log --oneline -30
 - 各release tagがdefault branchの祖先か。`git merge-base --is-ancestor <tag> <default-branch>`が非0なら、Release不足ではなく履歴整合問題として分離する
 - annotated / lightweight tag、tagが指すcommit、default branchとの差分を実物で確認する
 - tagのforce更新や付け替えは履歴改変として扱い、通常のRelease作成に混ぜず、影響とrollbackを説明して明示承認を得る
+
+### 7. Cursor Origin との併用（該当 repo のみ）
+
+repo が Cursor Origin（origin.cursor.com）と同期・併用されている場合:
+
+- 公開の顔（README 描画・topics・Social preview・検索流入・star）は当面 GitHub 側にしか無い（Origin は初期β・チーム向け作業面。2026-08 実測）。見栄え整備の対象は GitHub のままでよい
+- 同期モード（Sync from GitHub）の repo は Origin への push が GitHub へ素通しされるため、見栄え整備の commit をどちらの remote から送っても公開面に届く
+- Origin は初期βで機能が動くため、公開面・topics 相当・共有画像相当が Origin に生えていないかを**使う時点で再確認**し、生えていたら本節を実測で更新する
 
 ## 監査後にユーザーに出す提示形式
 
@@ -133,7 +150,7 @@ git log --oneline -30
 - **責任範囲を明確化**: 「自分の変更で壊れたもの」と「元から壊れてた既存問題」を区別し、後者は独立タスクとしてユーザーの判断を仰ぐ
 
 ### Release
-- **Release notes は CHANGELOG から流用**: あれば該当バージョンセクションをコピー。無ければ `git log <prev>..<this>` から生成提案を作る
+- **Release notes は CHANGELOG から流用**: あれば該当バージョンセクションをコピー。無ければ `gh release create --generate-notes`（GitHub 自動生成）か `git log <prev>..<this>` からの生成提案を使う
 - **`--latest` フラグ**: 最新の安定版にだけ付ける。古いバージョンを後追いで作る時は付けない
 
 ### OG バナー / Social preview
@@ -171,6 +188,15 @@ git log --oneline -30
 - **プロジェクトの性格と画像派手さをマッチさせる**: 監査 §4 の区分に対して、画像が過剰だと逆ブランディング、控えめ過ぎると放置感。区分 A（硬派系）で派手 hero + 装飾アイコン + アニメ GIF はノイズになりやすい。区分 D（創造系）で素っ気ない README は機会損失
 - **メンテ負債を避ける**: 風化する画像（UI スクショ / バージョン番号入り / コード連動の図）は意識的に選ぶ。**変わりにくい所**から作る。リリース告知 GIF を毎回作るコストを取れるかは別途判断
 - **ベース画像 + 文字差し替えの再利用**: バージョンごとの告知画像は AI 画像生成 MCP の edit 系でテンプレ化、毎回新規生成しない
+
+### 仕上げの確認（書いて終わりにしない）
+
+変更を push した後、GitHub 上の実際の見え方を確認してから完了とする:
+
+- README の描画（WebFetch か browser で repo ページを開く）: 画像が表示されるか、mermaid がレンダされるか、リンク切れが無いか、バッジが生きているか
+- 変更した description / topics が repo ページに反映されているか
+- Release を作った場合は Release ページの notes 描画
+- 崩れていたら直してから完了報告する。「push したので多分表示されている」で閉じない
 
 ## 完了報告に含めるもの
 
