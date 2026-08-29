@@ -1,6 +1,6 @@
 # 工場 host × product 期待matrix
 
-更新日: 2026-08-24
+更新日: 2026-08-29
 正本: dotagents
 対象: Mac、main-server、FOX WSL2、FOX Windows native
 
@@ -31,6 +31,7 @@ presenceと分離してその面だけを理由付き`unsupported`にする（gp
 | AIShell | required（Apple Silicon / macOS 15+） | unsupported（macOS native API不在） | unsupported（同左） | unsupported（同左） | high（対応Macのみ） |
 | ServerManager | not_applicable | required | not_applicable | not_applicable | high（main-serverのみ） |
 | peertable | required（client。実測済み） | required（server。`deploy/compose.yaml`でcompose常駐） | required（client。2026-08-10実測済み） | required（client。2026-08-10実測済み） | high |
+| unai | required | required | required | required | high |
 | Claude Code CLI | required | required | required | unsupported | high |
 | Codex CLI | required | required | required | required | high |
 | Grok Build | optional | optional | optional | optional | info |
@@ -56,6 +57,7 @@ Cursor親列はWave 1〜6の実測を書く。工場の4席は全部本線。こ
 | AIShell | MCP `aishell` required（Apple Silicon / macOS 15+のみ）。`AISHELL_CAPABILITY_SET=expanded-v1`で登録し、工場監視はpath非露出の`AISHELL_TOOL_PROFILE=factory`を使う | 同左 | MCP required（Apple Silicon / macOS 15+のみ。Wave 5 Mac `01a0091e` connected）。他hostはunsupported（WSL2 / Windows / Linux は typed `spawn_failed`） | MCP required（Apple Silicon / macOS 15+のみ。Wave 3 apply）。他hostはunsupported |
 | ServerManager | connector not_applicable | connector not_applicable | connector not_applicable | connector not_applicable |
 | peertable | team編成時（peertable setup）だけMCP `room` required。teardownで解除 | 同左 | 円卓は Windows native で利用可（2026-08-16 席対応修理後）。Grok親は room MCP を持たない（親は peertable skill の HTTP API で着卓）。room MCP は setup した席（Claude／Codex）だけ。Wave 2「roomはClaude面のまま」は失効 | 円卓は peertable skill の HTTP API で着卓。Cursor親の工場MCPに room は持たない。room MCP は setup した席（Claude／Codex）だけ |
+| unai | skill required。共通指示の一行で全文章仕事へ適用 | skill required。同左 | skill required。同左 | skill required。同左。`cursor/rules/factory.mdc`も常時適用面 |
 
 独立Codegraphは全hostで退役済みであり、製品・connector期待matrixへ含めない。BugHubの既存履歴だけを
 `not_applicable`として保持する。Latticeの`codegraph_*` tool名はLattice所有の入力互換ABIであり、
@@ -90,7 +92,7 @@ FOX WSL2のGitHub Actions runner標準Nodeは、OpenJS Foundation公式Snapの`n
 
 | host | 一撃展開 | 定期更新 | 実host受入 |
 |---|---|---|---|
-| Mac | `setup-macos-factory.sh` | LaunchAgent `com.kite.agents-update`、毎週月曜04:00 | `verify-install`、14製品、fresh v7 delivery |
-| main-server | `setup-linux-factory.sh` | cron `# dotagents-agents-update-linux`、毎日02:00 | `server` profile、ServerManager local readiness/revision、14製品、fresh v7 delivery |
-| FOX WSL2 | `setup-wsl-factory.sh` | cron `# dotagents-agents-update-wsl`、毎日02:00 | batch token、14製品、fresh v7 delivery |
-| FOX Windows native | `pwsh.exe -File setup-windows-native-factory.ps1`（PowerShell 7必須） | Task `dotagents-agents-update`、毎日02:00。actionも`pwsh.exe` | 実Task smoke、終了code、14製品、fresh v7 delivery |
+| Mac | `setup-macos-factory.sh` | LaunchAgent `com.kite.agents-update`、毎週月曜04:00 | `verify-install`、15製品、fresh v8 delivery |
+| main-server | `setup-linux-factory.sh` | cron `# dotagents-agents-update-linux`、毎日02:00 | `server` profile、ServerManager local readiness/revision、15製品、fresh v8 delivery |
+| FOX WSL2 | `setup-wsl-factory.sh` | cron `# dotagents-agents-update-wsl`、毎日02:00 | batch token、15製品、fresh v8 delivery |
+| FOX Windows native | `pwsh.exe -File setup-windows-native-factory.ps1`（PowerShell 7必須） | Task `dotagents-agents-update`、毎日02:00。actionも`pwsh.exe` | 実Task smoke、終了code、15製品、fresh v8 delivery |

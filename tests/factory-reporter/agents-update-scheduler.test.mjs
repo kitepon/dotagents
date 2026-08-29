@@ -75,7 +75,7 @@ test('fixture SIDは非Windows install dry-runだけを受理する', async () =
 
 test('delivery receiptは未配送・古いreceipt・token不一致を拒否し、同一batchの受理だけ通す', async () => {
   const { assertDeliveryReceipt, DELIVERY_RECEIPT_SCHEMA } = await import('../../lib/factory/delivery-receipt.mjs');
-  const token = '11111111-1111-4111-8111-111111111111'; const report = { schema_version: '7.0', report_id: 'new-report' };
+  const token = '11111111-1111-4111-8111-111111111111'; const report = { schema_version: '8.0', report_id: 'new-report' };
   const valid = { schema: DELIVERY_RECEIPT_SCHEMA, report_id: 'new-report', batch_token: token };
   assert.throws(() => assertDeliveryReceipt({ report, priorReportId: 'old-report', receipt: null, batchToken: token }));
   assert.throws(() => assertDeliveryReceipt({ report, priorReportId: 'new-report', receipt: valid, batchToken: token }));
@@ -83,7 +83,7 @@ test('delivery receiptは未配送・古いreceipt・token不一致を拒否し�
   assert.equal(assertDeliveryReceipt({ report, priorReportId: 'old-report', receipt: valid, batchToken: token }), true);
 });
 
-test('scheduled runnerは実行ごとのbatch tokenと今回のv7 delivery receiptを必須にする', async () => {
+test('scheduled runnerは実行ごとのbatch tokenと今回のv8 delivery receiptを必須にする', async () => {
   const source = await readFile(join(ROOT, 'bin', 'agents-update-schedule-runner.mjs'), 'utf8');
   assert.match(source, /randomUUID\(\)/u);
   assert.match(source, /FACTORY_REPORTER_RUNNER/u);

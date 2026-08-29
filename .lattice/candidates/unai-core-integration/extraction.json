@@ -1,0 +1,185 @@
+{
+  "schema": "lattice.todo_extraction.v4",
+  "project_id": "dotagents",
+  "plan_key": "unai-core-integration",
+  "plan_version": "v1",
+  "actor": {
+    "host": "mac-kite",
+    "session": "codex-root-unai-20260829",
+    "agent": "bell"
+  },
+  "recorded_at": "2026-08-29T08:32:39.000Z",
+  "tasks": [
+    {
+      "task_id": "unai-001",
+      "title": "unai自身へversion・native diagnostics・導入検証を実装する",
+      "lane": "implementation",
+      "design_memo": "対象repoはkitepon/unai。plugin.jsonのversionを単一正本として、人と工場が同じ公開入口からversionとmachine-readable diagnosticsを取得できる最小CLIを追加する。diagnosticsはskill実体、manifest整合、5 host向けsymlink状態をread-onlyで返し、secret・絶対path・文書本文を出さない。installerはCLIも冪等配布し、focused testと隔離HOME install smokeを追加する。既存のreview/refactor/write規範とrepo pathは変更しない。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["オーナーの2026-08-29依頼によりunaiを正式コア製品へ編入する。"]
+      }
+    },
+    {
+      "task_id": "unai-002",
+      "title": "dotagentsへunai adapter・wire v8・導入更新契約を追加する",
+      "lane": "implementation",
+      "design_memo": "対象repoはdotagents。歴史wire v2-v7を変更せず、固定product集合へunaiを加えるwire v8を追加する。unaiのnative diagnosticsだけをexact validationし、内部stateを推測しない。deployment contract、4 host setup、verify-install、scheduler/update、privacy fixture、schema validator、focused testsを同期する。ServerManager v8 endpointが未配備の間はv7を壊さず、cutover工程でのみcurrentをv8へ進める。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["wire v7以前は履歴互換として変更しない。"]
+      }
+    },
+    {
+      "task_id": "unai-003",
+      "title": "ServerManager/BugHubへwire v8 endpointとunai期待matrixを追加する",
+      "lane": "implementation",
+      "design_memo": "対象repoはmain-server上の/home/kite/ServerManagerだけ。Macの/Users/kite/Developer/ServerManagerはread-onlyとする。wire v7 endpointと履歴validatorを保持し、v8 endpoint・schema・unai product mapping・host expectation・view/reconciliation/version lifecycle testを追加する。BugHubは集約と期待判定だけを行い、unai source/stateを書き換えない。commit・push後は正規deploy-pi5入口で配備しreadinessを確認する。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["ServerManager変更はmain-serverの正規checkoutだけで行う。"]
+      }
+    },
+    {
+      "task_id": "unai-004",
+      "title": "unaiをreleaseして4 hostへ正規導入する",
+      "lane": "deployment",
+      "design_memo": "unaiの既定ブランチ祖先・focused/full gate・version整合を確認し、独立commitとGitHub pushを行う。Git配布製品なので既存versionを上書きせずmanifest versionを更新し、Claude marketplaceとinstall.shの公開mainを正規配布面とする。Mac/main-server/FOX WSL2/FOX Windows nativeへ公式installer経路で導入し、各hostでversion・native diagnostics・skill symlinkを実測する。repo移動・改名は行わない。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["公開前にversion・影響・rollbackを明示する。"]
+      }
+    },
+    {
+      "task_id": "unai-005",
+      "title": "BugHub wire v8をserver-firstで全host cutoverする",
+      "lane": "deployment",
+      "design_memo": "ServerManager v8 endpointを先に配備し、v7とv8を並存確認してからdotagents current wireをv8へ切り替える。4 hostのfactory setup/update入口でfresh v8 deliveryを送信し、unaiのpresence/compatibilityと他15製品の非回帰をBugHubで実測する。失敗時はv7 currentへの独立revertと既存endpoint継続がrollbackで、旧v7は削除しない。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["server-first、v7/v8並存、全host fresh deliveryの順を守る。"]
+      }
+    },
+    {
+      "task_id": "unai-006",
+      "title": "正典同期・関連gate・最終監査・知識還流を閉じる",
+      "lane": "acceptance",
+      "design_memo": "有限契約台帳、host/connector matrix、README、AGENTS/PLAN/shared constitutionと生成物、factory CI runbookの製品集合を実装事実へ同期する。各repoのfocused/related gate後にfull regressionを一度だけ実行する。公開契約と本番操作を独立反証し、受入matrix・回帰結果・host delivery evidence・最終Decisionを不変証跡へ残してControlとLattice phaseを閉じる。非目標はunaiの校正規範拡張、既存製品の修理、repo移動・改名。",
+      "narrative_ref": "README.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "README.md",
+        "origin_line": 156,
+        "source_commit": "2130667a56875b15d326f887d7447ce484a3cbb8",
+        "heading_path": ["工場コア製品の変更管理"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: unai-core-integration",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": ["要求外のunai機能拡張とrepo移動は行わない。"]
+      }
+    }
+  ],
+  "hard_dependencies": [],
+  "joins": [],
+  "extraction_digest": "960c58d39a019dac2410e2c2a8a639897d5c64e51a706dd3fd900255d6fe67de"
+}

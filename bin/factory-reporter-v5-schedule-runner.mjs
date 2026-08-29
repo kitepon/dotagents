@@ -14,7 +14,7 @@ import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
 const INVOKED = basename(process.argv[1] || '');
-const WIRE_MAJOR = INVOKED.includes('factory-reporter-v7') ? 'v7' : INVOKED.includes('factory-reporter-v6') ? 'v6' : 'v5';
+const WIRE_MAJOR = INVOKED.includes('factory-reporter-v8') ? 'v8' : INVOKED.includes('factory-reporter-v7') ? 'v7' : INVOKED.includes('factory-reporter-v6') ? 'v6' : 'v5';
 process.env.PATH = extendedSchedulerPath({ platform: platform(), path: process.env.PATH, execPath: process.execPath, home: homedir() });
 function statePath() { return platform() === 'win32' ? join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`) : join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`); }
 function platformMatches(profile) { return (platform() === 'darwin' && profile === 'mac') || (platform() === 'linux' && ['server', 'wsl'].includes(profile)) || (platform() === 'win32' && profile === 'windows-native'); }
@@ -164,7 +164,7 @@ try {
         if (!postUpdate && (config.collection.enabled || (finalizeUpdate && config.reporting.enabled))) await run(`factory-reporter-${WIRE_MAJOR}.mjs`, ['enqueue', '--config', configPath, '--report', reportPath, '--ack-metadata', acks]);
       }
       if (config.reporting.enabled) await run(`factory-reporter-${WIRE_MAJOR}.mjs`, ['flush', '--config', configPath]);
-      if (finalizeUpdate && WIRE_MAJOR === 'v7' && config.reporting.enabled && latestReport) await writeDeliveryReceipt(state, latestReport.report_id);
+      if (finalizeUpdate && ['v7', 'v8'].includes(WIRE_MAJOR) && config.reporting.enabled && latestReport) await writeDeliveryReceipt(state, latestReport.report_id);
       if (finalizeUpdate) process.stdout.write(`${JSON.stringify({ ok: true, finalized: true })}\n`);
       else if (failures.length) {
         process.stdout.write(`${JSON.stringify({ ok: false, post_gate_status: 'failed', failed_checks: failures.length })}\n`);

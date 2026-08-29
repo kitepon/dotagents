@@ -6,11 +6,10 @@
 **決定:** [ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)
 **契約:** [s1合意（決定45、peertable repo `docs/plan.md`）](https://github.com/kitepon-rgb/peertable)
 
-> **現在状態（2026-08-18）:** 必須キーから`observer`を削除し、現行v7は固定14製品（v5の13＋`peertable`）。
-> 編入時の15キー集合は履歴。client・serverとも実装・deploy済み、`FACTORY_V7_INGEST_ENABLED=true`。
-> **全4現役host（mac-kite・main-server・fox-wsl・windows-workstation）がwire v7で報告中**。
-> 各hostで実送信・gate success・BugHub matrixのcontract_version 7.0を実測済み。
-> [wire v6](wire-v6-design.md)はhost別rollback先として維持する（v6 state/outboxと退避configは各hostに保存済み）。
+> **現在状態（2026-08-29）:** 現役は[wire v8](wire-v8-design.md)の固定15製品で、v7はhost別rollback先である。
+> v7の必須集合は固定14製品（v5の13＋`peertable`、`observer`なし）のまま凍結し、
+> `FACTORY_V7_INGEST_ENABLED=true`とendpoint・state/outboxをrollback用に維持する。
+> [wire v6](wire-v6-design.md)はv7からの二段目rollback先として維持する。
 
 本書はwire v7の契約を所有する。wire v6踏襲のserver-first・dual-run設計を維持し、
 実装（`lib/factory/v7.mjs`・`lib/factory/contract.mjs`配線・tests・privacy fixture・`bin/factory-reporter-v7.mjs`等）と

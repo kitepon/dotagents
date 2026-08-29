@@ -13,12 +13,34 @@ trap 'rm -rf "$TEST_HOME" "$EMPTY_HOME"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
-mkdir -p "$TEST_HOME/.nvm/fake-bin" "$TEST_HOME/base-bin" "$TEST_HOME/npm-global/bin" "$TEST_HOME/shadow-bin"
+mkdir -p "$TEST_HOME/.nvm/fake-bin" "$TEST_HOME/base-bin" "$TEST_HOME/npm-global/bin" "$TEST_HOME/shadow-bin" "$TEST_HOME/.local/bin"
 mkdir -p "$TEST_HOME/system-bin"
 for command_path in /bin/date /bin/mkdir /usr/bin/tee "$(command -v readlink)" "$(command -v node)" "$(command -v uname)"; do
   [ -x "$command_path" ] || fail "test prerequisite がない: $command_path"
   ln -s "$command_path" "$TEST_HOME/base-bin/${command_path##*/}"
 done
+cat > "$TEST_HOME/.local/bin/curl" <<'EOF'
+#!/bin/sh
+output=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) output=$2; shift 2 ;;
+    *) shift ;;
+  esac
+done
+[ -n "$output" ] || exit 64
+printf ':\n' > "$output"
+/bin/cat > "$HOME/.local/bin/unai" <<'UNAI'
+#!/bin/sh
+case "$*" in
+  --version) printf '0.2.0\n' ;;
+  'factory-diagnostics --json') printf '%s\n' '{"schema":"unai.native_factory_diagnostics.v1","product":{"name":"unai","version":"0.2.0"},"overall":"ready","checks":{"manifest_consistency":"pass","node_runtime":"pass","skill_bundle":"pass"}}' ;;
+  *) exit 64 ;;
+esac
+UNAI
+/bin/chmod +x "$HOME/.local/bin/unai"
+EOF
+chmod +x "$TEST_HOME/.local/bin/curl"
 cat > "$TEST_HOME/.nvm/nvm.sh" <<'EOF'
 PATH="$NVM_DIR/fake-bin:$PATH"
 export PATH

@@ -12,24 +12,40 @@ import {
   readAndValidateReportV5,
   readAndValidateReportV6,
   readAndValidateReportV7,
+  readAndValidateReportV8,
   readConfig,
   validateReportV5,
   validateReportV6,
   validateReportV7,
+  validateReportV8,
 } from '../lib/factory/contract.mjs';
 import {
   acknowledgeRuntimeErrorsV5,
   acknowledgeRuntimeErrorsV6,
   acknowledgeRuntimeErrorsV7,
+  acknowledgeRuntimeErrorsV8,
   validateAcknowledgementBundleV5,
   validateAcknowledgementBundleV6,
   validateAcknowledgementBundleV7,
+  validateAcknowledgementBundleV8,
 } from '../lib/factory/runtime-errors.mjs';
 
 const INVOKED = basename(process.argv[1] || '');
 const IS_V6 = INVOKED.includes('factory-reporter-v6');
 const IS_V7 = INVOKED.includes('factory-reporter-v7');
-const WIRE = IS_V7
+const IS_V8 = INVOKED.includes('factory-reporter-v8');
+const WIRE = IS_V8
+  ? {
+      major: 'v8',
+      endpoint: '/api/factory/v8/reports',
+      state: 'factory-reporter-v8',
+      outboxSchema: 'dotagents.factory-outbox.v8',
+      readReport: readAndValidateReportV8,
+      validateReport: validateReportV8,
+      validateAcknowledgements: validateAcknowledgementBundleV8,
+      acknowledgeRuntimeErrors: acknowledgeRuntimeErrorsV8,
+    }
+  : IS_V7
   ? {
       major: 'v7',
       endpoint: '/api/factory/v7/reports',

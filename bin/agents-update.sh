@@ -41,7 +41,8 @@ LOG="$LOG_DIR/agents-update.log"
 # post-update gateのrunnerは、hostの実configが指すwire majorへ追従させる（env明示が最優先）。
 # 固定既定にするとhost別段階cutover中のhostでrunnerとendpointのmajorが食い違う
 # （2026-08-10実測: mac-kiteをv7へcutover後、v6固定既定のままだとflushがendpoint不一致で落ちる）。
-# configが無い・endpointが読めない場合はv6へ倒す（未cutover hostの従来挙動を変えない）。
+# configが無い・endpointが読めない場合は現役v8 runnerを選ぶ。runner側はconfig欠落を
+# 明示失敗にするため、旧majorへ暗黙fallbackしない。
 if [ -z "${FACTORY_REPORTER_RUNNER:-}" ]; then
   reporter_wire_major="$(node -e '
     try {
@@ -51,7 +52,7 @@ if [ -z "${FACTORY_REPORTER_RUNNER:-}" ]; then
     } catch {}
     process.exit(1);
   ' "$FACTORY_REPORTER_CONFIG" 2>/dev/null)" || reporter_wire_major=""
-  [ -z "$reporter_wire_major" ] && reporter_wire_major=v6
+  [ -z "$reporter_wire_major" ] && reporter_wire_major=v8
   FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-${reporter_wire_major}-schedule-runner"
 fi
 script_source="${BASH_SOURCE[0]}"
@@ -219,6 +220,12 @@ fi
       printf 'FAILED: MarkItDown uv tool install\n'
       update_failed=1
     fi
+  fi
+
+  printf -- '--- unai:official-installer ---\n'
+  if ! "$BASH" "$SCRIPT_DIR/install-unai.sh"; then
+    printf 'FAILED: unai official installer\n'
+    update_failed=1
   fi
 
   # Grok Build は npm 管理ではない。公開された stable JSON check だけを使い、

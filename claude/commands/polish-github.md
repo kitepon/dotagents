@@ -1,5 +1,5 @@
 ---
-description: GitHub OSS の見栄え（メタデータ / README / Release / 画像 / 図 / CI バッジ）を整える。最初に監査だけして選択肢を提示し、ユーザーの GO 後に着手。
+description: GitHub OSS の見栄え（メタデータ / README / Release / 画像 / 図 / CI バッジ）を整える。主言語を決めてから監査だけ行い、選択肢を提示してユーザーの GO 後に着手。
 ---
 
 <!-- 前提: 2026-07 検証、2026-08-29 改訂（主言語判断点・topics基準・仕上げ確認・AI読者入口・Cursor Origin）。依存は gh CLI・GitHub 仕様が主。画像生成は実行時の MCP/Skill 検出ベース（固定名依存なし）。Codex 版 codex/skills/polish-github は本ファイル（正本）を読む薄いポインタ＝一本化済み（2026-07-04） -->

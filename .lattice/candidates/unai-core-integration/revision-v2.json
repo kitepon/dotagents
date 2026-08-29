@@ -1,0 +1,156 @@
+{
+  "schema": "lattice.todo_revision.v1",
+  "project_id": "dotagents",
+  "plan_key": "unai-core-integration",
+  "predecessor": {
+    "plan_digest": "7083ff77e1861ac4d7ec2984aa89ab86cf3ea0e9098589ee5e730beade41b9c3",
+    "journal_head_digest": "d18e6d5f51d4e9733303da58d8f0b51e84810b2b14a6e8bf1e71d267c8a14415",
+    "plan_version": "v1"
+  },
+  "desired_plan": {
+    "schema": "lattice.todo_plan.v6",
+    "project_id": "dotagents",
+    "plan_key": "unai-core-integration",
+    "predecessor_plan_digest": "7083ff77e1861ac4d7ec2984aa89ab86cf3ea0e9098589ee5e730beade41b9c3",
+    "tasks": [
+      {
+        "compile_binding": null,
+        "design_memo": "対象repoはkitepon/unai。plugin.jsonのversionを単一正本として、人と工場が同じ公開入口からversionとmachine-readable diagnosticsを取得できる最小CLIを追加する。diagnosticsはskill実体、manifest整合、5 host向けsymlink状態をread-onlyで返し、secret・絶対path・文書本文を出さない。installerはCLIも冪等配布し、focused testと隔離HOME install smokeを追加する。既存のreview/refactor/write規範とrepo pathは変更しない。",
+        "lane": "implementation",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-001",
+        "title": "unai自身へversion・native diagnostics・導入検証を実装する"
+      },
+      {
+        "compile_binding": null,
+        "design_memo": "対象repoはdotagents。歴史wire v2-v7を変更せず、固定product集合へunaiを加えるwire v8を追加する。unaiのnative diagnosticsだけをexact validationし、内部stateを推測しない。deployment contract、4 host setup、verify-install、scheduler/update、privacy fixture、schema validator、focused testsを同期する。ServerManager v8 endpointが未配備の間はv7を壊さず、cutover工程でのみcurrentをv8へ進める。",
+        "lane": "implementation",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-002",
+        "title": "dotagentsへunai adapter・wire v8・導入更新契約を追加する"
+      },
+      {
+        "compile_binding": null,
+        "design_memo": "対象repoはmain-server上の/home/kite/ServerManagerだけ。Macの/Users/kite/Developer/ServerManagerはread-onlyとする。wire v7 endpointと履歴validatorを保持し、v8 endpoint・schema・unai product mapping・host expectation・view/reconciliation/version lifecycle testを追加する。BugHubは集約と期待判定だけを行い、unai source/stateを書き換えない。commit・push後はmain-serverの/home/kite/ServerManager/bughubで./deploy.shのdry-run、続けて./deploy.sh --applyを実行しreadinessを確認する。BUGHUB_HOSTの既定はlocalで、deploy-pi5はBugHub配備に使わない。",
+        "lane": "implementation",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-003",
+        "title": "ServerManager/BugHubへwire v8 endpointとunai期待matrixを追加する"
+      },
+      {
+        "compile_binding": null,
+        "design_memo": "unaiの既定ブランチ祖先・focused/full gate・version整合を確認し、独立commitとGitHub pushを行う。Git配布製品なので既存versionを上書きせずmanifest versionを更新し、Claude marketplaceとinstall.shの公開mainを正規配布面とする。Mac/main-server/FOX WSL2/FOX Windows nativeへ公式installer経路で導入し、各hostでversion・native diagnostics・skill symlinkを実測する。repo移動・改名は行わない。",
+        "lane": "deployment",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-004",
+        "title": "unaiをreleaseして4 hostへ正規導入する"
+      },
+      {
+        "compile_binding": null,
+        "design_memo": "ServerManager v8 endpointを先に配備し、v7とv8を並存確認してからdotagents current wireをv8へ切り替える。4 hostのfactory setup/update入口でfresh v8 deliveryを送信し、unaiのpresence/compatibilityと他15製品の非回帰をBugHubで実測する。失敗時はv7 currentへの独立revertと既存endpoint継続がrollbackで、旧v7は削除しない。",
+        "lane": "deployment",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-005",
+        "title": "BugHub wire v8をserver-firstで全host cutoverする"
+      },
+      {
+        "compile_binding": null,
+        "design_memo": "有限契約台帳、host/connector matrix、README、AGENTS/PLAN/shared constitutionと生成物、factory CI runbookの製品集合を実装事実へ同期する。各repoのfocused/related gate後にfull regressionを一度だけ実行する。公開契約と本番操作を独立反証し、受入matrix・回帰結果・host delivery evidence・最終Decisionを不変証跡へ残してControlとLattice phaseを閉じる。非目標はunaiの校正規範拡張、既存製品の修理、repo移動・改名。",
+        "lane": "acceptance",
+        "narrative_anchor": null,
+        "narrative_ref": "README.md",
+        "parent_task_id": null,
+        "task_id": "unai-006",
+        "title": "正典同期・関連gate・最終監査・知識還流を閉じる"
+      }
+    ],
+    "hard_dependencies": [],
+    "joins": [],
+    "plan_version": "rev-183b3552a5b04de8834bd959",
+    "topology_digest": "9bafa0b5b4af7214f419d4f6725230c4bd8dbb95d40c97e6b41b962484bf213d",
+    "plan_digest": "107446f6e648272e2d46ec07f60ddc60dbe893660539e902a59404fbbb22e670"
+  },
+  "task_migration": [
+    {
+      "from_task_id": "unai-001",
+      "to_task_id": "unai-001",
+      "state_policy": "carry"
+    },
+    {
+      "from_task_id": "unai-002",
+      "to_task_id": "unai-002",
+      "state_policy": "carry"
+    },
+    {
+      "from_task_id": "unai-003",
+      "to_task_id": "unai-003",
+      "state_policy": "reset_pending"
+    },
+    {
+      "from_task_id": "unai-004",
+      "to_task_id": "unai-004",
+      "state_policy": "reset_pending"
+    },
+    {
+      "from_task_id": "unai-005",
+      "to_task_id": "unai-005",
+      "state_policy": "reset_pending"
+    },
+    {
+      "from_task_id": "unai-006",
+      "to_task_id": "unai-006",
+      "state_policy": "reset_pending"
+    }
+  ],
+  "source_inventory": {
+    "active": [
+      {
+        "task_id": "unai-001",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L1",
+        "source_digest": "1a7e43d46ba61ca04f7b629036394a2f502d2a8582d3a71e436dc2ae1c63d582"
+      },
+      {
+        "task_id": "unai-002",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L2",
+        "source_digest": "52181cf92798254bddb2b1fbed2c6c5ccd321b82598f81d08c34b76ea7e49f8f"
+      },
+      {
+        "task_id": "unai-003",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L3",
+        "source_digest": "60e716555704181dd2a71193050f02e35b50f2fbaffd633f5a5692095c529ed8"
+      },
+      {
+        "task_id": "unai-004",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L4",
+        "source_digest": "d9cd497af63ec06499d6be429f9c02938b1fd3ee052ed2c0ceddc25c1b827256"
+      },
+      {
+        "task_id": "unai-005",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L5",
+        "source_digest": "cb191709922f0cf646b2021ba0a38375a71aa298fc88465c6a047f24e48cf24b"
+      },
+      {
+        "task_id": "unai-006",
+        "source_ref": ".lattice/candidates/unai-core-integration/revision-source.md#L6",
+        "source_digest": "9db0cb80115972db7ba76654ecc461ac32698ff2ed741c460efae03dbb470580"
+      }
+    ],
+    "excluded_tombstones": []
+  },
+  "reconciliation": {
+    "predecessor_reconciliation_digest": "1323b32f75ce62a1aa1a40c356eb092a04a451ed31428aa813c6cf07f8cbaa98",
+    "source_inventory_digest": "3d225559abc3e4716f399f52e920391ad8954aeb5da87ef7cd235f958e230149",
+    "reconciliation_digest": "49febf89ef058f9ceeff92a81953923b501d999e8dd3f49a60d0b76c9d1682a2"
+  },
+  "revision_digest": "117bf2c21c97cadba5fe93cc517c9d458d3c5b9e521098e6c36e5ad5eca5d7ac"
+}

@@ -74,10 +74,20 @@ cat >"$FIXTURE_ROOT/bin/verify-install.sh" <<'EOF'
 printf 'verify-install %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 printf 'verify-install: OK\n'
 EOF
+cat >"$FIXTURE_ROOT/bin/install-unai.sh" <<'EOF'
+#!/usr/bin/env bash
+mkdir -p "$HOME/.local/bin"
+printf 'install-unai\n' >>"$DOTAGENTS_SETUP_TEST_CALLS"
+cat >"$HOME/.local/bin/unai" <<'UNAI'
+#!/usr/bin/env bash
+exit 0
+UNAI
+chmod +x "$HOME/.local/bin/unai"
+EOF
 cat >"$FIXTURE_ROOT/bin/agents-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-state="$HOME/.local/state/dotagents/factory-reporter-v7"
+state="$HOME/.local/state/dotagents/factory-reporter-v8"
 log_dir="$HOME/.local/state/agents-update"
 mkdir -p "$state" "$log_dir"
 sequence_file="$state/fixture-sequence"
@@ -91,7 +101,7 @@ const fs = require('fs');
 const [output, reportId] = process.argv.slice(2);
 const required = [
   'caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector',
-  'aiterm-mcp', 'codex-sidecar', 'peertable', 'claude-code', 'codex-cli', 'grok-build',
+  'aiterm-mcp', 'codex-sidecar', 'peertable', 'unai', 'claude-code', 'codex-cli', 'grok-build',
 ];
 const products = Object.fromEntries(required.map((id) => [id, {
   presence_status: 'installed', compatibility_status: 'compatible', checks: [],
@@ -106,7 +116,7 @@ if (process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT) {
   products[process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT].presence_status = 'missing';
 }
 fs.writeFileSync(output, `${JSON.stringify({
-  schema_version: '7.0', report_id: reportId, host_profile: process.env.DOTAGENTS_SETUP_TEST_HOST_PROFILE,
+  schema_version: '8.0', report_id: reportId, host_profile: process.env.DOTAGENTS_SETUP_TEST_HOST_PROFILE,
   platform: { os: 'linux', arch: 'x64' }, products,
 })}\n`);
 NODE
@@ -218,7 +228,7 @@ chmod +x "$STUB_BIN/"*
 
 mkdir -p "$HOME_DIR/.config/dotagents"
 printf '%s\n' '.fixture-user-ignore' >"$HOME_DIR/.gitignore_global"
-printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v7/reports"}}\n' "$HOST_PROFILE" \
+printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v8/reports"}}\n' "$HOST_PROFILE" \
   >"$HOME_DIR/.config/dotagents/factory-reporter.json"
 {
   printf '%s\n' "17 * * * * /usr/bin/node /fixture/factory-reporter # dotagents-factory-reporter"
@@ -266,6 +276,7 @@ if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
   fail 'lattice hooks install --host grok を呼んだ'
 fi
 grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展開しない'
+grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
 grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
 grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-wsl-factory.sh" || fail 'caveat init を非対話にしない'
 grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
@@ -282,7 +293,7 @@ grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを�
 [ "$(grep -Fc 'agents-update ' "$CALLS")" -eq 2 ] || fail '各setup runでfresh updateを1回だけ実行しない'
 
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v7/latest-report.json")"
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
 [ "$latest_report" = fixture-report-2 ] || fail '2回目のfresh reportが作られていない'
 
 minimal_output="$(env -i \
@@ -295,10 +306,10 @@ minimal_output="$(env -i \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update)"
 grep -Fq '"delivery_acknowledged":true' <<<"$minimal_output" \
   || fail 'cron最小環境でdelivery receiptを確認しない'
-grep -Fq '"factory_products_checked":14' <<<"$minimal_output" \
-  || fail 'cron最小環境で全14製品を確認しない'
+grep -Fq '"factory_products_checked":15' <<<"$minimal_output" \
+  || fail 'cron最小環境で全15製品を確認しない'
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v7/latest-report.json")"
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
 [ "$latest_report" = fixture-report-3 ] || fail 'cron最小環境でfresh reportが作られていない'
 
 if DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=caveat \

@@ -1,13 +1,13 @@
-# 工場管理11製品＋基盤toolchain 3製品の有限契約台帳
+# 工場管理12製品＋基盤toolchain 3製品の有限契約台帳
 
-更新日: 2026-08-17。正本はdotagents。host期待状態は [factory-host-product-matrix.md](factory-host-product-matrix.md)、wire契約はServerManager `bughub/FACTORY_INTEGRATION.md`。
+更新日: 2026-08-29。正本はdotagents。host期待状態は [factory-host-product-matrix.md](factory-host-product-matrix.md)、wire契約はServerManager `bughub/FACTORY_INTEGRATION.md`。
 
 ## 共通境界
 
-- 現役管理対象は自作コア10製品（Caveat、Throughline、Spotter、Lattice、gpt-connector、aiterm-mcp、codex-sidecar、AIShell、ServerManager、peertable）と、公開CLIだけをblack-box管理する第三者製品MarkItDownの計11製品である。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、2026-08-18にwire必須キーからも外した。現役の製品・依存・配線・`products.observer`へ含めない。peertableはpeertable-onboarding campaignで編入し、H承認4件（npm 0.3.6公開・ServerManager wire v7 enroll・公開後smoke・正典の製品数更新）を2026-08-10に実行済み。wire v7 cutoverは2026-08-10に全4現役host（mac-kite・main-server・fox-wsl・windows-workstation）で完了し、各hostの実送信とBugHub matrix反映を実測済み（経緯は[H承認記録](evidence/2026-08-10-peertable-wire-v7-H-approval.md)）。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。
+- 現役管理対象は自作コア11製品（Caveat、Throughline、Spotter、Lattice、gpt-connector、aiterm-mcp、codex-sidecar、AIShell、ServerManager、peertable、unai）と、公開CLIだけをblack-box管理する第三者製品MarkItDownの計12製品である。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入する。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。
 - 現役契約はLattice `docs/01_integration-package.md`と本台帳・[factory-host-product-matrix.md](factory-host-product-matrix.md)が正、導入経緯は[docs/archive/plan_lattice-factory-integration.md](archive/plan_lattice-factory-integration.md)と[docs/archive/plan_observer-core-integration.md](archive/plan_observer-core-integration.md)が正。
-- dotagents所有の導入・更新後gate・verify-install用の機械可読な単一契約は`lib/factory/deployment-contract.mjs`である。managed 11 IDとcurrent wire v7の14 IDを分け、v2-v5の履歴集合を変更しない。v6/v7の現行必須集合から`observer`は削除する。host projectionはmatrixの`required`／`unsupported`／`not_applicable`だけを返し、profile/OS/arch/macOS majorの未知値・不整合をfail-closedにする。ServerManagerはserver profileの公開readiness/revision検証に限定する。
-- 初回導入と再適用はMacの`setup-macos-factory.sh`、Linuxの`setup-linux-factory.sh`、WSL2の`setup-wsl-factory.sh`、Windows nativeの`setup-windows-native-factory.ps1`が所有する。4入口はdeployment contractの製品集合だけを共有し、OS固有のLaunchAgent／cron／Task Scheduler、config、hook、credential、delivery receiptを混同しない。各入口は定期更新を冪等登録し、`verify-install`、固定14製品のfresh wire v7 report、BugHub delivery receiptまでを受け入れる。
+- dotagents所有の導入・更新後gate・verify-install用の機械可読な単一契約は`lib/factory/deployment-contract.mjs`である。managed 12 IDとcurrent wire v8の15 IDを分け、v2-v7の履歴集合を変更しない。host projectionはmatrixの`required`／`unsupported`／`not_applicable`だけを返し、profile/OS/arch/macOS majorの未知値・不整合をfail-closedにする。ServerManagerはserver profileの公開readiness/revision検証に限定する。
+- 初回導入と再適用はMacの`setup-macos-factory.sh`、Linuxの`setup-linux-factory.sh`、WSL2の`setup-wsl-factory.sh`、Windows nativeの`setup-windows-native-factory.ps1`が所有する。4入口はdeployment contractの製品集合だけを共有し、OS固有のLaunchAgent／cron／Task Scheduler、config、hook、credential、delivery receiptを混同しない。各入口は定期更新を冪等登録し、`verify-install`、固定15製品のfresh wire v8 report、BugHub delivery receiptまでを受け入れる。
 - Windows nativeの工場shellはPowerShell 7（`pwsh.exe`）だけとし、一撃入口・定期Task・Windows adapterは同じ実体を使う。5.1しかないhostはMicrosoft公式installer／package managerで7を導入してから再実行し、5.1／`cmd.exe`へfallbackしない。
 - コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。release gateは「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とし、AIShellの`scripts/verify-release-commit.mjs`＋`prepublishOnly`をreference実装とする。gate未実装の製品は、次にrelease作業を行うwaveで同時に導入する。
 - 工場の再現欠陥の重大度分類（P0/P1即時修理の閾値）とmaintenance wave処理は[shared/orchestrate/contract.md](../shared/orchestrate/contract.md)「Phase maintenance」が正で、本台帳へ複製しない。dotagents固有の境界: 原因と修理所有者が第三者製品または基盤toolchain本体である欠陥はdotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とし、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする（外部製品名が入力に現れるだけで範囲外へ逃がさない）。権限外変更（第三者本体のfork/patch）は範囲外として記録する。自作製品の本番deploy・credential利用・意図的障害試験は目的・影響・戻し方を記録して同一waveで進め、H承認待ちへ分解しない。
@@ -49,7 +49,7 @@
 - 所有/修正先: 自作 / `kitepon/Lattice`。version入口は`lattice --version`（`factory-diagnostics`のpackage versionと一致）。
 - project工程discovery正本: `lattice status --json`（schema `lattice.project_status.v1`、state `uninitialized|ready|active_run|invalid`、canonical store、active plan/run、`can_create_plan`、`next_action`）。`.lattice/`の有無を接続判定へ使わず、invalidをMarkdownへfallbackしない。
 - diagnostics/state正本: `lattice factory-diagnostics --json`と`lattice runtime-errors snapshot|ack ... --json`。run store、sensor index、runtime error storeはLatticeが所有し、dotagentsは直接解釈しない。コード構造面は同梱sensorと`lattice-mcp`だけから提供する。
-- 現adapter: native JSONをexact allowlistで検証し、現行wire v7の正式製品`lattice`へ射影する。BugHubは4現役hostをwire v7へenroll済み。sensorのindex不在・破損・version不整合はtyped failure／guidanceであり、外部Codegraphへfallbackしない。
+- 現adapter: native JSONをexact allowlistで検証し、現行wire v8の正式製品`lattice`へ射影する。v7はhost別rollback契約として維持する。sensorのindex不在・破損・version不整合はtyped failure／guidanceであり、外部Codegraphへfallbackしない。
 - runtime dispatch面（0.12.21〜0.12.26で公開）: request契約は`plan compile --schema --json`、executor adapter登録は`run adapter register|list`、参照controllerは配布binの`lattice-scripted-adapter`。`run_request.v1`・`executor_packet.v1`・`executor_receipt.v1`・`runtime_adapter_registration_input.v1`のJSON Schemaは配布物に同梱される。dotagentsはこれらをexact validationで消費し（`lib/orchestrate/lattice-receipt-projection.mjs`・`lattice-control-saga.mjs`）、schemaを自前で再定義しない。実dispatchの所有者はhostであり、初回駆動が効くのは配布binをlaunch argvへ明示したmanaged runだけである。
 - TODO↔runtime相関: `lattice todo bindings [--plan <key>] --json`（`lattice.todo_binding_projection.v1`）。`compile_binding`から`compiled_plan_digest`→`runtime_plan.v1`→`executor_packet.v1`→`executor_receipt.v1`を辿る。status面の現行wireは`todo_status_result.v6`（`audit_pending`に加えて`plan_notes`／`coordination`／`parallel_candidates`の工程3欄を持つ。監査待ちも工程に属する義務も、statusが答える——Lattice repoのADR 0159・0160）。dotagents側の消費者は`lib/orchestrate/lattice-projection.mjs`・`lib/orchestrate/lattice-control-saga.mjs`・`lib/lattice-hook.py`の3つで、いずれもexact key-setでv6だけを受理する。Control manifestの`external_source.contract_version`は束縛時点の履歴なので、照合はv4・v5・v6を受理する（観測schemaとは別軸。過去版は消さない）。
 - 互換: `codegraph_*` MCP tool名は入力互換名としてのみ残し、provider／sensor_owner=`lattice`とLattice系列versionを返す。独立Codegraph package、PATH command、MCP登録、daemon、SDK依存は禁止。
@@ -127,3 +127,13 @@
 - wire: v6の13製品（v5集合。observerなし）へpeertableを加えた`V7_PRODUCT_IDS`固定14製品（`lib/factory/v7.mjs`・[wire v7設計](wire-v7-design.md)・[ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)）。ServerManager/BugHubのv7 ingestはserver-firstでdeploy・`FACTORY_V7_INGEST_ENABLED=true`済みで、2026-08-10に全4現役hostのcutoverが完了した。v6はhost別rollback先として維持する。
 - release gate: `scripts/verify-release-commit.mjs`（aishell reference実装からの移植）を`prepublishOnly`へ連結済み。publish対象は既定ブランチ祖先のcleanなcommitだけに限定する。
 - 表現/禁止: room server URL・投稿token・room DB・message本文をreportへ転記しない。room DBの直接query、adapterによるmember state推測を禁止。`skill/`はpeertable repoが所有しnpm同梱で配る——dotagentsの`claude/skills/`や`install.sh`へ複製しない。
+
+### `unai`
+
+- 所有/修正先: 自作 / `kitepon/unai`。version入口: `unai --version`。`.claude-plugin/plugin.json`のversionを単一正本とする。
+- diagnostics/state正本: `unai factory-diagnostics --json`（schema `unai.native_factory_diagnostics.v1`）。`manifest_consistency`・`node_runtime`・`skill_bundle`のexact 3 checkをread-onlyで返す。文章本文、利用履歴、絶対path、secretは返さない。
+- 現adapter: `lib/factory/v8.mjs`がnative JSONをexact allowlistで検証する。`ready`＋exit 0をpass/compatible、`not_ready`＋非0をfail/incompatible、schema不正・CLI不在をunverifiedへ射影し、製品内部を推測しない。
+- 導入/更新: POSIXは公開mainの`install.sh`、Windows nativeはPowerShell 7の`install.ps1`だけを使う。dotagentsの`bin/install-unai.sh`はOSごとに公式installerを一回呼び、直後にversionとnative diagnosticsを確認する統合入口で、unai実体を複製しない。
+- 全文章仕事への適用: 共通正本`shared/constitution.md`に「文章・返答の文体はunai skillの規範に従う。」を一行だけ置き、生成物`claude/CLAUDE.md`、`codex/AGENTS.md`、`grok/AGENTS.md`、`cursor/AGENTS.md`、`cursor/rules/factory.mdc`へ同文を配る。host deltaへ別表現を重複保持しない。
+- wire: v7の固定14製品へ`unai`を加えた`V8_PRODUCT_IDS`固定15製品（`lib/factory/v8.mjs`・[wire v8設計](wire-v8-design.md)）。v7はhost別rollback先として維持し、v8 reportをv7へ変換しない。
+- 禁止: 校正対象の文章本文やvoice profileをfactory reportへ載せること。dotagentsがunaiの規範本文を複製すること。第三者installerや手動copyを正規更新面にすること。

@@ -114,6 +114,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   const cursor = await readFile(join(ROOT, "cursor/AGENTS.md"), "utf8");
   const cursorMdc = await readFile(join(ROOT, "cursor/rules/factory.mdc"), "utf8");
   const commonLines = common.split(/\r?\n/u);
+  const unaiRule = "- 文章・返答の文体はunai skillの規範に従う。";
 
   for (const heading of [
     "人格 — あなたはベル",
@@ -128,6 +129,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
     "出力衛生",
   ]) assert.match(common, new RegExp(`^## ${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"));
   assert.match(common, /repo内の変更はpush（push既定の判定はgit鉄則に従う）/);
+  assert.equal(commonLines.filter((line) => line === unaiRule).length, 1);
   assert.match(common, /通常のpushを完遂に含めるのは、project正典または恒久裁定がpush既定を定めるrepoだけ/);
   assert.match(common, /^- push既定を認定できるのは、\(a\)適用中のrepo直下のAGENTS\.md／CLAUDE\.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、\(b\)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと自作コア11製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、\(c\)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。$/m);
   assert.match(common, /^- 本節の還流・正典反映の書込みは、書込みを含む依頼・進行中campaign・明示の知識還流Phaseだけで行い、read-only指定の依頼では提案として返す。$/m);
@@ -178,6 +180,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
 
   // host deltaは共通契約を重複保持しない
   for (const delta of [claudeDelta, codexDelta, grokDelta, cursorDelta]) {
+    assert.doesNotMatch(delta, /文章・返答の文体はunai skillの規範に従う/);
     assert.doesNotMatch(delta, /project側を優先/);
     assert.doesNotMatch(delta, /委譲レーンは三つ|① native＝|external executionを積極利用/);
     assert.doesNotMatch(delta, /role定義（implementer／refuter／sorter等）をそのまま使う/);
@@ -188,5 +191,9 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
     assert.doesNotMatch(delta, /実モデルの格下げ/);
     assert.doesNotMatch(delta, /確信が持てない指摘|棄却側に倒す/);
     assert.doesNotMatch(delta, /直接編集しない/);
+  }
+
+  for (const output of [claude, codex, grok, cursor, cursorMdc]) {
+    assert.equal(output.split(/\r?\n/u).filter((line) => line === unaiRule).length, 1);
   }
 });

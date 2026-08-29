@@ -159,6 +159,7 @@ verify_factory_core() {
       caveat|throughline|spotter|lattice|markitdown|gpt-connector|aiterm-mcp) cli="$required_product" ;;
       codex-sidecar) cli=codex-sidecar-mcp ;;
       peertable) cli=peertable-client ;;
+      unai) cli=unai ;;
       aishell) cli=aishell-mcp; aishell_supported=true ;;
       servermanager) continue ;;
       *) echo "FAIL: deployment contract product が未対応: $required_product"; fail=1; continue ;;

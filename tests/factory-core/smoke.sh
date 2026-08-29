@@ -59,7 +59,7 @@ exit 64
 EOF
 chmod +x "$BIN_DIR/uv"
 
-for command in oracle gpt-connector aiterm-mcp codex-sidecar-mcp lattice aishell-mcp peertable-client; do
+for command in oracle gpt-connector aiterm-mcp codex-sidecar-mcp lattice aishell-mcp peertable-client unai; do
   cat > "$BIN_DIR/$command" <<'EOF'
 #!/bin/sh
 [ "$1" = --version ] && exit 0
@@ -173,7 +173,7 @@ mv "$BIN_DIR/spotter" "$BIN_DIR/spotter.off"
 assert_rejected 'spotter CLI 欠落'
 mv "$BIN_DIR/spotter.off" "$BIN_DIR/spotter"
 
-for command in aiterm-mcp codex-sidecar-mcp lattice peertable-client; do
+for command in aiterm-mcp codex-sidecar-mcp lattice peertable-client unai; do
   mv "$BIN_DIR/$command" "$BIN_DIR/$command.off"
   assert_rejected "$command CLI 欠落"
   mv "$BIN_DIR/$command.off" "$BIN_DIR/$command"

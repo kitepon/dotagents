@@ -77,7 +77,7 @@ FACTORY_TEST_BIN="$(mktemp -d)"
 UNKNOWN_OS_BIN="$(mktemp -d)"
 SUPPORTED_MAC_HOST_BIN="$(mktemp -d)"
 trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN" "$FACTORY_TEST_BIN" "$UNKNOWN_OS_BIN" "$SUPPORTED_MAC_HOST_BIN"' EXIT
-for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client aishell-mcp; do
+for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client unai aishell-mcp; do
   printf '#!/usr/bin/env bash\nexit 0\n' >"$FACTORY_TEST_BIN/$factory_cli"
   chmod +x "$FACTORY_TEST_BIN/$factory_cli"
 done
@@ -120,8 +120,7 @@ cat >"$SUPPORTED_MAC_HOST_BIN/sw_vers" <<'EOF'
 printf '15.1.0\n'
 EOF
 chmod +x "$SUPPORTED_MAC_HOST_BIN/uname" "$SUPPORTED_MAC_HOST_BIN/sw_vers"
-# shellcheck disable=SC2043 # 欠落CLIの検査対象は列挙であり、現在1件でも増減する。
-for missing_cli in peertable-client; do
+for missing_cli in peertable-client unai; do
   if PATH="$SUPPORTED_MAC_HOST_BIN:$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$OFFICIAL_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" DOTAGENTS_FACTORY_MISSING_CLI="$missing_cli" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$OFFICIAL_HOME/$missing_cli.out" 2>&1; then
     fail "$missing_cli 欠落をverify-installが通した"
   fi
@@ -441,11 +440,14 @@ verify "$OFFICIAL_HOME" official
 assert_link "$OFFICIAL_HOME/.local/bin/factory-reporter" "$ROOT/bin/factory-reporter.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-reporter-v6" "$ROOT/bin/factory-reporter-v6.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-reporter-v6-schedule-runner" "$ROOT/bin/factory-reporter-v6-schedule-runner.mjs"
+assert_link "$OFFICIAL_HOME/.local/bin/factory-reporter-v8" "$ROOT/bin/factory-reporter-v8.mjs"
+assert_link "$OFFICIAL_HOME/.local/bin/factory-reporter-v8-schedule-runner" "$ROOT/bin/factory-reporter-v8-schedule-runner.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-external-event" "$ROOT/bin/factory-external-event.mjs"
 [ -x "$OFFICIAL_HOME/.local/bin/factory-external-event" ] || fail 'factory-external-event が実行可能でない'
 HOME="$OFFICIAL_HOME" "$OFFICIAL_HOME/.local/bin/factory-external-event" status --json | grep -Fq '"high_watermark":0' || fail '配布factory-external-eventを直接実行できない'
 assert_link "$OFFICIAL_HOME/.local/bin/factory-scan" "$ROOT/bin/factory-scan.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-scan-v6" "$ROOT/bin/factory-scan-v6.mjs"
+assert_link "$OFFICIAL_HOME/.local/bin/factory-scan-v8" "$ROOT/bin/factory-scan-v8.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/orchestrate-run" "$ROOT/bin/orchestrate-run.mjs"
 [ -x "$OFFICIAL_HOME/.local/bin/orchestrate-run" ] || fail 'orchestrate-run が実行可能でない'
 help_json="$(node "$OFFICIAL_HOME/.local/bin/orchestrate-run" --help)"

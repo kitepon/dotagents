@@ -9,12 +9,12 @@ Lattice storeが唯一の正本であり、Markdown checkboxや旧queueへ二重
 ## 現在の工場
 
 - 開発工場: dotagents
-- 自作コア10製品: Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／
-  codex-sidecar／AIShell／ServerManager／peertable。Observerは2026-08-16に工場コアから撤去
+- 自作コア11製品: Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／
+  codex-sidecar／AIShell／ServerManager／peertable／unai。Observerは2026-08-16に工場コアから撤去
 - 第三者管理製品: MarkItDown（公開CLIだけをblack-box管理）
 - 基盤toolchain: Claude Code CLI／Codex CLI／Grok Build
-- 現役factory wire: **v7・固定14製品（observerキーなし。全4現役host cutover済み・2026-08-10）**。v6はhost別rollback先として維持
-  （[wire v7設計](wire-v7-design.md)・[reporter runbook §4b](factory-reporter-runbook.md)が正）
+- 現役factory wire: **v8・固定15製品（v7集合＋unai）**。v7はhost別rollback先として維持
+  （[wire v8設計](wire-v8-design.md)・[reporter runbook §4c](factory-reporter-runbook.md)が正）
 - 独立Codegraph: retired／not_applicable。Lattice sensorが正式後継
 
 所有境界と恒久規則は[AGENTS.md](../AGENTS.md)、趣旨は[PLAN.md](../PLAN.md)、有限契約は
@@ -64,8 +64,8 @@ Tier 2機械境界wave（`fm-0687`〜`fm-0690`・2026-08-02起票・lane `canon-
 - **`agents-update`のpost-update gate既定がwire v6 runner固定**（2026-08-10記録・所有repo=dotagents）:
   wire v7へcutover済みのhostでconfigのendpoint（v7）とrunner（v6）のmajorが食い違い、cutover後最初の
   定期実行からgateが落ちる構造だった。**2026-08-10修理済み**——runnerはhostの実configの
-  `reporting.endpoint`が指すmajorから解決し（env明示が最優先）、endpointが読めない時はv6へ倒す
-  （未cutover hostの挙動不変）。このMacでv7解決・config不在fallbackとも実測済み＝**解消**。
+  `reporting.endpoint`が指すmajorから解決し（env明示が最優先）、endpointが読めない時は現役v8
+  runnerを選ぶ。runner側はconfig欠落を明示失敗にし、旧majorへ暗黙fallbackしない＝**解消**。
 
 工程表示は次で生成する。
 

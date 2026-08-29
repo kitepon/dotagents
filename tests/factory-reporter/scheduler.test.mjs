@@ -11,7 +11,7 @@ import { postUpdateFailures } from '../../lib/factory/deployment-contract.mjs';
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const SCHEDULER = join(ROOT, 'bin', 'factory-reporter-scheduler.mjs');
 const RUNNER = join(ROOT, 'bin', 'factory-reporter-v4-schedule-runner.mjs');
-const V7_RUNNER = join(ROOT, 'bin', 'factory-reporter-v7-schedule-runner.mjs');
+const V8_RUNNER = join(ROOT, 'bin', 'factory-reporter-v8-schedule-runner.mjs');
 const roots = [];
 const CURRENT_PROFILE = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl';
 async function sandbox(profile = 'mac', collection = false, reporting = false) { const root = await mkdtemp(join(tmpdir(), 'factory-reporter-scheduler-test-')); roots.push(root); const config = join(root, 'config.json'); const credential = join(root, 'credential'); await writeFile(credential, 'unit-test-token\n', { mode: 0o600 }); await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'test-host', profile }, collection: { enabled: collection }, reporting: reporting ? { enabled: true, endpoint: 'http://127.0.0.1:1/api/factory/v4/reports', credential_file: credential } : { enabled: false } })); const stateRoot = process.platform === 'win32' ? join(root, 'local-app-data', 'dotagents') : join(root, 'state-home', 'dotagents'); return { root, config, credential, state: join(stateRoot, 'factory-reporter-v4'), stateRoot }; }
@@ -81,7 +81,7 @@ test('installはconfigのprofileとtarget不一致・制御文字をfail closed�
 test('collection/reporting=falseのrunnerはstate/outboxを作らず正常skipする', async () => { const box = await sandbox(CURRENT_PROFILE, false); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 0); assert.deepEqual(result.json, { ok: true, post_gate_status: 'skipped', skipped: 'collection-and-reporting-disabled' }); await assert.rejects(lstat(box.state)); });
 test('post-update gateは完全一致allowlist以外のunverifiedと全failをblockingにする', async () => {
   const profile = CURRENT_PROFILE === 'mac' ? 'windows-native' : CURRENT_PROFILE;
-  const required = ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'peertable', ...(profile === 'server' ? ['servermanager'] : []), ...(profile === 'windows-native' ? [] : ['claude-code', 'codex-cli'])];
+  const required = ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'peertable', 'unai', ...(profile === 'server' ? ['servermanager'] : []), ...(profile === 'windows-native' ? [] : ['claude-code', 'codex-cli'])];
   const report = (checks) => ({ products: Object.fromEntries(required.map((id) => [id, { presence_status: 'installed', compatibility_status: 'compatible', checks: checks[id] ?? [] }])) });
   const allowed = { spotter: [{ check_id: 'codex_hooks', status: 'unverified', reason_code: 'trust_not_machine_verifiable' }], throughline: [{ check_id: 'evidence_restore_smoke', status: 'unverified', reason_code: 'diagnostic_unverified' }, { check_id: 'claude_connector', status: 'unverified', reason_code: 'diagnostic_unverified' }], 'aiterm-mcp': [{ check_id: 'pty_list', status: 'unverified', reason_code: 'pty_list_unverified' }] };
   const facts = { profile, os: profile === 'windows-native' ? 'win32' : process.platform, arch: process.arch };
@@ -146,7 +146,7 @@ elif [ "$1" = runtime-errors ]; then echo '{"schema":"lattice.runtime_errors.v1"
 else exit 1; fi
 `); await fixtureCommand(bin, 'git', 'echo 1234567'); const normal = await run(RUNNER, ['--config', box.config], box, { PATH: bin }); assert.equal(normal.code, 0, normal.stderr); const result = await run(RUNNER, ['--config', box.config, '--post-update'], box, { PATH: bin }); assert.equal(result.code, 1); assert.deepEqual(result.json, { ok: false, post_gate_status: 'failed', failed_checks: CURRENT_PROFILE === 'windows-native' ? 7 : 9 }); });
 test('finalize-updateは最終ledgerを再投影し、製品failure自体を配送失敗へ偽装しない', async () => { const box = await sandbox(CURRENT_PROFILE, false, false); const bin = join(box.root, 'bin'); await mkdir(bin); for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await fixtureCommand(bin, name, 'exit 1'); await fixtureCommand(bin, 'git', 'echo 1234567'); const result = await run(RUNNER, ['--config', box.config, '--finalize-update'], box, { PATH: bin }); assert.equal(result.code, 0, result.stderr); assert.deepEqual(result.json, { ok: true, finalized: true }); await stat(join(box.state, 'latest-report.json')); });
-test('v7 finalize-updateはBugHub acceptedかつ今回report_id一致時だけdelivery receiptを原子的に作る', async () => {
+test('v8 finalize-updateはBugHub acceptedかつ今回report_id一致時だけdelivery receiptを原子的に作る', async () => {
   const token = '11111111-1111-4111-8111-111111111111';
   const cases = [
     ['accepted', true, (response, report) => { response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({ accepted: true, report_id: report.report_id })); }, true],
@@ -165,9 +165,9 @@ test('v7 finalize-updateはBugHub acceptedかつ今回report_id一致時だけde
     try {
       const box = await sandbox(CURRENT_PROFILE, false, reporting);
       const address = server.address();
-      if (reporting) await writeFile(box.config, JSON.stringify({ schema_version: '1.0', host: { id: 'test-host', profile: CURRENT_PROFILE }, collection: { enabled: false }, reporting: { enabled: true, endpoint: `http://127.0.0.1:${address.port}/api/factory/v7/reports`, credential_file: box.credential } }));
-      const result = await run(V7_RUNNER, ['--config', box.config, '--finalize-update'], box, { PATH: await v7FixtureBin(box), AGENTS_UPDATE_BATCH_TOKEN: token });
-      const state = join(box.stateRoot, 'factory-reporter-v7');
+      if (reporting) await writeFile(box.config, JSON.stringify({ schema_version: '1.0', host: { id: 'test-host', profile: CURRENT_PROFILE }, collection: { enabled: false }, reporting: { enabled: true, endpoint: `http://127.0.0.1:${address.port}/api/factory/v8/reports`, credential_file: box.credential } }));
+      const result = await run(V8_RUNNER, ['--config', box.config, '--finalize-update'], box, { PATH: await v7FixtureBin(box), AGENTS_UPDATE_BATCH_TOKEN: token });
+      const state = join(box.stateRoot, 'factory-reporter-v8');
       const receipt = join(state, 'delivery-receipt.json');
       if (receiptExpected) {
         assert.equal(result.code, 0, `${name}: ${result.stderr}`);

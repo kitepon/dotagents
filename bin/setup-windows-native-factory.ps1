@@ -160,7 +160,7 @@ function Assert-ReporterConfig {
   if ($config.host.profile -ne 'windows-native') { throw 'factory reporter host.profile must be windows-native' }
   if ($config.collection.enabled -ne $true -or $config.reporting.enabled -ne $true) { throw 'factory collection and reporting must be enabled' }
   $endpoint = [uri]$config.reporting.endpoint
-  if ($endpoint.AbsolutePath -ne '/api/factory/v7/reports') { throw 'factory reporter endpoint must use wire v7' }
+  if ($endpoint.AbsolutePath -ne '/api/factory/v8/reports') { throw 'factory reporter endpoint must use wire v8' }
   $credential = [string]$config.reporting.credential_file
   if ([string]::IsNullOrWhiteSpace($credential) -or -not (Test-Path -LiteralPath $credential -PathType Leaf)) {
     throw 'Windows-native BugHub credential is missing'
@@ -210,7 +210,7 @@ function Normalize-WindowsReporterConfig {
 function Invoke-BootstrapUpdate([string]$UpdateScript) {
   Write-Step 'factory-products-bootstrap: agents-update.sh'
   $previousRunner = $env:FACTORY_REPORTER_RUNNER
-  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v7-schedule-runner')
+  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
   try {
     & $GitBash $UpdateScript
     $code = $LASTEXITCODE
@@ -282,8 +282,8 @@ function Set-ToolchainPostGateSuccess([string]$LedgerHelper) {
 }
 
 function Invoke-FreshDelivery([string]$Runner, [string]$LedgerHelper, [string]$ProductSmoke) {
-  Write-Step 'fresh-bughub-delivery: factory-reporter-v7-schedule-runner.mjs'
-  $state = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter-v7'
+  Write-Step 'fresh-bughub-delivery: factory-reporter-v8-schedule-runner.mjs'
+  $state = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter-v8'
   $reportPath = Join-Path $state 'latest-report.json'
   $deliveryPath = Join-Path $state 'delivery-receipt.json'
   $priorReportId = $null
@@ -326,20 +326,20 @@ function Invoke-FreshDelivery([string]$Runner, [string]$LedgerHelper, [string]$P
   }
   $report = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
   $receipt = Get-Content -Raw -LiteralPath $deliveryPath | ConvertFrom-Json
-  if ($report.schema_version -ne '7.0' -or [string]$report.report_id -eq $priorReportId -or
+  if ($report.schema_version -ne '8.0' -or [string]$report.report_id -eq $priorReportId -or
       $receipt.schema -ne 'dotagents.factory-delivery-receipt.v1' -or
       $receipt.report_id -ne $report.report_id -or $receipt.batch_token -ne $batchToken) {
-    throw 'Fresh BugHub delivery receipt does not match this v7 batch'
+    throw 'Fresh BugHub delivery receipt does not match this v8 batch'
   }
   $smokeOutput = & node $ProductSmoke '--report' $reportPath 2>&1
   $smokeCode = $LASTEXITCODE
   $smokeOutput | ForEach-Object { Write-Host $_ }
   if ($smokeCode -ne 0) { throw "All-product smoke failed with exit $smokeCode" }
   $smoke = ($smokeOutput | Select-Object -Last 1) | ConvertFrom-Json
-  if ($smoke.schema -ne 'dotagents.windows-native-product-smoke.v1' -or $smoke.status -ne 'passed' -or $smoke.checked_products -ne 14) {
+  if ($smoke.schema -ne 'dotagents.windows-native-product-smoke.v1' -or $smoke.status -ne 'passed' -or $smoke.checked_products -ne 15) {
     throw 'All-product smoke receipt is invalid'
   }
-  return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v7'; product_smoke = $smoke }
+  return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v8'; product_smoke = $smoke }
 }
 
 function Remove-LegacyCron {
@@ -512,7 +512,7 @@ try {
   $applyGrok = Join-Path $RepoRoot 'bin\apply-grok-config.sh'
   $applyCursor = Join-Path $RepoRoot 'bin\apply-cursor-config.sh'
   $verify = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\verify-install.sh')
-  $deliveryRunner = Join-Path $RepoRoot 'bin\factory-reporter-v7-schedule-runner.mjs'
+  $deliveryRunner = Join-Path $RepoRoot 'bin\factory-reporter-v8-schedule-runner.mjs'
   $ledgerHelper = Join-Path $RepoRoot 'bin\factory-toolchain-ledger.mjs'
   $productSmoke = Join-Path $RepoRoot 'lib\factory\windows-native-product-smoke.mjs'
   $reporterScheduler = Join-Path $RepoRoot 'bin\factory-reporter-scheduler.mjs'
@@ -614,7 +614,7 @@ try {
 
   # verify-install.sh
   $verifyStatus = Invoke-VerifyInstall $verify
-  # factory-reporter-v7-schedule-runner.mjs
+  # factory-reporter-v8-schedule-runner.mjs
   $delivery = Invoke-FreshDelivery $deliveryRunner $ledgerHelper $productSmoke
   # agents-update-scheduler.mjs install --apply
   if (-not $ScheduledRun) {

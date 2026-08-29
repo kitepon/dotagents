@@ -10,7 +10,7 @@ while [ -L "$script_source" ]; do
 done
 ROOT="$(cd "$(dirname "$script_source")/.." && pwd)"
 REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
-REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v7"
+REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v8"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 LAUNCH_AGENT_LABEL='com.kite.agents-update'
 LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/$LAUNCH_AGENT_LABEL.plist"
@@ -46,8 +46,8 @@ let endpoint;
 try { endpoint = new URL(value?.reporting?.endpoint); }
 catch { process.stderr.write('FAIL: factory reporter endpointが不正\n'); process.exit(1); }
 if (value?.host?.profile !== 'mac' || value?.reporting?.enabled !== true
-  || endpoint.pathname !== '/api/factory/v7/reports') {
-  process.stderr.write('FAIL: factory reporterはmac profileのenabledなwire v7でなければならない\n');
+  || endpoint.pathname !== '/api/factory/v8/reports') {
+  process.stderr.write('FAIL: factory reporterはmac profileのenabledなwire v8でなければならない\n');
   process.exit(1);
 }
 NODE
@@ -101,13 +101,13 @@ const facts = {
   arch: report.platform?.arch,
   macosMajor: Number(majorText),
 };
-if (report.schema_version !== '7.0' || facts.profile !== 'mac' || facts.os !== 'darwin') {
-  throw new Error('macOS wire v7 reportでない');
+if (report.schema_version !== '8.0' || facts.profile !== 'mac' || facts.os !== 'darwin') {
+  throw new Error('macOS wire v8 reportでない');
 }
 const actualIds = Object.keys(report.products ?? {}).sort();
 const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
-  throw new Error('factory reportが固定14製品をすべて含まない');
+  throw new Error('factory reportが固定15製品をすべて含まない');
 }
 const projection = hostProjection(facts);
 const failures = postUpdateFailures(report, facts, { postUpdate: false });
@@ -139,14 +139,14 @@ run_factory_update() {
   batch_token="$(new_batch_token)"
   major="$(macos_major)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
-    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v7-schedule-runner" \
+    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
     "$ROOT/bin/agents-update.sh"
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
-    || die 'fresh v7 reportとBugHub delivery receiptが一致しない'
+    || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
   checked_products="$(validate_factory_products "$major")" \
     || die 'factory全製品の正規診断が受入条件を満たさない'
   printf '{"ok":true,"mode":"macos-setup","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_checked":%s}\n' \
@@ -265,7 +265,7 @@ ensure_codex_aishell() {
 
 ensure_managed_commands() {
   local -a commands=(caveat throughline spotter lattice markitdown gpt-connector
-    aiterm-mcp codex-sidecar-mcp peertable-client)
+    aiterm-mcp codex-sidecar-mcp peertable-client unai)
   supports_aishell && commands+=(aishell-mcp)
   local command_name missing=0
   for command_name in "${commands[@]}"; do
@@ -404,6 +404,7 @@ run_setup() {
   maybe_apply_grok_config
   apply_cursor_config
   "$ROOT/install.sh" --profile official
+  "$ROOT/bin/install-unai.sh"
   ensure_managed_commands
   # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。Cursor は MCP＋工場hook（apply-cursor-config）。
   # init は TTY だと公開ミラー確認で止まるので stdin を閉じる。

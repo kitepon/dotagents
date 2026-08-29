@@ -37,7 +37,7 @@ function locations(target, wireMajor) {
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
-  if (!['install', 'uninstall'].includes(command)) throw new Error('使い方: factory-reporter-scheduler install|uninstall [--dry-run|--apply] [--wire-major v1|v2|v4|v5|v6|v7] [--config <file>] [--platform darwin|linux|win32]');
+  if (!['install', 'uninstall'].includes(command)) throw new Error('使い方: factory-reporter-scheduler install|uninstall [--dry-run|--apply] [--wire-major v1|v2|v4|v5|v6|v7|v8] [--config <file>] [--platform darwin|linux|win32]');
   const options = {};
   for (let index = 0; index < rest.length; index++) {
     const key = rest[index];
@@ -48,7 +48,7 @@ function parseArgs(argv) {
   const target = options['--platform'] || hostPlatform();
   if (!['darwin', 'linux', 'win32'].includes(target)) throw new Error('--platformはdarwin、linux、win32のいずれかです');
   const wireMajor = options['--wire-major'] || 'v4';
-  if (!['v1', 'v2', 'v4', 'v5', 'v6', 'v7'].includes(wireMajor)) throw new Error('--wire-majorはv1、v2、v4、v5、v6、v7のいずれかです');
+  if (!['v1', 'v2', 'v4', 'v5', 'v6', 'v7', 'v8'].includes(wireMajor)) throw new Error('--wire-majorはv1、v2、v4、v5、v6、v7、v8のいずれかです');
   if (options.mode === 'apply' && target !== hostPlatform()) throw new Error('--applyは実行中OSと異なる--platformを指定できません');
   return { command, target, config: options['--config'] && safePath(options['--config'], '--config'), wireMajor, dryRun: options.mode !== 'apply' };
 }

@@ -9,7 +9,7 @@ Claude Code と Codex の自作 skill / slash command / rule を複数端末で�
 ### 開発工場の定義（所有境界）
 
 - **開発工場そのものはdotagents**。dotagentsを「工場の一部」「司令室だけ」「ServerManagerと並ぶ一方のcontrol plane」と再定義しない。全端末・全projectの規範、導入、更新、親別配線、互換契約、検証、上流追従をここが統括する。
-- 工場の現役管理対象は計11製品。**LatticeはCodegraphを完全吸収した正式後継であり、独立Codegraphはretired／not_applicableの履歴だけを保持して現役製品・依存・配線に含めない。** 製品の列挙・区分（自作コア／第三者／基盤toolchain）・現役契約は[製品契約台帳](docs/factory-product-contracts.md)、host対応と構造的`unsupported`は[host matrix](docs/factory-host-product-matrix.md)、Oracleの利用局面は[docs/02_models.md](docs/02_models.md)が正。Mac自前 Desktop と main-server 自前 AFK はコアIDを増やさない Community overlay で、正典は[factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md)。
+- 工場の現役管理対象は計12製品。**LatticeはCodegraphを完全吸収した正式後継であり、独立Codegraphはretired／not_applicableの履歴だけを保持して現役製品・依存・配線に含めない。** 製品の列挙・区分（自作コア／第三者／基盤toolchain）・現役契約は[製品契約台帳](docs/factory-product-contracts.md)、host対応と構造的`unsupported`は[host matrix](docs/factory-host-product-matrix.md)、Oracleの利用局面は[docs/02_models.md](docs/02_models.md)が正。Mac自前 Desktop と main-server 自前 AFK はコアIDを増やさない Community overlay で、正典は[factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md)。
 - **BugHubは独立した製品ではなく、ServerManager内部のコンポーネント**。既存の読み取り専用集約、報告元アプリによる重大度決定、`resolve` / `reopen`、`/ai`という契約を守り、各製品のversion・bug・compatibility結果を統括する連携先として活用する。
 - 各製品は自身のソース・状態・schema・migration・正規診断を所有する。dotagentsはそれらを複製せず統合契約を所有し、ServerManager/BugHubはdotagentsの代わりに工場方針を決めたり製品状態を直接書き換えたりしない。
 - オーナーは、dotagentsの統括AIが**自作コア製品**の正規repoへ必要な修正とrelease管理を行うことを明示許可している。これは責務範囲の恒久裁定であり、第三者製品のfork/patchを許可するものではない。自作コアの publish・本番反映は完遂であり、承認待ちへ分解しない。高リスク操作は目的・影響・戻し方を説明してから自分で行う。各製品repoの正典・release gate・独立履歴を守る。修理から公開までの完遂規律とrelease gate要件は[製品契約台帳](docs/factory-product-contracts.md)「共通境界」が正。

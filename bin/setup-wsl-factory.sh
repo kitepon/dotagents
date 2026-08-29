@@ -24,7 +24,7 @@ case "$SETUP_VARIANT" in
   *) echo "FAIL: 未対応のsetup variant: $SETUP_VARIANT" >&2; exit 1 ;;
 esac
 REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
-REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v7"
+REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v8"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 
 die() { echo "FAIL: $*" >&2; exit 1; }
@@ -56,8 +56,8 @@ let endpoint;
 try { endpoint = new URL(value?.reporting?.endpoint); }
 catch { process.stderr.write('FAIL: factory reporter endpointが不正\n'); process.exit(1); }
 if (value?.host?.profile !== process.argv[3]
-  || value?.reporting?.enabled !== true || endpoint.pathname !== '/api/factory/v7/reports') {
-  process.stderr.write(`FAIL: factory reporterは${process.argv[3]} profileのenabledなwire v7でなければならない\n`);
+  || value?.reporting?.enabled !== true || endpoint.pathname !== '/api/factory/v8/reports') {
+  process.stderr.write(`FAIL: factory reporterは${process.argv[3]} profileのenabledなwire v8でなければならない\n`);
   process.exit(1);
 }
 NODE
@@ -109,13 +109,13 @@ const { CURRENT_WIRE_PRODUCT_IDS, hostProjection, postUpdateFailures } =
   await import(pathToFileURL(contractPath).href);
 const report = JSON.parse(readFileSync(reportPath, 'utf8'));
 const facts = { profile: report.host_profile, os: report.platform?.os, arch: report.platform?.arch };
-if (report.schema_version !== '7.0' || facts.profile !== expectedProfile || facts.os !== 'linux') {
-  throw new Error(`${expectedProfile} wire v7 reportでない`);
+if (report.schema_version !== '8.0' || facts.profile !== expectedProfile || facts.os !== 'linux') {
+  throw new Error(`${expectedProfile} wire v8 reportでない`);
 }
 const actualIds = Object.keys(report.products ?? {}).sort();
 const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
-  throw new Error('factory reportが固定14製品をすべて含まない');
+  throw new Error('factory reportが固定15製品をすべて含まない');
 }
 const projection = hostProjection(facts);
 let failures = postUpdateFailures(report, facts, { postUpdate: false });
@@ -153,14 +153,14 @@ run_scheduled_update() {
   prior_report_id="$(fresh_report_id)"
   batch_token="$(new_batch_token)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
-    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v7-schedule-runner" \
+    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
     "$ROOT/bin/agents-update.sh"
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
-    || die 'fresh v7 reportとBugHub delivery receiptが一致しない'
+    || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
   checked_products="$(validate_factory_products)" \
     || die 'factory全製品の正規診断が受入条件を満たさない'
   printf '{"ok":true,"mode":"scheduled-update","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_checked":%s}\n' \
@@ -238,7 +238,7 @@ ensure_codex_mcp() {
 ensure_managed_commands() {
   local command_name missing=0
   for command_name in caveat throughline spotter lattice markitdown gpt-connector \
-    aiterm-mcp codex-sidecar-mcp peertable-client; do
+    aiterm-mcp codex-sidecar-mcp peertable-client unai; do
     if ! command -v "$command_name" >/dev/null 2>&1; then
       echo "INFO: factory managed commandを更新で補完する: $command_name"
       missing=1
@@ -248,7 +248,7 @@ ensure_managed_commands() {
     "$ROOT/bin/agents-update.sh"
   fi
   for command_name in caveat throughline spotter lattice markitdown gpt-connector \
-    aiterm-mcp codex-sidecar-mcp peertable-client; do
+    aiterm-mcp codex-sidecar-mcp peertable-client unai; do
     need "$command_name"
   done
 }
@@ -351,6 +351,7 @@ run_setup() {
   maybe_apply_grok_config
   apply_cursor_config
   "$ROOT/install.sh" --profile official
+  "$ROOT/bin/install-unai.sh"
   ensure_managed_commands
   # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。Cursor は MCP＋工場hook（apply-cursor-config）。
   # init は TTY だと公開ミラー確認で止まるので stdin を閉じる。

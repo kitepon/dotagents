@@ -1,0 +1,51 @@
+{
+  "schema": "lattice.plan_scope_review.v1",
+  "authoring_digest": "960c58d39a019dac2410e2c2a8a639897d5c64e51a706dd3fd900255d6fe67de",
+  "work_specs": [
+    {
+      "work_spec_id": "owner-001",
+      "requirement": "kitepon/unaiをdotagentsの正式な自作コア製品へ編入する。",
+      "acceptance": "unai自身の工場契約、dotagentsの導入・更新・reporting、ServerManager/BugHubの期待matrix、全hostの実配布と正典が一致し、既存wire互換を維持した状態で利用できる。"
+    }
+  ],
+  "task_assessments": [
+    {
+      "task_id": "unai-001",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "自作コア編入の先行条件である製品所有のversion・diagnostics・installer契約を成立させる。"
+    },
+    {
+      "task_id": "unai-002",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "dotagentsがunaiを導入・更新・診断・reportする統合契約を所有するために必要。"
+    },
+    {
+      "task_id": "unai-003",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "BugHubの固定product集合と期待matrixへunaiを追加し、reportを受理するために必要。"
+    },
+    {
+      "task_id": "unai-004",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "コード追加だけでなく使える配布面へ届けるというコア製品編入の受入に必要。"
+    },
+    {
+      "task_id": "unai-005",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "server-first互換手順で全hostの工場reportをunai込みへ切り替えるために必要。"
+    },
+    {
+      "task_id": "unai-006",
+      "work_spec_ids": ["owner-001"],
+      "judgment": "required",
+      "reason": "製品数・所有境界・検証結果を正典と証跡へ同期し編入を閉じるために必要。"
+    }
+  ],
+  "verdict": "scope_preserved",
+  "review_digest": "c9c39a9cd11348c1b1e03c0e4cd92bf57ff88e80c589faaecf0598e5e2d81822"
+}

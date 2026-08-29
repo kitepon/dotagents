@@ -1,0 +1,6 @@
+- [x] unai-001 unai自身へversion・native diagnostics・導入検証を実装する
+- [ ] unai-002 dotagentsへunai adapter・wire v8・導入更新契約を追加する
+- [ ] unai-003 ServerManager/BugHubへwire v8 endpointとunai期待matrixを追加する
+- [ ] unai-004 unaiをreleaseして4 hostへ正規導入する
+- [ ] unai-005 BugHub wire v8をserver-firstで全host cutoverする
+- [ ] unai-006 正典同期・関連gate・最終監査・知識還流を閉じる

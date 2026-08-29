@@ -93,7 +93,7 @@ contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](../../../shared/orchestra
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/delegation-contract.md)'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" 'references/workflow-templates.md'
 contains "$ROOT/PLAN.md" 'ラベル運用は統括レーンの4関節（writer委譲・受入裁定・Phase gate・H操作）の裁定用とする。'
-contains "$ROOT/PLAN.md" '作業後はpushで真実を返す（本原則は、dotagentsと自作コア10製品の正規repoに対する恒久push裁定である。第三者製品・基盤toolchainには適用しない。認定手順は憲法git鉄則に従う）'
+contains "$ROOT/PLAN.md" '作業後はpushで真実を返す（本原則は、dotagentsと自作コア11製品の正規repoに対する恒久push裁定である。第三者製品・基盤toolchainには適用しない。認定手順は憲法git鉄則に従う）'
 contains "$ROOT/PLAN.md" '10. （書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**知識は還流させて育てる（第二の脳）**'
 contains "$ROOT/PLAN.md" '（書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**方針級の発見はその場で正典へ**'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '**配置は統括レーンの4関節で宣言**'
@@ -206,7 +206,7 @@ for command in auto-deploy-on-push polish-github; do
 done
 # shellcheck disable=SC2016 # backticks are literal Markdown from the command contract.
 contains "$ROOT/claude/commands/auto-deploy-on-push.md" 'スキル `auto-deploy-on-push`'
-contains "$ROOT/claude/commands/polish-github.md" '最初に **現状監査** だけ実行'
+contains "$ROOT/claude/commands/polish-github.md" '次に **現状監査** だけ実行'
 contains "$ROOT/claude/commands/polish-github.md" 'ユーザーが GO サインを出してから着手する'
 
 for agent in implementer refuter; do
