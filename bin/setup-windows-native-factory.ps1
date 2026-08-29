@@ -613,7 +613,7 @@ try {
   if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
     Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'
   } else {
-    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'https://github.com/kitepon-rgb/Caveat-Private.git') -Label 'caveat-sync-init'
+    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'git@github.com:kitepon-rgb/Caveat-Private.git') -Label 'caveat-sync-init'
   }
 
   # verify-install.sh

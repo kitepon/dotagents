@@ -58,7 +58,8 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Remove-WindowsGlobalNpmLink.*npm root --global.*LinkType.*npm unlink --global.*Global npm link remains.*Remove-WindowsGlobalNpmLink 'aiterm-mcp'.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Update-WindowsNativeClaude.*\.local\\bin\\claude\.exe.*factory-products-bootstrap: Claude native update.*install\.sh.*Update-WindowsNativeClaude.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
-  assert.match(source, /Caveat-Private/u);
+  assert.match(source, /git@github\.com:kitepon-rgb\/Caveat-Private\.git/u);
+  assert.doesNotMatch(source, /https:\/\/github\.com\/kitepon-rgb\/Caveat-Private/u);
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /--post-update.*--finalize-update/su);
   assert.match(source, /Set-ToolchainPostGateSuccess.*--post-gate', 'success'/su);

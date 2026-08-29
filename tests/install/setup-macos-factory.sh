@@ -313,6 +313,8 @@ grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展�
 grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
 grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
 grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-macos-factory.sh" || fail 'caveat init を非対話にしない'
+grep -Fq 'caveat sync --init --repo git@github.com:kitepon-rgb/Caveat-Private.git' "$ROOT/bin/setup-macos-factory.sh" \
+  || fail 'Caveat-Privateの初回同期が非対話SSH経路でない'
 grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
 grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
 grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
