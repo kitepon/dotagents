@@ -99,8 +99,10 @@ EOF
 # shellcheck disable=SC2016 # 生成するfixtureの実行時に$1/$2を展開する。
 printf '#!/usr/bin/env bash\n[ "$1 $2" = "tool list" ] && printf "markitdown 0.1.0\\n"\n' >"$FACTORY_TEST_BIN/uv"
 chmod +x "$FACTORY_TEST_BIN/uv"
-# profileは実OSから決める。wslをdarwinへ上書きするとhostProjectionが不一致で止まる。
-verify() { PATH="$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$1" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE="${LATTICE_HOOKS_TEST_MODE:-wired}" "$ROOT/bin/verify-install.sh" --profile "$2"; }
+# profileは実OSから決める。Linux runnerはserverへ射影されるため、外部通信しない
+# readiness fixtureを明示してverify-installのserver契約を保つ。
+SERVERMANAGER_TEST_READY_URL='data:application/json,{"checks":[{"id":"database","status":"pass"},{"id":"schema","status":"pass"},{"id":"source_revision","status":"pass"}],"source_revision":"fixture-revision"}'
+verify() { PATH="$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$1" SERVERMANAGER_READY_URL="$SERVERMANAGER_TEST_READY_URL" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE="${LATTICE_HOOKS_TEST_MODE:-wired}" "$ROOT/bin/verify-install.sh" --profile "$2"; }
 cat >"$UNKNOWN_OS_BIN/uname" <<'EOF'
 #!/usr/bin/env bash
 case "$1" in -s) printf 'UnknownOS\n' ;; -m) printf 'x86_64\n' ;; esac

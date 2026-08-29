@@ -355,13 +355,25 @@ run_setup() {
   is_target_host || die "このスクリプトは$SETUP_VARIANT専用"
   # 親AI sessionは ~/.local/bin を持たないことがある。uv tool（markitdown）と
   # install.sh の配布面はここへ置くので、入口自身が PATH を完結させる。
-  # Ubuntu aptのNode 22より、工場契約のOpenJS公式Snap Node 24を先に解決する。
-  export PATH="$HOME/.local/bin:/snap/bin:$PATH"
+  export PATH="$HOME/.local/bin:$PATH"
+  # Ubuntu aptのNode 22しか見えない時だけ、OpenJS公式SnapのNode系commandを専用dirへ
+  # 射影する。/snap/bin全体を前へ出すとClaude等の別commandまで横取りするため禁止する。
+  local node_major snap_node_bin command_path
+  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)"
+  if { [ -z "$node_major" ] || [ "$node_major" -lt 24 ]; } \
+    && [ -x /snap/bin/node ] \
+    && [ "$(/snap/bin/node --version | sed -E 's/^v([0-9]+).*/\1/')" -ge 24 ]; then
+    snap_node_bin="$(mktemp -d)"
+    trap 'rm -rf "${snap_node_bin:-}"' EXIT
+    for command_path in node npm npx corepack; do
+      [ ! -x "/snap/bin/$command_path" ] || ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"
+    done
+    export PATH="$snap_node_bin:$PATH"
+  fi
   local command_name
   for command_name in git gh node npm docker python3 claude codex uv crontab sudo systemctl; do
     need "$command_name"
   done
-  local node_major
   node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
   [ "$node_major" -ge 24 ] || die 'Node.js 24以上が必要（WSLはOpenJS公式Snapの24/stableを使う）'
   python3 -c 'print(1)' >/dev/null || die 'python3を実行できない'
