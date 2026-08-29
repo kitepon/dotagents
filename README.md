@@ -193,7 +193,7 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   printf '.DS_Store\n' > ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global  # macOS ノイズを全リポで抑止
   ```
 - **WSL2 の場合**: WSL2 内の Claude/Codex を対象とする（Windows 側とは別環境）。`install.sh` は WSL の `$HOME` に symlink を張り、Windowsの既存 `~/.ssh/id_ed25519.pub` を WSLへ登録して、Windows `~/.ssh/config` にdotagents管理の `fox-wsl`（`localhost:2222`）を冪等生成する。同時にWSLの `~/.codex/hooks.json` をWindows Codex Desktopの `~/.codex/hooks.json` へ投影し、DesktopのWSL実行がWindows commandを `/bin/bash` へ渡す事故を防ぐ。Windows Codex DesktopではWindows側projectを流用せず、このSSH host上の `/home/kite/Developer/dotagents` を開く。cron の起動は下の「自動アップデート」節参照
-- **ランタイム**: node>=22＋corepack・docker・python3（`command -v node docker` で存在確認、`node --version` が v22+、`docker info` が通ること。**python3 だけは実行判定 `python3 -c "print(1)"` で確認**——Windows のストア偽エイリアスは存在チェックを通り、黙って exit 0 を返す〔罠DB `windows-python3-store-exit-0`〕）
+- **ランタイム**: node>=24＋corepack・docker・python3（`command -v node docker` で存在確認、`node --version` が v24+、`docker info` が通ること。WSLはUbuntu aptの22系でなくOpenJS公式Snapの24/stableを使い、`/snap/bin`をPATH先頭側へ置く。**python3 だけは実行判定 `python3 -c "print(1)"` で確認**——Windows のストア偽エイリアスは存在チェックを通り、黙って exit 0 を返す〔罠DB `windows-python3-store-exit-0`〕）
 - **CLI（必須）**: 管理12製品はCaveat／Throughline／Spotter／Lattice／MarkItDown／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／ServerManager／peertable／unai。共通requiredは基礎8＋`peertable-client`＋`unai`、macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。

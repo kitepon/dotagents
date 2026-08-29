@@ -391,7 +391,7 @@ run_setup() {
   done
   local node_major
   node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
-  [ "$node_major" -ge 22 ] || die 'Node.js 22以上が必要'
+  [ "$node_major" -ge 24 ] || die 'Node.js 24以上が必要'
   python3 -c 'print(1)' >/dev/null || die 'python3を実行できない'
   docker info >/dev/null 2>&1 || die 'docker daemonへ接続できない'
   gh auth status >/dev/null 2>&1 || die 'GitHub CLIが未認証'

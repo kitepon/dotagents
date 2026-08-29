@@ -237,8 +237,10 @@ printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"end
 } >"$CRONTAB"
 
 # shellcheck disable=SC2016 # setup側へ literal `$HOME` が書かれていることを検査する＝展開させない。
-grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh" \
-  || fail 'setupが ~/.local/bin を PATH 先頭へ置かない'
+grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh" \
+  || fail 'setupが ~/.local/bin と公式Snap NodeをPATH先頭側へ置かない'
+grep -Fq "[ \"\$node_major\" -ge 24 ]" "$ROOT/bin/setup-wsl-factory.sh" \
+  || fail 'setupがNode.js 24契約を強制しない'
 
 export HOME="$HOME_DIR"
 export PATH="$STUB_BIN:/usr/bin:/bin"

@@ -68,6 +68,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
   assert.match(source, /function Set-OwnerOnlyAcl.*DirectorySecurity.*FileSecurity.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*winget install --id Microsoft\.PowerShell/su);
+  assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
   assert.doesNotMatch(source, /\bSet-Acl\b/u);

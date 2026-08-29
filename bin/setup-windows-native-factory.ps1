@@ -491,6 +491,10 @@ if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is 
 foreach ($command in @('git', 'node', 'npm', 'python', 'uv')) {
   if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is missing: $command" }
 }
+$nodeVersion = (& node --version).Trim()
+if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v([0-9]+)\.' -or [int]$Matches[1] -lt 24) {
+  throw 'Node.js 24以上が必要です。公式installerまたはwingetで更新してください'
+}
 if (-not (Test-Path -LiteralPath $RepoRoot -PathType Container)) { throw "Cannot resolve the dotagents repository: $RepoRoot" }
 
 New-Item -ItemType Directory -Force -Path $StateDirectory | Out-Null

@@ -10,7 +10,7 @@
 set -uo pipefail
 
 # launchd / cron は最小 PATH で起動する（npm が /opt/homebrew 等にあると見つからず静かに失敗する）。
-PATH="${AGENTS_UPDATE_PATH_PREFIX:-$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin}:$PATH"
+PATH="${AGENTS_UPDATE_PATH_PREFIX:-$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/snap/bin:/usr/local/bin}:$PATH"
 
 # Linux / WSL2 の cron は NVM の選択済み Node を PATH に含めない。
 # system npmがPATHにあっても選ばず、NVMがある端末では正規入口から必ず復元する。
