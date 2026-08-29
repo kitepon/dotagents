@@ -127,8 +127,10 @@ exit 64
 EOF
 chmod +x "$BIN_DIR/spotter"
 
+SERVERMANAGER_TEST_READY_URL='data:application/json,{"checks":[{"id":"database","status":"pass"},{"id":"schema","status":"pass"},{"id":"source_revision","status":"pass"}],"source_revision":"fixture-revision"}'
 verify_core() {
   HOME="$HOME_DIR" PATH="$BIN_DIR:/usr/bin:/bin" \
+    SERVERMANAGER_READY_URL="$SERVERMANAGER_TEST_READY_URL" \
     DOTAGENTS_FACTORY_CORE_ONLY=1 \
     DOTAGENTS_FACTORY_PROJECT_ROOT="$PROJECT" \
     "$ROOT/bin/verify-install.sh" --profile official
