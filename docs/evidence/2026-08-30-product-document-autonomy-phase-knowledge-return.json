@@ -1,0 +1,17 @@
+{
+  "cwd": "/Users/kite/Developer/dotagents",
+  "control_id": "product-document-autonomy-20260830",
+  "actor_id": "bell-parent-20260830",
+  "expected_revision": 8,
+  "phase": "knowledge_return",
+  "state": "completed",
+  "evidence": [
+    {
+      "type": "file",
+      "ref": "docs/evidence/2026-08-30-product-document-autonomy-available-host-acceptance.md",
+      "digest": "65c76befc688e9f789ac44dd44b1bc92e95790afcda93211587188874472b099",
+      "observed_at": "2026-08-30T06:29:52.000Z"
+    }
+  ],
+  "decision": null
+}
