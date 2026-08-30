@@ -11,9 +11,9 @@ done
 ROOT="$(cd "$(dirname "$script_source")/.." && pwd)"
 
 if [ "${DOTAGENTS_SETUP_SKIP_REPO_RELOCATION:-0}" != 1 ]; then
-  canonical_root="$HOME/Developer/dotagent"
+  canonical_root="$HOME/Developer/dotagents"
   if [ "$ROOT" != "$canonical_root" ]; then
-    [ "$ROOT" = "$HOME/Developer/dotagents" ] \
+    [ "$ROOT" = "$HOME/Developer/dotagent" ] \
       || { echo "FAIL: dotagents cloneが正規pathでない: $ROOT" >&2; exit 1; }
     [ ! -e "$canonical_root" ] \
       || { echo "FAIL: 正規pathが既に存在する: $canonical_root" >&2; exit 1; }

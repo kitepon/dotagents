@@ -100,9 +100,9 @@ src/  tests/  package.json（or pyproject 等）
 host全体の初回導入・再適用はREADMEの`setup-macos-factory.sh`／`setup-linux-factory.sh`／`setup-linux-workstation-factory.sh`／
 `setup-windows-native-factory.ps1`だけを正規入口とする。4入口は共通deployment contractを読むが、
 LaunchAgent／cron／Task Scheduler、config、hook、credentialはhost別実装が所有し、相互に投影しない。
-Windows nativeのrepoは`%USERPROFILE%\Developer`配下に置く。このPCの正規checkoutは`C:\Users\kite_\Developer\dotagent`であり、PowerShell 7とGit for Windowsのnative executableだけで配備する。
+Windows nativeのrepoは`%USERPROFILE%\Developer`配下に置く。このPCの正規checkoutは`C:\Users\kite_\Developer\dotagents`であり、PowerShell 7とGit for Windowsのnative executableだけで配備する。
 Git for Windowsの`bash.exe`／`sh.exe`はWSLではない。Windows native入口はWSL distro、Docker Desktop、仮想化機能を作成・起動・検証せず、
-rabbit native Linuxの`/home/<user>/Developer/dotagent`とは別checkout・別HOME・別schedulerとして扱う。
+rabbit native Linuxの`/home/<user>/Developer/dotagents`とは別checkout・別HOME・別schedulerとして扱う。
 同入口は`~/.ssh/id_ed25519_main_server`と管理block `Host main-server 192.168.1.2`をWindows HOMEだけに作り、main-serverの固定ED25519 host keyを照合する。公開鍵登録は`.github/workflows/enroll-windows-main-server-ssh.yml`がmain-server自身のrunner上で行い、秘密鍵・Windows HOME・旧WSL HOMEを転送しない。aliasと`kite@192.168.1.2`直指定の双方が専用鍵へ解決されなければ受理しない。
 
 ### Skill の frontmatter

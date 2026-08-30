@@ -7,7 +7,7 @@ description: Use when the user asks to polish a GitHub repository's public OSS p
 
 # Polish GitHub
 
-**正本を読んで従うこと**: 同じdotagents checkoutの`claude/commands/polish-github.md`（このスキル自体が同リポからのsymlinkなので、実体は同居している。POSIXの`~/Developer/dotagent`やWindowsの`C:\Users\kite_\Developer\dotagent`など、checkoutの実pathから解決する）。
+**正本を読んで従うこと**: 同じdotagents checkoutの`claude/commands/polish-github.md`（このスキル自体が同リポからのsymlinkなので、実体は同居している。POSIXの`~/Developer/dotagents`やWindowsの`C:\Users\kite_\Developer\dotagents`など、checkoutの実pathから解決する）。
 
 正本が読めない場合はエラーとして報告し、以下の要約だけで代行しない（フォールバック禁止）。
 

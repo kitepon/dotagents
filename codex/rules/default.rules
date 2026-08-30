@@ -36,4 +36,4 @@ prefix_rule(pattern=["cp", "/home/kite/Developer/OpenCClaw/docs/codex-protocol/C
 prefix_rule(pattern=["bash", "-o", "pipefail", "-c", "node --test --experimental-test-isolation=none tests/*.test.js 2>&1 | tail -n 30"], decision="allow")
 prefix_rule(pattern=["curl", "-sSIL", "https://kitepon.dev/"], decision="allow")
 prefix_rule(pattern=["curl", "-4", "-sSIL", "-A", "Twitterbot/1.0", "https://kitepon.dev/"], decision="allow")
-prefix_rule(pattern=["node", "/Users/kite/Developer/dotagent/bin/orchestrate-run.mjs"], decision="allow")
+prefix_rule(pattern=["node", "/Users/kite/Developer/dotagents/bin/orchestrate-run.mjs"], decision="allow")
