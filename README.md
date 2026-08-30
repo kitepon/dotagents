@@ -196,7 +196,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
   ```
 - **host境界**: main-serverとrabbitは同じnative Linux基盤でも役割が異なる独立hostである。main-serverは`server` profileでServerManager／BugHubとpeertable serverを所有し、rabbitは`linux` profileのworkstation／peertable clientである。credential、config、scheduler、receiptを共有しない。FOXのWSL2席は2026-08-30に退役し、`wsl`は旧wire/outboxの読取互換だけに残す。
 - **共通ランタイム**: node>=24＋corepack・python3（`node --version`がv24+、`python3 -c "print(1)"`が成功すること。Windows nativeは正規入口がNode 24、Python、uvなどの不足をwingetから導入する。Windowsのストア偽エイリアスは存在チェックを通り、黙ってexit 0を返すため実行判定する〔罠DB `windows-python3-store-exit-0`〕）。
-- **Docker（POSIX hostのみ）**: 現行のmacOS／native Linux一撃入口は`docker info`までを前提にする。Windows native一撃展開と15製品smokeにはDockerを含めず、Docker DesktopやWSL backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
+- **Docker（POSIX hostのみ）**: 現行のmacOS／native Linux一撃入口は`docker info`までを前提にする。Windows native一撃展開と全製品smokeにはDockerを含めず、Docker DesktopやWSL backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
 - **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。

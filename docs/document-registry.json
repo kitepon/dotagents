@@ -466,11 +466,11 @@
       "path_regex": "^(?:docs/(?:factory-host-product-matrix|factory-product-contracts|factory-reporter-runbook|wire-v[0-9]+-design)\\.md|shared/runbooks/factory-ci\\.md)$",
       "expected_role": "integration",
       "exact_sha256_by_path": {
-        "docs/factory-host-product-matrix.md": "e6cc53223ddf981976863569f825a3f9b504bea05bfb91210ccb788788efb3e0",
+        "docs/factory-host-product-matrix.md": "02c2b08fcb9944fe0679cab3e071df0d62a79611ef7fad417c584e068a0232fb",
         "docs/factory-product-contracts.md": "a0b7072e50c465eda472eb497e07783987c00de696e833dc8c53c73ecd4cffe2",
-        "docs/factory-reporter-runbook.md": "a9389ab2305daca4b596397dcbc7984f4510ba68ac68533714fc45064b7fe767",
+        "docs/factory-reporter-runbook.md": "52a1a9cfceecb810cff22abba893e0ec68eb7cf763d88555e3c8081db8b7c9c1",
         "docs/wire-v8-design.md": "d710dc8205ad4da3ce8c31e15bffe1c26458a299228e6b6552fa904636b317ac",
-        "shared/runbooks/factory-ci.md": "7d929919c73814fabaa06cf812c6cf99d9c3bf87e2c2a7f9439aa89fb35fc6b3"
+        "shared/runbooks/factory-ci.md": "271c89bc681e9f6c37210a310c2e798ecd4b55289277a654fb2f6d17427bb663"
       },
       "required_regexes": [],
       "forbidden_regexes": []
@@ -520,7 +520,7 @@
       "path_regex": "^docs/05_codex-fragments\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/05_codex-fragments.md": "957a0e2e2217ad154753bded9415bcd92bcc264bf67f34c89097e95182c932bd"
+        "docs/05_codex-fragments.md": "43a4a31b3588745a8fcfef86c3affb56e5588705230ed4f046af9b7a867d39ee"
       },
       "required_regexes": [],
       "forbidden_regexes": []

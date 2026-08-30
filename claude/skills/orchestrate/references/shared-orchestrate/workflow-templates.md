@@ -11,7 +11,7 @@ CI（`tests/orchestrate/recipes-conformance.test.mjs`）で強制される——
 先に変え、両面を同一commitで更新する**。
 
 コピーして DIMENSIONS/CTX/TARGETS/検証観点をタスクに合わせて書き換える。`agent()` の
-`model`・`effort` は[docs/02_models.md](../../../../docs/02_models.md)の順位表どおり明示し、省略で親任せにしない。
+`model`・`effort` は docs/02_models.md の順位表どおり明示する（検証・反証系も親と同値のaliasを明示し、省略は不可）。
 本書の具体値はruntimeが要求する実行projectionであり、別の配置判断を持たない。順位変更時は同じcommitで同期し、
 `tests/skills/smoke.sh`で一致を確認する。
 
