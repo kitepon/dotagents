@@ -33,6 +33,7 @@ esac
 REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
 FACTORY_CREDENTIAL_FILE="${FACTORY_CREDENTIAL_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/credentials/factory.token}"
 MAIN_SERVER_SSH_TARGET="${MAIN_SERVER_SSH_TARGET:-kite@192.168.1.2}"
+RABBIT_SSH_HOST="${RABBIT_SSH_HOST:-192.168.1.55}"
 REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v8"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 
@@ -157,7 +158,7 @@ ensure_github_actions_runner() {
 linux_root_prerequisites_ready() {
   local package_name
   for package_name in ca-certificates cron curl docker.io gh git jq make openssh-client \
-    python3 python3-venv ripgrep shellcheck tmux xz-utils; do
+    openssh-server python3 python3-venv ripgrep shellcheck tmux xz-utils; do
     dpkg-query -W -f='${db:Status-Abbrev}' "$package_name" 2>/dev/null | grep -Fq 'ii ' \
       || return 1
   done
@@ -165,7 +166,22 @@ linux_root_prerequisites_ready() {
     && systemctl is-active cron >/dev/null 2>&1 \
     && systemctl is-enabled docker >/dev/null 2>&1 \
     && systemctl is-active docker >/dev/null 2>&1 \
-    && id -nG "$USER" | tr ' ' '\n' | grep -Fqx docker
+    && id -nG "$USER" | tr ' ' '\n' | grep -Fqx docker \
+    || return 1
+  if [ "$HOST_PROFILE" = linux ]; then
+    systemctl is-enabled ssh >/dev/null 2>&1 \
+      && systemctl is-active ssh >/dev/null 2>&1 \
+      && sudo -n true >/dev/null 2>&1 \
+      || return 1
+    [ "$(sudo -n stat -c '%a %U:%G' "/etc/sudoers.d/90-dotagents-${USER}-nopasswd" 2>/dev/null || true)" = '440 root:root' ] \
+      && [ "$(sudo -n cat "/etc/sudoers.d/90-dotagents-${USER}-nopasswd" 2>/dev/null || true)" = "$USER ALL=(ALL:ALL) NOPASSWD: ALL" ] \
+      && [ "$(stat -c '%a %U:%G' /etc/ssh/sshd_config.d/50-dotagents-rabbit.conf 2>/dev/null || true)" = '644 root:root' ] \
+      && sudo -n sshd -T 2>/dev/null | grep -Fqx 'pubkeyauthentication yes' \
+      && sudo -n sshd -T 2>/dev/null | grep -Fqx 'passwordauthentication no' \
+      && sudo -n sshd -T 2>/dev/null | grep -Fqx 'kbdinteractiveauthentication no' \
+      && sudo -n sshd -T 2>/dev/null | grep -Fqx 'permitrootlogin no' \
+      || return 1
+  fi
 }
 
 ensure_node24() {
@@ -218,14 +234,14 @@ ensure_linux_prerequisites() {
   [ -x "$root_helper" ] || die "root prerequisite helperが実行可能でない: $root_helper"
   if ! linux_root_prerequisites_ready; then
     if sudo -n true >/dev/null 2>&1; then
-      sudo -n "$root_helper" "$USER"
+      sudo -n "$root_helper" "$USER" "$HOST_PROFILE"
     elif [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ] && command -v pkexec >/dev/null 2>&1; then
       echo 'INFO: Ubuntu前提packageの導入にDesktop認証ダイアログを使用します'
-      pkexec "$root_helper" "$USER"
+      pkexec "$root_helper" "$USER" "$HOST_PROFILE"
     else
       [ -t 0 ] && [ -t 1 ] || die '初回導入は対話terminalまたはDesktop Polkit認証が必要'
       echo 'INFO: Ubuntu前提packageを一撃入口から導入するためsudo認証を行います'
-      sudo "$root_helper" "$USER"
+      sudo "$root_helper" "$USER" "$HOST_PROFILE"
     fi
   fi
 
@@ -265,6 +281,108 @@ ensure_main_server_ssh() {
   read -r -p '追加後にEnterを押してください: ' _
   ssh -o BatchMode=yes -o ConnectTimeout=5 "$MAIN_SERVER_SSH_TARGET" true 2>/dev/null \
     || die 'main-serverへの公開鍵認証を確認できない'
+}
+
+ensure_main_server_reverse_ssh() {
+  [ "$HOST_PROFILE" = linux ] || return 0
+  [ "${DOTAGENTS_SETUP_SKIP_REVERSE_SSH:-0}" != 1 ] || return 0
+  [[ "$RABBIT_SSH_HOST" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]] \
+    || die "rabbit SSH hostがIPv4形式でない: $RABBIT_SSH_HOST"
+  ensure_main_server_ssh
+
+  local ssh_dir="$HOME/.ssh" authorized_keys authorized_tmp
+  local public_key key_type key_blob
+  local host_key_type host_key_blob
+  public_key="$(ssh "$MAIN_SERVER_SSH_TARGET" 'bash -s' <<'REMOTE'
+set -euo pipefail
+ssh_dir="$HOME/.ssh"
+key="$ssh_dir/id_ed25519_rabbit"
+install -d -m 700 "$ssh_dir"
+if [ -e "$key" ] || [ -e "$key.pub" ]; then
+  [ -s "$key" ] && [ -s "$key.pub" ] \
+    || { echo 'rabbit専用SSH keyが不完全です' >&2; exit 1; }
+else
+  ssh-keygen -q -t ed25519 -N '' -C 'main-server-to-rabbit' -f "$key"
+fi
+chmod 600 "$key"
+chmod 644 "$key.pub"
+derived="$(ssh-keygen -y -f "$key" | awk '{print $1 " " $2}')"
+recorded="$(awk '{print $1 " " $2}' "$key.pub")"
+[ "$derived" = "$recorded" ] || { echo 'rabbit専用SSH key pairが不一致です' >&2; exit 1; }
+cat "$key.pub"
+REMOTE
+)" || die 'main-serverでrabbit専用SSH keyを準備できない'
+  read -r key_type key_blob _ <<<"$public_key"
+  [ "$key_type" = ssh-ed25519 ] && [[ "$key_blob" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] \
+    || die 'main-serverのrabbit専用公開鍵が不正'
+
+  install -d -m 700 "$ssh_dir"
+  authorized_keys="$ssh_dir/authorized_keys"
+  authorized_tmp="$(mktemp "$ssh_dir/authorized_keys.dotagents.XXXXXX")"
+  if [ -f "$authorized_keys" ]; then
+    awk -v blob="$key_blob" '
+      { for (field = 1; field <= NF; field += 1) if ($field == blob) next }
+      { print }
+    ' "$authorized_keys" >"$authorized_tmp"
+  fi
+  printf '%s %s %s %s\n' \
+    'no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-user-rc' \
+    "$key_type" "$key_blob" 'main-server-to-rabbit' >>"$authorized_tmp"
+  chmod 600 "$authorized_tmp"
+  mv -f "$authorized_tmp" "$authorized_keys"
+
+  read -r host_key_type host_key_blob _ </etc/ssh/ssh_host_ed25519_key.pub
+  [ "$host_key_type" = ssh-ed25519 ] && [[ "$host_key_blob" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] \
+    || die 'rabbitのSSH host公開鍵が不正'
+  # 値は直前の厳格なIPv4／base64検証を通した単語だけをremote引数へ渡す。
+  # shellcheck disable=SC2029
+  ssh "$MAIN_SERVER_SSH_TARGET" \
+    "bash -s -- '$RABBIT_SSH_HOST' '$host_key_blob'" <<'REMOTE'
+set -euo pipefail
+rabbit_host="$1"
+host_key_blob="$2"
+ssh_dir="$HOME/.ssh"
+config="$ssh_dir/config"
+known_hosts="$ssh_dir/known_hosts"
+install -d -m 700 "$ssh_dir"
+touch "$config" "$known_hosts"
+chmod 600 "$config" "$known_hosts"
+config_tmp="$(mktemp "$ssh_dir/config.dotagents.XXXXXX")"
+known_hosts_tmp="$(mktemp "$ssh_dir/known_hosts.dotagents.XXXXXX")"
+trap 'rm -f "${config_tmp:-}" "${known_hosts_tmp:-}"' EXIT
+awk '
+  $0 == "# dotagents-rabbit begin" { managed=1; next }
+  $0 == "# dotagents-rabbit end" { managed=0; next }
+  !managed { print }
+  END { if (managed) exit 2 }
+' "$config" >"$config_tmp"
+{
+  printf '\n%s\n' '# dotagents-rabbit begin'
+  printf 'Host rabbit %s\n' "$rabbit_host"
+  printf '  HostName %s\n' "$rabbit_host"
+  printf '%s\n' '  User kite'
+  printf '%s\n' '  IdentityFile ~/.ssh/id_ed25519_rabbit'
+  printf '%s\n' '  IdentitiesOnly yes'
+  printf '%s\n' '# dotagents-rabbit end'
+} >>"$config_tmp"
+chmod 600 "$config_tmp"
+mv -f "$config_tmp" "$config"
+cp "$known_hosts" "$known_hosts_tmp"
+for host in rabbit "$rabbit_host"; do
+  ssh-keygen -q -f "$known_hosts_tmp" -R "$host" >/dev/null 2>&1 || true
+done
+printf 'rabbit,%s ssh-ed25519 %s\n' "$rabbit_host" "$host_key_blob" >>"$known_hosts_tmp"
+chmod 600 "$known_hosts_tmp"
+mv -f "$known_hosts_tmp" "$known_hosts"
+ssh -G rabbit >/dev/null
+REMOTE
+
+  ssh "$MAIN_SERVER_SSH_TARGET" 'bash -s' <<'REMOTE'
+set -euo pipefail
+[ "$(ssh -o BatchMode=yes -o ConnectTimeout=5 rabbit hostname)" = rabbit ]
+ssh -o BatchMode=yes -o ConnectTimeout=5 rabbit 'sudo -n true'
+REMOTE
+  echo "INFO: main-server -> rabbit SSH / passwordless sudo: OK ($RABBIT_SSH_HOST)"
 }
 
 reporter_config_ready() {
@@ -747,6 +865,7 @@ run_setup() {
   ensure_github_auth
   # workstation runnerの組織登録権限は時間のかかる製品配線より先に検証する。
   ensure_github_actions_runner
+  ensure_main_server_reverse_ssh
 
   backup_managed_config
   ensure_git_identity

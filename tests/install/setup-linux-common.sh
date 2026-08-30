@@ -290,6 +290,7 @@ export DOTAGENTS_SETUP_SKIP_PREREQUISITES=1
 export DOTAGENTS_SETUP_SKIP_ENROLLMENT=1
 export DOTAGENTS_SETUP_SKIP_REPO_RELOCATION=1
 export DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER=1
+export DOTAGENTS_SETUP_SKIP_REVERSE_SSH=1
 export DOTAGENTS_SETUP_TEST_HOST_PROFILE="$HOST_PROFILE"
 export DOTAGENTS_SETUP_TEST_CALLS="$CALLS"
 export DOTAGENTS_SETUP_TEST_CRONTAB="$CRONTAB"
@@ -352,8 +353,18 @@ grep -Fq 'sudo ./svc.sh install "$USER"' "$ROOT/bin/setup-linux-common.sh" \
   || fail '公式runner service installerを使用しない'
 grep -Fq 'replace(/^\uFEFF/, "")' "$ROOT/bin/setup-linux-common.sh" \
   || fail '公式runner metadataのUTF-8 BOMを受理しない'
+grep -Eq 'openssh-client openssh-server' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
+  || fail 'rabbitのinbound SSH serverを一撃展開へ含めない'
 grep -Eq 'ripgrep shellcheck tmux xz-utils' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
   || fail 'Aitermのnative Linux前提tmuxを一撃展開へ含めない'
+# shellcheck disable=SC2016 # root helper内のliteral変数展開を検査する。
+grep -Fq '90-dotagents-${target_user}-nopasswd' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
+  || fail 'rabbitのpasswordless sudoをroot phaseで管理しない'
+grep -Fq 'id_ed25519_rabbit' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'main-serverのrabbit専用SSH keyを一撃展開で管理しない'
+grep -Fq "ssh -o BatchMode=yes -o ConnectTimeout=5 rabbit 'sudo -n true'" \
+  "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'main-serverからrabbitのpasswordless sudoを実火検証しない'
 grep -Fq 'gh auth switch --hostname github.com --user quolu' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'Caveat-Private同期前に工場ownerへ切り替えない'
 grep -Fq 'gh auth setup-git' "$ROOT/bin/setup-linux-common.sh" \
@@ -384,6 +395,7 @@ minimal_output="$(env -i \
   DOTAGENTS_SETUP_SKIP_PREREQUISITES=1 \
   DOTAGENTS_SETUP_SKIP_ENROLLMENT=1 \
   DOTAGENTS_SETUP_SKIP_REPO_RELOCATION=1 \
+  DOTAGENTS_SETUP_SKIP_REVERSE_SSH=1 \
   DOTAGENTS_SETUP_TEST_HOST_PROFILE="$HOST_PROFILE" \
   DOTAGENTS_SETUP_TEST_CALLS="$CALLS" \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update)"

@@ -219,6 +219,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
   Grok親の工場MCP 6はClaude/Codexへ手挿しせず、`~/.grok/config.toml`が所有する。適用は`apply-grok-config`（login済み`--apply`はH）。個人MCPはClaude jsonに残してよい。`compat.claude.mcps`は切らない。Cursor親の工場MCP 6と工場hookは`bin/apply-cursor-config.sh --apply`が`~/.cursor/mcp.json` / `hooks.json`を upsert する（Cursor CLI の `mcp add` は無い）。`cli-config.json`は触らない
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
 - **home-server ssh**: `kite@192.168.1.2`（固定IP）または`main-server`。Windows native入口はパスフレーズなしの専用鍵`~/.ssh/id_ed25519_main_server`、owner-only ACL、固定済みserver ED25519指紋、`IdentitiesOnly yes`を管理し、直IPとaliasの両方へ適用する。初回または認証喪失時は公開鍵だけをGitHub Actions secretへ置き、main-server上の`Enroll Windows main-server SSH` workflowで`authorized_keys`へ冪等登録する。server側鍵行はagent／port／X11 forwardingを禁止する
+- **main-server → rabbit ssh**: `kite@192.168.1.55`または`rabbit`。rabbit一撃入口がUbuntu公式OpenSSH Server、鍵認証限定のsshd設定、`kite`専用passwordless sudoersをroot phaseで管理する。main-serverには専用鍵`~/.ssh/id_ed25519_rabbit`と固定済みrabbit ED25519 host keyを配線し、rabbit側はagent／port／X11 forwardingを禁止した公開鍵行だけを受け入れる。alias／直IP接続と`sudo -n`の実火が成功しない限りfail closedにする
 
 ### 1. clone（`Developer`配下へ集約。Windows nativeとPOSIXは別checkout）
 
@@ -276,7 +277,7 @@ Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / 
 |---|---|---|
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
 | main-server | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
-| rabbit native Linux | `./bin/setup-linux-workstation-factory.sh` | Ubuntu公式前提package、Node.js 24、uv、GitHub認証、main-server SSH／reporter credential、全工場製品を一括導入。cron、毎日02:00。`linux` profile専用 |
+| rabbit native Linux | `./bin/setup-linux-workstation-factory.sh` | Ubuntu公式前提package、OpenSSH Server、`kite` passwordless sudo、main-serverからの専用鍵SSH、Node.js 24、uv、GitHub認証、main-server SSH／reporter credential、全工場製品を一括導入。cron、毎日02:00。`linux` profile専用 |
 | Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrep/OpenSSHも不足時は正規packageを導入する。さらにmain-server専用鍵・固定host key・SSH config・公開鍵登録workflow・alias／直IPの非対話再接続を一括検証する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
 
 macOSではAIShell（Apple Silicon／macOS 15+）も配備する。main-serverとrabbitは同じLinux共通本体を使うが、
