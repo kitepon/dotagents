@@ -132,7 +132,8 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `apply-cursor-config` | Cursor の工場MCP 6を `~/.cursor/mcp.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、post-update gateとreportを実行 |
-| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-wsl-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。共通配備契約を消費し、各OS固有の配線と全製品smokeを行う |
+| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-wsl-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。共通配備契約を消費し、各OS固有の配線と全製品smokeを行う。Windows入口はmain-serverへの恒久SSHも所有する |
+| GitHub Actions | `enroll-windows-main-server-ssh.yml` | Windows専用公開鍵をmain-server runner自身が`authorized_keys`へ冪等登録する。秘密鍵はWindowsから出さない |
 | bin | `bughub-external-probe.mjs` | server profileからloopback `/readyz`とdeploy revision manifestを照合し、安全な固定checkへ投影 |
 | bin | `factory-reporter.mjs` | 明示opt-inされた工場reportを検証・outbox保存・BugHubへ冪等送信 |
 | bin | `factory-external-event.mjs` | Pi5等の外部監視結果をmain-serverの所有者限定stateへ固定ServerManager eventとしてappend-only記録し、BugHub受理後だけack |
@@ -218,7 +219,7 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   ```
   Grok親の工場MCP 6はClaude/Codexへ手挿しせず、`~/.grok/config.toml`が所有する。適用は`apply-grok-config`（login済み`--apply`はH）。個人MCPはClaude jsonに残してよい。`compat.claude.mcps`は切らない。Cursor親の工場MCP 6と工場hookは`bin/apply-cursor-config.sh --apply`が`~/.cursor/mcp.json` / `hooks.json`を upsert する（Cursor CLI の `mcp add` は無い）。`cli-config.json`は触らない
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
-- **home-server ssh**: `kite@192.168.1.2` 直IP（固定IP・エイリアスは作らない）
+- **home-server ssh**: `kite@192.168.1.2`（固定IP）または`main-server`。Windows native入口はパスフレーズなしの専用鍵`~/.ssh/id_ed25519_main_server`、owner-only ACL、固定済みserver ED25519指紋、`IdentitiesOnly yes`を管理し、直IPとaliasの両方へ適用する。初回または認証喪失時は公開鍵だけをGitHub Actions secretへ置き、main-server上の`Enroll Windows main-server SSH` workflowで`authorized_keys`へ冪等登録する。server側鍵行はagent／port／X11 forwardingを禁止する
 
 ### 1. clone（`Developer`配下へ集約。Windows nativeとPOSIXは別checkout）
 
@@ -277,12 +278,14 @@ Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / 
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
 | Linux | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
 | WSL2 | `./bin/setup-wsl-factory.sh` | cron、毎日02:00。`systemd`と非対話`sudo`が必要 |
-| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrepも不足時は正規packageを導入する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
+| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrep/OpenSSHも不足時は正規packageを導入する。さらにmain-server専用鍵・固定host key・SSH config・公開鍵登録workflow・alias／直IPの非対話再接続を一括検証する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
 
 macOSではAIShell（Apple Silicon／macOS 15+）も配備する。WSL2とWindows nativeは別hostであり、
 config、hook、credential、scheduler、delivery receipt、runtime前提を共有しない。Windows native入口は`wsl.exe`を呼ばず、
 WSL distroの有無や状態を成功条件にしない。Windows Codex Desktopから別席のWSL2を使う時だけ、上記WSL2入口が作る
 `fox-wsl` SSH hostでWSL側projectを開く。
+
+Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`を3回と`ssh -o BatchMode=yes kite@192.168.1.2`を1回成功させること。通常の`ssh kite@192.168.1.2`で旧`id_ed25519`のpassphraseを聞かれる状態は不合格である。登録workflowが使う`MAIN_SERVER_WINDOWS_PUBLIC_KEY`は公開鍵だけであり、再適用可能な修復入口として保持してよい。
 
 個別に適用・切り分ける場合は、以下の正規入口を順に使う。
 

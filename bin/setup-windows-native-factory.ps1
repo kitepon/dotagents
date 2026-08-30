@@ -14,6 +14,7 @@ $Plan = @(
   'dotagents-links',
   'factory-products-bootstrap',
   'codex-config',
+  'main-server-ssh',
   'native-product-wiring',
   'lattice-hooks',
   'spotter-project',
@@ -65,6 +66,12 @@ $StateDirectory = Join-Path $env:LOCALAPPDATA 'dotagents\windows-native-factory-
 $ReceiptPath = Join-Path $StateDirectory 'latest-receipt.json'
 $TaskName = 'dotagents-agents-update'
 $ReporterTaskName = 'dotagents-factory-reporter'
+$MainServerHost = '192.168.1.2'
+$MainServerUser = 'kite'
+$MainServerAlias = 'main-server'
+$MainServerKeyComment = 'quolu@windows-main-server-20260830'
+$MainServerHostKey = '192.168.1.2 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWU1zJ02l+o/J1g+LJEAZSPV/BUcXJZJf9hIPnNCxlG'
+$MainServerHostKeyFingerprint = 'SHA256:TLhN/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'
 $RunId = [guid]::NewGuid().ToString()
 $RunLock = $null
 $TranscriptPath = Join-Path $StateDirectory "run-$RunId.log"
@@ -112,6 +119,14 @@ function Ensure-WindowsPrerequisites {
   Ensure-WingetCommand -Command 'make' -PackageId 'ezwinports.make'
   Ensure-WingetCommand -Command 'shellcheck' -PackageId 'koalaman.shellcheck'
   Ensure-WingetCommand -Command 'rg' -PackageId 'BurntSushi.ripgrep.MSVC'
+  foreach ($sshCommand in @('ssh', 'ssh-keygen', 'ssh-keyscan')) {
+    if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+      Invoke-WingetPackage -Id 'Git.Git' -Upgrade
+      if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+        throw "Git.Git was installed but required OpenSSH command $sshCommand is unavailable"
+      }
+    }
+  }
 }
 
 function Convert-ToGitBashPath([string]$Path) {
@@ -177,6 +192,8 @@ function Ensure-CodexMcp {
 function Set-OwnerOnlyAcl([string]$Path) {
   $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
   $item = Get-Item -LiteralPath $Path
+  $existingAcl = Get-Acl -LiteralPath $Path
+  $existingOwnerSid = ($existingAcl.GetOwner([Security.Principal.SecurityIdentifier])).Value
   if ($item.PSIsContainer) {
     $acl = [Security.AccessControl.DirectorySecurity]::new()
     $inherit = [Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit
@@ -184,7 +201,7 @@ function Set-OwnerOnlyAcl([string]$Path) {
     $acl = [Security.AccessControl.FileSecurity]::new()
     $inherit = [Security.AccessControl.InheritanceFlags]::None
   }
-  $acl.SetOwner($sid)
+  if ($existingOwnerSid -ne $sid.Value) { $acl.SetOwner($sid) }
   $acl.SetAccessRuleProtection($true, $false)
   $rule = [Security.AccessControl.FileSystemAccessRule]::new(
     $sid,
@@ -207,6 +224,160 @@ function Set-OwnerOnlyAcl([string]$Path) {
   if (-not $aclMatches) {
     throw "Owner-only ACL readback failed: $Path"
   }
+}
+
+function Write-Utf8NoBom([string]$Path, [string]$Content) {
+  [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
+}
+
+function Test-MainServerSsh {
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $output = & ssh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  return $code -eq 0 -and $output -eq 'dotagents-main-server-ssh-ok'
+}
+
+function Ensure-MainServerKnownHost([string]$SshDirectory) {
+  $knownHosts = Join-Path $SshDirectory 'known_hosts'
+  $scan = (& ssh-keyscan -T 5 -t ed25519 $MainServerHost 2>$null | Where-Object { $_ -notmatch '^#' }) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $scan.Trim() -ne $MainServerHostKey) {
+    throw "main-server host key does not match pinned fingerprint $MainServerHostKeyFingerprint"
+  }
+  $existing = if (Test-Path -LiteralPath $knownHosts -PathType Leaf) { Get-Content -LiteralPath $knownHosts } else { @() }
+  if ($existing -notcontains $MainServerHostKey) {
+    $updated = @($existing | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) + $MainServerHostKey
+    Write-Utf8NoBom -Path $knownHosts -Content (($updated -join "`n") + "`n")
+  }
+  $fingerprint = (& ssh-keygen -lf $knownHosts -F $MainServerHost 2>$null) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $fingerprint -notmatch [regex]::Escape($MainServerHostKeyFingerprint)) {
+    throw "main-server pinned host key readback failed: $MainServerHostKeyFingerprint"
+  }
+}
+
+function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) {
+  $configPath = Join-Path $SshDirectory 'config'
+  $begin = '# dotagents main-server begin'
+  $end = '# dotagents main-server end'
+  $managed = @(
+    $begin,
+    "Host $MainServerAlias $MainServerHost",
+    "    HostName $MainServerHost",
+    "    User $MainServerUser",
+    "    IdentityFile $($PrivateKey.Replace('\', '/'))",
+    '    IdentitiesOnly yes',
+    '    PreferredAuthentications publickey',
+    '    StrictHostKeyChecking yes',
+    '    ServerAliveInterval 30',
+    '    ServerAliveCountMax 3',
+    $end
+  ) -join "`n"
+  $current = if (Test-Path -LiteralPath $configPath -PathType Leaf) { Get-Content -Raw -LiteralPath $configPath } else { '' }
+  $pattern = "(?ms)^$([regex]::Escape($begin))\r?\n.*?^$([regex]::Escape($end))\r?\n?"
+  $withoutManaged = ([regex]::Replace($current, $pattern, '')).TrimEnd()
+  $next = if ([string]::IsNullOrWhiteSpace($withoutManaged)) { "$managed`n" } else { "$withoutManaged`n`n$managed`n" }
+  Write-Utf8NoBom -Path $configPath -Content $next
+  Set-OwnerOnlyAcl $configPath
+
+  $effective = & ssh -G $MainServerAlias 2>$null
+  $expected = @(
+    "hostname $MainServerHost",
+    "user $MainServerUser",
+    "identityfile $($PrivateKey.Replace('\', '/'))",
+    'identitiesonly yes',
+    'stricthostkeychecking true'
+  )
+  foreach ($entry in $expected) {
+    if ($effective -notcontains $entry) { throw "main-server SSH config readback is missing: $entry" }
+  }
+  $directEffective = & ssh -G $MainServerHost 2>$null
+  foreach ($entry in $expected) {
+    if ($directEffective -notcontains $entry) { throw "direct-IP main-server SSH config readback is missing: $entry" }
+  }
+}
+
+function Invoke-MainServerKeyEnrollment([string]$PublicKey) {
+  Write-Step 'main-server-ssh: enroll permanent public key'
+  $workflow = 'enroll-windows-main-server-ssh.yml'
+  $repo = 'kitepon/dotagents'
+  $prior = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 10 --json databaseId 2>$null | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the main-server SSH enrollment workflow' }
+  $priorIds = @($prior | ForEach-Object { [string]$_.databaseId })
+  & gh secret set MAIN_SERVER_WINDOWS_PUBLIC_KEY --repo $repo --body $PublicKey
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot set MAIN_SERVER_WINDOWS_PUBLIC_KEY for permanent enrollment' }
+  & gh workflow run $workflow --repo $repo --ref main
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot dispatch the main-server SSH enrollment workflow' }
+
+  $runId = $null
+  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(2)
+  do {
+    Start-Sleep -Seconds 2
+    $runs = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 5 --json databaseId 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot locate the dispatched main-server SSH enrollment run' }
+    $candidate = @($runs | Where-Object { [string]$_.databaseId -notin $priorIds } | Select-Object -First 1)
+    if ($candidate.Count -gt 0) { $runId = [string]$candidate[0].databaseId }
+  } until ($null -ne $runId -or [DateTimeOffset]::UtcNow -ge $deadline)
+  if ($null -eq $runId) { throw 'The dispatched main-server SSH enrollment run was not found' }
+
+  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(20)
+  $lastStatus = ''
+  do {
+    $run = & gh run view $runId --repo $repo --json status,conclusion,url 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect main-server SSH enrollment run $runId" }
+    if ($run.status -ne $lastStatus) {
+      Write-Step "main-server-ssh: enrollment $($run.status) $($run.url)"
+      $lastStatus = $run.status
+    }
+    if ($run.status -eq 'completed') {
+      if ($run.conclusion -ne 'success') { throw "main-server SSH enrollment failed: $($run.url) conclusion=$($run.conclusion)" }
+      return
+    }
+    Start-Sleep -Seconds 5
+  } until ([DateTimeOffset]::UtcNow -ge $deadline)
+  throw "main-server SSH enrollment did not complete within 20 minutes: $($run.url)"
+}
+
+function Ensure-MainServerSsh {
+  Write-Step 'main-server-ssh'
+  $sshDirectory = Join-Path $env:USERPROFILE '.ssh'
+  $privateKey = Join-Path $sshDirectory 'id_ed25519_main_server'
+  $publicKeyPath = "$privateKey.pub"
+  New-Item -ItemType Directory -Force -Path $sshDirectory | Out-Null
+
+  if (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -and -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
+    & ssh-keygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $privateKey
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to generate the permanent main-server SSH key' }
+  } elseif (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -or -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
+    throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half'
+  }
+
+  Set-OwnerOnlyAcl $privateKey
+  $publicKey = (Get-Content -Raw -LiteralPath $publicKeyPath).Trim()
+  if ($publicKey -notmatch "^ssh-ed25519 [A-Za-z0-9+/]+={0,3} $([regex]::Escape($MainServerKeyComment))$") {
+    throw "Unexpected permanent main-server public key format or comment: $publicKeyPath"
+  }
+  $derived = (& ssh-keygen -y -P '' -f $privateKey 2>$null).Trim()
+  if ($LASTEXITCODE -ne 0 -or $publicKey.Split(' ')[1] -ne $derived.Split(' ')[1]) {
+    throw 'The permanent main-server key is passphrase-protected or its public half does not match'
+  }
+
+  Ensure-MainServerKnownHost -SshDirectory $sshDirectory
+  Ensure-MainServerSshConfig -SshDirectory $sshDirectory -PrivateKey $privateKey
+  if (-not (Test-MainServerSsh)) {
+    Invoke-MainServerKeyEnrollment -PublicKey $publicKey
+  }
+  foreach ($attempt in 1..3) {
+    if (-not (Test-MainServerSsh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
+  }
+  $directOutput = & ssh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
+  if ($LASTEXITCODE -ne 0 -or $directOutput -ne 'dotagents-main-server-direct-ssh-ok') {
+    throw 'Permanent direct-IP main-server SSH verification failed'
+  }
+  Write-Step 'main-server-ssh: three reconnects passed'
 }
 
 function Assert-ReporterConfig {
@@ -718,6 +889,7 @@ try {
   Restore-ScheduledGitHubCliConfigFromCodexCache
   Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
   Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
+  Ensure-MainServerSsh
   $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'
   if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
     Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'

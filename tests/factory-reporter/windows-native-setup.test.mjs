@@ -72,10 +72,17 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /lib\\factory\\windows-native-product-smoke\.mjs/u);
   assert.match(source, /checked_products -ne 15/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
-  assert.match(source, /function Set-OwnerOnlyAcl.*DirectorySecurity.*FileSecurity.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
+  assert.match(source, /function Set-OwnerOnlyAcl.*existingOwnerSid.*DirectorySecurity.*FileSecurity.*existingOwnerSid -ne \$sid\.Value.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
   assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
+  assert.match(source, /function Ensure-WindowsPrerequisites.*ssh.*ssh-keygen.*ssh-keyscan.*Git\.Git/su);
+  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*ssh-keygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
+  assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*ssh-keyscan.*pinned fingerprint/su);
+  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*ssh -G.*direct-IP/su);
+  assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
+  assert.match(source, /github-auth-setup-git'.*Ensure-MainServerSsh.*caveat-sync/su);
+  assert.match(source, /ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
@@ -100,6 +107,7 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
     'dotagents-links',
     'factory-products-bootstrap',
     'codex-config',
+    'main-server-ssh',
     'native-product-wiring',
     'lattice-hooks',
     'spotter-project',

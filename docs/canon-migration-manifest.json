@@ -98,7 +98,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "Claude Code と Codex の自作 skill / slash command / rule を複数端末で同期する個人 dotfiles。\n`install.sh` がリポジトリ内エントリを `~/.claude/{skills,commands}`、`~/.codex/{rules,agents}`、\nCodex の公式 user skill 面 `$HOME/.agents/skills`（明示 legacy 時だけ `~/.codex/skills`）へ\n**ファイル / ディレクトリ単位の symlink** で配置する。\n\nそのため:\n\n- リポジトリ内の配布ファイルを編集すれば、選択した配布面の `~/.claude/...` / `~/.codex/...` / `~/.agents/skills/...` に即反映される（symlink なので同じファイル）。グローバル憲法だけは`shared/constitution.md`またはhost deltaを編集後、`node bin/render-global-constitution.mjs --write`で配布生成物を更新する。生成物を直接編集しない。\n- `install.sh` は冪等。既存 symlink は上書き、実ファイルが存在する宛先は `SKIP` してログを出す。失敗は止まる (`set -euo pipefail` を維持。フォールバック禁止)。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
+      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。同入口はmain-server専用SSH鍵・pinned host key・alias／直IP config・runner経由公開鍵登録・非対話再接続も所有する。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -332,7 +332,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "dotagents は**開発工場そのもの**。全プロジェクトに共通して効く土台と、そのコア製品群の統合責務を持つ:",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
+      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。同入口はmain-server専用SSH鍵・pinned host key・alias／直IP config・runner経由公開鍵登録・非対話再接続も所有する。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
     },
     {
       "receiver_path": "shared/runbooks/git-hygiene.md",
