@@ -8,6 +8,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Plan = @(
+  'prerequisite-packages',
   'factory-reporter-config',
   'retire-legacy-schedulers',
   'dotagents-links',
@@ -30,7 +31,22 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
 }
 
 if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) {
-  throw 'PowerShell 7 is required. Install the official GitHub release win-x64 MSI at machine scope.'
+  $powerShellMessage = 'PowerShell 7 is required. Install the official GitHub release win-x64 MSI at machine scope.'
+  if ($PlanOnly) { throw $powerShellMessage }
+  $officialPowerShell = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+  if (-not (Test-Path -LiteralPath $officialPowerShell -PathType Leaf)) {
+    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if ($null -eq $winget) { throw "$powerShellMessage winget.exe is also missing." }
+    Write-Host '[windows-native-factory] prerequisite-package: Microsoft.PowerShell'
+    & $winget.Source install --exact --id Microsoft.PowerShell --scope machine --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $officialPowerShell -PathType Leaf)) {
+      throw "$powerShellMessage winget installation failed."
+    }
+  }
+  $relayArguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+  if ($ScheduledRun) { $relayArguments += '-ScheduledRun' }
+  & $officialPowerShell @relayArguments
+  exit $LASTEXITCODE
 }
 
 if ($PlanOnly) {
@@ -55,6 +71,47 @@ $TranscriptPath = Join-Path $StateDirectory "run-$RunId.log"
 
 function Write-Step([string]$Name) {
   Write-Host "[windows-native-factory] $Name"
+}
+
+function Refresh-ProcessPath {
+  $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+  $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+  $env:Path = @($machinePath, $userPath) -join ';'
+}
+
+function Invoke-WingetPackage([string]$Id, [switch]$Upgrade) {
+  $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+  if ($null -eq $winget) { throw "Required package $Id is missing and winget.exe is unavailable" }
+  $verb = if ($Upgrade) { 'upgrade' } else { 'install' }
+  Write-Step "prerequisite-package: $Id"
+  & $winget.Source $verb --exact --id $Id --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+  if ($LASTEXITCODE -ne 0) { throw "winget $verb failed for $Id with exit $LASTEXITCODE" }
+  Refresh-ProcessPath
+}
+
+function Ensure-WingetCommand([string]$Command, [string]$PackageId) {
+  if (Get-Command $Command -ErrorAction SilentlyContinue) { return }
+  Invoke-WingetPackage -Id $PackageId
+  if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) {
+    throw "Package $PackageId was installed but command $Command is still unavailable"
+  }
+}
+
+function Ensure-WindowsPrerequisites {
+  Refresh-ProcessPath
+  Ensure-WingetCommand -Command 'git' -PackageId 'Git.Git'
+  Ensure-WingetCommand -Command 'node' -PackageId 'OpenJS.NodeJS.LTS'
+  $nodeVersion = (& node --version).Trim()
+  if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v([0-9]+)\.' -or [int]$Matches[1] -lt 24) {
+    Invoke-WingetPackage -Id 'OpenJS.NodeJS.LTS' -Upgrade
+  }
+  Ensure-WingetCommand -Command 'npm' -PackageId 'OpenJS.NodeJS.LTS'
+  Ensure-WingetCommand -Command 'gh' -PackageId 'GitHub.cli'
+  Ensure-WingetCommand -Command 'python' -PackageId 'Python.Python.3.13'
+  Ensure-WingetCommand -Command 'uv' -PackageId 'astral-sh.uv'
+  Ensure-WingetCommand -Command 'make' -PackageId 'ezwinports.make'
+  Ensure-WingetCommand -Command 'shellcheck' -PackageId 'koalaman.shellcheck'
+  Ensure-WingetCommand -Command 'rg' -PackageId 'BurntSushi.ripgrep.MSVC'
 }
 
 function Convert-ToGitBashPath([string]$Path) {
@@ -167,8 +224,63 @@ function Assert-ReporterConfig {
   }
 }
 
+function Restore-ScheduledReporterConfigFromCodexCache {
+  if (-not $ScheduledRun -or (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) { return }
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { return }
+  $candidates = @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*' | ForEach-Object {
+    $candidate = Join-Path $_.FullName 'LocalCache\Local\dotagents\factory-reporter\config.json'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
+  })
+  if ($candidates.Count -eq 0) { return }
+  if ($candidates.Count -ne 1) { throw 'Multiple Codex AppContainer factory reporter configs were found' }
+
+  $sourceConfig = $candidates[0].FullName
+  $sourceDirectory = Split-Path -Parent $sourceConfig
+  $sourceCredential = Join-Path $sourceDirectory 'credential'
+  if (-not (Test-Path -LiteralPath $sourceCredential -PathType Leaf) -or (Get-Item -LiteralPath $sourceCredential).Length -lt 1) {
+    throw 'Codex AppContainer BugHub credential is missing'
+  }
+  $destinationDirectory = Split-Path -Parent $ConfigPath
+  $destinationCredential = Join-Path $destinationDirectory 'credential'
+  $sourceValue = Get-Content -Raw -LiteralPath $sourceConfig | ConvertFrom-Json
+  if ([IO.Path]::GetFullPath([string]$sourceValue.reporting.credential_file) -ne [IO.Path]::GetFullPath($destinationCredential)) {
+    throw 'Codex AppContainer factory reporter credential path is not canonical'
+  }
+
+  New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+  Copy-Item -LiteralPath $sourceCredential -Destination $destinationCredential -Force
+  Copy-Item -LiteralPath $sourceConfig -Destination $ConfigPath -Force
+  Set-OwnerOnlyAcl $destinationDirectory
+  Set-OwnerOnlyAcl $destinationCredential
+  Set-OwnerOnlyAcl $ConfigPath
+  Write-Step 'factory-reporter-config: restored from Codex AppContainer cache'
+}
+
+function Restore-ScheduledGitHubCliConfigFromCodexCache {
+  if (-not $ScheduledRun -or (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) { return }
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { throw 'GitHub CLI is not authenticated for the scheduled task' }
+  $candidates = @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*' | ForEach-Object {
+    $candidate = Join-Path $_.FullName 'LocalCache\Roaming\GitHub CLI\hosts.yml'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
+  })
+  if ($candidates.Count -ne 1) { throw 'A unique Codex AppContainer GitHub CLI config was not found' }
+  $destinationDirectory = Join-Path $env:APPDATA 'GitHub CLI'
+  $destination = Join-Path $destinationDirectory 'hosts.yml'
+  New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+  Copy-Item -LiteralPath $candidates[0].FullName -Destination $destination -Force
+  Set-OwnerOnlyAcl $destinationDirectory
+  Set-OwnerOnlyAcl $destination
+  if (-not (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) {
+    throw 'GitHub CLI authentication was not restored for the scheduled task'
+  }
+  Write-Step 'github-cli-config: restored from Codex AppContainer cache'
+}
+
 function Normalize-WindowsReporterConfig {
   Write-Step 'factory-reporter-config: UTF-8 without BOM'
+  Restore-ScheduledReporterConfigFromCodexCache
   Assert-ReporterConfig
   $backup = Join-Path $StateDirectory "factory-reporter-config-$RunId.json.bak"
   Copy-Item -LiteralPath $ConfigPath -Destination $backup -Force
@@ -211,11 +323,16 @@ function Invoke-BootstrapUpdate([string]$UpdateScript) {
   Write-Step 'factory-products-bootstrap: agents-update.sh'
   $previousRunner = $env:FACTORY_REPORTER_RUNNER
   $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
+  $bootstrapLog = Join-Path $StateDirectory "bootstrap-$RunId.log"
   try {
-    & $GitBash $UpdateScript
+    & $GitBash $UpdateScript *> $bootstrapLog
     $code = $LASTEXITCODE
   } finally {
     $env:FACTORY_REPORTER_RUNNER = $previousRunner
+  }
+  if (Test-Path -LiteralPath $bootstrapLog -PathType Leaf) {
+    Set-OwnerOnlyAcl $bootstrapLog
+    Get-Content -LiteralPath $bootstrapLog | ForEach-Object { Write-Host $_ }
   }
   if ($code -eq 0) { return }
   $log = Join-Path $env:LOCALAPPDATA 'dotagents\agents-update\agents-update.log'
@@ -441,6 +558,17 @@ function Assert-DailyTask {
   }
 }
 
+function Get-CodexReceiptMirrorPaths {
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  $paths = @()
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { return $paths }
+  foreach ($directory in @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*')) {
+    if ($directory.Name -notmatch '^OpenAI\.Codex_[A-Za-z0-9]+$' -or ($directory.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+    $paths += Join-Path $directory.FullName 'LocalCache\Local\dotagents\windows-native-factory-setup\scheduled-receipt.json'
+  }
+  return $paths
+}
+
 function Write-Receipt([object]$Delivery, [bool]$ScheduledSmoke, [string]$VerifyStatus) {
   $value = [ordered]@{
     schema = 'dotagents.windows-native-factory-setup-receipt.v1'
@@ -459,6 +587,20 @@ function Write-Receipt([object]$Delivery, [bool]$ScheduledSmoke, [string]$Verify
   [IO.File]::WriteAllText($temporary, (($value | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
   Move-Item -LiteralPath $temporary -Destination $ReceiptPath -Force
   Set-OwnerOnlyAcl $ReceiptPath
+  # Codex Desktop (MSIX/AppContainer) から開始した親プロセスでは LocalAppData の
+  # virtual overlay がphysical receiptを隠す。scheduled processが同じ受領票を
+  # Codex cacheへ明示公開し、親が実行IDと配送ackを検証できるようにする。
+  if (-not $ScheduledRun) { return [pscustomobject]$value }
+  $mirrorPaths = @(Get-CodexReceiptMirrorPaths)
+  foreach ($mirror in $mirrorPaths) {
+    $mirrorDirectory = Split-Path -Parent $mirror
+    New-Item -ItemType Directory -Force -Path $mirrorDirectory | Out-Null
+    Set-OwnerOnlyAcl $mirrorDirectory
+    $mirrorTemporary = "$mirror.$RunId.tmp"
+    [IO.File]::WriteAllText($mirrorTemporary, (($value | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $mirrorTemporary -Destination $mirror -Force
+    Set-OwnerOnlyAcl $mirror
+  }
   return [pscustomobject]$value
 }
 
@@ -474,21 +616,25 @@ function Wait-ScheduledSmoke([string]$PriorRunId) {
       $info = Get-ScheduledTaskInfo -TaskName $TaskName
       if ($info.LastRunTime -le $priorLastRunTime) { continue }
       if ($info.LastTaskResult -ne 0) { throw "scheduled task LastTaskResult=$($info.LastTaskResult)" }
-      if (-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)) { throw 'scheduled task completed without a receipt' }
-      try {
-        $receipt = Get-Content -Raw -LiteralPath $ReceiptPath | ConvertFrom-Json
-        if ($receipt.run_id -ne $PriorRunId -and $receipt.scheduled_run -eq $true -and $receipt.delivery_acknowledged -eq $true) {
-          return $receipt
-        }
-      } catch {}
+      $candidates = @($ReceiptPath) + @(Get-CodexReceiptMirrorPaths)
+      foreach ($candidate in $candidates) {
+        if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+        try {
+          $receipt = Get-Content -Raw -LiteralPath $candidate | ConvertFrom-Json
+          if ($receipt.schema -eq 'dotagents.windows-native-factory-setup-receipt.v1' -and $receipt.run_id -ne $PriorRunId -and $receipt.scheduled_run -eq $true -and $receipt.delivery_acknowledged -eq $true) {
+            return $receipt
+          }
+        } catch {}
+      }
       throw 'scheduled task completed without a fresh acknowledged receipt'
     }
   }
   throw 'The daily 02:00 task smoke did not complete within 20 minutes'
 }
 
-if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is missing: $GitBash" }
-foreach ($command in @('git', 'node', 'npm', 'python', 'uv')) {
+Ensure-WindowsPrerequisites
+if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is missing after Git.Git installation: $GitBash" }
+foreach ($command in @('git', 'node', 'npm', 'gh', 'python', 'uv', 'make', 'shellcheck', 'rg')) {
   if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is missing: $command" }
 }
 $nodeVersion = (& node --version).Trim()
@@ -569,6 +715,7 @@ try {
   }
   # 初回syncより先に caveat init を実行すると、initが作る未追跡
   # ~/.caveat/own/.gitignore とprivate repoのcheckoutが衝突する。
+  Restore-ScheduledGitHubCliConfigFromCodexCache
   Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
   Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
   $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'

@@ -223,7 +223,10 @@ fi
         printf 'FAILED: MarkItDown uv tool upgrade\n'
         update_failed=1
       fi
-    elif ! uv tool install markitdown; then
+    # Windows AppContainerからの初回導入ではuv metadataだけが仮想領域にあり、
+    # scheduled runからは既存の公式executableだけが見える。uv ownershipを
+    # 正規storeへ収束させるため、未登録branchは公式の--force契約で再導入する。
+    elif ! uv tool install --force markitdown; then
       printf 'FAILED: MarkItDown uv tool install\n'
       update_failed=1
     fi

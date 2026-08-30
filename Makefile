@@ -3,6 +3,10 @@
 # `make ci` の clean HOME test は Codex CLI 0.144.1 を完全 TOML parser として使う。
 # markdownlint-cli2 は再現性のためバージョン固定。
 SHELL := /bin/bash
+# Native Windows GNU Make exports PWD as C:/..., while Git Bash creates
+# symlinks using /c/... paths. Let Bash reconstruct PWD so isolated-HOME
+# assertions compare one canonical path form on every host.
+unexport PWD
 MDLINT := npx --yes markdownlint-cli2@0.23.0
 ifeq ($(OS),Windows_NT)
 PYTHON := python

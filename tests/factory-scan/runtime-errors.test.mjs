@@ -142,7 +142,7 @@ test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadata�
     });
     assert.deepEqual(calls[0].command, fixture.command);
     assert.deepEqual(calls[0].args, fixture.args);
-    assert.equal(calls[0].options.timeoutMs, 3_000);
+    assert.equal(calls[0].options.timeoutMs, 10_000);
     assert.equal(calls[0].options.maxOutputBytes, 256 * 1024);
   }
 });

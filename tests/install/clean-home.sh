@@ -240,13 +240,16 @@ grep -Fq "FAIL: $OFFICIAL_HOME/.cursor/runbooks 不在" <<<"$cursor_runbook_miss
   || fail 'Cursor runbooks欠落のFAILが対象pathを名指ししない'
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
+# 以降はGrok認証済み席の実ファイルhook/config契約を検証する。
+# 呼出元PCの秘密・ログイン有無にfixtureの分岐を依存させない。
+export XAI_API_KEY='dotagents-clean-home-fixture'
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 printf '%s\n' '{"hooks":{}}' >"$OFFICIAL_HOME/.grok/hooks/factory.json"
 if grok_hooks_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok 工場hook欠落をverifyが見逃した'
 fi
 grep -Fq 'FAIL: Grok 工場hook が欠落' <<<"$grok_hooks_missing_output" \
-  || fail 'Grok 工場hook欠落のFAILを出さない'
+  || fail "Grok 工場hook欠落のFAILを出さない: $grok_hooks_missing_output"
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"

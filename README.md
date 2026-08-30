@@ -263,7 +263,7 @@ Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / 
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
 | Linux | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
 | WSL2 | `./bin/setup-wsl-factory.sh` | cron、毎日02:00。`systemd`と非対話`sudo`が必要 |
-| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1またはStore/MSIX版しかなければ、PowerShell公式GitHub releaseの`win-x64.msi`をmachine scopeへ導入する（App Execution Aliasはowner-only工場stateを読めないため不受理） | Task Scheduler、毎日02:00。ユーザー権限。UAC は出さない。5.1／`cmd.exe` fallbackなし |
+| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrepも不足時は正規packageを導入する | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`で工場処理を続行するfallbackなし |
 
 macOSではAIShell（Apple Silicon／macOS 15+）も配備する。WSL2とWindows nativeは別hostであり、
 config、hook、credential、scheduler、delivery receiptを共有しない。Windows Codex DesktopからWSL2を使う時は、

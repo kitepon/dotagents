@@ -450,8 +450,8 @@ if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   cat "$TEST_HOME/uv-absent.out" >&2
   fail 'MarkItDown absent→install fixtureが失敗した'
 fi
-[ "$(grep -c '^uv-absent:tool install markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
-  || fail 'MarkItDown absent時にuv tool installを実行していない'
+[ "$(grep -c '^uv-absent:tool install --force markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
+  || fail 'MarkItDown absent時にuv tool install --forceでuv ownershipを収束していない'
 
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
