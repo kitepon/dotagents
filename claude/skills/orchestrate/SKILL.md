@@ -7,18 +7,18 @@ description: 多エージェント/多モデル統括の標準型。統括レー
 
 # Orchestrate — 統括の標準型
 
-まず[共通契約](../../../shared/orchestrate/contract.md)と[委譲契約](../../../shared/orchestrate/delegation-contract.md)を全文読む。使う時・使わない時、同期、原因特定、focused検証、通し試験の最終確認、反証、Packet/Report、レーン分離、独立完結、知識還流、F/A/H、Control lifecycle、フェーズ、統括ゲートは共有文書が正本である。この本文は Claude 固有の appendix として読む。
+まず[共通契約](references/shared-orchestrate/contract.md)と[委譲契約](references/shared-orchestrate/delegation-contract.md)を全文読む。使う時・使わない時、同期、原因特定、focused検証、通し試験の最終確認、反証、Packet/Report、レーン分離、独立完結、知識還流、F/A/H、Control lifecycle、フェーズ、統括ゲートは共有文書が正本である。この本文は Claude 固有の appendix として読む。
 
 ## Claude appendix（既存の運用詳細）
 
-以下はClaudeのWorkflow / Agent / codex-sidecar / aitermを使う場合の固有入口と配置強化策である。共通原則の二重管理はせず、製品中立の判断は上の共通契約に従う。**aitermで子エージェントレーンを張る前に[aiterm-dispatch.md](../../../shared/orchestrate/aiterm-dispatch.md)（完了受信・レーン構成・親専任の運用型）を読む。**
+以下はClaudeのWorkflow / Agent / codex-sidecar / aitermを使う場合の固有入口と配置強化策である。共通原則の二重管理はせず、製品中立の判断は上の共通契約に従う。**aitermで子エージェントレーンを張る前に[aiterm-dispatch.md](references/shared-orchestrate/aiterm-dispatch.md)（完了受信・レーン構成・親専任の運用型）を読む。**
 
 Claude appendixは、Claude固有入口から得たstatusをControlへ投影するだけである。Claude内部の共通dispatch API、Executor state複製、新規operational admissionを前提にしない。既存manifestの定義・所有は変更しない。
 
 ## Claude 固有の運用
 
 - 同期確認には `sync-sweep` を使う。端末横断リポの照合、dirty、stash、迷いブランチ、NO_REMOTE を明示してから着手する。
-- Claude の委譲は[共有の委譲契約](../../../shared/orchestrate/delegation-contract.md)と[Workflow 雛形](references/workflow-templates.md)を参照する。
+- Claude の委譲は[共有の委譲契約](references/shared-orchestrate/delegation-contract.md)と[Workflow 雛形](references/workflow-templates.md)を参照する。
 
 ## 知能の配置
 
@@ -31,8 +31,8 @@ Claude appendixは、Claude固有入口から得たstatusをControlへ投影す�
 | L4 外部CLI | 完全固定仕様の機械的一括・第三者視点レビュー | 非対話＝codex-sidecar の `codex_review`/`codex_work`/`codex_generate` 等／対話＝aiterm の `codex_agent`・`grok_agent`・`composer_agent` | レート非依存の並列枠（02_models.md） |
 
 **レート予算**: 外部枠（Codex/Grok）とClaude内`sonnet`は対等候補とし、物量・隔離・quota残・準備コストで選ぶ（配置の既定と effort ゲートは docs/02_models.md）。
-**並列dispatchの既定はLattice**: 独立に見えるTODOが2つ以上あれば並列化を一度検討し（無意識の直列流れ禁止）、**同一repoへ書込みするworkerを2つ以上同時に走らせるなら**`lattice plan compile`→`run start`経由を既定にする（別repo並列・read-only並列は対象外）。交差判定を親の自前判断でやらない。直列化規則の正本は[合成契約](../../../shared/orchestrate/composition.md)「同一repo writerの直列化」、委譲側の帰結は[委譲契約](../../../shared/orchestrate/delegation-contract.md)「並列化の検討とLattice既定」。
-**継承の罠（最上位張り付き防止）**: Agent/Workflow の model 省略は親モデル継承＝親が最上位だと全子が最上位に張り付く。全役割で `model` と `effort` を順位表どおり毎回明示する——親と同値の指定は可、省略は不可（正本は[委譲契約](../../../shared/orchestrate/delegation-contract.md)最低安全契約）。
+**並列dispatchの既定はLattice**: 独立に見えるTODOが2つ以上あれば並列化を一度検討し（無意識の直列流れ禁止）、**同一repoへ書込みするworkerを2つ以上同時に走らせるなら**`lattice plan compile`→`run start`経由を既定にする（別repo並列・read-only並列は対象外）。交差判定を親の自前判断でやらない。直列化規則の正本は[合成契約](references/shared-orchestrate/composition.md)「同一repo writerの直列化」、委譲側の帰結は[委譲契約](references/shared-orchestrate/delegation-contract.md)「並列化の検討とLattice既定」。
+**継承の罠（最上位張り付き防止）**: Agent/Workflow の model 省略は親モデル継承＝親が最上位だと全子が最上位に張り付く。全役割で `model` と `effort` を順位表どおり毎回明示する——親と同値の指定は可、省略は不可（正本は[委譲契約](references/shared-orchestrate/delegation-contract.md)最低安全契約）。
 
 ## 協業ループ（Claude⇄外部AI・aiterm PTY で回す）
 
@@ -58,6 +58,6 @@ Claude appendixは、Claude固有入口から得たstatusをControlへ投影す�
 
 ## Claude 固有の参照
 
-- 委譲プロンプトの雛形: [共有の委譲契約](../../../shared/orchestrate/delegation-contract.md)
+- 委譲プロンプトの雛形: [共有の委譲契約](references/shared-orchestrate/delegation-contract.md)
 - Workflow スクリプト雛形（敵対的監査・一括整理）: `references/workflow-templates.md`
 - 役割→現行モデルの対応: `dotagents/docs/02_models.md`（バージョン固定禁止・エスカレーション裁量）

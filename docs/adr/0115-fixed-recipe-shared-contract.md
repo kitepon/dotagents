@@ -24,8 +24,10 @@ host非依存・製品非依存の静的契約として、各型のPhase名と�
 reducer（集約規則と完全性検算）・gate（合否）・失敗条件を所有する。対象は現行二型だけとし、
 第三の型を追加しない。
 
-配布はhost skillのrepo相対参照で成立する（skillはディレクトリごとsymlinkされ、kernelのpath解決が
-`../../../shared/`を実在ファイルへ導くことを実測済み）。`install.sh`の配布対象追加は不要。
+配布先のhost skillから参照できる自己完結した生成物を、各skillの
+`references/shared-orchestrate/`へ置く。共通正本と依存文書からgeneratorで作り、driftをCIで拒否する。
+skillディレクトリをsymlink配布した後に`..`でsymlink外へ抜ける参照は使わない。Windowsではその参照が
+配布先の字句上の親へ解決され、repo内だけで成立する`../../../shared/`が読めないことを実測したためである。
 
 ### 2. 実行結果は二軸で表現し、集約判定を固定する
 

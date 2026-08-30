@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+node "$ROOT/bin/render-orchestrate-skill-references.mjs" --check
 PYTHON=python3
 if [ "${OS:-}" = "Windows_NT" ]; then
   PYTHON=python
@@ -82,16 +83,22 @@ done
 
 [ -d "$ROOT/codex/skills/orchestrate" ] || fail 'Codex orchestrate は実ディレクトリでない'
 [ ! -L "$ROOT/codex/skills/orchestrate" ] || fail 'Codex orchestrate が symlink のまま'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/contract.md)'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/delegation-contract.md)'
+contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
+contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
 contains "$ROOT/shared/orchestrate/contract.md" '統括の共通契約'
 contains "$ROOT/shared/orchestrate/contract.md" '非目標（やらないこと）、既知の罠、検証方法を必ず含める'
 contains "$ROOT/shared/orchestrate/contract.md" 'Control Recordの最小lifecycle'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Delegation Packet（8点）'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Worker Reportの受入'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/contract.md)'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/delegation-contract.md)'
+contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
+contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" 'references/workflow-templates.md'
+contains "$ROOT/grok/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
+contains "$ROOT/grok/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
+for host in claude codex grok cursor; do
+  absent "$ROOT/$host/skills/orchestrate/SKILL.md" '../../../shared/orchestrate/'
+done
+absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" '../../../../shared/orchestrate/'
 contains "$ROOT/PLAN.md" 'ラベル運用は統括レーンの4関節（writer委譲・受入裁定・Phase gate・H操作）の裁定用とする。'
 contains "$ROOT/PLAN.md" '作業後はpushで真実を返す（本原則は、dotagentsと製品契約台帳で自作コアに分類された製品の正規repoに対する恒久push裁定である。第三者製品・基盤toolchainには適用しない。認定手順は憲法git鉄則に従う）'
 contains "$ROOT/PLAN.md" '10. （書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**知識は還流させて育てる（第二の脳）**'
@@ -226,8 +233,8 @@ for skill in orchestrate auto-deploy-on-push polish-github gpt-connector; do
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"
 done
-contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/contract.md)'
-contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](../../../shared/orchestrate/delegation-contract.md)'
+contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
+contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
 contains "$ROOT/cursor/skills/orchestrate/SKILL.md" 'GetDynamicTools'
 absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'mcp__aiterm__pty_'
 absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'spawn_agent'

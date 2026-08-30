@@ -8,6 +8,10 @@ grok/AGENTS.md text eol=lf
 cursor/AGENTS.md text eol=lf
 cursor/rules/factory.mdc text eol=lf
 docs/factory-current-state.md text eol=lf
+claude/skills/orchestrate/references/shared-orchestrate/** text eol=lf
+codex/skills/orchestrate/references/shared-orchestrate/** text eol=lf
+grok/skills/orchestrate/references/shared-orchestrate/** text eol=lf
+cursor/skills/orchestrate/references/shared-orchestrate/** text eol=lf
 
 # Lattice storeはcanonical JSON+LFのバイト列契約。EOL変換されると
 # artifact_truncated_or_trailing_bytesでstore全体がfail closedする（Windows checkoutで実害）。

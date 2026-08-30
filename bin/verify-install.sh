@@ -65,6 +65,16 @@ check() { # check <dst> <expect_src>
   fi
 }
 
+check_orchestrate_references() {
+  local skill="$1" file
+  for file in contract.md delegation-contract.md aiterm-dispatch.md recipes.md; do
+    if [ ! -r "$skill/references/shared-orchestrate/$file" ]; then
+      echo "FAIL: 配布済みorchestrateから $file を読めない: $skill"
+      fail=1
+    fi
+  done
+}
+
 verify_aishell_host_registration() {
   local codex_config claude_config
 
@@ -473,19 +483,19 @@ elif [ ! -r "$shared_orchestrate_contract" ]; then
 elif [ ! -r "$shared_delegation_contract" ]; then
   echo "FAIL: $shared_delegation_contract を読めない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/contract.md)' "$codex_orchestrate/SKILL.md"; then
+elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$codex_orchestrate/SKILL.md"; then
   echo "FAIL: $codex_orchestrate/SKILL.md が共通契約を参照していない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$codex_orchestrate/SKILL.md"; then
+elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$codex_orchestrate/SKILL.md"; then
   echo "FAIL: $codex_orchestrate/SKILL.md が共有委譲契約を参照していない"
   fail=1
 elif [ ! -r "$claude_orchestrate" ]; then
   echo "FAIL: $claude_orchestrate を読めない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/contract.md)' "$claude_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$claude_orchestrate"; then
   echo "FAIL: $claude_orchestrate が共通契約を参照していない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$claude_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$claude_orchestrate"; then
   echo "FAIL: $claude_orchestrate が共有委譲契約を参照していない"
   fail=1
 elif [ -e "$REPO/claude/skills/orchestrate/references/delegation-contract.md" ]; then
@@ -497,10 +507,10 @@ grok_orchestrate="$REPO/grok/skills/orchestrate/SKILL.md"
 if [ ! -r "$grok_orchestrate" ]; then
   echo "FAIL: $grok_orchestrate を読めない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/contract.md)' "$grok_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$grok_orchestrate"; then
   echo "FAIL: $grok_orchestrate が共通契約を参照していない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$grok_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$grok_orchestrate"; then
   echo "FAIL: $grok_orchestrate が共有委譲契約を参照していない"
   fail=1
 fi
@@ -509,10 +519,10 @@ cursor_orchestrate="$REPO/cursor/skills/orchestrate/SKILL.md"
 if [ ! -r "$cursor_orchestrate" ]; then
   echo "FAIL: $cursor_orchestrate を読めない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/contract.md)' "$cursor_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$cursor_orchestrate"; then
   echo "FAIL: $cursor_orchestrate が共通契約を参照していない"
   fail=1
-elif ! grep -Fq '](../../../shared/orchestrate/delegation-contract.md)' "$cursor_orchestrate"; then
+elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$cursor_orchestrate"; then
   echo "FAIL: $cursor_orchestrate が共有委譲契約を参照していない"
   fail=1
 fi
@@ -520,6 +530,11 @@ if [ -e "$REPO/cursor/skills-cursor" ] || [ -L "$REPO/cursor/skills-cursor" ]; t
   echo "FAIL: $REPO/cursor/skills-cursor が存在する（Cursor内蔵面は工場所有外）"
   fail=1
 fi
+
+check_orchestrate_references "$HOME/.claude/skills/orchestrate"
+check_orchestrate_references "$codex_skills_dir/orchestrate"
+check_orchestrate_references "$HOME/.grok/skills/orchestrate"
+check_orchestrate_references "$HOME/.cursor/skills/orchestrate"
 
 # install.sh の配布グループと対称に検証
 [ -f "$REPO/claude/CLAUDE.md" ] && check "$HOME/.claude/CLAUDE.md" "$REPO/claude/CLAUDE.md"
