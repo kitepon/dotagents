@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { access, chmod, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
+import { access, chmod, mkdir, readFile, readdir, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { test } from "node:test";
 import { dirname, join } from "node:path";
 
@@ -2330,10 +2330,12 @@ test("admission後の既存dirty scope外file mode変更をWORKSPACE_DRIFTで拒
     const run = await api.workerRunRecord({ cwd: repo.root, control_id: "mode-drift-control", actor_id: "parent", expected_revision: task.revision, worker_run: makeWorkerRun({ task_id: "mode-drift-task", workspace_cwd: repo.root }) });
     const admitted = await api.admitWorker({ cwd: repo.root, control_id: "mode-drift-control", actor_id: "parent", expected_revision: run.revision, worker_run_id: "run-001" });
     const baseline = admitted.manifest.worker_runs[0].baseline_workspace_fingerprint.files.find((entry) => entry.path === "docs/control-record-plan.md");
+    const baselineMode = (await stat(outside)).mode & 0o777;
     await chmod(outside, 0o755);
     const dispatched = await api.observeWorker({ cwd: repo.root, control_id: "mode-drift-control", actor_id: "parent", expected_revision: admitted.revision, worker_run_id: "run-001", observation: workerObservation("dispatched") });
     await assert.rejects(api.observeWorker({ cwd: repo.root, control_id: "mode-drift-control", actor_id: "parent", expected_revision: dispatched.revision, worker_run_id: "run-001", observation: completedWorkerObservation() }), code("WORKSPACE_DRIFT"));
-    assert.equal(baseline.file_mode & 0o777, 0o644);
+    assert.equal(baseline.file_mode & 0o777, baselineMode);
+    assert.notEqual(baselineMode, (await stat(outside)).mode & 0o777);
   });
 });
 

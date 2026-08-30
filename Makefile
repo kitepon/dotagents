@@ -68,9 +68,8 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/apply-grok-config.sh
 	bash tests/install/apply-cursor-config.sh
 	bash tests/install/clean-home.sh
-	bash tests/install/wsl-remote-ssh.sh
-	bash tests/install/setup-wsl-factory.sh
 	bash tests/install/setup-linux-factory.sh
+	bash tests/install/setup-linux-workstation-factory.sh
 	bash tests/install/setup-macos-factory.sh
 
 test-observer-hook-config: ## 隔離 HOME のObserver parent Stop hook transaction検証

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# native Linux（main-server）向け一撃展開入口。POSIX配線はWSL版と共有し、server契約を明示する。
+# native Linux（main-server）向け一撃展開入口。Linux共通本体へserver roleを明示する。
 set -euo pipefail
 
 script_source="${BASH_SOURCE[0]}"
@@ -10,5 +10,5 @@ while [ -L "$script_source" ]; do
 done
 ROOT="$(cd "$(dirname "$script_source")/.." && pwd)"
 
-export DOTAGENTS_SETUP_VARIANT=linux
-exec "$ROOT/bin/setup-wsl-factory.sh" "$@"
+export DOTAGENTS_SETUP_VARIANT=server
+exec "$ROOT/bin/setup-linux-common.sh" "$@"

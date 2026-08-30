@@ -12,6 +12,9 @@ import tempfile
 import threading
 import time
 
+if os.name != "nt":
+    import pwd
+
 for stream in (sys.stdin, sys.stdout, sys.stderr):
     if hasattr(stream, "reconfigure"):
         stream.reconfigure(encoding="utf-8")
@@ -28,10 +31,14 @@ if os.name == "nt":
     NODE_CANDIDATES = (program_files / "nodejs" / "node.exe",)
     LATTICE_CANDIDATES = ()
 else:
+    account_home = Path(pwd.getpwuid(os.getuid()).pw_dir)
     SYSTEM_PATHS = ("/usr/bin", "/bin", "/usr/sbin", "/sbin")
     GIT_CANDIDATES = ("/usr/bin/git", "/opt/homebrew/bin/git", "/usr/local/bin/git")
-    NODE_CANDIDATES = ("/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node")
-    LATTICE_CANDIDATES = ("/opt/homebrew/bin/lattice", "/usr/local/bin/lattice")
+    # Linux workstation setup deliberately installs the pinned Node runtime in
+    # the account-owned ~/.local tree. Resolve the account home through passwd
+    # rather than trusting HOME/PATH inherited from the hook caller.
+    NODE_CANDIDATES = (account_home / ".local/bin/node", "/opt/homebrew/bin/node", "/usr/local/bin/node", "/usr/bin/node")
+    LATTICE_CANDIDATES = (account_home / ".local/bin/lattice", "/opt/homebrew/bin/lattice", "/usr/local/bin/lattice")
 
 
 def trusted_executable(candidates):

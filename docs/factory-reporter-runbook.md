@@ -1,8 +1,8 @@
 # Factory reporter credential・設定ランブック
 
-更新日: 2026-08-29
+更新日: 2026-08-30
 正本: dotagents  
-対象: Mac / main-server / FOX WSL2 / FOX Windows native
+対象: Mac / main-server / rabbit native Linux / FOX Windows native
 
 ## 安全境界
 
@@ -24,7 +24,8 @@ install -d -m 700 ~/.config/dotagents
 install -m 600 examples/factory-reporter/mac.json ~/.config/dotagents/factory-reporter.json
 ```
 
-main-serverは`main-server.json`、FOX WSL2は`fox-wsl.json`を使う。Windows nativeは`windows-workstation.json`を`%LOCALAPPDATA%\dotagents\factory-reporter\config.json`へコピーし、PowerShellでACLを限定する。
+main-serverは`main-server.json`、rabbitは`rabbit.json`を使う。Windows nativeは`windows-workstation.json`を`%LOCALAPPDATA%\dotagents\factory-reporter\config.json`へコピーし、PowerShellでACLを限定する。
+rabbitの初回導入では`setup-linux-workstation-factory.sh`が§2〜4を一撃内で実行するため、平文tokenを手で表示・転記しない。以下の個別手順は既存hostの保守と切り分け用である。
 
 ```powershell
 $dir = "$env:LOCALAPPDATA\dotagents\factory-reporter"
@@ -48,7 +49,7 @@ ssh main-server 'cd /home/kite/bughub && docker compose exec -T bughub node src/
 |---|---|---|
 | `mac-kite` | `mac` | `mac-kite.token` |
 | `main-server` | `server` | `main-server.token` |
-| `fox-wsl` | `wsl` | `fox-wsl.token` |
+| `rabbit` | `linux` | `rabbit.token` |
 | `windows-workstation` | `windows-native` | `windows-workstation.token` |
 
 commandのJSON出力に含まれる`credential_id`は秘密ではない。revoke用に運用記録へ残す。token本文はstdoutへ出ない。
@@ -70,7 +71,7 @@ test -s ~/.config/dotagents/credentials/factory.token
 ssh main-server 'rm -f /home/kite/bughub/data/credentials/mac-kite.token'
 ```
 
-Windows nativeは`scp`で`%LOCALAPPDATA%\dotagents\factory-reporter\credential`へ直接保存し、directoryとfileへ現在userだけのACLを設定する。WSL側tokenとWindows native tokenを共用しない。
+Windows nativeは`scp`で`%LOCALAPPDATA%\dotagents\factory-reporter\credential`へ直接保存し、directoryとfileへ現在userだけのACLを設定する。rabbitとWindows nativeのtokenを共用しない。
 
 ## 4. 明示ON
 
@@ -103,7 +104,7 @@ v6へ復帰する時はconfigの`reporting.endpoint`を`/api/factory/v6/reports`
 
 peertable編入に伴うwire v7は、§4aと同じserver-first順序で2026-08-10に移行を完了した。当時の必須集合は固定14製品（observerキーなし）。契約は[wire v7設計](wire-v7-design.md)、承認記録は[H承認記録](evidence/2026-08-10-peertable-wire-v7-H-approval.md)が正。
 
-**v7完了時のhost別状態（2026-08-10）**: 全4現役host（mac-kite・main-server・fox-wsl・windows-workstation）がv7へcutover済み。各hostにv6退避config（`*.bak-v6-<timestamp>`）とv6 state/outboxが残っており、rollbackは§4a同様に即応できる。
+**v7完了時のhost別状態（2026-08-10、履歴）**: 当時の4 host（mac-kite・main-server・fox-wsl・windows-workstation）がv7へcutover済みだった。`fox-wsl`はその後退役し、現役hostには数えない。各hostにv6退避config（`*.bak-v6-<timestamp>`）とv6 state/outboxが残っており、rollbackは§4a同様に即応できる。
 
 host別cutoverの順序（全4現役hostで実測済みの形）:
 
@@ -213,7 +214,7 @@ factory-external-event resolve --check availability --reason unreachable \
 ```bash
 # macOS
 factory-reporter-scheduler install --dry-run --platform darwin --wire-major v<N>
-# Linux / WSL2
+# native Linux
 factory-reporter-scheduler install --dry-run --platform linux --wire-major v<N>
 # Windows native PowerShell
 factory-reporter-scheduler install --dry-run --platform win32 --wire-major v<N>
@@ -222,7 +223,7 @@ factory-reporter-scheduler install --dry-run --platform win32 --wire-major v<N>
 承認済みの対象hostだけで、dry-runの出力を確認してから同じcommandに`--apply`を付ける。`--apply`は実行中OSと一致するplatformだけを受け付ける。uninstallは登録済みの共通launchd label / cron marker / Task Scheduler名を外すためwire-major非依存である。
 
 - macOS: `~/Library/LaunchAgents/com.kite.factory-reporter.plist`を`launchctl bootstrap gui/$UID`で登録する。`node`の絶対path → 選択wireのrunnerをXML escapeした引数配列で起動する。runner state/logはwireごとのstateで0700、control artifactはmajor非依存である。
-- Linux / WSL2: 現在userのcrontabに`# dotagents-factory-reporter`で終わる**完全一致の自管理行だけ**を置換する。cron最小環境でもNodeとrunnerの絶対pathをPOSIX single-quoteして起動する。control artifactは`factory-reporter-scheduler/`配下でmajor非依存、runner state/outboxは削除しない。WSL2ではcron service自体を別途常設する。
+- native Linux: 現在userのcrontabに`# dotagents-factory-reporter`で終わる**完全一致の自管理行だけ**を置換する。cron最小環境でもNodeとrunnerの絶対pathをPOSIX single-quoteして起動する。control artifactは`factory-reporter-scheduler/`配下でmajor非依存、runner state/outboxは削除しない。
 - Windows native: `%LOCALAPPDATA%\dotagents\factory-reporter-scheduler\scheduler\dotagents-factory-reporter.xml`をUTF-16LE BOMで生成し、毎時のTaskを`schtasks.exe /Create /TN dotagents-factory-reporter /XML <file> /F`で登録する。control artifactはmajor非依存で、runner state/outboxは削除しない。apply時は継承・既存明示ACEを外し、現在userのSIDだけを許可するprivate ACLをPowerShell/.NETの`Access`面だけで設定する。
 
 停止はoutboxを消さずschedulerだけ外す。`factory-reporter-scheduler uninstall --dry-run --platform <OS>`で対象commandを確認し、承認後に`--apply`を付ける。
@@ -234,9 +235,9 @@ factory-reporter-scheduler install --dry-run --platform win32 --wire-major v<N>
 常設更新の正規入口はhost別一撃展開が所有する。
 
 - macOS: `setup-macos-factory.sh`がLaunchAgent `com.kite.agents-update`を毎週月曜04:00で登録し、初回実行中に全15製品とfresh v8 deliveryを検証する。
-- Linux: `setup-linux-factory.sh`が`setup-linux-factory --scheduled-update`を毎日02:00の専用cronへ登録する。server profile、ServerManager local readiness/revision、全15製品とfresh v8 deliveryを検証する。他hostの`factory_ingest`鮮度はBugHub集約監視が所有し、main-server展開を阻害しない。
-- WSL2: `setup-wsl-factory.sh`が`setup-wsl-factory --scheduled-update`を毎日02:00のcronへ登録する。scheduled runはbatch token、全15製品、同一tokenのdelivery receiptを検証する。
-- Windows native: `setup-windows-native-factory.ps1`が`agents-update-scheduler`を通じて`dotagents-agents-update`を毎日02:00に登録する。初回は登録した実Taskを起動してdelivery receiptまで確認する。WSL2側のcronで代用せず、WSL／Docker／仮想化の状態をWindows native reportの前提・証拠にしない。同入口はmain-server専用鍵・owner-only ACL・pinned host key・`Host main-server 192.168.1.2`・runner経由公開鍵登録を冪等管理し、alias 3回と直IP 1回の`BatchMode`接続も検査する。既定`id_ed25519`のpassphrase promptへ逃がさない。
+- main-server: `setup-linux-factory.sh`が`setup-linux-factory --scheduled-update`を毎日02:00の専用cronへ登録する。server profile、ServerManager local readiness/revision、全15製品とfresh v8 deliveryを検証する。他hostの`factory_ingest`鮮度はBugHub集約監視が所有し、main-server展開を阻害しない。
+- rabbit native Linux: `setup-linux-workstation-factory.sh`が`setup-linux-workstation-factory --scheduled-update`を毎日02:00の専用cronへ登録する。linux profile、batch token、全15製品、同一tokenのdelivery receiptを検証する。
+- Windows native: `setup-windows-native-factory.ps1`が`agents-update-scheduler`を通じて`dotagents-agents-update`を毎日02:00に登録する。初回は登録した実Taskを起動してdelivery receiptまで確認する。旧WSL2側のcronで代用せず、WSL／Docker／仮想化の状態をWindows native reportの前提・証拠にしない。同入口はmain-server専用鍵・owner-only ACL・pinned host key・`Host main-server 192.168.1.2`・runner経由公開鍵登録を冪等管理し、alias 3回と直IP 1回の`BatchMode`接続も検査する。既定`id_ed25519`のpassphrase promptへ逃がさない。
 
 Windows nativeの常設更新は`agents-update-scheduler`が所有する。`install|status|uninstall`はdry-run既定で、専用task `dotagents-agents-update`、現在SIDの`UserId`と`InteractiveToken`を組にしたUTF-16LE BOM XML、locale非依存の`Get-ScheduledTask`照会、Create後の読み戻し、runner preflight、DACL `Access`だけのowner-only ACLを使う。`--apply`とTask手動起動はH承認が必要である。scheduled runnerは実行ごとに新しいbatch tokenを発行して`agents-update`へ渡し、終了codeだけでなく、BugHub accepted後にv8 runnerが原子的に保存した同一report_id・同一tokenのdelivery receiptを確認する。runtime-error acknowledgement metadataはdelivery証拠に使わない。rollbackはtaskだけを`uninstall --apply`で外し、report/outboxを削除しない。
 Taskのactionは公式PowerShell 7を直接起動し、Git Bashが必要な子処理もGit for Windowsのnative executableへ限定する。`wsl.exe`やWSL側credential／receiptへfallbackしない。

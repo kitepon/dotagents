@@ -154,6 +154,17 @@ verify_factory_core() {
         host_profile=wsl
       else
         host_profile=server
+        local reporter_config="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
+        if [ -f "$reporter_config" ]; then
+          local configured_profile
+          configured_profile="$(node -e '
+            try {
+              const value = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
+              if (["server", "linux"].includes(value?.host?.profile)) process.stdout.write(value.host.profile);
+            } catch {}
+          ' "$reporter_config" 2>/dev/null || true)"
+          [ -z "$configured_profile" ] || host_profile="$configured_profile"
+        fi
       fi
       ;;
     *) echo "FAIL: 未対応OSをhost profileへ射影できない"; fail=1; return ;;
@@ -1149,12 +1160,6 @@ raise SystemExit(0 if relevant == [expected] and matches == [expected] else 1)
 PY
 then
   echo "FAIL: Codex Lattice工程表hook（SessionStart / UserPromptSubmit）の正規 entry がない"
-  fail=1
-fi
-
-# WSL2では独立SSH経路と、Windows Codex Desktopへ投影したWSL正規hooksを配布契約に含む。
-# 判定と検証はinstallerと同じ正規入口へ集約し、非WSL hostではその入口自身がSKIPする。
-if ! "$REPO/bin/configure-windows-wsl-ssh.sh" --check; then
   fail=1
 fi
 

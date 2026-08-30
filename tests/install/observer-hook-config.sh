@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 POSIX_METADATA=1
 case "$(uname -s)" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict; POSIX_METADATA=0 ;; esac

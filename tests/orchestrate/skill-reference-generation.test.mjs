@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import { access, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import test from "node:test";
@@ -11,6 +12,10 @@ const RENDER = join(ROOT, "bin", "render-orchestrate-skill-references.mjs");
 function run(root, mode) {
   return spawnSync(process.execPath, [RENDER, mode, "--root", root], { encoding: "utf8" });
 }
+
+test("配布rendererはshebang付き実行CLIとして保持する", async () => {
+  await access(RENDER, constants.X_OK);
+});
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), "orchestrate-skill-references-"));

@@ -59,7 +59,7 @@ schema不正は`unverified`、CLI不在は`missing`へfail closedする。校正
 
 ## 5. host expectationと文章面
 
-unaiはMac、main-server、FOX WSL2、FOX Windows nativeの全4 hostで`required`、欠落severityは`high`とする。製品導入と文章面への適用は次の二つに分ける。
+unaiはMac、main-server、rabbit native Linux、FOX Windows nativeの現役4 hostで`required`、欠落severityは`high`とする。製品導入と文章面への適用は次の二つに分ける。
 
 - 製品面: 公式installerでskillとCLIを配り、native diagnosticsをfactory reportへ射影する
 - 利用面: `shared/constitution.md`の「文章・返答の文体はunai skillの規範に従う。」を全host生成物へ同文で配る

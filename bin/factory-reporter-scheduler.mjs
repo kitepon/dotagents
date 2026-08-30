@@ -53,7 +53,7 @@ function parseArgs(argv) {
   return { command, target, config: options['--config'] && safePath(options['--config'], '--config'), wireMajor, dryRun: options.mode !== 'apply' };
 }
 
-function platformMatches(profile, target) { return (target === 'darwin' && profile === 'mac') || (target === 'linux' && ['server', 'wsl'].includes(profile)) || (target === 'win32' && profile === 'windows-native'); }
+function platformMatches(profile, target) { return (target === 'darwin' && profile === 'mac') || (target === 'linux' && ['server', 'linux', 'wsl'].includes(profile)) || (target === 'win32' && profile === 'windows-native'); }
 export function stableNodePath(target, executable = process.execPath, exists = existsSync) {
   const node = safePath(executable, 'node path');
   if (target !== 'darwin') return node;

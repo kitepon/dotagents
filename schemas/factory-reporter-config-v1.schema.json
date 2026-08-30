@@ -18,7 +18,7 @@
           "maxLength": 64
         },
         "profile": {
-          "enum": ["server", "mac", "wsl", "windows-native"]
+          "enum": ["server", "mac", "linux", "wsl", "windows-native"]
         }
       }
     },

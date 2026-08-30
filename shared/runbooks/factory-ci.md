@@ -7,12 +7,12 @@
 
 ## 標準契約
 
-- macOS native・Linux native・Windows native・WSL2を対象とする製品は、4環境で同じfull
+- macOS native・Linux server・Linux workstation・Windows nativeを対象とする製品は、4環境で同じfull
   commandを並列実行する。OSごとの役割分散はしない。対応OSを限定する製品は、製品契約に
   従って対象環境だけを選び、非対応環境を成功扱いしない。
-- Windows native runnerはPowerShell 7とGit for Windowsで閉じ、WSL2 runner、Docker Desktop、
+- Windows native runnerはPowerShell 7とGit for Windowsで閉じ、WSL、Docker Desktop、
   WSL interop、仮想化機能へfallbackしない。Git for Windowsの`bash.exe`／`sh.exe`はWindows native
-  toolchainとして扱い、WSL2 runnerは別checkout・別HOME・別label・別受入を維持する。
+  toolchainとして扱う。Linux serverとLinux workstationは別checkout・別HOME・別label・別受入を維持する。
 - 製品repoは`kitepon/dotagents/.github/workflows/factory-full-ci.yml@main`を呼び、製品自身の
   dependency commandとfull commandだけを渡す。独自runner登録・OS matrix・役割分散・capacity・
   fallbackは作らない。
@@ -77,6 +77,6 @@ jobs:
 3. Organizationにはrunnerが存在し、対象repoからだけ見えない場合はrunner groupへrepoを追加する。
    Organizationにも存在しない、または旧owner／旧repo scopeへ登録されている場合だけ、各hostの
    runnerを対象Organizationへ登録し直す。登録tokenは文書・log・shell履歴へ残さない。
-4. `factory`と対象環境のlabel（`macos-native`、`linux-native`、`windows-native`、`wsl2`）を持つ
+4. `factory`と対象環境のlabel（`macos-native`、`linux-server`、`linux-workstation`、`windows-native`）を持つ
    runnerがonlineであることを確認する。
 5. `workflow_dispatch`で対象環境を一度実行し、同じfull commandが割り当てられたことを確認する。

@@ -132,7 +132,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `apply-cursor-config` | Cursor の工場MCP 6を `~/.cursor/mcp.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、post-update gateとreportを実行 |
-| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-wsl-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。共通配備契約を消費し、各OS固有の配線と全製品smokeを行う。Windows入口はmain-serverへの恒久SSHも所有する |
+| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各OS固有の配線と全製品smokeを行う。Windows入口はmain-serverへの恒久SSHも所有する |
 | GitHub Actions | `enroll-windows-main-server-ssh.yml` | Windows専用公開鍵をmain-server runner自身が`authorized_keys`へ冪等登録する。秘密鍵はWindowsから出さない |
 | bin | `bughub-external-probe.mjs` | server profileからloopback `/readyz`とdeploy revision manifestを照合し、安全な固定checkへ投影 |
 | bin | `factory-reporter.mjs` | 明示opt-inされた工場reportを検証・outbox保存・BugHubへ冪等送信 |
@@ -169,8 +169,8 @@ Claude command の Codex 正規入口は slash command の模造ではなく、�
 ### Codex 9面の対応状況
 
 「全対応」はファイル数の左右対称ではなく能力対称で判定する。合格条件・進捗・各面の状態は
-Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入口の確定済み台帳は
-[アーカイブ済み計画](docs/archive/plan_codex-full-support.md#8-端末台帳)を参照する（本 README には複製しない）。
+Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口の完了台帳は
+[アーカイブ済み計画](docs/archive/plan_codex-full-support.md#8-端末台帳)に履歴として残す。現役hostと入口は下のhost別表を正とする。
 
 | 面 | dotagents の正規入口 |
 |---|---|
@@ -194,14 +194,13 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   git config --global init.defaultBranch main   # 新規リポが master で生まれるのを防ぐ（2026-07-04 実被弾）
   printf '.DS_Store\n' > ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global  # macOS ノイズを全リポで抑止
   ```
-- **host境界**: Windows nativeとWSL2は同じ物理PC上でも別hostである。Windows nativeはPowerShell 7とGit for Windowsで閉じ、WSL／Linux kernel、Docker Desktop、Hyper-V、Virtual Machine Platformを導入・起動・検証しない。WSL2をWindows nativeのfallbackや不足packageの回避先にしない。
-- **WSL2 の場合**: WSL2 内の Claude/Codex を対象とする（Windows 側とは別環境）。`install.sh` は WSL の `$HOME` に symlink を張り、Windowsの既存 `~/.ssh/id_ed25519.pub` を WSLへ登録して、Windows `~/.ssh/config` にdotagents管理の `fox-wsl`（`localhost:2222`）を冪等生成する。同時にWSLの `~/.codex/hooks.json` をWindows Codex Desktopの `~/.codex/hooks.json` へ投影し、DesktopのWSL実行がWindows commandを `/bin/bash` へ渡す事故を防ぐ。Windows Codex DesktopではWindows側projectを流用せず、このSSH host上の `/home/kite/Developer/dotagents` を開く。cron の起動は下の「自動アップデート」節参照
+- **host境界**: main-serverとrabbitは同じnative Linux基盤でも役割が異なる独立hostである。main-serverは`server` profileでServerManager／BugHubとpeertable serverを所有し、rabbitは`linux` profileのworkstation／peertable clientである。credential、config、scheduler、receiptを共有しない。FOXのWSL2席は2026-08-30に退役し、`wsl`は旧wire/outboxの読取互換だけに残す。
 - **共通ランタイム**: node>=24＋corepack・python3（`node --version`がv24+、`python3 -c "print(1)"`が成功すること。Windows nativeは正規入口がNode 24、Python、uvなどの不足をwingetから導入する。Windowsのストア偽エイリアスは存在チェックを通り、黙ってexit 0を返すため実行判定する〔罠DB `windows-python3-store-exit-0`〕）。
-- **Docker（POSIX hostのみ）**: 現行のmacOS／Linux／WSL2一撃入口は`docker info`までを前提にする。Windows native一撃展開と15製品smokeにはDockerを含めず、Docker DesktopやそのWSL2 backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
+- **Docker（POSIX hostのみ）**: 現行のmacOS／native Linux一撃入口は`docker info`までを前提にする。Windows native一撃展開と15製品smokeにはDockerを含めず、Docker DesktopやWSL backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
 - **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。
-- **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場MCP適用（`apply-grok-config --apply`）はH。工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。4席の新規session受入は2026-08-16に閉じた。
+- **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場MCP適用（`apply-grok-config --apply`）はH。現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。旧4席の新規session受入履歴は2026-08-16に閉じたが、rabbitは別hostとして新たに受け入れる。
 - **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`codex-sidecar-mcp`・`gpt-connector-mcp`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermとcodex-sidecarを登録する。登録・loginは端末configを変えるH操作。
 - **MCP（ユーザースコープ登録。上の CLI 導入後）**:
   ```bash
@@ -223,7 +222,7 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
 
 ### 1. clone（`Developer`配下へ集約。Windows nativeとPOSIXは別checkout）
 
-macOS／Linux／WSL2:
+macOS／native Linux:
 
 ```bash
 gh repo clone kitepon/dotagents ~/Developer/dotagents   # gh 認証を使う（SSH 鍵の有無に依存しない）
@@ -238,7 +237,7 @@ gh repo clone kitepon/dotagents dotagent
 Set-Location .\dotagent
 ```
 
-一撃入口はcheckout自身からrepo rootを解決し、WSL側の`~/Developer/dotagents`や旧pathへ越境しない。
+一撃入口はcheckout自身からrepo rootを解決し、別hostのcheckoutや旧pathへ越境しない。
 
 ### 2. 既存実ファイルの退避（重要——install.sh は実ファイルを SKIP する）
 
@@ -260,30 +259,29 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 席への手作業の展開（SSHで1箇所から他席を回す場合を含む）は次だけとする。その席のdotagents作業ディレクトリへ移り、そこで親AI（Grok／Claude／Codex）を起動し、その親に下表の正規入口を実行させる。失敗はその席で原因を直してから閉じる。スクリプトをSSH先で無人実行して成功扱いにしない。`verify-install`やsetupのexit 0を親session受入の代用にしない。定期更新のcron／Taskはこの節の対象外。
 
 初回導入と再適用の正規入口はhost別の一撃展開スクリプトである。4入口は同じ
-`lib/factory/deployment-contract.mjs`を消費し、既存のWindows native／WSL2固有配線を共有実装へ
+`lib/factory/deployment-contract.mjs`を消費し、Windows native固有配線やLinuxのserver/workstation役割を共有実装へ
 押し込まない。いずれも公式skill面、現役製品、MCP、Lattice／Spotter hook、定期更新、
 `verify-install`、[工場の現行状態](docs/factory-current-state.md)が示すwireのfresh reportとBugHub delivery receiptまでを一括検証する。
 Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。
 工場MCPと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
 Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 
-実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
-[工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。MCP login、GitHub認証、POSIX hostのDocker稼働など「0. 前提」のhost別外部状態は
+既存hostは実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
+[工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。rabbit初回入口だけはmain-server SSHを確認後、`rabbit`／`linux` credential発行・安全な転送・config作成まで一撃内で行う。MCP login、GitHub認証、POSIX hostのDocker稼働など「0. 前提」のhost別外部状態は
 スクリプトが捏造せず、欠けていれば名指しで停止する。Windows nativeではDocker／WSL2を外部前提に加えない。
 
-工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線で、各席に独立した正規入口を持つ。
+工場の現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線で、各席に独立した正規入口を持つ。
 
 | host | 正規入口 | 定期更新 |
 |---|---|---|
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
-| Linux | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
-| WSL2 | `./bin/setup-wsl-factory.sh` | cron、毎日02:00。`systemd`と非対話`sudo`が必要 |
+| main-server | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
+| rabbit native Linux | `./bin/setup-linux-workstation-factory.sh` | Ubuntu公式前提package、Node.js 24、uv、GitHub認証、main-server SSH／reporter credential、全工場製品を一括導入。cron、毎日02:00。`linux` profile専用 |
 | Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrep/OpenSSHも不足時は正規packageを導入する。さらにmain-server専用鍵・固定host key・SSH config・公開鍵登録workflow・alias／直IPの非対話再接続を一括検証する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
 
-macOSではAIShell（Apple Silicon／macOS 15+）も配備する。WSL2とWindows nativeは別hostであり、
-config、hook、credential、scheduler、delivery receipt、runtime前提を共有しない。Windows native入口は`wsl.exe`を呼ばず、
-WSL distroの有無や状態を成功条件にしない。Windows Codex Desktopから別席のWSL2を使う時だけ、上記WSL2入口が作る
-`fox-wsl` SSH hostでWSL側projectを開く。
+macOSではAIShell（Apple Silicon／macOS 15+）も配備する。main-serverとrabbitは同じLinux共通本体を使うが、
+profile、ServerManager所有、peertable役割、credential、scheduler、delivery receiptを共有しない。Windows native入口は`wsl.exe`を呼ばず、
+WSL distroの有無や状態を成功条件にしない。
 
 Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`を3回と`ssh -o BatchMode=yes kite@192.168.1.2`を1回成功させること。通常の`ssh kite@192.168.1.2`で旧`id_ed25519`のpassphraseを聞かれる状態は不合格である。登録workflowが使う`MAIN_SERVER_WINDOWS_PUBLIC_KEY`は公開鍵だけであり、再適用可能な修復入口として保持してよい。
 
@@ -362,8 +360,8 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 | host | 登録される入口 | 読み戻し・受入 |
 |---|---|---|
 | macOS | LaunchAgent `com.kite.agents-update` → `~/.local/bin/agents-update` | plist構文、登録状態、初回一撃展開中のfresh v8 delivery |
-| Linux | cron `# dotagents-agents-update-linux` → `setup-linux-factory --scheduled-update` | `server` profile、完全一致行、15製品、fresh delivery receipt |
-| WSL2 | cron `# dotagents-agents-update-wsl` → `setup-wsl-factory --scheduled-update` | 完全一致行、batch token、全15製品、fresh delivery receipt |
+| main-server | cron `# dotagents-agents-update-linux` → `setup-linux-factory --scheduled-update` | `server` profile、完全一致行、15製品、fresh delivery receipt |
+| rabbit native Linux | cron `# dotagents-agents-update-linux-workstation` → `setup-linux-workstation-factory --scheduled-update` | `linux` profile、完全一致行、batch token、全15製品、fresh delivery receipt |
 | Windows native | Task `dotagents-agents-update` → `setup-windows-native-factory.ps1 -ScheduledRun` | SID／02:00／action、実Task起動、終了code、全15製品、fresh delivery receipt |
 
 旧自動更新を手動で調査する場合だけ、次を使う。一撃展開は自管理entryを冪等に置換し、既知の旧
@@ -379,8 +377,8 @@ ls ~/Library/LaunchAgents/ 2>/dev/null | grep -i -E "npm|update"  # 旧 LaunchAg
 
 ```bash
 launchctl kickstart gui/$UID/com.kite.agents-update   # macOS
-setup-linux-factory --scheduled-update                # Linux
-setup-wsl-factory --scheduled-update                  # WSL2
+setup-linux-factory --scheduled-update                # main-server
+setup-linux-workstation-factory --scheduled-update    # rabbit native Linux
 tail -5 ~/.local/state/agents-update/agents-update.log # "agents-update end" 行が出ること（実ログの完了行。旧記載 "Finished" は実装と不一致だった）
 ```
 

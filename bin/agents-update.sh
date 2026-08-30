@@ -119,6 +119,16 @@ npm_install_spec() {
   esac
 }
 
+npm_install_global() {
+  local package_name="$1" install_spec="$2"
+  case "$package_name" in
+    '@anthropic-ai/claude-code'|claude-spotter)
+      npm install -g "--allow-scripts=$package_name" "$install_spec"
+      ;;
+    *) npm install -g "$install_spec" ;;
+  esac
+}
+
 # 現役製品のOS/arch別更新集合はdeployment contractだけが所有する。
 PACKAGES=()
 while IFS= read -r package_line; do
@@ -178,7 +188,7 @@ fi
         fi
       fi
       install_spec="$(npm_install_spec "$pkg")"
-      if [[ "$skip_install" -eq 0 ]] && ! npm install -g "$install_spec"; then
+      if [[ "$skip_install" -eq 0 ]] && ! npm_install_global "$pkg" "$install_spec"; then
         printf 'FAILED: %s\n' "$pkg"
         update_failed=1
         operation=failed; reason=install_failed
