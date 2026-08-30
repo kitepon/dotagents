@@ -1,0 +1,216 @@
+{
+  "schema": "lattice.todo_extraction.v4",
+  "project_id": "dotagents",
+  "plan_key": "product-document-autonomy",
+  "plan_version": "v1",
+  "actor": {
+    "host": "mac-kite",
+    "session": "product-document-autonomy-20260830",
+    "agent": "bell"
+  },
+  "recorded_at": "2026-08-30T00:55:15.000Z",
+  "tasks": [
+    {
+      "task_id": "pda-001",
+      "title": "全対象repoの基準線と全文書目録を固定する",
+      "lane": "baseline",
+      "design_memo": "dotagentsと自作コア製品repoについてfetch後のHEAD、既定branch、dirty、現役文書入口、archive/evidence、内部参照、外部参照を実測する。完了済み文書、同義文書、dotagentsへ残った製品固有制御を候補として列挙するが、この工程では移動も修正も行わない。削除可否はgrepだけで決めず、git履歴、生成器、CI、Lattice/Controlのimmutable参照も確認する。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 30,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "1. 基準線と全文書目録"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: product-document-autonomy",
+        "carry_over_ref": "docs/evidence/2026-07-26-factory-documentation-sync-final.md",
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0126-factory-documentation-ownership-sync.md", "docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["2026-07-26の同期後に重複が再蓄積した原因を所有gateの欠落として再監査する。"]
+      }
+    },
+    {
+      "task_id": "pda-002",
+      "title": "文書の所有境界と意味重複を全量監査する",
+      "lane": "discovery",
+      "design_memo": "全文書をcurrent、contract、history、evidenceだけでなく、factory integration、host distribution、product controlへ意味分類する。各重複群には一つの統合先を決め、旧入口の削除、archive移動、互換導線のいずれかを参照実測から判定する。製品固有の導入、設定、状態、schema、migration、診断、復旧、更新、release判断は製品repo側の既存正典へ統合する候補として確定する。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 34,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "2. 所有境界と意味重複の監査"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "Lattice store: product-document-autonomy",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["製品の単独稼働時に失われる制御が一つでもあれば所有移管対象とする。"]
+      }
+    },
+    {
+      "task_id": "pda-003",
+      "title": "dotagentsの現役文書面をarchiveと統合正典へ縮約する",
+      "lane": "implementation",
+      "design_memo": "完了済みplan、handoff、migration記録、旧版案内をdocs/archiveへ移し、意味が同じ現役説明を00_overview、README、工場統合契約など最少の正典へ統合する。factory-product-contractsは製品内部の制御を複製せず、owner repoと工場が消費する公開面、host expectation、privacy、compatibilityだけを保持する。document registryとCIはlifecycleとownershipの両方を検査する。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 38,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "3. dotagents現役面の縮約"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "docs/00_overview.md",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0132-document-current-state-registry.md", "docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["immutable Control/Lattice参照を壊す文書は移動せず、現役入口から除外する。"]
+      }
+    },
+    {
+      "task_id": "pda-004",
+      "title": "製品固有の制御文書を各製品repoへ還流する",
+      "lane": "implementation",
+      "design_memo": "各製品repoの既存READMEとdocsを優先し、dotagentsにしか無い製品固有の導入、設定、状態、診断、復旧、更新、release判断を意味統合する。製品からdotagentsへの必須参照は作らず、工場統合を外したcloneでも操作判断が完結する形にする。各repo内でも完了済み文書をarchiveへ移し、同義入口を一つへ畳む。runtimeや公開APIは文書整理を理由に変更しない。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 42,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "4. 製品repoへの所有還流"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "各製品repoのREADME.mdとdocs/",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0126-factory-documentation-ownership-sync.md", "docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["新しい製品文書を増やす前に既存正典へmergeできるかを確認する。"]
+      }
+    },
+    {
+      "task_id": "pda-005",
+      "title": "製品自律性と文書所有境界を機械検証する",
+      "lane": "verification",
+      "design_memo": "dotagents側では現役面に履歴が残らず、統合契約が製品内部制御を正本化せず、全current文書が所有役割へ分類されるfocused testを追加する。製品側ではREADMEから導入、利用、診断、復旧、更新、release判断へ到達でき、dotagentsへの必須参照が無いことを各repoの既存lint/testへ最小限に追加する。リンク、生成drift、archive分類を検査する。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 46,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "5. 自律性と文書境界の機械検証"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "各repoのCI契約",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["検査は所有境界を型として保持し、文章内容を無根拠なkeyword閾値で裁定しない。"]
+      }
+    },
+    {
+      "task_id": "pda-006",
+      "title": "全repoの受入、push、remote CI、知識還流を閉じる",
+      "lane": "acceptance",
+      "design_memo": "focused testと関連testがgreenになった後だけ各repoのfull gateを一度実行する。変更repoは対象限定commitで既定branchへ着地させ、通常push、remote CI、clean、origin同期を確認する。最後に文書移動一覧、意味統合一覧、所有移管一覧、単独稼働受入matrix、回帰結果、未変更理由をevidenceへ固定し、ControlとLatticeを閉じる。",
+      "narrative_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+        "origin_line": 50,
+        "source_commit": "8f77f0710c3d60621630ae93f1e7f6a3dbdcc7b6",
+        "heading_path": ["ADR 0133: 製品文書の自律所有と現役面の縮約", "実行単位", "6. 全体受入と知識還流"],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": "docs/evidence/2026-08-30-product-document-autonomy-final.md",
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": ["docs/adr/0133-product-document-autonomy-and-archive.md"],
+        "notes": ["全製品を変更した体裁は作らず、実測で変更不要だったrepoは理由と検証結果を残す。"]
+      }
+    }
+  ],
+  "hard_dependencies": [
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-001"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-002"},
+      "reason": "基準線と参照実測なしに移動・統合先を決めない。"
+    },
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-002"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-003"},
+      "reason": "全量監査で確定した分類だけをdotagentsへ適用する。"
+    },
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-002"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-004"},
+      "reason": "全量監査で確定した所有移管だけを各製品へ適用する。"
+    },
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-003"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-005"},
+      "reason": "dotagents現役面の縮約後に境界gateを検証する。"
+    },
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-004"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-005"},
+      "reason": "製品側へ所有を還流した後に単独稼働入口を検証する。"
+    },
+    {
+      "from": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-005"},
+      "to": {"project_id": "dotagents", "plan_key": "product-document-autonomy", "task_id": "pda-006"},
+      "reason": "focusedな自律性検証を通過してから全体受入へ進む。"
+    }
+  ],
+  "joins": [],
+  "extraction_digest": "4a7d4078d56bf8e9507f3b2c360b0c9adda9dd0c9055e07ebadf791524877537"
+}

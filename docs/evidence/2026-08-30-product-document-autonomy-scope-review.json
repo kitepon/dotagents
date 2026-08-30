@@ -1,0 +1,71 @@
+{
+  "schema": "lattice.plan_scope_review.v1",
+  "authoring_digest": "4a7d4078d56bf8e9507f3b2c360b0c9adda9dd0c9055e07ebadf791524877537",
+  "work_specs": [
+    {
+      "work_spec_id": "archive-old",
+      "requirement": "古い文書をarchiveフォルダへ移し、無意識に読む文書量とtoken消費を減らす。",
+      "acceptance": "現役の判断や操作に不要な文書が現役入口から外れ、参照を壊さずarchiveまたは履歴面へ移っている。"
+    },
+    {
+      "work_spec_id": "govern-not-control",
+      "requirement": "dotagentsは各製品を統括する立場であり、制御する立場にしない。",
+      "acceptance": "dotagentsの現役文書と機械正本は製品集合、host適用、相互接続、互換性、工場投影、横断受入だけを所有する。"
+    },
+    {
+      "work_spec_id": "merge-duplicates",
+      "requirement": "同じ意味の文書をmergeする。",
+      "acceptance": "各意味領域の現役正典が一つに決まり、不要な重複入口が削除または短い互換導線へ縮約されている。"
+    },
+    {
+      "work_spec_id": "place-by-owner",
+      "requirement": "文章が属するべき製品フォルダを判定し、その所有者へ置く。",
+      "acceptance": "製品固有の制御文書は各製品repoに、工場横断の統合文書だけはdotagentsに置かれている。"
+    },
+    {
+      "work_spec_id": "standalone-products",
+      "requirement": "各製品は単独でも動き、単独化した時に制御を失わない。",
+      "acceptance": "各製品repo単独のREADMEとdocsから導入、利用、診断、復旧、更新、release判断へ到達でき、dotagentsへの必須依存がない。"
+    }
+  ],
+  "task_assessments": [
+    {
+      "task_id": "pda-001",
+      "work_spec_ids": ["archive-old", "govern-not-control", "merge-duplicates", "place-by-owner", "standalone-products"],
+      "judgment": "required",
+      "reason": "移動、統合、所有移管の前に全量と参照を実測する基準線が必要である。"
+    },
+    {
+      "task_id": "pda-002",
+      "work_spec_ids": ["archive-old", "govern-not-control", "merge-duplicates", "place-by-owner", "standalone-products"],
+      "judgment": "required",
+      "reason": "古さ、同義性、所有者、単独性、統合境界を同じ目録上で判定する作業そのものである。"
+    },
+    {
+      "task_id": "pda-003",
+      "work_spec_ids": ["archive-old", "govern-not-control", "merge-duplicates"],
+      "judgment": "required",
+      "reason": "dotagentsの現役面から履歴と製品制御を除き、横断統合だけへ縮約する実装である。"
+    },
+    {
+      "task_id": "pda-004",
+      "work_spec_ids": ["archive-old", "merge-duplicates", "place-by-owner", "standalone-products"],
+      "judgment": "required",
+      "reason": "製品固有制御を正しいrepoへ還流し、製品単独の文書入口を成立させる実装である。"
+    },
+    {
+      "task_id": "pda-005",
+      "work_spec_ids": ["archive-old", "govern-not-control", "merge-duplicates", "place-by-owner", "standalone-products"],
+      "judgment": "required",
+      "reason": "今回の境界が次回の更新で再び崩れないよう、成立条件を既存CIへ保持する。"
+    },
+    {
+      "task_id": "pda-006",
+      "work_spec_ids": ["archive-old", "govern-not-control", "merge-duplicates", "place-by-owner", "standalone-products"],
+      "judgment": "required",
+      "reason": "複数repoへ届いたことと単独性を全体受入で実証し、移動と統合の結果を履歴へ固定する。"
+    }
+  ],
+  "verdict": "scope_preserved",
+  "review_digest": "9626b42d04615318529e1cef82ee606c817b4ed7c12027a760c1291e084a71dd"
+}
