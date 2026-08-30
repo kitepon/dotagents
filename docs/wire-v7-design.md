@@ -4,7 +4,7 @@
 **工程正本:** Lattice plan `peertable-onboarding`（設計）／`peertable-wire-v7-execution`・`peertable-wire-v7-cutover-deploy`（実行）
 **対象:** dotagents reporter、ServerManager / BugHub ingest、4 active host
 **決定:** [ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)
-**契約:** [s1合意（決定45、peertable repo `docs/plan.md`）](https://github.com/kitepon-rgb/peertable)
+**契約:** [s1合意（決定45、peertable repo `docs/plan.md`）](https://github.com/kitepon/peertable)
 
 > **現在状態:** 現役とrollback先は[工場の現行状態](factory-current-state.md)を参照する。
 > v7の必須集合は固定14製品（v5の13＋`peertable`、`observer`なし）のまま凍結し、

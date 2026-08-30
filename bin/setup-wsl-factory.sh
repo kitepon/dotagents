@@ -183,8 +183,8 @@ backup_managed_config() {
 }
 
 ensure_git_identity() {
-  git config --global user.name kitepon-rgb
-  git config --global user.email kitepon-rgb@users.noreply.github.com
+  git config --global user.name quolu
+  git config --global user.email 226230081+quolu@users.noreply.github.com
   git config --global init.defaultBranch main
   if [ ! -f "$HOME/.gitignore_global" ] || ! grep -Fqx '.DS_Store' "$HOME/.gitignore_global"; then
     printf '.DS_Store\n' >>"$HOME/.gitignore_global"
@@ -278,12 +278,12 @@ ensure_toolchain_bootstrap() {
 }
 
 ensure_caveat_sync() {
-  gh auth switch --hostname github.com --user kitepon-rgb
+  gh auth switch --hostname github.com --user quolu
   gh auth setup-git
   if [ -d "$HOME/.caveat/own/.git" ]; then
     caveat sync
   else
-    caveat sync --init --repo https://github.com/kitepon-rgb/Caveat-Private.git
+    caveat sync --init --repo https://github.com/quolu/Caveat-Private.git
   fi
 }
 

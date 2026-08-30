@@ -188,8 +188,8 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
 
 - **git**: 鍵設定済み・`gh auth status` OK・**identity 設定**（未設定だと hostname 由来の偽メールで履歴が汚れる）:
   ```bash
-  git config --global user.name "kitepon-rgb"
-  git config --global user.email "kitepon-rgb@users.noreply.github.com"
+  git config --global user.name "quolu"
+  git config --global user.email "226230081+quolu@users.noreply.github.com"
   git config --global init.defaultBranch main   # 新規リポが master で生まれるのを防ぐ（2026-07-04 実被弾）
   printf '.DS_Store\n' > ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global  # macOS ノイズを全リポで抑止
   ```
@@ -238,7 +238,7 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 [ -f ~/.grok/rules/AGENTS.md ] && [ ! -L ~/.grok/rules/AGENTS.md ] && rm ~/.grok/rules/AGENTS.md
 ```
 
-**caveat の own は Caveat 自身が同期する**（v0.15+。dotagents は所有しない）: 新端末では `caveat sync --init --repo https://github.com/kitepon-rgb/Caveat-Private.git` で `~/.caveat/own` に Caveat-Private を clone → 以降 `caveat sync` で往復する。一撃setupは先に`gh auth switch --hostname github.com --user kitepon-rgb`と`gh auth setup-git`を実行し、非対話のschedulerでもHTTPS remoteへ認証できる状態を作る。既存端末に端末ローカルの罠が残っていたら、`caveat sync` の前に中身を `~/.caveat/own/entries/<category>/` へマージしてから同期する（同名衝突は中身を見て統合）。`verify-install` は own が Caveat-Private をremoteに持つか確認する。
+**caveat の own は Caveat 自身が同期する**（v0.15+。dotagents は所有しない）: 新端末では `caveat sync --init --repo https://github.com/quolu/Caveat-Private.git` で `~/.caveat/own` に Caveat-Private を clone → 以降 `caveat sync` で往復する。一撃setupは先に`gh auth switch --hostname github.com --user quolu`と`gh auth setup-git`を実行し、非対話のschedulerでもHTTPS remoteへ認証できる状態を作る。既存端末に端末ローカルの罠が残っていたら、`caveat sync` の前に中身を `~/.caveat/own/entries/<category>/` へマージしてから同期する（同名衝突は中身を見て統合）。`verify-install` は own が Caveat-Private をremoteに持つか確認する。
 
 ### 3. 一撃展開 → 検証バッテリー
 

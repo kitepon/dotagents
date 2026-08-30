@@ -24,7 +24,7 @@ esac
 printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v "$PYTHON_RUNTIME")" > "$BIN_DIR/python3"
 chmod +x "$BIN_DIR/python3"
 git -C "$HOME_DIR/.caveat/own" init -q
-git -C "$HOME_DIR/.caveat/own" remote add origin 'git@github.com:kitepon-rgb/Caveat-Private.git'
+git -C "$HOME_DIR/.caveat/own" remote add origin 'git@github.com:quolu/Caveat-Private.git'
 cat > "$PROJECT/.spotter/marker.json" <<EOF
 {"markerVersion":"2","auditorContext":{"mode":"throughline","command":"$BIN_DIR/throughline"}}
 EOF
@@ -194,9 +194,9 @@ fi
 # Oracle はv1 rollback互換だけに残す。v2の通常導入・更新対象ではないため、
 # v2 factory core smokeはOracle wrapperの正常性を要求しない。
 
-git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:kitepon-rgb/not-private.git'
+git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:quolu/not-private.git'
 assert_rejected 'Caveat-Private remote 欠落'
-git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:kitepon-rgb/Caveat-Private.git'
+git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:quolu/Caveat-Private.git'
 
 mv "$PROJECT/.spotter/marker.json" "$PROJECT/.spotter/marker.json.off"
 assert_rejected 'Spotter marker 欠落'

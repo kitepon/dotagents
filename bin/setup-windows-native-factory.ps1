@@ -567,6 +567,16 @@ try {
   } finally {
     $env:HOME = $previousCursorHome
   }
+  # 初回syncより先に caveat init を実行すると、initが作る未追跡
+  # ~/.caveat/own/.gitignore とprivate repoのcheckoutが衝突する。
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
+  $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'
+  if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
+    Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'
+  } else {
+    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'https://github.com/quolu/Caveat-Private.git') -Label 'caveat-sync-init'
+  }
   $previousHome = $env:HOME
   $previousCodexHome = $env:CODEX_HOME
   $env:HOME = $env:USERPROFILE
@@ -608,15 +618,6 @@ try {
   Ensure-CodexMcp -Name 'codex-sidecar' -Command 'codex-sidecar-mcp'
   Ensure-CodexMcp -Name 'gpt_connector' -Command 'gpt-connector-mcp'
   Ensure-CodexMcp -Name 'lattice' -Command 'lattice-mcp'
-
-  Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'kitepon-rgb') -Label 'github-auth-switch'
-  Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
-  $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'
-  if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
-    Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'
-  } else {
-    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'https://github.com/kitepon-rgb/Caveat-Private.git') -Label 'caveat-sync-init'
-  }
 
   # verify-install.sh
   $verifyStatus = Invoke-VerifyInstall $verify

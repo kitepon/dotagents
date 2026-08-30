@@ -58,7 +58,9 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Remove-WindowsGlobalNpmLink.*npm root --global.*LinkType.*npm unlink --global.*Global npm link remains.*Remove-WindowsGlobalNpmLink 'aiterm-mcp'.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Update-WindowsNativeClaude.*\.local\\bin\\claude\.exe.*factory-products-bootstrap: Claude native update.*install\.sh.*Update-WindowsNativeClaude.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
-  assert.match(source, /gh' -Arguments @\('auth', 'switch', '--hostname', 'github\.com', '--user', 'kitepon-rgb'\).*gh' -Arguments @\('auth', 'setup-git'\).*https:\/\/github\.com\/kitepon-rgb\/Caveat-Private\.git/su);
+  assert.match(source, /gh' -Arguments @\('auth', 'switch', '--hostname', 'github\.com', '--user', 'quolu'\).*gh' -Arguments @\('auth', 'setup-git'\).*https:\/\/github\.com\/quolu\/Caveat-Private\.git/su);
+  assert.ok(source.indexOf("Label 'caveat-sync-init'") < source.indexOf("Label 'native-product-wiring: caveat init'"),
+    '初回Caveat syncはinitが未追跡.gitignoreを作る前に実行する');
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /--post-update.*--finalize-update/su);
   assert.match(source, /Set-ToolchainPostGateSuccess.*--post-gate', 'success'/su);
