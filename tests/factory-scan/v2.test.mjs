@@ -121,6 +121,15 @@ test('Caveat・Throughline・aitermの観測済みadapter契約だけを受理�
   const throughlineV9Canonical = structuredClone(throughlineV9); throughlineV9Canonical.databaseSchema.schema = 'throughline.database.v9';
   await setJson('throughline', throughlineV9Canonical); report = await scan();
   assert.equal(report.products.throughline.compatibility_status, 'compatible');
+  const throughlineV9Fresh = structuredClone(throughlineV9Canonical);
+  throughlineV9Fresh.overall.status = 'unverified';
+  Object.assign(throughlineV9Fresh.databaseSchema, { status: 'not_applicable', databaseSchemaVersion: null, reason: 'not_applicable' });
+  throughlineV9Fresh.readiness.restore = { status: 'not_applicable', reason: 'not_applicable' };
+  throughlineV9Fresh.readiness.handoff = { status: 'unverified', reason: 'diagnostic_unverified' };
+  await setJson('throughline', throughlineV9Fresh); report = await scan();
+  assert.equal(report.products.throughline.presence_status, 'installed');
+  assert.equal(report.products.throughline.checks.find((item) => item.check_id === 'database_schema').status, 'skipped');
+  assert.equal(report.products.throughline.checks.find((item) => item.check_id === 'handoff').status, 'unverified');
   const throughlineV10 = structuredClone(throughlineV9); throughlineV10.databaseSchema.databaseSchemaVersion = 10; throughlineV10.databaseSchema.supportedDatabaseSchemaVersion = 10;
   await setJson('throughline', throughlineV10); report = await scan();
   assert.equal(report.products.throughline.checks[0].reason_code, 'native_diagnostics_schema');

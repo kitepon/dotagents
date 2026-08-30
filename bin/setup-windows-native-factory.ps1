@@ -8,11 +8,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $Plan = @(
+  'prerequisite-packages',
   'factory-reporter-config',
   'retire-legacy-schedulers',
   'dotagents-links',
   'factory-products-bootstrap',
   'codex-config',
+  'main-server-ssh',
   'native-product-wiring',
   'lattice-hooks',
   'spotter-project',
@@ -29,7 +31,22 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
 }
 
 if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) {
-  throw 'PowerShell 7 is required. Install the official GitHub release win-x64 MSI at machine scope.'
+  $powerShellMessage = 'PowerShell 7 is required. Install the official GitHub release win-x64 MSI at machine scope.'
+  if ($PlanOnly) { throw $powerShellMessage }
+  $officialPowerShell = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
+  if (-not (Test-Path -LiteralPath $officialPowerShell -PathType Leaf)) {
+    $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+    if ($null -eq $winget) { throw "$powerShellMessage winget.exe is also missing." }
+    Write-Host '[windows-native-factory] prerequisite-package: Microsoft.PowerShell'
+    & $winget.Source install --exact --id Microsoft.PowerShell --scope machine --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $officialPowerShell -PathType Leaf)) {
+      throw "$powerShellMessage winget installation failed."
+    }
+  }
+  $relayArguments = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath)
+  if ($ScheduledRun) { $relayArguments += '-ScheduledRun' }
+  & $officialPowerShell @relayArguments
+  exit $LASTEXITCODE
 }
 
 if ($PlanOnly) {
@@ -48,12 +65,67 @@ $StateDirectory = Join-Path $env:LOCALAPPDATA 'dotagents\windows-native-factory-
 $ReceiptPath = Join-Path $StateDirectory 'latest-receipt.json'
 $TaskName = 'dotagents-agents-update'
 $ReporterTaskName = 'dotagents-factory-reporter'
+$MainServerHost = '192.168.1.2'
+$MainServerUser = 'kite'
+$MainServerAlias = 'main-server'
+$MainServerKeyComment = 'quolu@windows-main-server-20260830'
+$MainServerHostKey = '192.168.1.2 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWU1zJ02l+o/J1g+LJEAZSPV/BUcXJZJf9hIPnNCxlG'
+$MainServerHostKeyFingerprint = 'SHA256:TLhN/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'
 $RunId = [guid]::NewGuid().ToString()
 $RunLock = $null
 $TranscriptPath = Join-Path $StateDirectory "run-$RunId.log"
 
 function Write-Step([string]$Name) {
   Write-Host "[windows-native-factory] $Name"
+}
+
+function Refresh-ProcessPath {
+  $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+  $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+  $env:Path = @($machinePath, $userPath) -join ';'
+}
+
+function Invoke-WingetPackage([string]$Id, [switch]$Upgrade) {
+  $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+  if ($null -eq $winget) { throw "Required package $Id is missing and winget.exe is unavailable" }
+  $verb = if ($Upgrade) { 'upgrade' } else { 'install' }
+  Write-Step "prerequisite-package: $Id"
+  & $winget.Source $verb --exact --id $Id --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+  if ($LASTEXITCODE -ne 0) { throw "winget $verb failed for $Id with exit $LASTEXITCODE" }
+  Refresh-ProcessPath
+}
+
+function Ensure-WingetCommand([string]$Command, [string]$PackageId) {
+  if (Get-Command $Command -ErrorAction SilentlyContinue) { return }
+  Invoke-WingetPackage -Id $PackageId
+  if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) {
+    throw "Package $PackageId was installed but command $Command is still unavailable"
+  }
+}
+
+function Ensure-WindowsPrerequisites {
+  Refresh-ProcessPath
+  Ensure-WingetCommand -Command 'git' -PackageId 'Git.Git'
+  Ensure-WingetCommand -Command 'node' -PackageId 'OpenJS.NodeJS.LTS'
+  $nodeVersion = (& node --version).Trim()
+  if ($LASTEXITCODE -ne 0 -or $nodeVersion -notmatch '^v([0-9]+)\.' -or [int]$Matches[1] -lt 24) {
+    Invoke-WingetPackage -Id 'OpenJS.NodeJS.LTS' -Upgrade
+  }
+  Ensure-WingetCommand -Command 'npm' -PackageId 'OpenJS.NodeJS.LTS'
+  Ensure-WingetCommand -Command 'gh' -PackageId 'GitHub.cli'
+  Ensure-WingetCommand -Command 'python' -PackageId 'Python.Python.3.13'
+  Ensure-WingetCommand -Command 'uv' -PackageId 'astral-sh.uv'
+  Ensure-WingetCommand -Command 'make' -PackageId 'ezwinports.make'
+  Ensure-WingetCommand -Command 'shellcheck' -PackageId 'koalaman.shellcheck'
+  Ensure-WingetCommand -Command 'rg' -PackageId 'BurntSushi.ripgrep.MSVC'
+  foreach ($sshCommand in @('ssh', 'ssh-keygen', 'ssh-keyscan')) {
+    if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+      Invoke-WingetPackage -Id 'Git.Git' -Upgrade
+      if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+        throw "Git.Git was installed but required OpenSSH command $sshCommand is unavailable"
+      }
+    }
+  }
 }
 
 function Convert-ToGitBashPath([string]$Path) {
@@ -119,6 +191,8 @@ function Ensure-CodexMcp {
 function Set-OwnerOnlyAcl([string]$Path) {
   $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User
   $item = Get-Item -LiteralPath $Path
+  $existingAcl = Get-Acl -LiteralPath $Path
+  $existingOwnerSid = ($existingAcl.GetOwner([Security.Principal.SecurityIdentifier])).Value
   if ($item.PSIsContainer) {
     $acl = [Security.AccessControl.DirectorySecurity]::new()
     $inherit = [Security.AccessControl.InheritanceFlags]::ContainerInherit -bor [Security.AccessControl.InheritanceFlags]::ObjectInherit
@@ -126,7 +200,7 @@ function Set-OwnerOnlyAcl([string]$Path) {
     $acl = [Security.AccessControl.FileSecurity]::new()
     $inherit = [Security.AccessControl.InheritanceFlags]::None
   }
-  $acl.SetOwner($sid)
+  if ($existingOwnerSid -ne $sid.Value) { $acl.SetOwner($sid) }
   $acl.SetAccessRuleProtection($true, $false)
   $rule = [Security.AccessControl.FileSystemAccessRule]::new(
     $sid,
@@ -151,6 +225,160 @@ function Set-OwnerOnlyAcl([string]$Path) {
   }
 }
 
+function Write-Utf8NoBom([string]$Path, [string]$Content) {
+  [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
+}
+
+function Test-MainServerSsh {
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $output = & ssh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  return $code -eq 0 -and $output -eq 'dotagents-main-server-ssh-ok'
+}
+
+function Ensure-MainServerKnownHost([string]$SshDirectory) {
+  $knownHosts = Join-Path $SshDirectory 'known_hosts'
+  $scan = (& ssh-keyscan -T 5 -t ed25519 $MainServerHost 2>$null | Where-Object { $_ -notmatch '^#' }) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $scan.Trim() -ne $MainServerHostKey) {
+    throw "main-server host key does not match pinned fingerprint $MainServerHostKeyFingerprint"
+  }
+  $existing = if (Test-Path -LiteralPath $knownHosts -PathType Leaf) { Get-Content -LiteralPath $knownHosts } else { @() }
+  if ($existing -notcontains $MainServerHostKey) {
+    $updated = @($existing | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) + $MainServerHostKey
+    Write-Utf8NoBom -Path $knownHosts -Content (($updated -join "`n") + "`n")
+  }
+  $fingerprint = (& ssh-keygen -lf $knownHosts -F $MainServerHost 2>$null) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $fingerprint -notmatch [regex]::Escape($MainServerHostKeyFingerprint)) {
+    throw "main-server pinned host key readback failed: $MainServerHostKeyFingerprint"
+  }
+}
+
+function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) {
+  $configPath = Join-Path $SshDirectory 'config'
+  $begin = '# dotagents main-server begin'
+  $end = '# dotagents main-server end'
+  $managed = @(
+    $begin,
+    "Host $MainServerAlias $MainServerHost",
+    "    HostName $MainServerHost",
+    "    User $MainServerUser",
+    "    IdentityFile $($PrivateKey.Replace('\', '/'))",
+    '    IdentitiesOnly yes',
+    '    PreferredAuthentications publickey',
+    '    StrictHostKeyChecking yes',
+    '    ServerAliveInterval 30',
+    '    ServerAliveCountMax 3',
+    $end
+  ) -join "`n"
+  $current = if (Test-Path -LiteralPath $configPath -PathType Leaf) { Get-Content -Raw -LiteralPath $configPath } else { '' }
+  $pattern = "(?ms)^$([regex]::Escape($begin))\r?\n.*?^$([regex]::Escape($end))\r?\n?"
+  $withoutManaged = ([regex]::Replace($current, $pattern, '')).TrimEnd()
+  $next = if ([string]::IsNullOrWhiteSpace($withoutManaged)) { "$managed`n" } else { "$withoutManaged`n`n$managed`n" }
+  Write-Utf8NoBom -Path $configPath -Content $next
+  Set-OwnerOnlyAcl $configPath
+
+  $effective = & ssh -G $MainServerAlias 2>$null
+  $expected = @(
+    "hostname $MainServerHost",
+    "user $MainServerUser",
+    "identityfile $($PrivateKey.Replace('\', '/'))",
+    'identitiesonly yes',
+    'stricthostkeychecking true'
+  )
+  foreach ($entry in $expected) {
+    if ($effective -notcontains $entry) { throw "main-server SSH config readback is missing: $entry" }
+  }
+  $directEffective = & ssh -G $MainServerHost 2>$null
+  foreach ($entry in $expected) {
+    if ($directEffective -notcontains $entry) { throw "direct-IP main-server SSH config readback is missing: $entry" }
+  }
+}
+
+function Invoke-MainServerKeyEnrollment([string]$PublicKey) {
+  Write-Step 'main-server-ssh: enroll permanent public key'
+  $workflow = 'enroll-windows-main-server-ssh.yml'
+  $repo = 'kitepon/dotagents'
+  $prior = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 10 --json databaseId 2>$null | ConvertFrom-Json
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the main-server SSH enrollment workflow' }
+  $priorIds = @($prior | ForEach-Object { [string]$_.databaseId })
+  & gh secret set MAIN_SERVER_WINDOWS_PUBLIC_KEY --repo $repo --body $PublicKey
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot set MAIN_SERVER_WINDOWS_PUBLIC_KEY for permanent enrollment' }
+  & gh workflow run $workflow --repo $repo --ref main
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot dispatch the main-server SSH enrollment workflow' }
+
+  $runId = $null
+  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(2)
+  do {
+    Start-Sleep -Seconds 2
+    $runs = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 5 --json databaseId 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot locate the dispatched main-server SSH enrollment run' }
+    $candidate = @($runs | Where-Object { [string]$_.databaseId -notin $priorIds } | Select-Object -First 1)
+    if ($candidate.Count -gt 0) { $runId = [string]$candidate[0].databaseId }
+  } until ($null -ne $runId -or [DateTimeOffset]::UtcNow -ge $deadline)
+  if ($null -eq $runId) { throw 'The dispatched main-server SSH enrollment run was not found' }
+
+  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(20)
+  $lastStatus = ''
+  do {
+    $run = & gh run view $runId --repo $repo --json status,conclusion,url 2>$null | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect main-server SSH enrollment run $runId" }
+    if ($run.status -ne $lastStatus) {
+      Write-Step "main-server-ssh: enrollment $($run.status) $($run.url)"
+      $lastStatus = $run.status
+    }
+    if ($run.status -eq 'completed') {
+      if ($run.conclusion -ne 'success') { throw "main-server SSH enrollment failed: $($run.url) conclusion=$($run.conclusion)" }
+      return
+    }
+    Start-Sleep -Seconds 5
+  } until ([DateTimeOffset]::UtcNow -ge $deadline)
+  throw "main-server SSH enrollment did not complete within 20 minutes: $($run.url)"
+}
+
+function Ensure-MainServerSsh {
+  Write-Step 'main-server-ssh'
+  $sshDirectory = Join-Path $env:USERPROFILE '.ssh'
+  $privateKey = Join-Path $sshDirectory 'id_ed25519_main_server'
+  $publicKeyPath = "$privateKey.pub"
+  New-Item -ItemType Directory -Force -Path $sshDirectory | Out-Null
+
+  if (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -and -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
+    & ssh-keygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $privateKey
+    if ($LASTEXITCODE -ne 0) { throw 'Failed to generate the permanent main-server SSH key' }
+  } elseif (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -or -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
+    throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half'
+  }
+
+  Set-OwnerOnlyAcl $privateKey
+  $publicKey = (Get-Content -Raw -LiteralPath $publicKeyPath).Trim()
+  if ($publicKey -notmatch "^ssh-ed25519 [A-Za-z0-9+/]+={0,3} $([regex]::Escape($MainServerKeyComment))$") {
+    throw "Unexpected permanent main-server public key format or comment: $publicKeyPath"
+  }
+  $derived = (& ssh-keygen -y -P '' -f $privateKey 2>$null).Trim()
+  if ($LASTEXITCODE -ne 0 -or $publicKey.Split(' ')[1] -ne $derived.Split(' ')[1]) {
+    throw 'The permanent main-server key is passphrase-protected or its public half does not match'
+  }
+
+  Ensure-MainServerKnownHost -SshDirectory $sshDirectory
+  Ensure-MainServerSshConfig -SshDirectory $sshDirectory -PrivateKey $privateKey
+  if (-not (Test-MainServerSsh)) {
+    Invoke-MainServerKeyEnrollment -PublicKey $publicKey
+  }
+  foreach ($attempt in 1..3) {
+    if (-not (Test-MainServerSsh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
+  }
+  $directOutput = & ssh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
+  if ($LASTEXITCODE -ne 0 -or $directOutput -ne 'dotagents-main-server-direct-ssh-ok') {
+    throw 'Permanent direct-IP main-server SSH verification failed'
+  }
+  Write-Step 'main-server-ssh: three reconnects passed'
+}
+
 function Assert-ReporterConfig {
   if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
     throw "Windows factory reporter config is missing: $ConfigPath"
@@ -166,8 +394,63 @@ function Assert-ReporterConfig {
   }
 }
 
+function Restore-ScheduledReporterConfigFromCodexCache {
+  if (-not $ScheduledRun -or (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) { return }
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { return }
+  $candidates = @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*' | ForEach-Object {
+    $candidate = Join-Path $_.FullName 'LocalCache\Local\dotagents\factory-reporter\config.json'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
+  })
+  if ($candidates.Count -eq 0) { return }
+  if ($candidates.Count -ne 1) { throw 'Multiple Codex AppContainer factory reporter configs were found' }
+
+  $sourceConfig = $candidates[0].FullName
+  $sourceDirectory = Split-Path -Parent $sourceConfig
+  $sourceCredential = Join-Path $sourceDirectory 'credential'
+  if (-not (Test-Path -LiteralPath $sourceCredential -PathType Leaf) -or (Get-Item -LiteralPath $sourceCredential).Length -lt 1) {
+    throw 'Codex AppContainer BugHub credential is missing'
+  }
+  $destinationDirectory = Split-Path -Parent $ConfigPath
+  $destinationCredential = Join-Path $destinationDirectory 'credential'
+  $sourceValue = Get-Content -Raw -LiteralPath $sourceConfig | ConvertFrom-Json
+  if ([IO.Path]::GetFullPath([string]$sourceValue.reporting.credential_file) -ne [IO.Path]::GetFullPath($destinationCredential)) {
+    throw 'Codex AppContainer factory reporter credential path is not canonical'
+  }
+
+  New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+  Copy-Item -LiteralPath $sourceCredential -Destination $destinationCredential -Force
+  Copy-Item -LiteralPath $sourceConfig -Destination $ConfigPath -Force
+  Set-OwnerOnlyAcl $destinationDirectory
+  Set-OwnerOnlyAcl $destinationCredential
+  Set-OwnerOnlyAcl $ConfigPath
+  Write-Step 'factory-reporter-config: restored from Codex AppContainer cache'
+}
+
+function Restore-ScheduledGitHubCliConfigFromCodexCache {
+  if (-not $ScheduledRun -or (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) { return }
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { throw 'GitHub CLI is not authenticated for the scheduled task' }
+  $candidates = @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*' | ForEach-Object {
+    $candidate = Join-Path $_.FullName 'LocalCache\Roaming\GitHub CLI\hosts.yml'
+    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
+  })
+  if ($candidates.Count -ne 1) { throw 'A unique Codex AppContainer GitHub CLI config was not found' }
+  $destinationDirectory = Join-Path $env:APPDATA 'GitHub CLI'
+  $destination = Join-Path $destinationDirectory 'hosts.yml'
+  New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
+  Copy-Item -LiteralPath $candidates[0].FullName -Destination $destination -Force
+  Set-OwnerOnlyAcl $destinationDirectory
+  Set-OwnerOnlyAcl $destination
+  if (-not (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) {
+    throw 'GitHub CLI authentication was not restored for the scheduled task'
+  }
+  Write-Step 'github-cli-config: restored from Codex AppContainer cache'
+}
+
 function Normalize-WindowsReporterConfig {
   Write-Step 'factory-reporter-config: UTF-8 without BOM'
+  Restore-ScheduledReporterConfigFromCodexCache
   Assert-ReporterConfig
   $backup = Join-Path $StateDirectory "factory-reporter-config-$RunId.json.bak"
   Copy-Item -LiteralPath $ConfigPath -Destination $backup -Force
@@ -210,11 +493,16 @@ function Invoke-BootstrapUpdate([string]$UpdateScript) {
   Write-Step 'factory-products-bootstrap: agents-update.sh'
   $previousRunner = $env:FACTORY_REPORTER_RUNNER
   $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
+  $bootstrapLog = Join-Path $StateDirectory "bootstrap-$RunId.log"
   try {
-    & $GitBash $UpdateScript
+    & $GitBash $UpdateScript *> $bootstrapLog
     $code = $LASTEXITCODE
   } finally {
     $env:FACTORY_REPORTER_RUNNER = $previousRunner
+  }
+  if (Test-Path -LiteralPath $bootstrapLog -PathType Leaf) {
+    Set-OwnerOnlyAcl $bootstrapLog
+    Get-Content -LiteralPath $bootstrapLog | ForEach-Object { Write-Host $_ }
   }
   if ($code -eq 0) { return }
   $log = Join-Path $env:LOCALAPPDATA 'dotagents\agents-update\agents-update.log'
@@ -440,6 +728,17 @@ function Assert-DailyTask {
   }
 }
 
+function Get-CodexReceiptMirrorPaths {
+  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
+  $paths = @()
+  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { return $paths }
+  foreach ($directory in @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*')) {
+    if ($directory.Name -notmatch '^OpenAI\.Codex_[A-Za-z0-9]+$' -or ($directory.Attributes -band [IO.FileAttributes]::ReparsePoint)) { continue }
+    $paths += Join-Path $directory.FullName 'LocalCache\Local\dotagents\windows-native-factory-setup\scheduled-receipt.json'
+  }
+  return $paths
+}
+
 function Write-Receipt([object]$Delivery, [bool]$ScheduledSmoke, [string]$VerifyStatus) {
   $value = [ordered]@{
     schema = 'dotagents.windows-native-factory-setup-receipt.v1'
@@ -458,6 +757,20 @@ function Write-Receipt([object]$Delivery, [bool]$ScheduledSmoke, [string]$Verify
   [IO.File]::WriteAllText($temporary, (($value | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
   Move-Item -LiteralPath $temporary -Destination $ReceiptPath -Force
   Set-OwnerOnlyAcl $ReceiptPath
+  # Codex Desktop (MSIX/AppContainer) から開始した親プロセスでは LocalAppData の
+  # virtual overlay がphysical receiptを隠す。scheduled processが同じ受領票を
+  # Codex cacheへ明示公開し、親が実行IDと配送ackを検証できるようにする。
+  if (-not $ScheduledRun) { return [pscustomobject]$value }
+  $mirrorPaths = @(Get-CodexReceiptMirrorPaths)
+  foreach ($mirror in $mirrorPaths) {
+    $mirrorDirectory = Split-Path -Parent $mirror
+    New-Item -ItemType Directory -Force -Path $mirrorDirectory | Out-Null
+    Set-OwnerOnlyAcl $mirrorDirectory
+    $mirrorTemporary = "$mirror.$RunId.tmp"
+    [IO.File]::WriteAllText($mirrorTemporary, (($value | ConvertTo-Json -Depth 10 -Compress) + [Environment]::NewLine), [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $mirrorTemporary -Destination $mirror -Force
+    Set-OwnerOnlyAcl $mirror
+  }
   return [pscustomobject]$value
 }
 
@@ -473,21 +786,25 @@ function Wait-ScheduledSmoke([string]$PriorRunId) {
       $info = Get-ScheduledTaskInfo -TaskName $TaskName
       if ($info.LastRunTime -le $priorLastRunTime) { continue }
       if ($info.LastTaskResult -ne 0) { throw "scheduled task LastTaskResult=$($info.LastTaskResult)" }
-      if (-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)) { throw 'scheduled task completed without a receipt' }
-      try {
-        $receipt = Get-Content -Raw -LiteralPath $ReceiptPath | ConvertFrom-Json
-        if ($receipt.run_id -ne $PriorRunId -and $receipt.scheduled_run -eq $true -and $receipt.delivery_acknowledged -eq $true) {
-          return $receipt
-        }
-      } catch {}
+      $candidates = @($ReceiptPath) + @(Get-CodexReceiptMirrorPaths)
+      foreach ($candidate in $candidates) {
+        if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+        try {
+          $receipt = Get-Content -Raw -LiteralPath $candidate | ConvertFrom-Json
+          if ($receipt.schema -eq 'dotagents.windows-native-factory-setup-receipt.v1' -and $receipt.run_id -ne $PriorRunId -and $receipt.scheduled_run -eq $true -and $receipt.delivery_acknowledged -eq $true) {
+            return $receipt
+          }
+        } catch {}
+      }
       throw 'scheduled task completed without a fresh acknowledged receipt'
     }
   }
   throw 'The daily 02:00 task smoke did not complete within 20 minutes'
 }
 
-if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is missing: $GitBash" }
-foreach ($command in @('git', 'node', 'npm', 'python', 'uv')) {
+Ensure-WindowsPrerequisites
+if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is missing after Git.Git installation: $GitBash" }
+foreach ($command in @('git', 'node', 'npm', 'gh', 'python', 'uv', 'make', 'shellcheck', 'rg')) {
   if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is missing: $command" }
 }
 $nodeVersion = (& node --version).Trim()
@@ -566,6 +883,10 @@ try {
   } finally {
     $env:HOME = $previousCursorHome
   }
+  Restore-ScheduledGitHubCliConfigFromCodexCache
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
+  Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
+  Ensure-MainServerSsh
   $previousHome = $env:HOME
   $previousCodexHome = $env:CODEX_HOME
   $env:HOME = $env:USERPROFILE

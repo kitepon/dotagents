@@ -187,6 +187,10 @@ if (!same(npmPackagesForHost({ os: 'Linux', arch: 'x64' }), base)
 EOF
 [ "$(grep -c '^normal:' "$TEST_HOME/npm-calls.log")" -eq "$expected_npm_packages" ] \
   || fail "curated package集合を fake npm へ正確に渡していない"
+grep -q '^normal:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' \
+  "$TEST_HOME/npm-calls.log" || fail 'Claude Code lifecycle scriptをpackage限定で許可しない'
+grep -q '^normal:install -g --allow-scripts=claude-spotter claude-spotter@latest$' \
+  "$TEST_HOME/npm-calls.log" || fail 'Spotter lifecycle scriptをpackage限定で許可しない'
 if grep -q '@colbymchenry/codegraph' "$TEST_HOME/npm-calls.log"; then
   fail 'retired Codegraphを更新対象へ再導入している'
 fi
@@ -263,7 +267,7 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/registry-drift.out" 2>&1; then
   fail 'npm registry objectをlatest versionとして受理した'
 fi
-if grep -q '^registry-drift:install -g @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
+if grep -q '^registry-drift:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
   fail 'npm registry schema drift時にClaude Codeを更新した'
 fi
 grep -q '^registry-drift:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls.log" \
@@ -278,7 +282,7 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/registry-unknown.out" 2>&1; then
   fail 'npm registry unknown versionを更新成功扱いした'
 fi
-if grep -q '^registry-unknown:install -g @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
+if grep -q '^registry-unknown:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
   fail 'npm registry unknown version時にClaude Codeを更新した'
 fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="registry_unavailable"||r.latest_version!==null)process.exit(1)' \
@@ -291,7 +295,7 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/npm-downgrade.out" 2>&1; then
   fail 'installed > registry latestを更新成功扱いした'
 fi
-if grep -q '^npm-downgrade:install -g @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
+if grep -q '^npm-downgrade:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' "$TEST_HOME/npm-calls.log"; then
   fail 'npm downgradeを実行した'
 fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="downgrade_refused"||r.before_version!=="2.2.0"||r.after_version!=="2.2.0")process.exit(1)' \
@@ -454,8 +458,8 @@ if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   cat "$TEST_HOME/uv-absent.out" >&2
   fail 'MarkItDown absent→install fixtureが失敗した'
 fi
-[ "$(grep -c '^uv-absent:tool install markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
-  || fail 'MarkItDown absent時にuv tool installを実行していない'
+[ "$(grep -c '^uv-absent:tool install --force markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
+  || fail 'MarkItDown absent時にuv tool install --forceでuv ownershipを収束していない'
 
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \

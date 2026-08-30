@@ -33,7 +33,7 @@ dotagents は**開発工場そのもの**。全プロジェクトに共通して
 
 - **プロジェクト作業は sync-sweep green から始める**。掃引の検査項目・台帳運用と、リポ終活トリアージ（三分類・安全に消せる条件・救済手順・GitHub 側は archive）は git-hygiene runbook が正。**「休眠」は端末単位の状態であってプロジェクトの生死ではない——生死はオーナー宣言でのみ決まり、削除承認は常に H・端末ごと**。
 - **席への手作業の工場展開は、その席のdotagents作業ディレクトリで親AIを起動し、その親にその席の正規入口を実行させ、失敗はその席で直して閉じる**（SSHで1箇所から他席を回す場合も同じ。理由: 2026-08-16 Wave 5。一撃展開のexit 0は親として動くことを見ない。入口スクリプトは改良が続き、スクリプト単独の無人実行では席差の壊れに気づけない）。定期更新のcron／Taskは対象外。手順はREADME「他端末セットアップ・ランブック」が正。
-- **定期**: `agents-update` の常設（全端末必須。Macは週次、WSL2／Windows nativeは日次。登録と受入はREADME「他端末セットアップ」「自動アップデート」のhost別一撃展開が正）。**月次**: メモリ棚卸し＋ rag/ Lint（枠と手順は knowledge-return runbook が正）。世代交代時の更新手順は docs/02_models.md が正。
+- **定期**: `agents-update` の常設（全端末必須。Macは週次、main-server／rabbit native Linux／Windows nativeは日次。各hostのcron／Task Schedulerは独立jobで、相互代替・共有しない。登録と受入はREADME「他端末セットアップ」「自動アップデート」のhost別一撃展開が正）。**月次**: メモリ棚卸し＋ rag/ Lint（枠と手順は knowledge-return runbook が正）。世代交代時の更新手順は docs/02_models.md が正。
 
 ## 残件
 

@@ -296,6 +296,13 @@
       "path_regex": "^(?:claude/CLAUDE\\.md|codex/AGENTS\\.md|grok/AGENTS\\.md|cursor/AGENTS\\.md|cursor/rules/factory\\.mdc)$"
     },
     {
+      "id": "orchestrate-skill-shared-references",
+      "kind": "generated",
+      "owner_scope": "dotagents",
+      "role": "generated",
+      "path_regex": "^(?:claude|codex|grok|cursor)/skills/orchestrate/references/shared-orchestrate/.*\\.md$"
+    },
+    {
       "id": "immutable-evidence",
       "kind": "evidence",
       "owner_scope": "dotagents",
@@ -523,9 +530,9 @@
       "path_regex": "^(?:codex|grok|cursor)/skills/orchestrate/SKILL\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "codex/skills/orchestrate/SKILL.md": "8ac2fdba0e1fa42f5d41258810671dbf5df90fbaaf8c83c43c7e3db0734641bd",
-        "cursor/skills/orchestrate/SKILL.md": "bfc847783bf8960d79fb6ff3f9c6eeed7834e7511329a202e6a60c93aa15bced",
-        "grok/skills/orchestrate/SKILL.md": "5bfc435ee10b49f2a894a442d49220752871e042418fb23c4d50fead2d7dc241"
+        "codex/skills/orchestrate/SKILL.md": "2a84bee6117b06c35fa85cdcc2056339bc8dcf88a654b22a8a155dd92c2bddd4",
+        "cursor/skills/orchestrate/SKILL.md": "3242dcf283dd171d742b6ef6fac60eeb09019bb86f910d15da2c2be322777685",
+        "grok/skills/orchestrate/SKILL.md": "21937efac24aa25e36fea6bc385d3699e7bbe9976f63d9364669c42df3e69f06"
       },
       "required_regexes": [],
       "forbidden_regexes": []
@@ -535,7 +542,7 @@
       "path_regex": "^docs/00_overview\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/00_overview.md": "74c06a01709c4ca222de50033ded96f4a42230c2e205ba1cac39dba5efd56f3e"
+        "docs/00_overview.md": "28d7c968f781714dee84fd844f936d2a2ba12cbcba15e0c2fbc6e2bebd3ae9f5"
       },
       "required_regexes": [],
       "forbidden_regexes": []

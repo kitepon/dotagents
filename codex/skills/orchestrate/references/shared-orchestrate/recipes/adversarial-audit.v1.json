@@ -1,0 +1,72 @@
+{
+  "schema": "dotagents.recipe.adversarial-audit.v1",
+  "phases": ["Find", "Dedup", "Verify", "Critic"],
+  "limits": {
+    "dimensions_min": 1,
+    "dimensions_max": 8,
+    "max_findings_per_dimension": 10,
+    "max_blind_spots": 5,
+    "max_second_rounds": 1
+  },
+  "io": {
+    "findings": {
+      "type": "object",
+      "required": ["findings"],
+      "properties": {
+        "findings": {
+          "type": "array",
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "required": ["title", "kind", "files", "evidence", "impact", "effort", "suggestion", "contract_critical"],
+            "properties": {
+              "title": { "type": "string" },
+              "kind": { "type": "string" },
+              "files": { "type": "array", "items": { "type": "string" } },
+              "evidence": { "type": "string" },
+              "impact": { "type": "string", "enum": ["high", "medium", "low"] },
+              "effort": { "type": "string", "enum": ["S", "M", "L"] },
+              "suggestion": { "type": "string" },
+              "contract_critical": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "verdict": {
+      "type": "object",
+      "required": ["real", "worth_it", "reason"],
+      "properties": {
+        "real": { "type": "boolean" },
+        "worth_it": { "type": "boolean" },
+        "risk": { "type": "string" },
+        "reason": { "type": "string" },
+        "revised_suggestion": { "type": "string" }
+      }
+    },
+    "critic": {
+      "type": "object",
+      "required": ["blind_spots"],
+      "properties": {
+        "blind_spots": {
+          "type": "array",
+          "maxItems": 5,
+          "items": {
+            "type": "object",
+            "required": ["area", "why", "evidence"],
+            "properties": {
+              "area": { "type": "string" },
+              "why": { "type": "string" },
+              "evidence": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "fixture": {
+    "findings": { "findings": [{ "title": "例: 認可チェックの欠落", "kind": "correctness", "files": ["src/auth.mjs"], "evidence": "src/auth.mjs:42 で role 検査前に mutation が実行される", "impact": "high", "effort": "S", "suggestion": "mutation 前に requireRole を移動する", "contract_critical": true }] },
+    "verdict": { "real": true, "worth_it": true, "reason": "実読で evidence の行を確認した", "risk": "認可バイパス" },
+    "critic": { "blind_spots": [{ "area": "エラー経路", "why": "全指摘が正常系だけを見ている", "evidence": "src/auth.mjs:60-80 の catch 節は未検査" }] }
+  }
+}

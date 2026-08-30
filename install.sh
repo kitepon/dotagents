@@ -185,8 +185,4 @@ for f in "$HERE/bin"/*.mjs; do
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .mjs)"
 done
 
-# Windows Codex Desktop から WSL2 projectを開く経路を、Windows native projectと分離する。
-# 非WSL hostではSKIP。WSLではSSH配線に加え、WSL正規hooksをWindows Desktopへ投影する。
-"$HERE/bin/configure-windows-wsl-ssh.sh" --apply
-
 echo "done."

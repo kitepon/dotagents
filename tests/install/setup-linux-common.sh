@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# WSL／native Linux一撃展開の順序、冪等cron、fresh delivery receiptを隔離fixtureで検証する。
+# native Linux共通一撃展開の順序、冪等cron、fresh delivery receiptを隔離fixtureで検証する。
 set -euo pipefail
 
 # Windows native（Git Bash/MSYS）には/usr/bin/gitが無く、POSIX固定PATHのfixtureが
-# 成立しない。検証対象のWSL展開自体がWindows nativeを対象にしないため明示SKIPする。
+# 成立しない。検証対象のnative Linux展開自体がWindows nativeを対象にしないため明示SKIPする。
 if [ "${OS:-}" = "Windows_NT" ]; then
-  echo "SKIP: Windows nativeは対象外（POSIX PATH fixture不成立・検証対象はWSL展開）"
+  echo "SKIP: Windows nativeは対象外（POSIX PATH fixture不成立・検証対象はnative Linux展開）"
   exit 0
 fi
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-SETUP_VARIANT="${DOTAGENTS_SETUP_TEST_VARIANT:-wsl}"
+SETUP_VARIANT="${DOTAGENTS_SETUP_TEST_VARIANT:-linux}"
 case "$SETUP_VARIANT" in
-  wsl) SETUP_COMMAND=setup-wsl-factory; HOST_PROFILE=wsl ;;
-  linux) SETUP_COMMAND=setup-linux-factory; HOST_PROFILE=server ;;
+  server) SETUP_COMMAND=setup-linux-factory; HOST_PROFILE=server; CRON_SUFFIX=linux ;;
+  linux) SETUP_COMMAND=setup-linux-workstation-factory; HOST_PROFILE=linux; CRON_SUFFIX=linux-workstation ;;
   *) echo "FAIL: 未対応のtest variant: $SETUP_VARIANT" >&2; exit 1 ;;
 esac
 export SETUP_COMMAND
+export CRON_SUFFIX
 SOURCE="$ROOT/bin/$SETUP_COMMAND.sh"
 [ -x "$SOURCE" ] || { echo "FAIL: $SETUP_VARIANT一撃展開スクリプトがない: $SOURCE" >&2; exit 1; }
 
@@ -29,12 +30,28 @@ CRONTAB="$FIXTURE/crontab"
 NODE_BIN="$(command -v node)"
 trap 'rm -rf "$FIXTURE"' EXIT
 mkdir -p "$HOME_DIR" "$FIXTURE_ROOT/bin" "$FIXTURE_ROOT/lib/factory" "$STUB_BIN"
-cp "$ROOT/bin/setup-wsl-factory.sh" "$FIXTURE_ROOT/bin/setup-wsl-factory.sh"
+cp "$ROOT/bin/setup-linux-common.sh" "$FIXTURE_ROOT/bin/setup-linux-common.sh"
 cp "$SOURCE" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"
 cp "$ROOT/lib/factory/delivery-receipt.mjs" "$FIXTURE_ROOT/lib/factory/delivery-receipt.mjs"
 cp "$ROOT/lib/factory/deployment-contract.mjs" "$FIXTURE_ROOT/lib/factory/deployment-contract.mjs"
-chmod +x "$FIXTURE_ROOT/bin/setup-wsl-factory.sh" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"
+chmod +x "$FIXTURE_ROOT/bin/setup-linux-common.sh" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"
 ln -s "$NODE_BIN" "$STUB_BIN/node"
+
+# 中断された caveat init が残す公式scaffoldを再現する。setupは内容一致を確認し、
+# backupしてからsync --initを先行させなければならない。
+mkdir -p "$HOME_DIR/.caveat/own/entries"
+cat >"$HOME_DIR/.caveat/own/.gitignore" <<'EOF'
+# Private entries DO sync to your private remote (Caveat-Private) — that is the
+# intended sharing boundary. The public boundary is enforced by `caveat publish`.
+
+# Obsidian per-user config: workspace layout, theme, plugin state, cache.
+.obsidian/
+
+# Editor / OS scratch files that should never sync.
+.DS_Store
+*.swp
+*~
+EOF
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -174,6 +191,7 @@ cat >"$STUB_BIN/caveat" <<'EOF'
 #!/usr/bin/env bash
 set -e
 printf 'caveat %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
+mkdir -p "$HOME/.caveat/own/.git"
 EOF
 cat >"$STUB_BIN/claude" <<'EOF'
 #!/usr/bin/env bash
@@ -216,7 +234,7 @@ else
   exit 0
 fi
 EOF
-for command_name in npm uv gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client; do
+for command_name in npm uv gpt-connector gpt-connector-mcp lattice-mcp aiterm-mcp codex-sidecar codex-sidecar-mcp peertable-client; do
   cat >"$STUB_BIN/$command_name" <<'EOF'
 #!/usr/bin/env bash
 exit 0
@@ -247,18 +265,18 @@ printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"end
 } >"$CRONTAB"
 
 # shellcheck disable=SC2016 # setup側へ literal `$HOME` が書かれていることを検査する＝展開させない。
-grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh" \
+grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'setupが ~/.local/bin をPATH先頭へ置かない'
 # shellcheck disable=SC2016 # setup側のliteral変数名を含む射影行を検査するため展開させない。
-grep -Fq 'ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"' "$ROOT/bin/setup-wsl-factory.sh" \
+grep -Fq 'ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'setupが公式SnapのNode系commandだけを専用dirへ射影しない'
 # shellcheck disable=SC2016 # 禁止するliteral PATH行を検査するため展開させない。
-if grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-wsl-factory.sh"; then
+if grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-linux-common.sh"; then
   fail 'setupが/snap/bin全体をPATH先頭へ出す'
 fi
-grep -Fq "[ \"\$node_major\" -ge 24 ]" "$ROOT/bin/setup-wsl-factory.sh" \
+grep -Fq "[ \"\$node_major\" -ge 24 ]" "$ROOT/bin/setup-linux-common.sh" \
   || fail 'setupがNode.js 24契約を強制しない'
-node - "$ROOT/bin/setup-wsl-factory.sh" <<'NODE'
+node - "$ROOT/bin/setup-linux-common.sh" <<'NODE'
 const source = require('fs').readFileSync(process.argv[2], 'utf8');
 if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('"$ROOT/bin/apply-codex-config.sh" --apply'))
   || !source.includes('npm install -g @openai/codex@latest')) process.exit(1);
@@ -267,8 +285,12 @@ NODE
 export HOME="$HOME_DIR"
 export PATH="$STUB_BIN:/usr/bin:/bin"
 unset XAI_API_KEY
-export DOTAGENTS_SETUP_WSL_FORCE=1
 export DOTAGENTS_SETUP_LINUX_FORCE=1
+export DOTAGENTS_SETUP_SKIP_PREREQUISITES=1
+export DOTAGENTS_SETUP_SKIP_ENROLLMENT=1
+export DOTAGENTS_SETUP_SKIP_REPO_RELOCATION=1
+export DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER=1
+export DOTAGENTS_SETUP_SKIP_REVERSE_SSH=1
 export DOTAGENTS_SETUP_TEST_HOST_PROFILE="$HOST_PROFILE"
 export DOTAGENTS_SETUP_TEST_CALLS="$CALLS"
 export DOTAGENTS_SETUP_TEST_CRONTAB="$CRONTAB"
@@ -281,7 +303,7 @@ export DOTAGENTS_SETUP_TEST_ROOT="$FIXTURE_ROOT"
   || fail '既存global gitignoreを保持しない'
 [ "$(grep -Fxc '.DS_Store' "$HOME_DIR/.gitignore_global")" -eq 1 ] \
   || fail '.DS_Storeを冪等に補完しない'
-[ "$(grep -Fc "# dotagents-agents-update-$SETUP_VARIANT" "$CRONTAB")" -eq 1 ] || fail 'cron管理行が1件でない'
+[ "$(grep -Fc "# dotagents-agents-update-$CRON_SUFFIX" "$CRONTAB")" -eq 1 ] || fail 'cron管理行が1件でない'
 grep -Fq '# dotagents-factory-reporter' "$CRONTAB" || fail '既存のfactory reporter cronを保持しない'
 if grep -E 'agents-update|update-npm-globals' "$CRONTAB" | grep -Fv "$SETUP_COMMAND" >/dev/null; then
   fail '旧update cronを残した'
@@ -301,14 +323,56 @@ if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
 fi
 grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展開しない'
 grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
-[ "$(grep -Fc 'caveat init --sync --yes' "$CALLS")" -eq 2 ] \
-  || fail '2回のsetupがCaveat製品入口を各1回呼ばない'
-[ "$(grep -Fc 'caveat init --sync --yes </dev/null' "$ROOT/bin/setup-wsl-factory.sh")" -eq 1 ] \
-  || fail 'Caveat製品setup入口を非対話で一度だけ定義しない'
-if grep -Eq 'ensure_caveat_sync|Caveat-Private|\.caveat/own/\.git|gh auth switch.*quolu|caveat sync' "$ROOT/bin/setup-wsl-factory.sh"; then
-  fail '工場setupがCaveat内部state・remote・認証を制御する'
-fi
+grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
+grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-linux-common.sh" || fail 'caveat init を非対話にしない'
+[ "$(grep -n '^caveat sync --init ' "$CALLS" | head -1 | cut -d: -f1)" -lt \
+  "$(grep -n '^caveat init$' "$CALLS" | head -1 | cut -d: -f1)" ] \
+  || fail 'Caveat初回syncがinitより先でない'
+find "$HOME_DIR/.local/state/dotagents/backups" -path '*/caveat-init-scaffold-*/.gitignore' -type f | grep -q . \
+  || fail '中断されたCaveat初期scaffoldをbackupしない'
+grep -Fq 'npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest' \
+  "$ROOT/bin/setup-linux-common.sh" || fail 'Claude Code公式lifecycle scriptを限定許可しない'
+grep -Fq 'npm install -g --allow-scripts=claude-spotter' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'Spotter公式lifecycle scriptを限定許可しない'
+grep -Fq 'env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'factory batchへ対話中Codex thread identityを混入させる'
+grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-server'"'" "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'main-server runner labelを役割別に定義しない'
+grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-workstation'"'" "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'rabbit runner labelを役割別に定義しない'
+# shellcheck disable=SC2016 # setup側のliteral変数参照を検査するため展開させない。
+grep -Fq -- '--labels "factory,$ACTIONS_RUNNER_LABEL"' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'host別labelでrunnerを登録しない'
+grep -Fq 'set_org_runner_labels factory-linux-main linux-server' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'rabbit一撃展開からmain-serverの旧Linux labelを移行しない'
+# shellcheck disable=SC2016 # setup側のliteral変数参照を検査するため展開させない。
+grep -Fq 'cd "$ACTIONS_RUNNER_ROOT"' "$ROOT/bin/setup-linux-common.sh" \
+  || fail '公式runner serviceをrunner root内から操作しない'
+# shellcheck disable=SC2016 # setup側のliteral変数参照を検査するため展開させない。
+grep -Fq 'sudo ./svc.sh install "$USER"' "$ROOT/bin/setup-linux-common.sh" \
+  || fail '公式runner service installerを使用しない'
+grep -Fq 'replace(/^\uFEFF/, "")' "$ROOT/bin/setup-linux-common.sh" \
+  || fail '公式runner metadataのUTF-8 BOMを受理しない'
+grep -Eq 'openssh-client openssh-server' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
+  || fail 'rabbitのinbound SSH serverを一撃展開へ含めない'
+grep -Eq 'ripgrep shellcheck tmux xz-utils' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
+  || fail 'Aitermのnative Linux前提tmuxを一撃展開へ含めない'
+# shellcheck disable=SC2016 # root helper内のliteral変数展開を検査する。
+grep -Fq '90-dotagents-${target_user}-nopasswd' "$ROOT/bin/setup-linux-prerequisites-root.sh" \
+  || fail 'rabbitのpasswordless sudoをroot phaseで管理しない'
+grep -Fq 'id_ed25519_rabbit' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'main-serverのrabbit専用SSH keyを一撃展開で管理しない'
+grep -Fq "ssh -o BatchMode=yes -o ConnectTimeout=5 rabbit 'sudo -n true'" \
+  "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'main-serverからrabbitのpasswordless sudoを実火検証しない'
+grep -Fq 'gh auth switch --hostname github.com --user quolu' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'Caveat-Private同期前に工場ownerへ切り替えない'
+grep -Fq 'gh auth setup-git' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'Caveat-Private同期前にGitHub HTTPS credential helperを配線しない'
+grep -Fq 'caveat sync --init --repo https://github.com/quolu/Caveat-Private.git' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'Caveat-Privateの初回同期が公式HTTPS経路でない'
 grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
+grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
 grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
 grep -Fq 'lattice hooks install --host codex' "$CALLS" || fail 'Codex Lattice hookを配線しない'
 grep -Fq 'lattice hooks install --host cursor' "$CALLS" || fail 'Cursor Lattice hookを配線しない'
@@ -327,8 +391,11 @@ latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFile
 minimal_output="$(env -i \
   HOME="$HOME_DIR" \
   PATH="$STUB_BIN:/usr/bin:/bin" \
-  DOTAGENTS_SETUP_WSL_FORCE=1 \
   DOTAGENTS_SETUP_LINUX_FORCE=1 \
+  DOTAGENTS_SETUP_SKIP_PREREQUISITES=1 \
+  DOTAGENTS_SETUP_SKIP_ENROLLMENT=1 \
+  DOTAGENTS_SETUP_SKIP_REPO_RELOCATION=1 \
+  DOTAGENTS_SETUP_SKIP_REVERSE_SSH=1 \
   DOTAGENTS_SETUP_TEST_HOST_PROFILE="$HOST_PROFILE" \
   DOTAGENTS_SETUP_TEST_CALLS="$CALLS" \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update)"

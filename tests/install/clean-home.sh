@@ -48,6 +48,13 @@ assert_link() {
     fail "$1 が $2 向き symlink でない"
   fi
 }
+assert_orchestrate_references() {
+  local skill="$1"
+  for file in contract.md delegation-contract.md aiterm-dispatch.md recipes.md; do
+    [ -r "$skill/references/shared-orchestrate/$file" ] \
+      || fail "配布済みorchestrateから $file を読めない: $skill"
+  done
+}
 seed_config() {
   mkdir -p "$1/.codex"
   cat >"$1/.codex/config.toml" <<'EOF'
@@ -215,6 +222,7 @@ assert_link "$OFFICIAL_HOME/.codex/runbooks" "$ROOT/shared/runbooks"
 assert_link "$OFFICIAL_HOME/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$OFFICIAL_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
 assert_link "$OFFICIAL_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
+assert_orchestrate_references "$OFFICIAL_HOME/.grok/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.grok/skills/auto-deploy-on-push" "$ROOT/grok/skills/auto-deploy-on-push"
 assert_link "$OFFICIAL_HOME/.grok/skills/gpt-connector" "$ROOT/grok/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.grok/skills/polish-github" "$ROOT/grok/skills/polish-github"
@@ -226,6 +234,7 @@ assert_link "$OFFICIAL_HOME/.cursor/factory-constitution/.cursor/rules/factory.m
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
 assert_link "$OFFICIAL_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
+assert_orchestrate_references "$OFFICIAL_HOME/.cursor/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.cursor/skills/auto-deploy-on-push" "$ROOT/cursor/skills/auto-deploy-on-push"
 assert_link "$OFFICIAL_HOME/.cursor/skills/gpt-connector" "$ROOT/cursor/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.cursor/skills/polish-github" "$ROOT/cursor/skills/polish-github"
@@ -248,13 +257,16 @@ grep -Fq "FAIL: $OFFICIAL_HOME/.cursor/runbooks 不在" <<<"$cursor_runbook_miss
   || fail 'Cursor runbooks欠落のFAILが対象pathを名指ししない'
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
+# 以降はGrok認証済み席の実ファイルhook/config契約を検証する。
+# 呼出元PCの秘密・ログイン有無にfixtureの分岐を依存させない。
+export XAI_API_KEY='dotagents-clean-home-fixture'
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 printf '%s\n' '{"hooks":{}}' >"$OFFICIAL_HOME/.grok/hooks/factory.json"
 if grok_hooks_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok 工場hook欠落をverifyが見逃した'
 fi
 grep -Fq 'FAIL: Grok 工場hook が欠落' <<<"$grok_hooks_missing_output" \
-  || fail 'Grok 工場hook欠落のFAILを出さない'
+  || fail "Grok 工場hook欠落のFAILを出さない: $grok_hooks_missing_output"
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
@@ -334,7 +346,7 @@ cp "$ROOT/claude/skills/orchestrate/SKILL.md" "$VERIFY_FIXTURE/claude/skills/orc
 import sys
 from pathlib import Path
 path = Path(sys.argv[1])
-path.write_text(path.read_text(encoding="utf-8").replace("](../../../shared/orchestrate/delegation-contract.md)", "`../../../shared/orchestrate/delegation-contract.md`"), encoding="utf-8")
+path.write_text(path.read_text(encoding="utf-8").replace("](references/shared-orchestrate/delegation-contract.md)", "`references/shared-orchestrate/delegation-contract.md`"), encoding="utf-8")
 PY
 ln -s "$ROOT/codex" "$VERIFY_FIXTURE/codex"
 ln -s "$ROOT/shared" "$VERIFY_FIXTURE/shared"
@@ -480,6 +492,8 @@ json.dump(data, open(path, "w", encoding="utf-8"))
 PY
 verify "$OFFICIAL_HOME" official
 assert_link "$OFFICIAL_HOME/.agents/skills/orchestrate" "$ROOT/codex/skills/orchestrate"
+assert_orchestrate_references "$OFFICIAL_HOME/.claude/skills/orchestrate"
+assert_orchestrate_references "$OFFICIAL_HOME/.agents/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.agents/skills/polish-github" "$ROOT/codex/skills/polish-github"
 rm "$OFFICIAL_HOME/.agents/skills/polish-github"
 [ ! -e "$OFFICIAL_HOME/.agents/skills/polish-github" ] \
@@ -694,18 +708,22 @@ assert_link "$LEGACY_HOME/.codex/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$LEGACY_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
+assert_orchestrate_references "$LEGACY_HOME/.grok/skills/orchestrate"
 assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 assert_link "$LEGACY_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
+assert_orchestrate_references "$LEGACY_HOME/.cursor/skills/orchestrate"
 assert_link "$LEGACY_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 [ ! -e "$LEGACY_HOME/.cursor/AGENTS.md" ] || fail 'legacy が Cursor AGENTS.md を ~/.cursor へ置いた'
 apply_grok_config_on_windows "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply
 verify "$LEGACY_HOME" legacy
 assert_link "$LEGACY_HOME/.codex/skills/orchestrate" "$ROOT/codex/skills/orchestrate"
+assert_orchestrate_references "$LEGACY_HOME/.claude/skills/orchestrate"
+assert_orchestrate_references "$LEGACY_HOME/.codex/skills/orchestrate"
 assert_link "$LEGACY_HOME/.codex/skills/polish-github" "$ROOT/codex/skills/polish-github"
 [ ! -e "$LEGACY_HOME/.agents/skills/orchestrate" ] || fail 'legacy が official skill 面を作った'
 [ ! -e "$LEGACY_HOME/.agents/skills/polish-github" ] \

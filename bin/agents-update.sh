@@ -107,6 +107,16 @@ npm_install_spec() {
   esac
 }
 
+npm_install_global() {
+  local package_name="$1" install_spec="$2"
+  case "$package_name" in
+    '@anthropic-ai/claude-code'|claude-spotter)
+      npm install -g "--allow-scripts=$package_name" "$install_spec"
+      ;;
+    *) npm install -g "$install_spec" ;;
+  esac
+}
+
 # 現役製品のOS/arch別更新集合はdeployment contractだけが所有する。
 PACKAGES=()
 while IFS= read -r package_line; do
@@ -174,7 +184,7 @@ fi
         fi
       fi
       install_spec="$(npm_install_spec "$pkg")"
-      if [[ "$skip_install" -eq 0 ]] && ! npm install -g "$install_spec"; then
+      if [[ "$skip_install" -eq 0 ]] && ! npm_install_global "$pkg" "$install_spec"; then
         printf 'FAILED: %s\n' "$pkg"
         update_failed=1
         operation=failed; reason=install_failed
@@ -207,7 +217,10 @@ fi
         printf 'FAILED: MarkItDown uv tool upgrade\n'
         update_failed=1
       fi
-    elif ! uv tool install markitdown; then
+    # Windows AppContainerからの初回導入ではuv metadataだけが仮想領域にあり、
+    # scheduled runからは既存の公式executableだけが見える。uv ownershipを
+    # 正規storeへ収束させるため、未登録branchは公式の--force契約で再導入する。
+    elif ! uv tool install --force markitdown; then
       printf 'FAILED: MarkItDown uv tool install\n'
       update_failed=1
     fi

@@ -8,7 +8,7 @@
 
 ## 工場runner契約
 
-- self-hosted runnerは`factory`とhostを表すlabelを持つ。現役labelは`macos-native`、`linux-native`、`windows-native`、`wsl2`である。どのlabelを製品が要求するかは製品repoが決める。
+- self-hosted runnerは`factory`とhostを表すlabelを持つ。現役labelは`macos-native`、`linux-server`、`linux-workstation`、`windows-native`である。どのlabelを製品が要求するかは製品repoが決める。
 - runner groupのrepo access、同時実行capacity、online/busy、標準toolchainを工場の観測対象にする。
 - runnerは個人用PATHや対話sessionを前提にしない。runnerやtoolchainの障害を別環境への迂回で隠さない。
 - 製品repoからrunnerが見えない、要求labelに割り当たらない、queuedのまま進まない、標準toolchainがない問題はdotagentsで直す。

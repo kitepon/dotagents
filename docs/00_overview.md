@@ -23,7 +23,7 @@ archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文di
 | [06_gpt-connector.md](06_gpt-connector.md) | ChatGPT製品を工場へ登録する薄い接続pointer（`gpt_connector` / `gpt-connector-mcp`） |
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
-| [../README.md](../README.md#他端末セットアップランブック) | 工場4席（Mac / Windows native / WSL2 / Linux）の一撃展開と定期更新 |
+| [../README.md](../README.md#他端末セットアップランブック) | 現役4席（Mac / main-server / rabbit native Linux / Windows native）の一撃展開と定期更新。Windows nativeはPowerShell 7＋Git for Windowsだけで閉じ、WSL／Dockerを前提にせず、main-server恒久SSHも同じ入口で閉じる |
 | [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
 | [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |
 | `plan_*.md` | 現役計画だけ。完遂時は`archive/`へ移し、固定path consumerが実在する場合だけroot stubを残す |
@@ -60,5 +60,5 @@ ADR本文と状態は裁定時点の不変記録であり、後から改稿し�
 - 調査資産: [../rag/INDEX.md](../rag/INDEX.md)
 - 人格・全端末共通規範: [../shared/constitution.md](../shared/constitution.md)（唯一の共通正本。harness固有差分と配布生成物は各harnessディレクトリ。現役のGrok/Cursor配線は[07](07_grok-fragments.md)／[08](08_cursor-fragments.md)、完了した導入工程は[archive](archive/)が持つ）
 - 規範の入口: ルート [../AGENTS.md](../AGENTS.md) は全AI向けのproject正典であり、Claude Code はルート [../CLAUDE.md](../CLAUDE.md) の `@AGENTS.md` 経由で取り込む。共通憲法は `shared/constitution.md`、host固有差分は各host delta、runtime配布物は生成物として管理する。
-- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。
+- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-linux-workstation-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。同入口はmain-server専用SSH鍵・pinned host key・alias／直IP config・runner経由公開鍵登録・非対話再接続も所有する。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。
 - 文書はregistry上の5種と所有roleへ機械分類する。変動する現行値は構造化正本から生成し、current文書は[工場の現行状態](factory-current-state.md)を参照する。完了文書は`archive/`、固定証拠は`evidence/`へ置き、製品内部契約は各製品repoへ返す。archiveはinventoryとdigest、製品接続面はsurface policyで機械検査する。

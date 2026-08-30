@@ -1,6 +1,7 @@
 # 工場 host × product 期待matrix
 
 正本: dotagents
+対象: Mac、main-server、rabbit native Linux、FOX Windows native
 
 このmatrixは、工場が各hostと親AIへ要求する接続状態だけを定める。製品の導入・設定・状態・schema・migration・診断の意味・復旧・更新・CI・releaseは各製品repoが所有する。過去の導入Wave、端末ごとのsession、導入済みversion、製品内部のcommandは[凍結した旧版](archive/2026-08_factory-host-product-matrix-pre-autonomy.md)に置き、ここへ戻さない。
 
@@ -14,9 +15,9 @@
 
 ## 製品導入
 
-製品集合と区分は[生成された現行状態](factory-current-state.md)が正である。製品のpresenceとconnector面を分け、hostの構造要因で成立しない面だけを`unsupported`にする。
+製品集合と区分は[生成された現行状態](factory-current-state.md)が正である。製品のpresenceとconnector面を分け、hostの構造要因で成立しない面だけを`unsupported`にする。WSL2は退役hostであり、履歴・旧outbox読取互換だけに残して現役hostへ割り当てない。main-serverとrabbitは同じnative Linux基盤を共有するが、`server`と`linux` profile、ServerManager所有、peertable server/client、credential、scheduler、receiptを分離する。Windows nativeはPowerShell 7とGit for Windowsで閉じ、`wsl.exe`、WSL distro、Docker Desktop、Hyper-V、Virtual Machine Platformを導入・起動・検証しない。
 
-| product | Mac | main-server | FOX WSL2 | FOX Windows native | 欠落severity |
+| product | Mac | main-server | rabbit native Linux | FOX Windows native | 欠落severity |
 |---|---|---|---|---|---|
 | Caveat | required | required | required | required | high |
 | Throughline | required | required | required | required | high |

@@ -24,7 +24,7 @@
 }
 ```
 
-配置後は内容を表示せず、fileが空でないこととpermissionだけを確認する。WSLとWindows nativeでcredentialを共有しない。
+配置後は内容を表示せず、fileが空でないこととpermissionだけを確認する。hostごとにcredentialを分け、rabbitとWindows nativeのtokenを共用しない。rabbitの初回導入は`setup-linux-workstation-factory.sh`がcredential発行・転送・config作成まで一撃内で行うため、平文tokenを手で表示・転記しない。
 
 ## 正規実行順序
 

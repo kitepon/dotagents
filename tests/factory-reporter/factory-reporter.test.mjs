@@ -151,7 +151,7 @@ test('不正UTF-8のconfig/reportとoptional config fieldは拒否する', async
 
 test('config host profile/additional fieldと旧reporting.host_idを拒否する', async () => {
   const cases = [
-    { host: { id: 'test-host', profile: 'linux' }, collection: { enabled: false }, reporting: { enabled: false } },
+    { host: { id: 'test-host', profile: 'desktop' }, collection: { enabled: false }, reporting: { enabled: false } },
     { host: { id: 'test-host', profile: 'mac', extra: true }, collection: { enabled: false }, reporting: { enabled: false } },
     { host: { id: 'test-host', profile: 'mac' }, collection: { enabled: false }, reporting: { enabled: false, host_id: 'test-host' } },
   ];

@@ -558,7 +558,68 @@ test('Windows npm .cmd実物variantは空白を含むPathから検証済みNode 
   const entry = await box.entry('safe.js', 'process.exit(0);\n');
   await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js', { programIndent: '  ' });
   const resolved = await resolveWindowsCommand('safe-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [await realpath(entry)] });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
+});
+
+test('Windows npm .cmdはAppContainerのrealpath仮想化後もshim字面のentrypointで起動する', async (t) => {
+  const box = await windowsCommandFixture(t);
+  const entry = await box.entry('safe.js', 'process.exit(0);\n');
+  await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
+  const canonicalBin = await realpath(box.bin);
+  const canonicalEntry = await realpath(entry);
+  const redirectedBin = join(box.root, 'app-container-cache');
+  const redirectedEntry = join(redirectedBin, 'node_modules', 'safe-package', 'bin', 'safe.js');
+  const virtualizingFs = {
+    lstat: (path) => import('node:fs/promises').then((fs) => fs.lstat(path)),
+    readFile: (path, encoding) => readFile(path, encoding),
+    async realpath(path) {
+      const canonical = await realpath(path);
+      if (canonical === canonicalBin) return redirectedBin;
+      if (canonical === canonicalEntry) return redirectedEntry;
+      return canonical;
+    },
+  };
+  const resolved = await resolveWindowsCommand('safe-cli', { env: box.env, fs: virtualizingFs, pathModule: WINDOWS_FIXTURE_PATH });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
+});
+
+test('Windows npm AppContainer仮想化時は子CLIのPATHも同一の検証済みnpm cacheへ揃える', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'factory-windows-appcontainer-run-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const bin = join(root, 'AppData', 'Roaming', 'npm');
+  const entry = join(bin, 'node_modules', 'safe-package', 'bin', 'safe.js');
+  const virtualNpm = join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm');
+  await mkdir(resolve(entry, '..'), { recursive: true });
+  await writeFile(entry, 'process.stdout.write(process.env.PATH);\n');
+  const helper = join(root, 'success-helper.mjs');
+  await writeFile(helper, `process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ status: 'ok', command: ${JSON.stringify(process.execPath)}, prefixArgs: [${JSON.stringify(entry)}], pathPrefix: ${JSON.stringify(virtualNpm)} })));\n`);
+  const result = await runCommand('safe-cli', [], { env: { Path: bin, PathExt: '.CMD;.EXE' }, platform: 'win32', windowsPathModule: WINDOWS_FIXTURE_PATH, windowsHelperPath: helper });
+  assert.equal(result.ok, true, result.stderr);
+  assert.equal(result.stdout, `${virtualNpm};${bin}`);
+});
+
+test('Windows npm .cmdはentrypointだけがCodex AppContainerへ仮想化されても同一suffixを検証する', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'factory-windows-appcontainer-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const bin = join(root, 'AppData', 'Roaming', 'npm');
+  const entry = join(bin, 'node_modules', 'safe-package', 'bin', 'safe.js');
+  await mkdir(resolve(entry, '..'), { recursive: true });
+  await writeFile(entry, 'process.exit(0);\n');
+  const fixture = await windowsCommandFixture(t);
+  const fixtureCmd = await fixture.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
+  await writeFile(join(bin, 'safe-cli.cmd'), await readFile(fixtureCmd, 'utf8'));
+  const canonicalEntry = await realpath(entry);
+  const redirectedEntry = join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm', 'node_modules', 'safe-package', 'bin', 'safe.js');
+  const virtualizingFs = {
+    lstat: (path) => import('node:fs/promises').then((fs) => fs.lstat(path)),
+    readFile: (path, encoding) => readFile(path, encoding),
+    async realpath(path) {
+      const canonical = await realpath(path);
+      return canonical === canonicalEntry ? redirectedEntry : canonical;
+    },
+  };
+  const resolved = await resolveWindowsCommand('safe-cli', { env: { Path: bin, PathExt: '.CMD;.EXE' }, fs: virtualizingFs, pathModule: WINDOWS_FIXTURE_PATH });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry], pathPrefix: join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm') });
 });
 
 test('Windows .exeはPATHEXT順で直接起動し、npm .cmdへはcmd.exeを介在させない', async (t) => {
@@ -569,13 +630,23 @@ test('Windows .exeはPATHEXT順で直接起動し、npm .cmdへはcmd.exeを介�
   assert.deepEqual(resolved, { command: executable, prefixArgs: [] });
 });
 
+test('Windows npm native .cmdはnode_modules内の固定exeだけをshell非介在で起動する', async (t) => {
+  const box = await windowsCommandFixture(t);
+  const executable = await box.entry('native.exe', 'placeholder');
+  await writeFile(join(box.bin, 'native-cli.cmd'), '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n"%dp0%\\node_modules\\safe-package\\bin\\native.exe"   %*\r\n');
+  const resolved = await resolveWindowsCommand('native-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH });
+  assert.deepEqual(resolved, { command: executable, prefixArgs: [] });
+  await writeFile(join(box.bin, 'native-cli.cmd'), '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n"%dp0%\\..\\outside.exe" %*\r\n');
+  await assert.rejects(resolveWindowsCommand('native-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH }), { code: 'EINVAL' });
+});
+
 test('Windows command解決はPATHEXT先頭の許可外ps1を実行せず検証済みnpm cmdへ進む', async (t) => {
   const box = await windowsCommandFixture(t);
   const entry = await box.entry('safe.js', 'process.exit(0);\n');
   await writeFile(join(box.bin, 'safe-cli.ps1'), 'throw "must not run"\n');
   await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
   const resolved = await resolveWindowsCommand('safe-cli', { env: { ...box.env, PathExt: '.PS1;.CMD;.EXE' }, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [await realpath(entry)] });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
 });
 
 test('Windows npm .cmdはstdin・cwd・envを保ってNodeで実行する', async (t) => {

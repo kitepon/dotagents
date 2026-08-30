@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   classify:
-    runs-on: [self-hosted, factory, linux-native]
+    runs-on: [self-hosted, factory, linux-server]
     outputs:
       product_change: ${{ steps.changes.outputs.product_change }}
       comparison_base: ${{ steps.changes.outputs.comparison_base }}
@@ -126,7 +126,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: ${{ fromJSON(inputs.environment != 'all' && format('["{0}"]', inputs.environment) || '["macos-native","linux-native","windows-native","wsl2"]') }}
+        environment: ${{ fromJSON(inputs.environment != 'all' && format('["{0}"]', inputs.environment) || '["macos-native","linux-server","linux-workstation","windows-native"]') }}
     timeout-minutes: 30
     runs-on: [self-hosted, factory, "${{ matrix.environment }}"]
     steps:

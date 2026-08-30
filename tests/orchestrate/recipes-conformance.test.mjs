@@ -81,9 +81,9 @@ test("両host面と正本文書が相互参照で結ばれている（片面撤�
   assert.ok(recipes.includes("](recipes/adversarial-audit.v1.json)"), "recipes.md must link the audit schema");
   assert.ok(recipes.includes("](recipes/bulk-curation.v1.json)"), "recipes.md must link the curation schema");
   const claude = await readFile(TEMPLATE, "utf8");
-  assert.ok(claude.includes("shared/orchestrate/recipes.md"), "Claude projection must reference the shared canon");
+  assert.ok(claude.includes("shared-orchestrate/recipes.md"), "Claude projection must reference its bundled shared canon");
   const codex = await readFile(join(ROOT, "codex", "skills", "orchestrate", "SKILL.md"), "utf8");
-  assert.ok(codex.includes("shared/orchestrate/recipes.md"), "Codex entry must reference the shared canon");
+  assert.ok(codex.includes("references/shared-orchestrate/recipes.md"), "Codex entry must reference its bundled shared canon");
   // 意味差の再発防止: 集約の3値とunknown回収規則は正本にだけ置く（本testは存在参照のみを縛る）
   assert.ok(recipes.includes("partial_failure"), "shared canon must own the aggregate semantics");
 });

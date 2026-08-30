@@ -28,6 +28,7 @@ test('deployment contractは管理12製品とv8 wire 15 IDを固定する', () =
   assert.deepEqual(CURRENT_WIRE_PRODUCT_IDS, V8_PRODUCT_IDS);
   assert.deepEqual(hostProjection({ profile: 'mac', os: 'darwin', arch: 'arm64', macosMajor: 15 }).required, ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'aishell', 'peertable', 'unai']);
   assert.deepEqual(hostProjection({ profile: 'server', os: 'linux', arch: 'arm64' }).required, ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'servermanager', 'peertable', 'unai']);
+  assert.deepEqual(hostProjection({ profile: 'linux', os: 'linux', arch: 'x64' }).required, ['caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector', 'aiterm-mcp', 'codex-sidecar', 'peertable', 'unai']);
 });
 
 test('host projectionはprofile/OS/arch/macOS majorの未知値と不整合をfail-closedにする', () => {
@@ -43,7 +44,8 @@ test('host別required集合はmatrix全行と完全一致する', () => {
   assert.deepEqual(required({ profile: 'mac', os: 'darwin', arch: 'arm64', macosMajor: 15 }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','aishell','peertable','unai']);
   assert.deepEqual(required({ profile: 'mac', os: 'darwin', arch: 'arm64', macosMajor: 14 }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','peertable','unai']);
   assert.deepEqual(required({ profile: 'server', os: 'linux', arch: 'arm64' }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','servermanager','peertable','unai']);
-  assert.deepEqual(required({ profile: 'wsl', os: 'linux', arch: 'x64' }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','peertable','unai']);
+  assert.deepEqual(required({ profile: 'linux', os: 'linux', arch: 'x64' }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','peertable','unai']);
+  assert.throws(() => required({ profile: 'wsl', os: 'linux', arch: 'x64' }), /profile/u);
   assert.deepEqual(required({ profile: 'windows-native', os: 'win32', arch: 'x64' }), ['caveat','throughline','spotter','lattice','markitdown','gpt-connector','aiterm-mcp','codex-sidecar','peertable','unai']);
 });
 

@@ -1,9 +1,9 @@
 # Workflow スクリプト雛形（Claude投影）
 
 実証済みの2型の**Claude Workflow tool向け投影**。Phase・入出力schema・reducer・gate・失敗条件の
-意味の正本は[固定Recipe契約](../../../../shared/orchestrate/recipes.md)であり、本書は実行入口
+意味の正本は[固定Recipe契約](shared-orchestrate/recipes.md)であり、本書は実行入口
 （`phase()`／`parallel()`／`agent()`への写像）だけを所有する。本書内のschema literalは
-[shared/orchestrate/recipes/](../../../../shared/orchestrate/recipes/)のcanonical JSONと機械的一致を
+[shared/orchestrate/recipes/](shared-orchestrate/recipes/)のcanonical JSONと機械的一致を
 CI（`tests/orchestrate/recipes-conformance.test.mjs`）で強制される——**schemaを変えるときはshared正本を
 先に変え、両面を同一commitで更新する**。
 

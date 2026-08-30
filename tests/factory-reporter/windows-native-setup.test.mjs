@@ -12,6 +12,7 @@ const SETUP = join(ROOT, 'bin', 'setup-windows-native-factory.ps1');
 test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・検証・2時schedulerを一入口に閉じる', async () => {
   const source = await readFile(SETUP, 'utf8');
   const ordered = [
+    'Ensure-WindowsPrerequisites',
     'install.sh',
     'agents-update.sh',
     'apply-codex-config.sh',
@@ -37,6 +38,9 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.doesNotMatch(source, /WindowsBuiltInRole\]::Administrator/u);
   assert.match(source, /Stop-ScheduledTask.*factory-reporter-scheduler\.mjs.*uninstall.*Remove-LegacyCron.*install\.sh/su);
   assert.match(source, /function Normalize-WindowsReporterConfig.*UTF-8 without BOM.*factory-reporter-config.*\.bak.*UTF8Encoding.*\$false.*still has a UTF-8 BOM/su);
+  assert.match(source, /function Restore-ScheduledReporterConfigFromCodexCache.*ScheduledRun.*OpenAI\.Codex_\*.*LocalCache\\Local\\dotagents\\factory-reporter\\config\.json.*credential path is not canonical.*Set-OwnerOnlyAcl \$destinationCredential.*Restore-ScheduledReporterConfigFromCodexCache.*Assert-ReporterConfig/su);
+  assert.match(source, /function Restore-ScheduledGitHubCliConfigFromCodexCache.*gh.*auth.*status.*OpenAI\.Codex_\*.*LocalCache\\Roaming\\GitHub CLI\\hosts\.yml.*Set-OwnerOnlyAcl \$destination.*authentication was not restored.*Restore-ScheduledGitHubCliConfigFromCodexCache.*github-auth-switch/su);
+  assert.match(source, /function Invoke-BootstrapUpdate.*bootstrap-\$RunId\.log.*\$GitBash \$UpdateScript \*> \$bootstrapLog.*Set-OwnerOnlyAcl \$bootstrapLog.*Get-Content -LiteralPath \$bootstrapLog/su);
   assert.match(source, /python3.*apply-codex-config\.sh/su);
   assert.match(source, /\.grok\\auth\.json/u);
   assert.match(source, /XAI_API_KEY/u);
@@ -57,7 +61,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Remove-WindowsGlobalNpmLink.*npm root --global.*LinkType.*npm unlink --global.*Global npm link remains.*Remove-WindowsGlobalNpmLink 'aiterm-mcp'.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Update-WindowsNativeClaude.*\.local\\bin\\claude\.exe.*factory-products-bootstrap: Claude native update.*install\.sh.*Update-WindowsNativeClaude.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
-  assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|github-auth-switch|github-auth-setup-git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
+  assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /--post-update.*--finalize-update/su);
   assert.match(source, /Set-ToolchainPostGateSuccess.*--post-gate', 'success'/su);
@@ -65,15 +69,24 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /lib\\factory\\windows-native-product-smoke\.mjs/u);
   assert.match(source, /checked_products -ne 15/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
-  assert.match(source, /function Set-OwnerOnlyAcl.*DirectorySecurity.*FileSecurity.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
+  assert.match(source, /function Set-OwnerOnlyAcl.*existingOwnerSid.*DirectorySecurity.*FileSecurity.*existingOwnerSid -ne \$sid\.Value.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
+  assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
+  assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
+  assert.match(source, /function Ensure-WindowsPrerequisites.*ssh.*ssh-keygen.*ssh-keyscan.*Git\.Git/su);
+  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*ssh-keygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
+  assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*ssh-keyscan.*pinned fingerprint/su);
+  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*ssh -G.*direct-IP/su);
+  assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
+  assert.match(source, /github-auth-setup-git'.*Ensure-MainServerSsh.*native-product-wiring: caveat setup/su);
+  assert.match(source, /ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
   assert.doesNotMatch(source, /\bSet-Acl\b/u);
   assert.match(source, /Get-Acl -LiteralPath \$Path.*GetOwner.*GetAccessRules.*IsInherited.*Owner-only ACL readback failed/su);
   assert.match(source, /THROUGHLINE_CODEX_THREAD_ID.*CODEX_THREAD_ID/su);
-  assert.match(source, /function Wait-ScheduledSmoke.*priorLastRunTime.*Start-ScheduledTask.*LastRunTime -le \$priorLastRunTime.*LastTaskResult -ne 0.*completed without a receipt.*fresh acknowledged receipt/su);
+  assert.match(source, /function Get-CodexReceiptMirrorPaths.*OpenAI\.Codex_\*.*scheduled-receipt\.json.*function Write-Receipt.*ScheduledRun.*Get-CodexReceiptMirrorPaths.*Set-OwnerOnlyAcl \$mirror.*function Wait-ScheduledSmoke.*priorLastRunTime.*Start-ScheduledTask.*LastRunTime -le \$priorLastRunTime.*LastTaskResult -ne 0.*Get-CodexReceiptMirrorPaths.*fresh acknowledged receipt/su);
   assert.match(source, /-ScheduledRun/u);
   assert.doesNotMatch(source, /\bwsl(?:\.exe)?\b/iu);
 });
@@ -85,11 +98,13 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
   assert.equal(value.schema, 'dotagents.windows-native-factory-setup-plan.v1');
   assert.equal(value.platform, 'windows-native');
   assert.deepEqual(value.steps, [
+    'prerequisite-packages',
     'factory-reporter-config',
     'retire-legacy-schedulers',
     'dotagents-links',
     'factory-products-bootstrap',
     'codex-config',
+    'main-server-ssh',
     'native-product-wiring',
     'lattice-hooks',
     'spotter-project',
@@ -141,6 +156,14 @@ test('Windows native全製品smokeはwire v8の15 ID・製品別実動作・構�
   assert.equal(receipt.status, 'passed');
   const broken = structuredClone(report); broken.products.markitdown.checks[0].status = 'fail';
   assert.throws(() => assertWindowsNativeProductSmoke(broken, process.arch), /markitdown/u);
+  const freshThroughline = structuredClone(report);
+  for (const checkId of ['database_schema', 'restore']) {
+    const item = freshThroughline.products.throughline.checks.find((check) => check.check_id === checkId);
+    Object.assign(item, { status: 'skipped', reason_code: 'not_applicable' });
+  }
+  assert.equal(assertWindowsNativeProductSmoke(freshThroughline, process.arch).status, 'passed');
+  freshThroughline.products.throughline.checks.find((check) => check.check_id === 'restore').reason_code = 'diagnostic_unverified';
+  assert.throws(() => assertWindowsNativeProductSmoke(freshThroughline, process.arch), /throughline:restore/u);
   const incomplete = structuredClone(report); delete incomplete.products.peertable;
   assert.throws(() => assertWindowsNativeProductSmoke(incomplete, process.arch), /product set/u);
 });

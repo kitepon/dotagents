@@ -33,6 +33,10 @@ Codex中位(`gpt-5.6-terra`)×medium のread-onlyレーン2本による実読調
 
 ## 実測で決着した論点
 
+> 2026-08-30訂正: 次の1点目はWindows配布面を含む実測ではなく、全hostへ一般化した誤判定だった。
+> Windowsではsymlink外へ抜ける`..`が配布先の親へ解決され、参照先を読めない。
+> 現行契約と修正は[ADR 0115](../adr/0115-fixed-recipe-shared-contract.md)を正とする。
+
 - skillは**ディレクトリごと** symlinkされるため、配布後の
   `~/.claude/skills/orchestrate/../../../shared/orchestrate/contract.md` はkernelのpath解決がsymlinkを
   辿って実在ファイルへ到達する。`install.sh`が`shared/`を配布対象に走査しないことは、host共通契約を

@@ -4,7 +4,7 @@
 
 ## 開発ルート（オーナー裁定 2026-07-04）
 
-- 開発ルートの標準は **`~/Developer`**（macOS・Linux・WSL2。ランブックの clone 先・sync-sweep の既定と同一）。
+- 開発ルートの標準は **`~/Developer`**（macOS・native Linux。ランブックの clone 先・sync-sweep の既定と同一）。
 - ただし**既存端末の移設や例外はオーナーが端末ごとに裁定**する。端末限定の裁定は該当端末の記録に置き、本ファイルへ一般化して書かない。
 - 基準パスの変更（移動・改名・削除）の承認・申告義務は共通憲法「git・shell・ファイルの作法」に従う。
 
@@ -97,9 +97,13 @@ src/  tests/  package.json（or pyproject 等）
 
 `install.sh`は配布対象を1階層だけ走査しsymlinkを張る。Codex skill面は`--profile official|legacy`の一方だけを選び、新規entryの追加・削除・改名後は`./install.sh --profile <面>`を再実行する。
 
-host全体の初回導入・再適用はREADMEの`setup-macos-factory.sh`／`setup-linux-factory.sh`／`setup-wsl-factory.sh`／
+host全体の初回導入・再適用はREADMEの`setup-macos-factory.sh`／`setup-linux-factory.sh`／`setup-linux-workstation-factory.sh`／
 `setup-windows-native-factory.ps1`だけを正規入口とする。4入口は共通deployment contractを読むが、
 LaunchAgent／cron／Task Scheduler、config、hook、credentialはhost別実装が所有し、相互に投影しない。
+Windows nativeのrepoは`%USERPROFILE%\Developer`配下に置く。このPCの正規checkoutは`C:\Users\kite_\Developer\dotagent`であり、PowerShell 7とGit for Windowsのnative executableだけで配備する。
+Git for Windowsの`bash.exe`／`sh.exe`はWSLではない。Windows native入口はWSL distro、Docker Desktop、仮想化機能を作成・起動・検証せず、
+rabbit native Linuxの`/home/<user>/Developer/dotagent`とは別checkout・別HOME・別schedulerとして扱う。
+同入口は`~/.ssh/id_ed25519_main_server`と管理block `Host main-server 192.168.1.2`をWindows HOMEだけに作り、main-serverの固定ED25519 host keyを照合する。公開鍵登録は`.github/workflows/enroll-windows-main-server-ssh.yml`がmain-server自身のrunner上で行い、秘密鍵・Windows HOME・旧WSL HOMEを転送しない。aliasと`kite@192.168.1.2`直指定の双方が専用鍵へ解決されなければ受理しない。
 
 ### Skill の frontmatter
 

@@ -14,9 +14,9 @@ on:
         options:
           - all
           - macos-native
-          - linux-native
+          - linux-server
+          - linux-workstation
           - windows-native
-          - wsl2
       comparison_base:
         description: "文書不変性を比較する既存commit/ref（例: origin/main~1）"
         required: true

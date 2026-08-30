@@ -17,7 +17,7 @@ const INVOKED = basename(process.argv[1] || '');
 const WIRE_MAJOR = INVOKED.includes('factory-reporter-v8') ? 'v8' : INVOKED.includes('factory-reporter-v7') ? 'v7' : INVOKED.includes('factory-reporter-v6') ? 'v6' : 'v5';
 process.env.PATH = extendedSchedulerPath({ platform: platform(), path: process.env.PATH, execPath: process.execPath, home: homedir() });
 function statePath() { return platform() === 'win32' ? join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`) : join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`); }
-function platformMatches(profile) { return (platform() === 'darwin' && profile === 'mac') || (platform() === 'linux' && ['server', 'wsl'].includes(profile)) || (platform() === 'win32' && profile === 'windows-native'); }
+function platformMatches(profile) { return (platform() === 'darwin' && profile === 'mac') || (platform() === 'linux' && ['server', 'linux', 'wsl'].includes(profile)) || (platform() === 'win32' && profile === 'windows-native'); }
 function macosMajor() { if (platform() !== 'darwin') return null; const result = spawnSync('sw_vers', ['-productVersion'], { encoding: 'utf8' }); const major = Number(result.stdout?.trim().split('.')[0]); if (result.status !== 0 || !Number.isInteger(major) || major < 1) throw new Error('macOS majorを取得できません'); return major; }
 function run(script, args) { return new Promise((resolveRun, rejectRun) => { const child = spawn(process.execPath, [join(HERE, script), ...args], { stdio: 'inherit' }); child.on('error', rejectRun); child.on('close', (code) => code === 0 ? resolveRun() : rejectRun(new Error(`${script} がexit ${code}で失敗`))); }); }
 function ownerOnlyAcl(path) {

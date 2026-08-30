@@ -3,6 +3,10 @@
 # `make ci` の clean HOME test は Codex CLI 0.144.1 を完全 TOML parser として使う。
 # markdownlint-cli2 は再現性のためバージョン固定。
 SHELL := /bin/bash
+# Native Windows GNU Make exports PWD as C:/..., while Git Bash creates
+# symlinks using /c/... paths. Let Bash reconstruct PWD so isolated-HOME
+# assertions compare one canonical path form on every host.
+unexport PWD
 MDLINT := npx --yes markdownlint-cli2@0.23.0
 ifeq ($(OS),Windows_NT)
 PYTHON := python
@@ -68,9 +72,8 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/apply-grok-config.sh
 	bash tests/install/apply-cursor-config.sh
 	bash tests/install/clean-home.sh
-	bash tests/install/wsl-remote-ssh.sh
-	bash tests/install/setup-wsl-factory.sh
 	bash tests/install/setup-linux-factory.sh
+	bash tests/install/setup-linux-workstation-factory.sh
 	bash tests/install/setup-macos-factory.sh
 
 test-update: ## cron 最小 PATH で NVM 配下の npm を解決できることを検証
