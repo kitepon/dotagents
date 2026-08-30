@@ -38,7 +38,7 @@
     }
   },
   "fixture": {
-    "target": { "target": "claude/skills/foo", "repo_root": "/Users/kite/Developer/dotagents", "effect": "write", "write_scope": ["claude/skills/foo"] },
+    "target": { "target": "claude/skills/foo", "repo_root": "/Users/kite/Developer/dotagent", "effect": "write", "write_scope": ["claude/skills/foo"] },
     "report": { "target": "claude/skills/foo", "fixed": ["frontmatter の description を起動条件文へ修正"], "flags_for_owner": [{ "file": "claude/skills/foo/SKILL.md", "why": "本文の例が現行 CLI と食い違う。意図不明のため裁定要", "quote": "`foo --legacy`" }] }
   }
 }

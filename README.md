@@ -226,8 +226,8 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 macOS／native Linux:
 
 ```bash
-gh repo clone kitepon/dotagents ~/Developer/dotagents   # gh 認証を使う（SSH 鍵の有無に依存しない）
-cd ~/Developer/dotagents
+gh repo clone kitepon/dotagents ~/Developer/dotagent   # gh 認証を使う（SSH 鍵の有無に依存しない）
+cd ~/Developer/dotagent
 ```
 
 Windows native（このPCの正規配置）:
@@ -408,6 +408,6 @@ report／outbox／credentialを削除しない。
 
 ## 既知の罠
 
-- POSIXの旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。Windows nativeの正規checkoutは`C:\Users\kite_\Developer\dotagent`であり、POSIX pathやWSL mountへ揃えない。
+- POSIXの旧clone path `~/projects/dotagents` と `~/Developer/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagent` へ貼り直す。Windows nativeの正規checkoutも`C:\Users\kite_\Developer\dotagent`とする。
 - Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。
 - Throughlineが端末側で実体管理する `sc-detail`、`tl`、`tl-trim` と `~/.codex/skills/throughline` はrepoへ再収録しない。
