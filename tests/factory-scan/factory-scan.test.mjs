@@ -558,7 +558,7 @@ test('Windows npm .cmd実物variantは空白を含むPathから検証済みNode 
   const entry = await box.entry('safe.js', 'process.exit(0);\n');
   await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js', { programIndent: '  ' });
   const resolved = await resolveWindowsCommand('safe-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [await realpath(entry)] });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
 });
 
 test('Windows npm .cmdはAppContainerのrealpath仮想化後もshim字面のentrypointで起動する', async (t) => {
@@ -646,7 +646,7 @@ test('Windows command解決はPATHEXT先頭の許可外ps1を実行せず検証�
   await writeFile(join(box.bin, 'safe-cli.ps1'), 'throw "must not run"\n');
   await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
   const resolved = await resolveWindowsCommand('safe-cli', { env: { ...box.env, PathExt: '.PS1;.CMD;.EXE' }, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [await realpath(entry)] });
+  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
 });
 
 test('Windows npm .cmdはstdin・cwd・envを保ってNodeで実行する', async (t) => {
