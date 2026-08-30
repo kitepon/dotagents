@@ -20,9 +20,12 @@ const product = (contractVersion = '8.0') => ({
 
 function readyDiagnostic() {
   return {
-    schema: 'unai.native_factory_diagnostics.v1',
-    product: { name: 'unai', version: '0.2.0' },
-    checks: { manifest_consistency: 'pass', node_runtime: 'pass', skill_bundle: 'pass' },
+    schema: 'unai.native_factory_diagnostics.v2',
+    product: { name: 'unai', version: '0.4.0' },
+    checks: {
+      manifest_consistency: 'pass', node_runtime: 'pass', skill_bundle: 'pass',
+      skill_projections: { claude: 'ready', codex: 'ready', grok: 'ready', cursor: 'ready' },
+    },
     overall: 'ready',
   };
 }
@@ -72,8 +75,9 @@ test('v8 validatorは固定15製品だけを受理し、v7を変更しない', (
 
 test('projectUnaiFactoryはnative diagnosticsをcompatible/passへ投影する', () => {
   const projected = projectUnaiFactory(readyDiagnostic(), true, NOW);
-  assert.equal(projected.installed_version, '0.2.0');
+  assert.equal(projected.installed_version, '0.4.0');
   assert.equal(projected.compatibility_status, 'compatible');
+  assert.equal(projected.checks.length, 7);
   assert.ok(projected.checks.every((item) => item.status === 'pass'));
 });
 
@@ -86,6 +90,16 @@ test('projectUnaiFactoryはfailを固定fingerprintへ投影し、exit不一致�
   assert.match(failed.fingerprint, /^[0-9a-f]{64}$/u);
   assert.equal(projectUnaiFactory(fixture, false, NOW).checks.find((item) => item.check_id === 'skill_bundle').fingerprint, failed.fingerprint);
   assert.throws(() => projectUnaiFactory(readyDiagnostic(), false, NOW), /unai_exit_mismatch/u);
+});
+
+test('projectUnaiFactoryは4配布面のdriftをfailへ投影する', () => {
+  const fixture = readyDiagnostic();
+  fixture.checks.skill_projections.codex = 'stale'; fixture.overall = 'not_ready';
+  const projected = projectUnaiFactory(fixture, false, NOW);
+  const failed = projected.checks.find((item) => item.check_id === 'skill_projection_codex');
+  assert.equal(projected.compatibility_status, 'incompatible');
+  assert.equal(failed.status, 'fail');
+  assert.equal(projected.checks.find((item) => item.check_id === 'skill_projection_claude').status, 'pass');
 });
 
 test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影する', async () => {

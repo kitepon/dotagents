@@ -47,20 +47,29 @@ link_one() {
 }
 
 remove_retired_link() {
-  local path="$1" expected_target="$2"
+  local path="$1" actual_target expected_target
+  shift
   [ -L "$path" ] || return 0
-  if [ "$(readlink "$path")" = "$expected_target" ]; then
-    rm "$path"
-    echo "removed retired link: $path"
-  fi
+  actual_target="$(readlink "$path")"
+  for expected_target in "$@"; do
+    if [ "$actual_target" = "$expected_target" ]; then
+      rm "$path"
+      echo "removed retired link: $path"
+      return 0
+    fi
+  done
 }
 
 # 廃止済みの dotagents 所有入口だけを除去する。実ファイルや別所有者の
 # symlink は触らず、旧 official / legacy の双方に残る dangling link を防ぐ。
-remove_retired_link "$HOME/.claude/skills/audit-gauntlet" "$HERE/claude/skills/audit-gauntlet"
-remove_retired_link "$HOME/.claude/commands/audit-gauntlet.md" "$HERE/claude/commands/audit-gauntlet.md"
-remove_retired_link "$HOME/.agents/skills/audit-gauntlet" "$HERE/codex/skills/audit-gauntlet"
-remove_retired_link "$HOME/.codex/skills/audit-gauntlet" "$HERE/codex/skills/audit-gauntlet"
+remove_retired_link "$HOME/.claude/skills/audit-gauntlet" \
+  "$HERE/claude/skills/audit-gauntlet" "$HOME/Developer/dotagent/claude/skills/audit-gauntlet"
+remove_retired_link "$HOME/.claude/commands/audit-gauntlet.md" \
+  "$HERE/claude/commands/audit-gauntlet.md" "$HOME/Developer/dotagent/claude/commands/audit-gauntlet.md"
+remove_retired_link "$HOME/.agents/skills/audit-gauntlet" \
+  "$HERE/codex/skills/audit-gauntlet" "$HOME/Developer/dotagent/codex/skills/audit-gauntlet"
+remove_retired_link "$HOME/.codex/skills/audit-gauntlet" \
+  "$HERE/codex/skills/audit-gauntlet" "$HOME/Developer/dotagent/codex/skills/audit-gauntlet"
 
 # Claude
 mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/agents"
@@ -165,16 +174,20 @@ fi
 mkdir -p "$HOME/.local/bin"
 remove_retired_link \
   "$HOME/.local/bin/windows-native-product-smoke" \
-  "$HERE/bin/windows-native-product-smoke.mjs"
+  "$HERE/bin/windows-native-product-smoke.mjs" \
+  "$HOME/Developer/dotagent/bin/windows-native-product-smoke.mjs"
 remove_retired_link \
   "$HOME/.local/bin/render-current-docs" \
-  "$HERE/bin/render-current-docs.mjs"
+  "$HERE/bin/render-current-docs.mjs" \
+  "$HOME/Developer/dotagent/bin/render-current-docs.mjs"
 remove_retired_link \
   "$HOME/.local/bin/apply-observer-hook-config" \
-  "$HERE/bin/apply-observer-hook-config.sh"
+  "$HERE/bin/apply-observer-hook-config.sh" \
+  "$HOME/Developer/dotagent/bin/apply-observer-hook-config.sh"
 remove_retired_link \
   "$HOME/.local/bin/verify-observer-package" \
-  "$HERE/bin/verify-observer-package.sh"
+  "$HERE/bin/verify-observer-package.sh" \
+  "$HOME/Developer/dotagent/bin/verify-observer-package.sh"
 for f in "$HERE/bin"/*.sh; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .sh)"

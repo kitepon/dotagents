@@ -71,6 +71,7 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/quoted-hook-command.sh
 	bash tests/install/apply-grok-config.sh
 	bash tests/install/apply-cursor-config.sh
+	bash tests/install/install-unai.sh
 	bash tests/install/clean-home.sh
 	bash tests/install/setup-linux-factory.sh
 	bash tests/install/setup-linux-workstation-factory.sh

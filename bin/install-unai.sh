@@ -30,16 +30,22 @@ case "${OS:-$(uname -s)}" in
     ;;
 esac
 
-diagnostic="$(run_unai factory-diagnostics --json)"
+diagnostic_status=0
+diagnostic="$(run_unai factory-diagnostics --json)" || diagnostic_status=$?
+[ "$diagnostic_status" -eq 0 ] \
+  || { echo 'FAIL: unai native diagnosticsがreadyではありません' >&2; exit 1; }
 printf '%s' "$diagnostic" | node -e '
   let value;
   try { value = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
   const checks = value?.checks;
-  process.exit(value?.schema === "unai.native_factory_diagnostics.v1"
+  const projections = checks?.skill_projections;
+  process.exit(value?.schema === "unai.native_factory_diagnostics.v2"
     && value?.product?.name === "unai"
     && value?.overall === "ready"
     && checks?.manifest_consistency === "pass"
     && checks?.node_runtime === "pass"
-    && checks?.skill_bundle === "pass" ? 0 : 1);
+    && checks?.skill_bundle === "pass"
+    && ["claude", "codex", "grok", "cursor"]
+      .every((host) => projections?.[host] === "ready") ? 0 : 1);
 ' || { echo 'FAIL: unai native diagnosticsがreadyではありません' >&2; exit 1; }
 printf 'unai: %s / ready\n' "$(run_unai --version)"

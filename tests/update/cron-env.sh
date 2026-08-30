@@ -33,8 +33,8 @@ printf ':\n' > "$output"
 /bin/cat > "$HOME/.local/bin/unai" <<'UNAI'
 #!/bin/sh
 case "$*" in
-  --version) printf '0.2.0\n' ;;
-  'factory-diagnostics --json') printf '%s\n' '{"schema":"unai.native_factory_diagnostics.v1","product":{"name":"unai","version":"0.2.0"},"overall":"ready","checks":{"manifest_consistency":"pass","node_runtime":"pass","skill_bundle":"pass"}}' ;;
+  --version) printf '0.4.0\n' ;;
+  'factory-diagnostics --json') printf '%s\n' '{"schema":"unai.native_factory_diagnostics.v2","product":{"name":"unai","version":"0.4.0"},"overall":"ready","checks":{"manifest_consistency":"pass","node_runtime":"pass","skill_bundle":"pass","skill_projections":{"claude":"ready","codex":"ready","grok":"ready","cursor":"ready"}}}' ;;
   *) exit 64 ;;
 esac
 UNAI

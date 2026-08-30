@@ -203,9 +203,9 @@ ln -s "$ROOT/claude/commands/audit-gauntlet.md" "$OFFICIAL_HOME/.claude/commands
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.agents/skills/audit-gauntlet"
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.codex/skills/audit-gauntlet"
 ln -s "$ROOT/bin/windows-native-product-smoke.mjs" "$OFFICIAL_HOME/.local/bin/windows-native-product-smoke"
-ln -s "$ROOT/bin/render-current-docs.mjs" "$OFFICIAL_HOME/.local/bin/render-current-docs"
-ln -s "$ROOT/bin/apply-observer-hook-config.sh" "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config"
-ln -s "$ROOT/bin/verify-observer-package.sh" "$OFFICIAL_HOME/.local/bin/verify-observer-package"
+ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/render-current-docs.mjs" "$OFFICIAL_HOME/.local/bin/render-current-docs"
+ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/apply-observer-hook-config.sh" "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config"
+ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/verify-observer-package.sh" "$OFFICIAL_HOME/.local/bin/verify-observer-package"
 if HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official --profile official >/dev/null 2>&1; then
   fail 'install が重複 profile を受理した'
 fi
@@ -304,7 +304,7 @@ assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
 [ ! -L "$OFFICIAL_HOME/.codex/skills/audit-gauntlet" ] || fail '廃止済みlegacy Codex skill linkを除去しない'
 [ ! -L "$OFFICIAL_HOME/.local/bin/windows-native-product-smoke" ] \
   || fail 'Windows native内部helperの旧global CLI linkを除去しない'
-[ ! -e "$OFFICIAL_HOME/.local/bin/render-current-docs" ] \
+[ ! -L "$OFFICIAL_HOME/.local/bin/render-current-docs" ] \
   || fail 'repo専用の文書rendererをglobal CLIへ配布した'
 [ ! -L "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config" ] \
   || fail '廃止済みObserver hook applierの旧global CLI linkを除去しない'

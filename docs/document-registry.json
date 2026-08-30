@@ -467,7 +467,7 @@
       "expected_role": "integration",
       "exact_sha256_by_path": {
         "docs/factory-host-product-matrix.md": "02c2b08fcb9944fe0679cab3e071df0d62a79611ef7fad417c584e068a0232fb",
-        "docs/factory-product-contracts.md": "a0b7072e50c465eda472eb497e07783987c00de696e833dc8c53c73ecd4cffe2",
+        "docs/factory-product-contracts.md": "54cacb72497acaf1cd07396f3c60b4d0e7bd961938af38be877c0b7e08ec0b4d",
         "docs/factory-reporter-runbook.md": "52a1a9cfceecb810cff22abba893e0ec68eb7cf763d88555e3c8081db8b7c9c1",
         "docs/wire-v8-design.md": "d710dc8205ad4da3ce8c31e15bffe1c26458a299228e6b6552fa904636b317ac",
         "shared/runbooks/factory-ci.md": "271c89bc681e9f6c37210a310c2e798ecd4b55289277a654fb2f6d17427bb663"

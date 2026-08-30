@@ -1,6 +1,6 @@
 # 工場の製品統合契約台帳
 
-更新日: 2026-08-30。ここは各製品を**制御する台帳ではなく、公開面を工場へ接続する台帳**である。製品集合・現役wire・endpointは[生成された現行状態](factory-current-state.md)、host期待は[host matrix](factory-host-product-matrix.md)が正。製品内部の手順を含んでいた旧版は[archive](archive/2026-08_factory-product-contracts-pre-autonomy.md)へ凍結した。
+更新日: 2026-08-31。ここは各製品を**制御する台帳ではなく、公開面を工場へ接続する台帳**である。製品集合・現役wire・endpointは[生成された現行状態](factory-current-state.md)、host期待は[host matrix](factory-host-product-matrix.md)が正。製品内部の手順を含んでいた旧版は[archive](archive/2026-08_factory-product-contracts-pre-autonomy.md)へ凍結した。
 
 ## 共通境界
 
@@ -29,7 +29,7 @@
 | `servermanager` / `kitepon/ServerManager` | loopback `/readyz`、deploy revision manifest、公開external-event connector | server hostだけreadiness/revision/freshnessを外部probe。DBやPi5 stateを直接読まない | [ServerManager docs](https://github.com/kitepon/ServerManager/tree/main/docs) |
 | `aishell` / `kitepon/aishell` | MCP `factory_diagnostics` (`aishell.native_factory_diagnostics.v1`) と initialize version | Apple Silicon macOSだけ。factory profileのprivacy済みprojectionを消費し、通常tool profileへ混ぜない | [AIShell diagnostics](https://github.com/kitepon/aishell/blob/main/docs/factory-diagnostics.md) |
 | `peertable` / `kitepon/peertable` | `peertable-client diagnostics --json` (`peertable.native_factory_diagnostics.v1`) | native overall/version。room URL・token・DB・message本文を読まない | [Peertable docs](https://github.com/kitepon/peertable/tree/main/docs) |
-| `unai` / `kitepon/unai` | `unai --version`; `unai factory-diagnostics --json` (`unai.native_factory_diagnostics.v1`) | native overall/version/manifest整合。校正本文・voice・履歴を読まない | [unai README](https://github.com/kitepon/unai#readme) |
+| `unai` / `kitepon/unai` | `unai --version`; `unai factory-diagnostics --json` (`unai.native_factory_diagnostics.v2`) | native overall/version/manifest整合とClaude/Codex/Grok/Cursorのskill projection。校正本文・voice・履歴を読まない | [unai README](https://github.com/kitepon/unai#readme) |
 
 ## 第三者・基盤toolchain
 
