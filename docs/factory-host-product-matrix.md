@@ -86,7 +86,9 @@ BugHub serverはhost credentialにprofileを結び付け、このmatrixから期
 ## host別展開と定期更新
 
 製品集合は上表とdeployment contractが共有するが、host配線は次の入口が個別に所有する。
-WSL2とWindows nativeは同一物理端末でも別hostとして扱い、設定・credential・scheduler・receiptを共有しない。
+WSL2とWindows nativeは同一物理端末でも別hostとして扱い、checkout、HOME、設定、credential、scheduler、receipt、runtime前提を共有しない。
+Windows nativeはPowerShell 7とGit for Windowsで閉じ、`wsl.exe`、WSL distro、Docker Desktop、Hyper-V、Virtual Machine Platformを導入・起動・検証しない。
+Git for Windowsの`bash.exe`／`sh.exe`はWindows native executableであり、WSL hostへの越境ではない。WSL2のcronや製品状態をWindows nativeのTask／受入の代用にしない。
 
 FOX WSL2のGitHub Actions runner標準Nodeは、OpenJS Foundation公式Snapの`node` 24/stableとし、runner rootの`.path`は`/snap/bin`を先頭に置く。Ubuntu resoluteのapt `nodejs`は22系のため、工場製品のNode 24契約には使わない。版数更新後はrunner serviceを再起動し、runnerの`.path`を適用した環境で`node --version`と`npm --version`を実測する。
 

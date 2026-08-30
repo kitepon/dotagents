@@ -9,6 +9,7 @@ Windows工場shellと永続PTYの責務を一つの契約へ揃える。その�
 
 - Windows native工場shellはPowerShell 7（`pwsh.exe`）だけ。5.1／`cmd.exe` fallbackは持たない。
 - 5.1しかないhostはMicrosoft公式installer／package managerでPowerShell 7を導入してから再実行する。
+- Windows nativeはWSL2・Docker・Hyper-V・Virtual Machine Platformを前提にもfallbackにもせず、Git for Windowsのnative `bash.exe`／`sh.exe`だけをPOSIX script互換入口にする。
 - Aitermが対話型永続PTYとsession lifecycleを所有し、Windows backendはpsmuxだけを使う。
 - psmuxはshellではない。PTY内shellがPowerShell 7である。
 - Aiterm以外の製品はpsmuxへ直接依存せず、永続PTYが必要な時だけAiterm公開APIを使う。

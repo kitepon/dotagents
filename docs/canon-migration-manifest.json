@@ -98,7 +98,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "Claude Code と Codex の自作 skill / slash command / rule を複数端末で同期する個人 dotfiles。\n`install.sh` がリポジトリ内エントリを `~/.claude/{skills,commands}`、`~/.codex/{rules,agents}`、\nCodex の公式 user skill 面 `$HOME/.agents/skills`（明示 legacy 時だけ `~/.codex/skills`）へ\n**ファイル / ディレクトリ単位の symlink** で配置する。\n\nそのため:\n\n- リポジトリ内の配布ファイルを編集すれば、選択した配布面の `~/.claude/...` / `~/.codex/...` / `~/.agents/skills/...` に即反映される（symlink なので同じファイル）。グローバル憲法だけは`shared/constitution.md`またはhost deltaを編集後、`node bin/render-global-constitution.mjs --write`で配布生成物を更新する。生成物を直接編集しない。\n- `install.sh` は冪等。既存 symlink は上書き、実ファイルが存在する宛先は `SKIP` してログを出す。失敗は止まる (`set -euo pipefail` を維持。フォールバック禁止)。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
+      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -161,7 +161,7 @@
       "l0_pointer_phrase": "README",
       "source_text": "1. `./install.sh` を再実行し、期待どおりの `linked:` / `SKIP` が出ること\n2. `ls -la ~/.claude/skills ~/.claude/commands ~/.agents/skills ~/.codex/rules`（legacy 選択時は `~/.codex/skills`）で link 先が本リポを向いていること\n3. 新しい Claude Code / Codex セッションでスキル・コマンドが一覧に出ること\n\n## 自動アップデート\n\n`bin/agents-update.sh` が curated な NPM ツール群 (Claude Code / Codex CLI / aiterm-mcp / Codex Sidecar / pnpm ほか) を `npm install -g <pkg>@latest` で順次更新する。`install.sh` で `~/.local/bin/agents-update` に symlink される。**週次の常設は必須**（macOS=launchd／Linux・WSL=cron。手順と「旧自動更新の撲滅」は [README.md](README.md)「自動アップデート」節が正典）。**対象パッケージ一覧はスクリプト先頭の `PACKAGES=` を直接編集**。`npm link` / `npm install -g .` 中の package をリストに残したまま走らせると registry 版で上書きされる点だけ注意。\n\n工場管理対象11製品は「導入済み」で終わらない。NPM製品は `@latest`、第三者製品MarkItDownは `uv tool upgrade` で更新し、更新後も `verify-install` と `make ci` の互換契約を維持する。失敗した製品名を明示して更新ジョブを非0終了させ、上流更新でCLI・hook・MCP・設定schemaが変わった時は、製品側の正規契約を確認してdotagentsのadapter・ランブック・fixtureを同じ作業で追従させる。\n\n## 既知の罠\n\n- **旧 clone パスは `~/projects/dotagents`（消滅）**。2026-05 以前に設置した symlink が旧パス向きで残っている端末がありうる。`./install.sh` 再実行で貼り直す。\n- **Codex skill 面を同居させない**: `$HOME/.agents/skills` と `~/.codex/skills` の同名 skill は selector に二重出現しうる。通常は公式 profile、旧入口だけ `--profile legacy` を明示し、`verify-install` の重複 FAIL を解消してから新規 session を開く。\n- **Throughline 管理物と衝突しない**: `sc-detail` / `tl` / `tl-trim` コマンドは Throughline が端末側で実ファイル生成するためリポから除去済み (3cdff89)。再収録しない。`~/.codex/skills/throughline` も同様に端末側実ディレクトリが管理する——repo 版は 2026-07-04 の資産棚卸しで**廃止済み**（どの端末でも shadow され未使用の死荷重だった）。こちらも再収録しない。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "## 既知の罠\n\n- 旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。\n- Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。\n- Throughlineが端末側で実体管理する `sc-detail`、`tl`、`tl-trim` と `~/.codex/skills/throughline` はrepoへ再収録しない。"
+      "receiver_text": "## 既知の罠\n\n- POSIXの旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。Windows nativeの正規checkoutは`C:\\Users\\kite_\\Developer\\dotagent`であり、POSIX pathやWSL mountへ揃えない。\n- Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。\n- Throughlineが端末側で実体管理する `sc-detail`、`tl`、`tl-trim` と `~/.codex/skills/throughline` はrepoへ再収録しない。"
     },
     {
       "receiver_path": "docs/00_overview.md",
@@ -332,7 +332,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "dotagents は**開発工場そのもの**。全プロジェクトに共通して効く土台と、そのコア製品群の統合責務を持つ:",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
+      "receiver_text": "- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL2・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
     },
     {
       "receiver_path": "shared/runbooks/git-hygiene.md",

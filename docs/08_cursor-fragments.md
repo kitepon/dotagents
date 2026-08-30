@@ -23,6 +23,7 @@
 command の論理名は上表どおり。適用時に `PATH` 上で解決できた command は絶対パスで書き、その親ディレクトリを `env.PATH` の先頭に置く。この解決は適用した席の PATH だけを見る。席への手作業の展開は、その席の親AIに正規入口を実行させる。Mac で書いた `mcp.json` を他席 HOME へ転送して置かない。Cursor Desktop の GUI PATH と Agent CLI の PATH は別でありうる。未解決なら名前のまま残し、handshake は typed 失敗。既に実行可能な絶対パスがあり basename が論理名と一致し、`env.PATH` が契約どおりなら、適用器の PATH が空でも書き戻さない。
 
 Windows native では同じ契約を Windows の語に写す。`env.PATH` の区切りは `;`。解決できた command は PATHEXT どおり `.cmd` / `.exe` になりうる。npm の global bin と `node.exe` は別ディレクトリなので、よくある配置（`Program Files\\nodejs` 等）に `node.exe` があればその親も `env.PATH` に置く。
+Windows nativeのCursor配線はWindows側`~/.cursor`だけを所有し、WSL2側のHOME、Docker、仮想化を前提・fallbackにしない。shellが必要なhookはGit for Windowsのnative `sh.exe`を使い、WSLへdispatchしない。
 
 ## 2. 触らない面
 

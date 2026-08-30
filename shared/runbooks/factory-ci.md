@@ -10,6 +10,9 @@
 - macOS native・Linux native・Windows native・WSL2を対象とする製品は、4環境で同じfull
   commandを並列実行する。OSごとの役割分散はしない。対応OSを限定する製品は、製品契約に
   従って対象環境だけを選び、非対応環境を成功扱いしない。
+- Windows native runnerはPowerShell 7とGit for Windowsで閉じ、WSL2 runner、Docker Desktop、
+  WSL interop、仮想化機能へfallbackしない。Git for Windowsの`bash.exe`／`sh.exe`はWindows native
+  toolchainとして扱い、WSL2 runnerは別checkout・別HOME・別label・別受入を維持する。
 - 製品repoは`kitepon/dotagents/.github/workflows/factory-full-ci.yml@main`を呼び、製品自身の
   dependency commandとfull commandだけを渡す。独自runner登録・OS matrix・役割分散・capacity・
   fallbackは作らない。

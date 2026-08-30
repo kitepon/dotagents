@@ -193,8 +193,10 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
   git config --global init.defaultBranch main   # 新規リポが master で生まれるのを防ぐ（2026-07-04 実被弾）
   printf '.DS_Store\n' > ~/.gitignore_global && git config --global core.excludesfile ~/.gitignore_global  # macOS ノイズを全リポで抑止
   ```
+- **host境界**: Windows nativeとWSL2は同じ物理PC上でも別hostである。Windows nativeはPowerShell 7とGit for Windowsで閉じ、WSL／Linux kernel、Docker Desktop、Hyper-V、Virtual Machine Platformを導入・起動・検証しない。WSL2をWindows nativeのfallbackや不足packageの回避先にしない。
 - **WSL2 の場合**: WSL2 内の Claude/Codex を対象とする（Windows 側とは別環境）。`install.sh` は WSL の `$HOME` に symlink を張り、Windowsの既存 `~/.ssh/id_ed25519.pub` を WSLへ登録して、Windows `~/.ssh/config` にdotagents管理の `fox-wsl`（`localhost:2222`）を冪等生成する。同時にWSLの `~/.codex/hooks.json` をWindows Codex Desktopの `~/.codex/hooks.json` へ投影し、DesktopのWSL実行がWindows commandを `/bin/bash` へ渡す事故を防ぐ。Windows Codex DesktopではWindows側projectを流用せず、このSSH host上の `/home/kite/Developer/dotagents` を開く。cron の起動は下の「自動アップデート」節参照
-- **ランタイム**: node>=24＋corepack・docker・python3（`command -v node docker` で存在確認、`node --version` が v24+、`docker info` が通ること。WSLはUbuntu aptの22系でなくOpenJS公式Snapの24/stableを使い、`/snap/bin`をPATH先頭側へ置く。**python3 だけは実行判定 `python3 -c "print(1)"` で確認**——Windows のストア偽エイリアスは存在チェックを通り、黙って exit 0 を返す〔罠DB `windows-python3-store-exit-0`〕）
+- **共通ランタイム**: node>=24＋corepack・python3（`node --version`がv24+、`python3 -c "print(1)"`が成功すること。Windows nativeは正規入口がNode 24、Python、uvなどの不足をwingetから導入する。Windowsのストア偽エイリアスは存在チェックを通り、黙ってexit 0を返すため実行判定する〔罠DB `windows-python3-store-exit-0`〕）。
+- **Docker（POSIX hostのみ）**: 現行のmacOS／Linux／WSL2一撃入口は`docker info`までを前提にする。Windows native一撃展開と15製品smokeにはDockerを含めず、Docker DesktopやそのWSL2 backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
 - **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。
@@ -218,12 +220,24 @@ Codex全対応の工程状態はLattice storeが正本で、現役4 host・5入�
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
 - **home-server ssh**: `kite@192.168.1.2` 直IP（固定IP・エイリアスは作らない）
 
-### 1. clone（パスは全端末で `~/Developer/dotagents` に統一。旧 `~/projects` は廃止）
+### 1. clone（`Developer`配下へ集約。Windows nativeとPOSIXは別checkout）
+
+macOS／Linux／WSL2:
 
 ```bash
 gh repo clone kitepon/dotagents ~/Developer/dotagents   # gh 認証を使う（SSH 鍵の有無に依存しない）
 cd ~/Developer/dotagents
 ```
+
+Windows native（このPCの正規配置）:
+
+```powershell
+Set-Location C:\Users\kite_\Developer
+gh repo clone kitepon/dotagents dotagent
+Set-Location .\dotagent
+```
+
+一撃入口はcheckout自身からrepo rootを解決し、WSL側の`~/Developer/dotagents`や旧pathへ越境しない。
 
 ### 2. 既存実ファイルの退避（重要——install.sh は実ファイルを SKIP する）
 
@@ -253,8 +267,8 @@ Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hook
 Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 
 実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
-[工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。MCP login、GitHub認証、Docker稼働など「0. 前提」の外部状態は
-スクリプトが捏造せず、欠けていれば名指しで停止する。
+[工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。MCP login、GitHub認証、POSIX hostのDocker稼働など「0. 前提」のhost別外部状態は
+スクリプトが捏造せず、欠けていれば名指しで停止する。Windows nativeではDocker／WSL2を外部前提に加えない。
 
 工場の4席（Mac / Windows native / WSL2 / Linux）は全部本線で、各席に独立した正規入口を持つ。
 
@@ -263,11 +277,12 @@ Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / 
 | macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
 | Linux | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
 | WSL2 | `./bin/setup-wsl-factory.sh` | cron、毎日02:00。`systemd`と非対話`sudo`が必要 |
-| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrepも不足時は正規packageを導入する | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`で工場処理を続行するfallbackなし |
+| Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrepも不足時は正規packageを導入する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
 
 macOSではAIShell（Apple Silicon／macOS 15+）も配備する。WSL2とWindows nativeは別hostであり、
-config、hook、credential、scheduler、delivery receiptを共有しない。Windows Codex DesktopからWSL2を使う時は、
-上記WSL2入口が作る`fox-wsl` SSH hostでWSL側projectを開く。
+config、hook、credential、scheduler、delivery receipt、runtime前提を共有しない。Windows native入口は`wsl.exe`を呼ばず、
+WSL distroの有無や状態を成功条件にしない。Windows Codex Desktopから別席のWSL2を使う時だけ、上記WSL2入口が作る
+`fox-wsl` SSH hostでWSL側projectを開く。
 
 個別に適用・切り分ける場合は、以下の正規入口を順に使う。
 
@@ -391,6 +406,6 @@ report／outbox／credentialを削除しない。
 
 ## 既知の罠
 
-- 旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。
+- POSIXの旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。Windows nativeの正規checkoutは`C:\Users\kite_\Developer\dotagent`であり、POSIX pathやWSL mountへ揃えない。
 - Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。
 - Throughlineが端末側で実体管理する `sc-detail`、`tl`、`tl-trim` と `~/.codex/skills/throughline` はrepoへ再収録しない。

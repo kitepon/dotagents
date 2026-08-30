@@ -100,6 +100,9 @@ src/  tests/  package.json（or pyproject 等）
 host全体の初回導入・再適用はREADMEの`setup-macos-factory.sh`／`setup-linux-factory.sh`／`setup-wsl-factory.sh`／
 `setup-windows-native-factory.ps1`だけを正規入口とする。4入口は共通deployment contractを読むが、
 LaunchAgent／cron／Task Scheduler、config、hook、credentialはhost別実装が所有し、相互に投影しない。
+Windows nativeのrepoは`%USERPROFILE%\Developer`配下に置く。このPCの正規checkoutは`C:\Users\kite_\Developer\dotagent`であり、PowerShell 7とGit for Windowsのnative executableだけで配備する。
+Git for Windowsの`bash.exe`／`sh.exe`はWSLではない。Windows native入口はWSL distro、Docker Desktop、仮想化機能を作成・起動・検証せず、
+WSL2側の`/home/<user>/Developer/dotagents`とは別checkout・別HOME・別schedulerとして扱う。
 
 ### Skill の frontmatter
 

@@ -160,8 +160,9 @@ contains "$deploy" '承認待ちにしない'
 contains "$deploy" '../../../claude/skills/auto-deploy-on-push/SKILL.md'
 
 polish="$ROOT/codex/skills/polish-github/SKILL.md"
-tilde="~"
-contains "$polish" "$tilde/Developer/dotagents/claude/commands/polish-github.md"
+# shellcheck disable=SC2016 # backticks are literal Markdown from the skill contract.
+contains "$polish" '同じdotagents checkoutの`claude/commands/polish-github.md`'
+contains "$polish" 'C:\Users\kite_\Developer\dotagent'
 contains "$polish" '正本が読めない場合はエラーとして報告'
 contains "$polish" '以下の要約だけで代行しない（フォールバック禁止）'
 
