@@ -616,7 +616,13 @@ recover_caveat_init_scaffold() {
     || die "Caveat ownが既知の初期scaffoldでない: $own"
   [ -z "$(find "$own/entries" -mindepth 1 -print -quit)" ] \
     || die "Caveat ownに未同期entryがあるため初回syncを拒否する: $own/entries"
-  actual_gitignore_sha="$(sha256sum "$own/.gitignore" | awk '{print $1}')"
+  if command -v sha256sum >/dev/null 2>&1; then
+    actual_gitignore_sha="$(sha256sum "$own/.gitignore" | awk '{print $1}')"
+  elif command -v shasum >/dev/null 2>&1; then
+    actual_gitignore_sha="$(shasum -a 256 "$own/.gitignore" | awk '{print $1}')"
+  else
+    die 'SHA-256計算コマンドがない（sha256sum または shasum が必要）'
+  fi
   [ "$actual_gitignore_sha" = "$expected_gitignore_sha" ] \
     || die "Caveat .gitignoreが既知の初期scaffoldと異なるため初回syncを拒否する"
 
