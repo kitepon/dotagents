@@ -97,7 +97,14 @@ resolve_npm_global_bin() {
       ;;
     *) bin="$prefix/bin" ;;
   esac
-  [[ "$bin" = /* && -d "$bin" ]] || return 1
+  [[ "$bin" = /* ]] || return 1
+  # A clean npm installation can report a valid global prefix before the
+  # platform-specific bin directory has been created.  The first factory
+  # bootstrap must be able to create that directory; relative or otherwise
+  # invalid prefixes are still rejected above.
+  if [[ ! -d "$bin" ]]; then
+    mkdir -p -- "$bin" || return 1
+  fi
   printf '%s' "$bin"
 }
 record_toolchain() {

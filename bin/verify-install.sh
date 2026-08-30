@@ -553,11 +553,17 @@ done
 windows_native=0
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) windows_native=1 ;; esac
 [ -n "${WINDIR:-}" ] && windows_native=1
+grok_logged_in=0
+if [ -n "${XAI_API_KEY:-}" ] || [ -s "$HOME/.grok/auth.json" ]; then
+  grok_logged_in=1
+fi
 for f in "$REPO/grok/hooks"/*.json; do
   [ -e "$f" ] || continue
   if [ "$windows_native" = 1 ] && [ "$(basename "$f")" = factory.json ]; then
     dest="$HOME/.grok/hooks/factory.json"
-    if [ ! -f "$dest" ]; then
+    if [ "$grok_logged_in" -ne 1 ]; then
+      check "$dest" "$f"
+    elif [ ! -f "$dest" ]; then
       echo "FAIL: $dest 不在（Windows 工場hookは apply-grok-config が実ファイルを書く）"; fail=1
     elif [ -L "$dest" ]; then
       echo "FAIL: $dest が symlink のまま（Windows では interpreter 付き実ファイルが正）"; fail=1
@@ -567,7 +573,8 @@ for f in "$REPO/grok/hooks"/*.json; do
   check "$HOME/.grok/hooks/$(basename "$f")" "$f"
 done
 grok_factory_hooks="$HOME/.grok/hooks/factory.json"
-if [ -f "$grok_factory_hooks" ] || [ -L "$grok_factory_hooks" ]; then
+if { [ "$windows_native" -ne 1 ] || [ "$grok_logged_in" -eq 1 ]; } \
+  && { [ -f "$grok_factory_hooks" ] || [ -L "$grok_factory_hooks" ]; }; then
   if ! python3 - "$grok_factory_hooks" "$REPO/lib/hook-command.py" <<'PY'
 import importlib.util
 import json
@@ -747,7 +754,7 @@ PY
   rm -rf "$const_probe"
 fi
 grok_config="$HOME/.grok/config.toml"
-if [ -f "$grok_config" ]; then
+if [ "$grok_logged_in" -eq 1 ] && [ -f "$grok_config" ]; then
   if ! python3 - "$grok_config" <<'PY'
 import re
 import sys

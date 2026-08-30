@@ -67,7 +67,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /checked_products -ne 15/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
   assert.match(source, /function Set-OwnerOnlyAcl.*DirectorySecurity.*FileSecurity.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
-  assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*winget install --id Microsoft\.PowerShell/su);
+  assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
@@ -107,7 +107,7 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
 test('Windows native一撃setupはWindows PowerShell 5.1を明示拒否する', { skip: process.platform !== 'win32' }, () => {
   const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SETUP, '-PlanOnly'], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /PowerShell 7.*winget install --id Microsoft\.PowerShell/u);
+  assert.match(result.stderr, /PowerShell 7.*official GitHub release.*MSI.*machine scope/u);
 });
 
 function passingProduct(checkIds) {

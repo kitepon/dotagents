@@ -30,7 +30,7 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
 }
 
 if ($PSVersionTable.PSEdition -ne 'Core' -or $PSVersionTable.PSVersion.Major -lt 7) {
-  throw 'PowerShell 7が必要です。Microsoft公式経路で導入してください: winget install --id Microsoft.PowerShell --source winget'
+  throw 'PowerShell 7 is required. Install the official GitHub release win-x64 MSI at machine scope.'
 }
 
 if ($PlanOnly) {

@@ -11,7 +11,9 @@ Microsoftの現行Windows client向け推奨導入経路はWinGetで、PowerShel
 したがって5.1を互換fallbackに残す必要はなく、工場入口は`pwsh.exe`の存在とmajor 7以上を要求できる。
 
 dotagentsのWindows一撃入口・定期Task・Node製Windows adapterは`pwsh.exe`だけを使う。5.1しか
-ないhostは`winget install --id Microsoft.PowerShell --source winget`で7を導入してから再実行する。
+ないhost、またはStore/MSIXのApp Execution Aliasしかないhostは、PowerShell公式GitHub releaseの
+`win-x64.msi`をmachine scopeへ導入してから再実行する。App Execution AliasはCore 7を返しても
+owner-only工場stateをpackaged contextから読めないため、正規factory shellとして受理しない。
 
 対話型永続PTYは別レイヤであり、Aitermが所有する。Windowsではpsmuxがterminal/session
 multiplexer、PTY内で動くshellがPowerShell 7である。他製品はpsmuxへ直接依存しない。

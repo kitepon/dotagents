@@ -37,7 +37,7 @@ test('未知・不足引数は台帳を作らず拒否し、Windows ACL契約を
 test('並行recordでも3製品の成功結果をlost updateしない', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'toolchain-ledger-')); t.after(() => rm(root, { recursive: true, force: true })); const file = join(root, 'ledger.json');
   const results = await Promise.all(['claude-code', 'codex-cli', 'grok-build'].map((product) => run(args(file, product))));
-  assert.deepEqual(results.map((item) => item.code), [0, 0, 0]);
+  assert.deepEqual(results.map((item) => item.code), [0, 0, 0], results.map((item) => item.stderr).join('\n'));
   const value = JSON.parse(await readFile(file, 'utf8'));
   assert.deepEqual(Object.keys(value.products).sort(), ['claude-code', 'codex-cli', 'grok-build']);
 });

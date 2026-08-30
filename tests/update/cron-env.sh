@@ -338,6 +338,22 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
 fi
 grep -q '^FAILED: npm global prefix/bin が不正または利用不能$' "$TEST_HOME/invalid-prefix.out" \
   || fail '不正なnpm global prefixを名指ししない'
+
+# Fresh Windows/npm installations may expose a valid absolute prefix before
+# its command directory exists.  The bootstrap owns creating that directory.
+fresh_prefix="$TEST_HOME/fresh-npm-global"
+rm -rf "$fresh_prefix"
+env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" FACTORY_REPORTER_RUNNER="$REPORTER" \
+  TOOLCHAIN_LEDGER_FILE="$TEST_HOME/fresh-prefix-ledger.json" \
+  NPM_PREFIX="$fresh_prefix" RUN_ID=fresh-prefix \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/fresh-prefix.out" 2>&1 || true
+[ ! -e "$fresh_prefix" ] && fail '正規npm global prefixを初回bootstrapで作成しない'
+[ -d "$fresh_prefix/bin" ] || fail '正規npm global binを初回bootstrapで作成しない'
+if grep -q '^FAILED: npm global prefix/bin が不正または利用不能$' "$TEST_HOME/fresh-prefix.out"; then
+  fail '存在前の正規npm global prefixを不正扱いした'
+fi
 if grep -q '^invalid-prefix:shadow-' "$TEST_HOME/cli-calls.log"; then
   fail '不正prefix時にPATH shadowされたCLIでversion判定した'
 fi
