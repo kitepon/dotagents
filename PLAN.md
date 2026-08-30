@@ -4,7 +4,7 @@
 
 ## 趣旨
 
-dotagents は**開発工場そのもの**。全プロジェクトに共通して効く土台（規範・同期ハブ・知識台帳）と、工場管理対象製品の統合責務を持つ。規範・配布・知識の各面の地図は [docs/00_overview.md](docs/00_overview.md)、管理対象12製品・基盤toolchain・BugHubの台帳は [docs/factory-product-contracts.md](docs/factory-product-contracts.md) が正。GitHub が真実の源。LatticeはCodegraphを完全吸収した正式後継で、独立Codegraphはretired／not_applicableの履歴だけを保持する。
+dotagents は**開発工場そのもの**。全プロジェクトに共通して効く土台（規範・同期ハブ・知識台帳）と、工場管理対象製品の統合責務を持つ。規範・配布・知識の各面の地図は [docs/00_overview.md](docs/00_overview.md)、管理対象の現行集合は[工場の現行状態](docs/factory-current-state.md)、製品・基盤toolchain・BugHubの統合契約は [docs/factory-product-contracts.md](docs/factory-product-contracts.md) が正。GitHub が真実の源。LatticeはCodegraphを完全吸収した正式後継で、独立Codegraphはretired／not_applicableの履歴だけを保持する。
 
 **範囲**: 本旨は「開発工場（環境）の最適化」。個々のプロダクトの品質監査・法務チェック・深いバグ探しは範囲外——それは「工場で作る製品の検品」であり、オーナーが個別に依頼した時だけ行う。各プロジェクトへの介入は原則、①GitHub 同期 ②フォルダ構成の標準化 ③CLAUDE.md ブラッシュアップ ④Spotter のproject-scoped有効化に絞る。Spotterは全projectで無条件発火させず、正規CLIが作るmarkerで対象を限定する。
 
@@ -25,6 +25,7 @@ dotagents は**開発工場そのもの**。全プロジェクトに共通して
 
 - **統括レーンのプランはプロジェクトの docs/ に作る**。通常レーンは会話上の成功条件または内蔵planで足り、会話・端末メモリ・`~/.claude/plans` を工程正本にしない。
 - **実行TODOの正本はLattice typed discoveryで決める**: 工程を読む/作る前に `lattice status --json` で正本を判定する（判定・cutover・fallback禁止の詳細は lattice-workflow runbook が正）。
+- **文書は所有者と寿命を同時に決める**: current／contract／generated／history／evidenceの分類とarchive例外は[docsの地図](docs/00_overview.md)と[document registry](docs/document-registry.json)が正。完了文書はarchiveへ移し、同義currentは一つへ統合する。各製品の内部制御は各製品repoが所有し、dotagentsは横断統合だけを所有する。
 - **時間見積を計画の制約・判断材料にしない**（AI の作業時間見積は実際の約20倍過大）。計画は順序・依存関係・承認ゲート（H）だけで組む。
 - （書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**方針級の発見はその場で正典へ**。共通文書の書き方（端末非依存・絶対日付・方針は理由ごと本文に）と書き先の振り分けは canon-authoring runbook が正。
 
@@ -36,4 +37,4 @@ dotagents は**開発工場そのもの**。全プロジェクトに共通して
 
 ## 残件
 
-- 工程正本: Lattice plan `factory-master`。[開発工場 統合マスター計画](docs/plan_factory-master.md)は目的・判断・受入条件とLattice工程への導線だけを持ち、本憲章へ個別TODOを重複させない。
+- 現役工程は`lattice todo status --json`を正とし、本憲章へ個別TODOや完了数を重複させない。完了した統合工程は固定参照用の[案内](docs/plan_factory-master.md)から履歴へ辿る。

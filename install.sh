@@ -173,12 +173,16 @@ mkdir -p "$HOME/.local/bin"
 remove_retired_link \
   "$HOME/.local/bin/windows-native-product-smoke" \
   "$HERE/bin/windows-native-product-smoke.mjs"
+remove_retired_link \
+  "$HOME/.local/bin/render-current-docs" \
+  "$HERE/bin/render-current-docs.mjs"
 for f in "$HERE/bin"/*.sh; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .sh)"
 done
 for f in "$HERE/bin"/*.mjs; do
   [ -e "$f" ] || continue
+  [ "$(basename "$f")" != render-current-docs.mjs ] || continue
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .mjs)"
 done
 

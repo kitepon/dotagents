@@ -13,7 +13,7 @@ description: 統括レーン（①計画に中断が組込済み②受入が多�
 - host 内の子は`Task`を使う。工場roleは`implementer`と`refuter`。bundled explore/plan は置換えない。円卓の代替ではない。modelは親継承を避け、docs/02_models.md 順位表の当該役割の配置（model×effort）を毎回明示する。
 - 日常shellはCursor nativeの単発・背景コマンド。aiterm永続PTYは外部子（Codex/Claude/Grok）を張る時だけ使い、Cursor親の日常shellへ流さない。
 - MCPは`GetDynamicTools`でschemaを取ってから`CallDynamicTool`する。Claudeの`mcp__*`名前、Codex native の agent spawn、Grok の subagent spawn を正入口にしない。
-- `gpt_connector`は親直轄のconsultation専用。Worker・実装・shellの担当にしない。timeout後は同じslugをsessionsで回収する。
+- `gpt_connector`は親直轄のconsultation専用。Worker・実装・shellの担当にしない。製品操作は[gpt-connector skill](../gpt-connector/SKILL.md)から製品正本へ辿り、このappendixへ複製しない。
 - `~/.cursor/skills-cursor`はCursor内蔵。工場scan対象にしない。同名skillをそこに置かない。
 - ClaudeのWorkflow / Agent matcherと、Codex nativeの`agent_type`/`fork_turns`、Grokの`spawn_subagent`はこの入口の正本ではない。
 

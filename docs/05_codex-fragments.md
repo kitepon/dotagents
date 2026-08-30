@@ -77,7 +77,7 @@ role別の期待値や警告を生成しない。
 
 ## 3b. gpt-connector MCP（ChatGPT接続・工場コア全端末必須）
 
-Chat枠（Work枠と別勘定）の第二意見を Codex 親からも使えるようにする。最終server IDは `gpt_connector`、commandは `gpt-connector-mcp`。専用Chrome、product-owned state、明示model/effort、caller既知slug、timeout後の sessions 回収を守る。MCP登録は限定applierの対象外なので、H承認後に `codex mcp add gpt_connector -- gpt-connector-mcp` で行う。正典は [06_gpt-connector.md](06_gpt-connector.md)。
+ChatGPTの第二意見をCodex親へ接続する工場entryは、server ID `gpt_connector`、command `gpt-connector-mcp`である。MCP登録は限定applierの対象外なので、対象hostへ `codex mcp add gpt_connector -- gpt-connector-mcp` で登録する。工場境界は[接続pointer](06_gpt-connector.md)、製品の利用・診断・復旧は[gpt-connectorの正本](https://github.com/kitepon/gpt-connector#readme)に従う。
 
 ## 4. `project_doc_fallback_filenames = ["CLAUDE.md"]`（任意・副作用明記）
 
@@ -234,22 +234,3 @@ codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
 STDIO の environment は closed-mode として扱う。親 shell の値が必要だと推測して継承に頼らず、`mcp_servers.<id>.env` / `env_vars` に必要最小限を明示する。secret をコマンド行・repo・会話ログに書かない。OAuth は `codex mcp login <name>` を対話 H の下で行い、未認証の任意 MCP は理由付き WARN とする。
 
 疎通は書込みを伴わない最小操作で確認する。`caveat_search`、OpenAI Docs検索、`aiterm`のsession listはread-only。コード構造面は`lattice-mcp`だけを使い、indexが無ければtyped guidanceに従う。独立Codegraphをfallback起動しない。AIShellは対話登録と工場疎通で入口を分ける——対話hostは`AISHELL_CAPABILITY_SET=expanded-v1`の高密度面へ登録し、工場疎通は`AISHELL_TOOL_PROFILE=factory`でだけ見える`factory_diagnostics`でschema `aishell.native_factory_diagnostics.v1`、product version、privacy 4項目falseを確認する。pathを返す`runtime_status`を工場疎通の代用にしない。gpt-connectorの`sessions`はread-onlyだが、Chat送信は依頼に必要な時だけ行う。Oracleは互換・rollback時だけ参照する。
-
-## Observer parent Stop hook
-
-ObserverのCodex Stop hookは`hooks.json`へ手書きしない。Claude設定と同じtransactionで、Observer CLIが返すversioned Codex fragmentをその製品契約どおりに適用する。
-
-```bash
-apply-observer-hook-config --observer-hook "$HOME/.local/bin/observer-parent-stop-hook" \
-  --state-root "$HOME/.local/state/observer"
-apply-observer-hook-config --apply --observer-hook "$HOME/.local/bin/observer-parent-stop-hook" \
-  --state-root "$HOME/.local/state/observer"
-apply-observer-hook-config --restore "$HOME/Archives/dotagents-observer-hook-config-<timestamp>.tar.gz"
-```
-
-adapterは既存の他製品hookを保持し、Observer targetだけを一件へ正規化する。`CODEX_HOME`を指定した隔離fixtureではその配下の`hooks.json`を対象にできるが、実端末でのapplyはH gateである。
-`--state-root`はpreflight、parent caller、Claude／Codex Stop hookで同じabsolute pathを必須とし、
-旧rootを持つ同一Observer targetを重複保持しない。
-`--apply`が返す0600 archiveは元の存在有無、mode、uid／gidを固定manifestへ持つ。rollbackは同じ
-`HOME`／`CODEX_HOME`で`--restore`を使い、二設定を原子的に復元する。restore途中失敗は開始前状態へ戻り、
-元absentの設定は削除される。manifest導入前の旧archiveや手製tarはfail closedで拒否する。

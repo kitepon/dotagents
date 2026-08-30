@@ -17,7 +17,7 @@ description: 統括レーン（①計画に中断が組込済み②受入が多�
 - Control配下の書込み Workerは、`verify-codex-agent-routing <role> <agent-path>` が role・model・effort・developer instructions の一致を確認してから、同じ子へ follow-up で実作業を渡す。
 - `implementer` は仕様固定の実装・テスト、`refuter` は書込み禁止の行動契約で敵対的検証、`sorter` は書込み禁止の行動契約で分類・抽出を担う。実効sandboxは親から継承し、role TOMLで別権限を保証しない。model と effort は role TOML によって決まり、呼び出し側が手指定しない。
 - native枠は工場全体の上限ではない。隔離・durable work・独立capacity・役割適合でexternal executionに具体的利益がある時は、`codex-sidecar`またはaitermの`grok_agent` / `composer_agent`を積極利用する。aitermの`codex_agent`は、nativeで満たせないdurable external session等の利益が準備・回収コストを上回る時だけ例外的に使い、単なるcapacity追加や起動可能性を理由に選ばない。Codex親から入れ子のCodexを起動してよいが、通常入口はnativeとする。
-- `gpt_connector` は親直轄のconsultation専用であり、Worker、external capacity、独立監査票、実装・shell・テストの担当として扱わない。timeout後は同じslugをsessionsで回収し、重複送信しない。
+- `gpt_connector`は親直轄のconsultation専用であり、Worker、external capacity、独立監査票、実装・shell・テストの担当として扱わない。製品操作は[gpt-connector skill](../gpt-connector/SKILL.md)から製品正本へ辿り、このappendixへ複製しない。
 - Codexの入口はinstalled / registered / verified / execution-verifiedを区別し、external writerにはexecution-verifiedの入口だけを使う。
 
 ## 固定Recipe（二型）のCodex入口

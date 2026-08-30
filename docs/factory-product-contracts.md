@@ -1,139 +1,52 @@
-# 工場管理製品と基盤toolchainの有限契約台帳
+# 工場の製品統合契約台帳
 
-更新日: 2026-08-29。正本はdotagents。host期待状態は [factory-host-product-matrix.md](factory-host-product-matrix.md)、wire契約はServerManager `bughub/FACTORY_INTEGRATION.md`。
+更新日: 2026-08-30。ここは各製品を**制御する台帳ではなく、公開面を工場へ接続する台帳**である。製品集合・現役wire・endpointは[生成された現行状態](factory-current-state.md)、host期待は[host matrix](factory-host-product-matrix.md)が正。製品内部の手順を含んでいた旧版は[archive](archive/2026-08_factory-product-contracts-pre-autonomy.md)へ凍結した。
 
 ## 共通境界
 
-- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は各製品のversion入口・診断・adapter・禁止事項を所有する。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。
-- 現役契約はLattice `docs/01_integration-package.md`と本台帳・[factory-host-product-matrix.md](factory-host-product-matrix.md)が正、導入経緯は[docs/archive/plan_lattice-factory-integration.md](archive/plan_lattice-factory-integration.md)と[docs/archive/plan_observer-core-integration.md](archive/plan_observer-core-integration.md)が正。
-- dotagents所有の導入・更新後gate・verify-install用の機械可読な単一契約は`lib/factory/deployment-contract.mjs`である。managed集合とcurrent wire集合を分け、過去majorの履歴集合を変更しない。host projectionはmatrixの`required`／`unsupported`／`not_applicable`だけを返し、profile/OS/arch/macOS majorの未知値・不整合をfail-closedにする。ServerManagerはserver profileの公開readiness/revision検証に限定する。
-- 初回導入と再適用はMacの`setup-macos-factory.sh`、Linuxの`setup-linux-factory.sh`、WSL2の`setup-wsl-factory.sh`、Windows nativeの`setup-windows-native-factory.ps1`が所有する。4入口はdeployment contractの製品集合だけを共有し、OS固有のLaunchAgent／cron／Task Scheduler、config、hook、credential、delivery receiptを混同しない。各入口は定期更新を冪等登録し、`verify-install`、[工場の現行状態](factory-current-state.md)が示すwireのfresh report、BugHub delivery receiptまでを受け入れる。
-- Windows nativeの工場shellはPowerShell 7（`pwsh.exe`）だけとし、一撃入口・定期Task・Windows adapterは同じ実体を使う。5.1しかないhostはMicrosoft公式installer／package managerで7を導入してから再実行し、5.1／`cmd.exe`へfallbackしない。
-- コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。release gateは「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とし、AIShellの`scripts/verify-release-commit.mjs`＋`prepublishOnly`をreference実装とする。gate未実装の製品は、次にrelease作業を行うwaveで同時に導入する。
-- 工場の再現欠陥の重大度分類（P0/P1即時修理の閾値）とmaintenance wave処理は[shared/orchestrate/contract.md](../shared/orchestrate/contract.md)「Phase maintenance」が正で、本台帳へ複製しない。dotagents固有の境界: 原因と修理所有者が第三者製品または基盤toolchain本体である欠陥はdotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とし、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする（外部製品名が入力に現れるだけで範囲外へ逃がさない）。権限外変更（第三者本体のfork/patch）は範囲外として記録する。自作製品の本番deploy・credential利用・意図的障害試験は目的・影響・戻し方を記録して同一waveで進め、H承認待ちへ分解しない。
-- 各製品のhost/connector期待状態は本台帳へ複製せず、[factory-host-product-matrix.md](factory-host-product-matrix.md)の親別connector matrixだけが持つ。
-- adapterは下記の正規入口だけをread-onlyで使う。未実装native diagnosticsを内部stateの推測で補わない。
-- `latest_version`、update/compatibility、state schema/migration、runtime errorは製品所有者の正規診断が出るまで省略または`unverified`。`unsupported`/`unverified`/`skipped`をpassへ丸めない。
-- 第三者製品のfork、patch、`node_modules`改変、内部DB読解を禁止。自作製品もdotagentsがDB/schemaを直接解釈しない。
+- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は製品ID、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host/wire互換、製品文書へのpointerだけを所有する。
+- 各製品は、自身の導入・設定・状態・schema・migration・診断の意味・復旧・更新・release判断を自身のrepoで所有する。dotagentsはそれを複製せず、公開入口だけを消費する。
+- dotagentsが所有するのは、製品ID、version probe、公開diagnostics入口とschema ID、adapter projection、privacy、host/wire互換、横断受入だけである。
+- adapterはread-only公開入口だけを使う。内部DB・設定・hook・processを推測して補わず、`unsupported`／`unverified`／`skipped`をpassへ丸めない。
+- factory連携を外しても製品本体の導入・利用・診断・復旧・更新・release判断が失われないことを製品側の受入条件とする。
+- 製品CIのworkflowと合否は各製品repoが所有する。dotagentsは共通runnerとhost横断接続を提供し、製品からdotagentsのworkflowを参照させない。
 - reportへsecret、credential、prompt、session/file本文、生log、絶対pathを出さない。
+- 製品の修理とreleaseは製品repoの正典に従う。dotagentsは公開後probeとhost/wire横断受入だけを判定する。
+- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、製品側gate通過後の公開probeとhost/wire横断受入だけを担当する。publish対象を既定ブランチの祖先に限る共通規則は維持する。
+- 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。
 
-## 台帳
+## 自作コア製品
 
-### `caveat`
+| ID / repo | version・公開diagnostics | 工場projection | 製品側の正本 |
+|---|---|---|---|
+| `caveat` / `kitepon/Caveat` | `caveat --version`; `caveat factory-diagnostics --json` (`caveat.native_factory_diagnostics.v1`); runtime error snapshot / ack | native overall、version、公開runtime error。CLI不在は`missing`、内部DB/hook推測は禁止 | [Caveat docs](https://github.com/kitepon/Caveat/tree/main/docs) |
+| `throughline` / `kitepon/Throughline` | `throughline --version`; `throughline factory-diagnostics --json` (`throughline.native_factory_diagnostics.v1`); runtime error snapshot / ack | native overall、version、公開runtime error。session本文・DB直接読解は禁止 | [Throughline docs](https://github.com/kitepon/Throughline/tree/main/docs) |
+| `spotter` / `kitepon/Spotter` | `spotter --version`; `spotter diagnostics factory` (schema `1.0`); 公開runtime error snapshot/ack | 対象外projectは`not_applicable`、対象で診断不能は`unverified`。tool DB直接読解は禁止 | [Spotter docs](https://github.com/kitepon/Spotter/tree/main/docs) |
+| `lattice` / `kitepon/Lattice` | `lattice --version`; `lattice status --json` (`lattice.project_status.v1`); `lattice factory-diagnostics --json` (`lattice.native_factory_diagnostics.v1`); runtime-errors | typed project status、native overall、sensor/readiness、公開runtime error。消費中の`todo_status_result`とruntime schemaはdotagents consumerがexact validationする | [Lattice product contract](https://github.com/kitepon/Lattice/blob/main/docs/00_product-contract.md) |
+| `gpt-connector` / `kitepon/gpt-connector` | `gpt-connector --version`; `gpt-connector factory-diagnostics --json` (`gpt-connector.factory-diagnostics.v1`); runtime error公開面 | version、MCP contract readiness、製品が返すoverall/check状態をそのまま投影する。Darwin以外のlive面は`unsupported`でありreadyへ丸めない。会話・job内部を読まない | [gpt-connector README](https://github.com/kitepon/gpt-connector#readme) |
+| `aiterm-mcp` / `kitepon/aiterm-mcp` | MCP `diagnostics` (`aiterm-mcp.factory-diagnostics.v1`); runtime error snapshot/ack | stdio initialize後のread-only診断。PTY/agent起動をhealth checkにしない | [aiterm-mcp docs](https://github.com/kitepon/aiterm-mcp/tree/main/docs) |
+| `codex-sidecar` / `kitepon/codex-sidecar` | `codex-sidecar factory-diagnostics --project <cwd>` (`factoryReadiness.schemaVersion="1"`); runtime error公開面 | package整合済みversion、native overall、read-only readiness。実agentを起動しない | [codex-sidecar usage](https://github.com/kitepon/codex-sidecar/blob/main/docs/USAGE.md) |
+| `servermanager` / `kitepon/ServerManager` | loopback `/readyz`、deploy revision manifest、公開external-event connector | server hostだけreadiness/revision/freshnessを外部probe。DBやPi5 stateを直接読まない | [ServerManager docs](https://github.com/kitepon/ServerManager/tree/main/docs) |
+| `aishell` / `kitepon/aishell` | MCP `factory_diagnostics` (`aishell.native_factory_diagnostics.v1`) と initialize version | Apple Silicon macOSだけ。factory profileのprivacy済みprojectionを消費し、通常tool profileへ混ぜない | [AIShell diagnostics](https://github.com/kitepon/aishell/blob/main/docs/factory-diagnostics.md) |
+| `peertable` / `kitepon/peertable` | `peertable-client diagnostics --json` (`peertable.native_factory_diagnostics.v1`) | native overall/version。room URL・token・DB・message本文を読まない | [Peertable docs](https://github.com/kitepon/peertable/tree/main/docs) |
+| `unai` / `kitepon/unai` | `unai --version`; `unai factory-diagnostics --json` (`unai.native_factory_diagnostics.v1`) | native overall/version/manifest整合。校正本文・voice・履歴を読まない | [unai README](https://github.com/kitepon/unai#readme) |
 
-- 所有/修正先: 自作 / `kitepon/Caveat`。version入口: `caveat --version`。
-- diagnostics/state正本: `caveat factory-diagnostics --json`（schema `caveat.native_factory_diagnostics.v1`）。Caveat repoのown DB/schema/migration、sync、connectorをread-onlyで返す。公開runtime errorは`caveat runtime-errors snapshot --after-cursor 0 --limit 256 --json`／`ack <cursor> --json`。
-- 現adapter: native JSONをexact allowlistで検証し、`ready`＋exit 0をpass/compatible、`not_ready`＋非0を固定fingerprintのfail/incompatible、`unverified`＋非0・schema不正をunverifiedへ射影する。DB schema/migrationと、明示opt-inされた公開runtime error snapshot/ackを接続済み。
-- 表現/禁止: 診断不能は`unverified`、CLI不在は`missing`。Caveat DB直接queryやhook推測は禁止。
-- Cursor: 製品hookは `caveat cursor-hook install` が `~/.cursor/hooks.json` へ flat `{command, timeout}` を upsert する（`beforeSubmitPrompt` / `postToolUse` / `postToolUseFailure` / `stop`。工場 hook は残す）。出力は `additional_context`。Cursor envelope を Claude 形へ変換しない。factory diagnostics の connectors exact（`claude`/`codex`）はこの面では切らない。
-
-### `throughline`
-
-- 所有/修正先: 自作 / `kitepon/Throughline`。version入口: `throughline --version`。
-- diagnostics/state正本: `throughline factory-diagnostics --json`（schema `throughline.native_factory_diagnostics.v1`）。DB schema/migration、connector、capture/restore/handoffをread-onlyで返す。
-- Grok: 製品hookは `throughline install` が書く `~/.grok/hooks/throughline.json`（絶対 node + `bin/throughline.mjs`）。`/tl` 後の記憶再開は `throughline grok-continue --session grok:<id>`（源の `project_path`、macOS Terminal、初手末尾は待機）。stdout 再注入・aiterm・`--rules` は現行契約ではない。
-- Cursor: 製品hookは `throughline install` が `~/.cursor/hooks.json` へ upsert する（絶対 node + `bin/throughline.mjs`。工場 `cursor-*-hook` は残す）。session id は `cursor:<uuid>`。handoff 注入は sessionStart の `additional_context`（beforeSubmitPrompt は continue のみ）。`/tl` 後継の自動起動はしない。新規 Cursor session が baton を飲む。stdout 再注入・aiterm は現行契約ではない。
-- 現adapter: native JSONのversion、database schema/migration、overallと、明示opt-inされた公開runtime error snapshot/ackを接続済み。製品診断が示すClaude connector `unverified`等をgreenへ丸めない。
-- 表現/禁止: 正規JSON診断なしは`unverified`。session本文送信、破壊的restore、`.agents`直接解釈は禁止。
-
-### `spotter`
-
-- 所有/修正先: 自作 / `kitepon/Spotter`。version入口: `spotter --version`。
-- diagnostics/state正本: `spotter diagnostics factory`（schema 1.0）。既存doctor inspectorとtool DB validatorを再利用するread-only JSON。
-- 現adapter: native JSONのversion、marker schema、overallと、明示opt-inされた公開runtime error snapshot/ackを接続済み。
-- 表現/禁止: 対象外projectは`not_applicable`、対象で診断不能は`unverified`。全project自動activation、tool DB直接読解は禁止。
-- Cursor: `hostAgent: 'cursor'` の adapter が `tool-db.cursor.json` を所有する。discovery は `~/.cursor/mcp.json` と Cursor skills/agents。`spotter cursor-hook install` が `~/.cursor/hooks.json` の `sessionStart` へ catalog refresh を upsert する（工場 hook は残す）。`~/.cursor/skills-cursor` はカタログに入れない。対象projectの明示installがrequiredである点は他hostと同じ。
-
-### `lattice`
-
-- 所有/修正先: 自作 / `kitepon/Lattice`。version入口は`lattice --version`（`factory-diagnostics`のpackage versionと一致）。
-- project工程discovery正本: `lattice status --json`（schema `lattice.project_status.v1`、state `uninitialized|ready|active_run|invalid`、canonical store、active plan/run、`can_create_plan`、`next_action`）。`.lattice/`の有無を接続判定へ使わず、invalidをMarkdownへfallbackしない。
-- diagnostics/state正本: `lattice factory-diagnostics --json`と`lattice runtime-errors snapshot|ack ... --json`。run store、sensor index、runtime error storeはLatticeが所有し、dotagentsは直接解釈しない。コード構造面は同梱sensorと`lattice-mcp`だけから提供する。
-- 現adapter: native JSONをexact allowlistで検証し、[工場の現行状態](factory-current-state.md)が示すwireの正式製品`lattice`へ射影する。rollback先は同ページに従う。sensorのindex不在・破損・version不整合はtyped failure／guidanceであり、外部Codegraphへfallbackしない。
-- runtime dispatch面（0.12.21〜0.12.26で公開）: request契約は`plan compile --schema --json`、executor adapter登録は`run adapter register|list`、参照controllerは配布binの`lattice-scripted-adapter`。`run_request.v1`・`executor_packet.v1`・`executor_receipt.v1`・`runtime_adapter_registration_input.v1`のJSON Schemaは配布物に同梱される。dotagentsはこれらをexact validationで消費し（`lib/orchestrate/lattice-receipt-projection.mjs`・`lattice-control-saga.mjs`）、schemaを自前で再定義しない。実dispatchの所有者はhostであり、初回駆動が効くのは配布binをlaunch argvへ明示したmanaged runだけである。
-- TODO↔runtime相関: `lattice todo bindings [--plan <key>] --json`（`lattice.todo_binding_projection.v1`）。`compile_binding`から`compiled_plan_digest`→`runtime_plan.v1`→`executor_packet.v1`→`executor_receipt.v1`を辿る。status面の現行wireは`todo_status_result.v6`（`audit_pending`に加えて`plan_notes`／`coordination`／`parallel_candidates`の工程3欄を持つ。監査待ちも工程に属する義務も、statusが答える——Lattice repoのADR 0159・0160）。dotagents側の消費者は`lib/orchestrate/lattice-projection.mjs`・`lib/orchestrate/lattice-control-saga.mjs`・`lib/lattice-hook.py`の3つで、いずれもexact key-setでv6だけを受理する。Control manifestの`external_source.contract_version`は束縛時点の履歴なので、照合はv4・v5・v6を受理する（観測schemaとは別軸。過去版は消さない）。
-- 互換: `codegraph_*` MCP tool名は入力互換名としてのみ残し、provider／sensor_owner=`lattice`とLattice系列versionを返す。独立Codegraph package、PATH command、MCP登録、daemon、SDK依存は禁止。
-- 表現/禁止: 生message・絶対path・repo/prompt内容をreportへ転記しない。診断のためにindex生成・run実行・provider起動を行わない。
-- Cursor: `lattice hooks install --host cursor` が `~/.cursor/hooks.json` の `beforeSubmitPrompt` へ flat `{command, timeout: 5}` を冪等マージする。Claude/Codex の入れ子 `UserPromptSubmit` は変えない。工場 `cursor-lattice-gantt-hook` はdotagents所有の案内のまま残す。emit は Cursor の `conversation_id` / `workspace_roots` を読み、`additional_context` を返す。
+## 第三者・基盤toolchain
 
 ### `markitdown`
 
-- 所有/修正先: 第三者 / `kitepon/dotagents`外付けadapter。version入口: `markitdown --version`。
-- diagnostics/state正本: 一時local text fixtureを`markitdown <file>`で変換しstdout byte数を確認。永続state/schema/migrationは契約しない。
-- 対応version: stable `>=0.1.0 <0.2.0`（build metadata付きは許容、prereleaseは未検証で範囲外）。範囲外は`installed`を保った`local_fixture=unsupported:upstream_version_unsupported`、version取得不能・形式drift・CLI不在は`unverified:version_unverified`としてfixture診断を実行しない。
-- 現adapter: 対応versionだけlocal fixtureを実行する。fixture診断の失敗または空出力は`local_fixture=unverified`であり、version範囲外の`unsupported`とは区別する。latest/update/runtime errorは未実装。
-- 禁止: URL/JSレンダリングをhealth扱い、rc=0だけでpass。
-
-### `gpt-connector`
-
-- 所有/修正先: 自作 / `kitepon/gpt-connector`。version入口: `gpt-connector --version`。
-- diagnostics/state正本: versioned native factory diagnosticsとproduct-owned runtime error snapshot。dotagentsはChatGPT会話・job stateを直接読解しない。
-- update/compatibility: 製品の正規update・diagnosticsでinstalled/latest、model/effort、MCP readinessを観測する。caller既知slugだけを受け、unknown slugを推測しない。
-- idle意味論（0.4.12+）: 専用Chromeはon-demand起動の設計であり、CDP接続不能（unreachable）は故障でなくidle平常状態。診断は`cdp: unverified/chrome_idle`・overall `unverified`を返し、起動中の実異常（HTTP error・target不正・RUNTIME_DRIFT）だけを`not_ready`にする。adapterとpost-update gateはidle系tupleを非blockingとして扱う。
-- 禁止: Oracle/OpenAI APIへの暗黙fallback、prompt/response/file/conversation ID/絶対pathの送信、Oracle profileの流用。timeout後は sessions で回収する。idle（chrome_idle）をfail/incompatibleへ丸めない。
+第三者のblack-box adapterで、`markitdown --version`と一時local fixtureだけを使う。対応範囲はstable `>=0.1.0 <0.2.0`。第三者本体をpatchせず、URL/JS renderingやrc=0だけでpassにしない。
 
 ### 基盤toolchain
 
-- `claude-code`、`codex-cli`、`grok-build`はコア製品ではないが、version・update結果・互換性を固定product IDで管理する。
-- Claude/Codexはnpm `@latest`、Grok Buildは正規self-updateを用いる。失敗を他製品の成功で隠さず、第三者本体のpatch・内部状態読解・認証変更・agent起動はしない。
-- Mac の自前 Desktop と main-server の自前 AFK Pilot は、公式 `grok-build` ID とは別の **Community overlay** である。新product ID・wire 集合・コア12目にはしない。所有と更新は[factory-grok-build-community-overlay.md](factory-grok-build-community-overlay.md)。
-- Oracleはv1互換・手動rollbackの履歴対象としてのみ残し、新規契約台帳・通常connector・更新対象には含めない。
-
-### `aiterm-mcp`
-
-- 所有/修正先: 自作 / `kitepon/aiterm-mcp`。version入口: native MCP `diagnostics` responseのpackage version。
-- diagnostics/state正本: stdio MCP initialize後のread-only `diagnostics` tool（schema `aiterm-mcp.factory-diagnostics.v1`）。PTY一覧は件数だけ、harness依存（wire名`vendor_dependencies`）は実行可能性だけを返す。
-- 現adapter: stdio MCP initialize→`diagnostics`と、明示opt-inされた公開runtime error snapshot/ackを接続済み。PTY backend不能やschema driftは`unverified`、native `not_ready`は固定fingerprintのfailへ写像する。
-- Windows native契約: Aitermが永続PTYとsession lifecycleを所有し、backendはpsmux、PTY内shellはPowerShell 7だけを使う。psmuxはshellではない。他製品はpsmuxへ直接依存せず、必要な時だけAiterm公開APIを消費する。
-- 禁止: PTY/agent起動をhealth扱い。Windows PowerShell 5.1／`cmd.exe`へのfallback、他製品からのpsmux直接操作。
-
-### `codex-sidecar`
-
-- 所有/修正先: 自作 / `kitepon/codex-sidecar`。version入口: `codex-sidecar factory-diagnostics --project <scan cwd>` の `factoryReadiness.packageVersions.packages.cli`。
-- diagnostics/state正本: `factory-diagnostics` の read-only JSON（top-level `status`、`factoryReadiness.schemaVersion="1"`、`overall`、`packageVersions.status`と3 package version整合、result schema/workflow/preset/model policy/read-only dry-run readiness）。`ready`は`status:ok`かつexit 0、`not_ready`/`unverified`は`status:failed`かつ非0。`unverified`はpackage情報を省略した最小shapeも正規。実agent/Codexを起動しない。
-- 現adapter: native JSONをschema allowlistで検証し、`ready`をpass/compatible、`not_ready`を固定fingerprintのfail/incompatible、`unverified`・schema不正・CLI不在をunverifiedへ射影する。installed versionは整合済みのCLI package versionだけを採用し、明示opt-inされた公開runtime error snapshot/ackも接続済み。
-- 表現/禁止: raw output、absolute path、prompt/context/file内容、preset名、token/env/log/result本文をreportへ転記しない。実agent起動をhealth扱いにしない。
-
-### `servermanager`
-
-- 所有/修正先: 自作 / `kitepon/ServerManager`。version入口: loopback readinessのpackage versionとbuild/deploy source revision。
-- diagnostics/state正本: 外部runnerのBugHub health、poll/ingest鮮度、DB migration、container/source一致、Pi5監視。SQLite migration/Pi5 runtimeはServerManager所有。
-- 現adapter: server profileではloopback `/readyz`とdeploy revision manifestを外部probeで照合し、DB/schema/pull/ingest/delivery/revisionの固定checkへ投影する。Pi5のdurable external eventは公開connector経由でsnapshot/ackし、非serverは`not_applicable`。
-- 禁止: BugHub自己申告だけで合格、dotagentsからDB直接読解。
-
-### `aishell`
-
-- 所有/修正先: 自作 / `kitepon/aishell`。version入口はMCP initializeの`serverInfo.version`と`factory_diagnostics.product.version`の一致で、Swift側`AIShellProduct.version`が単一正本、package.jsonとのdriftは`verify-npm-package.mjs`が検出する。
-- diagnostics/state正本: `AISHELL_TOOL_PROFILE=factory`でだけ公開されるread-only MCP `factory_diagnostics`（schema `aishell.native_factory_diagnostics.v1`）。platform、runtime configuration schema/migration、操作readiness、MCP、管理アプリbundleを返す。許可root・Git worktreeは件数だけで、path、activity、file本文、process argumentを返さない。
-- 公開面の分離: 対話hostは`AISHELL_CAPABILITY_SET=expanded-v1`の高密度11 tool面（製品が候補面と位置づける面であり、上流の変更に追従する）へ登録し、工場診断はfactory profileへ隔離する。既定7／expanded 11／full 29／legacy 25のどの一覧にも`factory_diagnostics`は現れず、profile外からは呼べない。factory profileとcapability setの併用は`FACTORY_PROFILE_CAPABILITY_SET_UNSUPPORTED`で拒否され、fallbackしない。
-- runtime schema: `aishell.runtime_configuration.v2`。旧単一`allowedRootPath`は製品側のcompatible-on-readで解釈し、dotagentsは`runtime.json`や`activity.jsonl`を直接読まない。
-- update/rollback: Apple Silicon Macだけ`@quolu/aishell@latest`をglobal更新し、package内`AIShell.app`と`aishell-mcp`を同版で扱う。rollbackは旧npm versionへ戻してMCP processを再起動する。診断は`0.4.1`以降で公開されており、それ以前のversionは`unverified`になる。
-- 起動形式: adapterもMCP hostも`aishell-mcp`をbare command名で起動する。`verify-install`は対応Mac上のClaude/Codex両hostについて、user/enable状態、bare command、`AISHELL_CAPABILITY_SET=expanded-v1`、接続状態を検証し、CLI存在だけでは合格にしない。製品側はloaded executable pathからAIShell.app bundleを解決し、この起動形式をrelease gateが覆う。完全修飾pathでだけ検証してbare名起動を未検証のまま出さない。
-- wire: v2/v3/v4固定集合へ後付けせず、ServerManager optional sourceを先行し、Lattice wire v4完了後のwire v5で正式enroll済み。後続majorでも同じ製品契約を維持し、過去majorはrollback契約として保持する。
-- 禁止: 非対応hostへの導入、shell/AppleScript/JXA fallback、`runtime_status`のpathをfactory reportへ転記、pauseを製品故障へ丸めること。
+- `claude-code`、`codex-cli`、`grok-build`は基盤toolchainでありコア製品ではない。公式installer／package manager／self-updateだけを使い、内部状態や認証を変更しない。
+- Grok Desktop / AFKのCommunity overlayは製品IDを増やさない。工場との接続と両repoを跨ぐ順序だけを[overlay契約](factory-grok-build-community-overlay.md)が所有し、build・deploy・release・state・recoveryは各overlay repoが所有する。
+- OracleとObserverは現役製品集合へ戻さない。履歴とrollback可否は[生成された現行状態](factory-current-state.md)およびarchiveから読む。
 
 ### `observer`
 
-- 所有/修正先: 自作 / `kitepon/Observer`。2026-08-16に工場コアから撤去。2026-08-18にwire v6/v7の製品キーから削除。製品repoは残す。
-- 現adapter: なし。factory-scan v6/v7は`products.observer`を出さない。`validateReportV6`/`validateReportV7`はobserverキーを要求せず、余剰キーとして拒否する。CLI探索も更新も一撃展開もしない。
-- update/rollback: `@quolu/observer`を工場更新集合に含めない。
-- 禁止: 工場管理対象・一撃展開・wire必須キーへ戻すこと。欠落を`missing`/`high`へすること。ServerManagerから内部stateを修復すること。履歴の物理削除。
+2026-08-16に工場コアから撤去済みで、wire v6/v7を含む現役・rollback製品キーへ`products.observer`を出さない。adapter、更新、一撃展開、欠落issue化を復活させない。
 
-### `peertable`
+## 変更時の受入
 
-- 所有/修正先: 自作 / `kitepon/peertable`。version入口: `peertable-client diagnostics --json`の`product.version`（`package.json`と`room/client.mjs`の`MCP_VERSION`一致を`version_consistency` checkが検証。別途`--version`は無い）。
-- diagnostics/state正本: `peertable-client diagnostics --json`（schema `peertable.native_factory_diagnostics.v1`。決定45契約）。`version_consistency`・`bin_integrity`・`node_runtime`・`skill_bundle`・`room_reachability`をread-onlyで返す。room DB・member state・message本文は解釈しない。`room_reachability`は`PEERTABLE_URL`未設定時`not_applicable`（npm単体利用の平常状態）、設定時は到達fetchの`pass`/`fail`。overallは`ready`（全pass/not_applicable）/`not_ready`（fail含む）/`unverified`（判定不能含む）。
-- 現adapter: `lib/factory/v7.mjs`の`projectPeertableFactory`/`peertableProduct`がnative JSONをexact allowlistで検証し、`ready`をpass/compatible、`not_ready`を固定fingerprintのfail/incompatible、schema不正・CLI不在をunverified/missingへ射影する。`room_reachability`はLAN room到達性と製品健全性を結合させないため、scan時は常に`PEERTABLE_URL=''`で空へ倒す（不可侵原則：ServerManager server profileパターンの踏襲）。runtime errorは製品側に未実装のため契約対象外。
-- wire: v6の13製品（v5集合。observerなし）へpeertableを加えた`V7_PRODUCT_IDS`固定14製品（`lib/factory/v7.mjs`・[wire v7設計](wire-v7-design.md)・[ADR 0127](adr/0127-wire-v7-peertable-enrollment.md)）。2026-08-10に全4hostのv7 cutoverを完了し、後続majorでもpeertable契約を維持する。過去majorはrollback契約として保持する。
-- release gate: `scripts/verify-release-commit.mjs`（aishell reference実装からの移植）を`prepublishOnly`へ連結済み。publish対象は既定ブランチ祖先のcleanなcommitだけに限定する。
-- 表現/禁止: room server URL・投稿token・room DB・message本文をreportへ転記しない。room DBの直接query、adapterによるmember state推測を禁止。`skill/`はpeertable repoが所有しnpm同梱で配る——dotagentsの`claude/skills/`や`install.sh`へ複製しない。
-
-### `unai`
-
-- 所有/修正先: 自作 / `kitepon/unai`。version入口: `unai --version`。`.claude-plugin/plugin.json`のversionを単一正本とする。
-- diagnostics/state正本: `unai factory-diagnostics --json`（schema `unai.native_factory_diagnostics.v1`）。`manifest_consistency`・`node_runtime`・`skill_bundle`のexact 3 checkをread-onlyで返す。文章本文、利用履歴、絶対path、secretは返さない。
-- 現adapter: `lib/factory/v8.mjs`がnative JSONをexact allowlistで検証する。`ready`＋exit 0をpass/compatible、`not_ready`＋非0をfail/incompatible、schema不正・CLI不在をunverifiedへ射影し、製品内部を推測しない。
-- 導入/更新: POSIXは公開mainの`install.sh`、Windows nativeはPowerShell 7の`install.ps1`だけを使う。dotagentsの`bin/install-unai.sh`はOSごとに公式installerを一回呼び、直後にversionとnative diagnosticsを確認する統合入口で、unai実体を複製しない。
-- 全文章仕事への適用: 共通正本`shared/constitution.md`に「文章・返答の文体はunai skillの規範に従う。」を一行だけ置き、生成物`claude/CLAUDE.md`、`codex/AGENTS.md`、`grok/AGENTS.md`、`cursor/AGENTS.md`、`cursor/rules/factory.mdc`へ同文を配る。host deltaへ別表現を重複保持しない。
-- wire: v7の固定14製品へ`unai`を加えた`V8_PRODUCT_IDS`固定15製品（`lib/factory/v8.mjs`・[wire v8設計](wire-v8-design.md)）。v7はhost別rollback先として維持し、v8 reportをv7へ変換しない。
-- 禁止: 校正対象の文章本文やvoice profileをfactory reportへ載せること。dotagentsがunaiの規範本文を複製すること。第三者installerや手動copyを正規更新面にすること。
+製品追加・削除・公開schema変更では、製品repoの公開契約を先に更新し、次にdeployment contract、host matrix、adapter、wire契約、生成状態、4 hostの横断受入を更新する。製品内部の手順やrelease可否をこの台帳へ書き戻さない。

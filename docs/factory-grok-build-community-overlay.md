@@ -1,35 +1,35 @@
-# Grok Build Community overlay（工場所有の差分面）
+# Grok Build Community overlayの工場接続
 
-更新日: 2026-08-17。正本はdotagents。これは新しい自作コア製品でも基盤toolchainの新IDでもない。公式 `grok` CLI（product `grok-build`）はそのまま black-box 管理する。本面は、自前 Desktop（Mac / Windows / Linux）と main-server の自前 AFK Pilot だけを工場が追従する。
+この文書は、Grok Build Desktopのkitepon overlayとAFK Pilotを工場へ接続する情報だけを扱う。各製品の導入・設定・状態・復旧・更新・build・deploy・releaseは各製品repoが所有し、dotagentsは代行しない。
 
-## 所有
+## 工場契約
 
-| 面 | 作業ディレクトリ | origin | upstream |
+- Desktop overlayとAFK Pilotは、工場の製品IDやfactory wireの対象を増やさないCommunity overlayである。
+- 公式`grok` CLIは第三者toolchainとして扱い、このoverlayの管理対象へ含めない。
+- dotagentsが所有するのは、工場で使うrepoとhostの対応、公開接続点、跨製品の依存順序だけである。
+
+## 工場での位置付け
+
+| 面 | 工場の作業ディレクトリ | repo | 工場との接続 |
 |---|---|---|---|
-| Desktop overlay | `~/Developer/grok-build-vscode` | `kitepon/grok-build-desktop-kitepon`（private） | `phuryn/grok-build-vscode` |
-| AFK overlay | `~/Developer/afkpilot` | `kitepon/afkpilot-kitepon`（private） | `phuryn/afkpilot` |
-| 公開ホスト | main-server `~/afkpilot/deploy/kitepon` | — | — |
+| Desktop overlay | `~/Developer/grok-build-vscode` | `kitepon/grok-build-desktop-kitepon` | 各席のDesktopとAFKへのuplink |
+| AFK Pilot | `~/Developer/afkpilot` | `kitepon/afkpilot-kitepon` | main-serverの公開relay |
 
-公開面は `https://afk.kitepon.dev`。Access は `kitepon@gmail.com`、セッション 720h。Desktop の API/uplink と `/update/*` `/desktop-update` `/download/*` だけ Bypass。Caddy は `192.168.1.2:18870`。公式 `Grok Build Desktop.app` は残し、運用は `Grok Build Desktop (kitepon).app`（Windows NSIS / Linux AppImage も同 appId）。
+どちらも自作コア製品ではなく、単独repoの制御をdotagentsへ移さない。
 
-禁止: 上流 `phuryn/*` への push。公式 dmg の上書き。コア11＋toolchain 3 の product ID 追加。第三者本体への無関係 patch。
+## 製品側の正本
 
-## 更新
+- Desktop overlay: `grok-build-vscode/KITEPON.md`、`docs/desktop.md`、`docs/desktop-update-spec.md`
+- AFK Pilot: `afkpilot/docs/repositories.md`、`docs/CICD.md`、`deploy/kitepon/README.md`
 
-入口は `bin/update-grok-community-overlay.sh`（dirty なら停止、`upstream/main` へ rebase、focused test。`--push` で origin へ `--force-with-lease`）。ビルドと本番 compose は別手。詳細は grok-build-community-overlay runbook。
+製品の操作や障害対応では、上記の製品文書を直接読む。この文書へ手順や可変設定を複製しない。
 
-Desktop のレール「Update available」は kitepon feed（`https://afk.kitepon.dev/update/{mac,win,linux}/`）の新しい配布物合図。ボタンは公式 dmg を開かず、electron-updater で kitepon 成果物を入れて Restart する。サーバー側の自己更新通知は無い。
+## 工場が所有する接続
 
-## 差分の置き場
+- 公開relayの工場上の接続先は`https://afk.kitepon.dev`、配置hostはmain-serverである。
+- `bin/update-grok-community-overlay.sh`は、工場から両repoの`scripts/update-overlay.sh`を呼ぶだけの接続器である。更新・検証・pushは各製品入口が所有し、この接続器へ製品内部のcommandやrelease・deploy判断を置かない。
+- host対応と工場での利用可否は[host matrix](factory-host-product-matrix.md)へ記録する。
 
-Desktop: 既定リレー `wss://afk.kitepon.dev`、パッケージ済みでも `GROK_RELAY_URL` / `~/.grok/afk-relay.json`、updater は kitepon feed、appId/profile 分離、空 cwd の回復。
+## 跨製品の順序
 
-AFK: `RELAY_DEVICE_STORE` のファイル永続、`deploy/kitepon/`。`web/vendor` は手で持たず、必要なら上流手順の `npm run sync-ui`。`web/chat.html` は vendor ではない。
-
-## リモートでプロジェクトを足す
-
-入口は PROJECTS の `＋`。`$HOME` 配下のディレクトリ一覧で、`~/Developer` があればそこから始める。ホーム自体は追加しない。外す操作はデスクだけ。
-
-届ける面は二つ。Desktop host が `listHostDir` / パス付き `addProjectFolder` を処理し、AFK の vendored `chat.js` と `web/chat.html` が一覧 UI と即送信を持つ。片方だけ新しいと `Loading folders...` のまま止まる。`hostDirListing` に会話スコープを付けない。`listHostDir` は identity 復元の outbox に入れない。
-
-Desktop の差し替えは席でアプリを開き直す。動いているプロセスは古い asar のまま。リモート作業中に Desktop を quit しない（uplink が切れ、その作業も止まる）。
+Desktopが新しいrelay契約を必要とする変更だけは、AFK Pilot側が互換契約と配備順を所有する。正本は`afkpilot/docs/repositories.md`と`docs/CICD.md`であり、dotagentsは依存関係を参照して工場smokeの順序へ反映する。

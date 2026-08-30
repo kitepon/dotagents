@@ -13,7 +13,7 @@ description: 統括レーン（①計画に中断が組込済み②受入が多�
 - host 内の子は`spawn_subagent`を使う。工場roleは`implementer`と`refuter`。円卓の代替ではない。modelは親継承を避け、docs/02_models.md 順位表の当該役割のGrok配置（model×effort）を毎回明示する。
 - 日常shellはGrok nativeの`run_terminal_command`。aiterm永続PTYは外部子（Claude/Codex/Composer）を張る時だけ使い、Grok親の日常shellへ流さない。
 - MCPは`search_tool`でschemaを取ってから`use_tool`する。Claudeの`mcp__*`名前やCodexの`spawn_agent`を正入口にしない。
-- `gpt_connector`は親直轄のconsultation専用。Worker・実装・shellの担当にしない。timeout後は同じslugをsessionsで回収する。
+- `gpt_connector`は親直轄のconsultation専用。Worker・実装・shellの担当にしない。製品操作は[gpt-connector skill](../gpt-connector/SKILL.md)から製品正本へ辿り、このappendixへ複製しない。
 - ClaudeのWorkflow / Agent matcherと、Codex nativeの`agent_type`/`fork_turns`はこの入口の正本ではない。
 
 ## 固定RecipeのGrok入口

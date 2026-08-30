@@ -44,9 +44,9 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
       "<HOME>/Developer/aiterm-mcp",
       "<HOME>/Developer/codex-sidecar",
       "<HOME>/Developer/aishell",
-      "<HOME>/Developer/Observer",
       "<HOME>/Developer/ServerManager",
-      "<HOME>/Developer/peertable"
+      "<HOME>/Developer/peertable",
+      "<HOME>/Developer/unai"
     ]
   }
 }
@@ -63,27 +63,6 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
 - 実例: caveat の UserPromptSubmit / Stop hook（罠シグナルの提示・セッション状態の退避）。配線は caveat 側の正典に従い、caveat MCP 導入とセットで適用する。
 - **Spotter hookは手挿ししない**: 対象projectで `spotter install -y` を実行し、Spotter自身にproject markerとClaude 5 hookを管理させる。PATH上のThroughlineが解決できればauditor contextは既定ON。全projectへglobal発火させる旧`--user`方式はdaemon proliferationを再発させるため非採用。
 - **Lattice導線hookは手挿ししない**: `lattice hooks install --host claude|codex` を実行し、Lattice自身にsensor気づかせ導線を管理させる。
-
-## Observer parent Stop hook（Claude）
-
-Observerのparent Stop entryは手書きしない。Observer配布済みの`observer-hook-config`からversioned fragmentを取得し、dotagents adapterが既存hookを保ったまま正規化する。既定はdry-runであり、実端末の`--apply`とhook trustはH gateである。
-
-```bash
-apply-observer-hook-config --observer-hook "$HOME/.local/bin/observer-parent-stop-hook" \
-  --state-root "$HOME/.local/state/observer"
-apply-observer-hook-config --apply --observer-hook "$HOME/.local/bin/observer-parent-stop-hook" \
-  --state-root "$HOME/.local/state/observer"
-apply-observer-hook-config --restore "$HOME/Archives/dotagents-observer-hook-config-<timestamp>.tar.gz"
-```
-
-`--state-root`はpreflight、`observer parent ... run`、両providerのStop hookで同じabsolute pathを使う。
-省略や既定rootへの暗黙fallbackは認めず、以前のstate rootを持つ同一Observer targetはcanonical一件へ置換する。
-
-`settings.json`が存在しない・空の場合もadapterがobjectとして扱う。symlink、Observer CLI不在、fragment schema不一致、candidate verifier不一致はfail loudであり、既存の他製品Stop hookを削除して補うことはしない。
-`--apply`は変更前の存在有無、mode、uid／gidと内容を0600 archiveへ記録し、既存configのmode／ownerを
-保持する。`--restore`は同じ`HOME`／`CODEX_HOME`で、symlinkでない本人所有archiveと固定manifest／member
-集合を検証してから二設定を原子的に復元する。途中失敗はrestore開始前状態へ戻し、元々absentだったconfigは
-削除する。manifest導入前の旧archiveや手製tarをrestoreへ流用しない。
 
 - **Claude hook の正規入口**: [`../bin/apply-claude-config.sh`](../bin/apply-claude-config.sh) が下記のClaude hook jq断片を `~/.claude/settings.json` へ冪等に追加する。既存entry・model・permissions・他ツールの設定は変更しない。断片は配線内容の正本として残す。
 - **計画レーン案内 hook（全端末必須・下記）**: プラン承認直後に「計画文書の作法」を注入する。レーンの発動条件はグローバル正典「作業レーンと統制」に従う（本書へ条件を複製しない）。ペイロードは同期される [`../bin/plan-gate-hook.sh`](../bin/plan-gate-hook.sh)（`./install.sh` で `~/.local/bin/plan-gate-hook` へ symlink）。初期設計は [archive/2026-07_plan-gate-hook.md](archive/2026-07_plan-gate-hook.md)、現行のレーン裁定はグローバルCLAUDE.md／AGENTS.mdを正とする。

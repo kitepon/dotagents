@@ -194,10 +194,25 @@ done
 contains "$ROOT/claude/skills/auto-deploy-on-push/SKILL.md" 'GitHub Actions'
 # shellcheck disable=SC2016 # backticks are literal Markdown from the skill contract.
 contains "$ROOT/claude/skills/gpt-connector/SKILL.md" '正規MCP server IDは `gpt_connector`'
-contains "$ROOT/claude/skills/gpt-connector/SKILL.md" 'Oracle/OpenAI APIへの暗黙fallbackはしない'
+contains "$ROOT/claude/skills/gpt-connector/SKILL.md" 'https://github.com/kitepon/gpt-connector#readme'
+contains "$ROOT/claude/skills/gpt-connector/SKILL.md" '製品の操作契約を複製しない'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '共通契約'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '委譲契約'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" 'references/workflow-templates.md'
+
+# gpt-connectorは全harnessで同じ製品正本を指し、各面にはrouting差分だけを置く。
+for harness in claude codex grok cursor; do
+  file="$ROOT/$harness/skills/gpt-connector/SKILL.md"
+  [ -f "$file" ] || fail "$file がない"
+  frontmatter_is_name_and_description_only "$file"
+  contains "$file" '`gpt_connector`'
+  contains "$file" '`gpt-connector-mcp`'
+  contains "$file" 'https://github.com/kitepon/gpt-connector#readme'
+  contains "$file" '製品の操作契約を複製しない'
+done
+
+contains "$ROOT/codex/skills/oracle/SKILL.md" '../../../docs/archive/2026-08_06_oracle-mcp.md'
+contains "$ROOT/codex/skills/oracle/SKILL.md" '通常入口はgpt-connector'
 
 for command in auto-deploy-on-push polish-github; do
   file="$ROOT/claude/commands/$command.md"

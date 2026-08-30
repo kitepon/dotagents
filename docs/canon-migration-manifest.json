@@ -107,7 +107,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- 工場の現役管理対象は計11製品。自作コア10製品（Caveat／Throughline／Spotter／Lattice／gpt-connector／aiterm-mcp／codex-sidecar／AIShell／Observer／ServerManager）と、公開CLIだけをblack-box管理する第三者製品MarkItDownである。端末能力を担う10製品のうちAIShellはmacOS arm64専用、ObserverはmacOS専用であり、非対応hostでは構造的な`unsupported`として扱う。LatticeはCodegraphを完全吸収した正式後継であり、独立Codegraphはretired／not_applicableの履歴だけを保持して現役製品・依存・配線に含めない。Claude Code CLI／Codex CLI／Grok Buildは別区分の基盤toolchainとして管理し、Oracleはv1互換・rollback専用とする。現役契約はLattice `docs/01_integration-package.md`と本repoの製品契約台帳・host matrix、導入経緯は[完了plan](docs/archive/plan_lattice-factory-integration.md)および[Observer編入plan](docs/archive/plan_observer-core-integration.md)が正。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は各製品のversion入口・診断・adapter・禁止事項を所有する。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
+      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は製品ID、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host/wire互換、製品文書へのpointerだけを所有する。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -116,7 +116,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- オーナーは、dotagentsの統括AIが**自作コア製品**の正規repoへ必要な修正を行い、version更新、release準備、publish、公開後smokeまで管理することを明示許可している。コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。これは責務範囲の恒久裁定であり、第三者製品のfork/patch許可や、本番deploy・credential・意図的障害・registry publish等のH操作に対する目的/影響/rollback説明と実行時承認を省略するものではない。各製品repoの正典・release gate・独立履歴を守る。**コア製品のrelease gateは、共通憲法の「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とする**（reference実装はAIShell `scripts/verify-release-commit.mjs`＋`prepublishOnly`）。gate未実装の製品は、次にそのrepoでrelease作業を行うwaveで同時に導入する。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。release gateは「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とし、AIShellの`scripts/verify-release-commit.mjs`＋`prepublishOnly`をreference実装とする。gate未実装の製品は、次にrelease作業を行うwaveで同時に導入する。"
+      "receiver_text": "- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、製品側gate通過後の公開probeとhost/wire横断受入だけを担当する。publish対象を既定ブランチの祖先に限る共通規則は維持する。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -125,7 +125,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- **工場欠陥は重大度とPhaseで処理する（本リポ固有の恒久裁定）**: コア製品、ServerManager/BugHub、dotagents所有の連携で再現した欠陥のうち、データ損失、security・認可・秘密漏洩、公開契約・履歴破壊、回復不能、現在のcritical pathまたはPhase受入を塞ぐP0/P1だけを即時修理する。非クリティカル欠陥は最小再現・影響・所有repoを既存planのmaintenance queueへ一度記録して本筋を続け、Phaseの通常TODO後、full regression/Phase監査前のmaintenance wave一回で重複統合・再現確認・repo別修理・focused/related gate・repo別commitまで閉じる。欠陥ごとのplan、Control、ADR、独立監査、receiptは作らない。**原因と修理所有者がコア製品、ServerManager/BugHub、dotagentsのいずれにも属さない第三者製品または基盤toolchain本体の欠陥は、dotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とする。** ただしdotagents所有adapter・設定生成・互換projectionの欠陥はdotagents欠陥であり、外部製品名が入力に現れるだけで範囲外へ逃がさない。権限外変更、コア製品のpublish・本番deploy・credential/login・意図的障害試験は、理由と必要条件を記録しH承認待ちとしてcarry overする。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 工場の再現欠陥の重大度分類（P0/P1即時修理の閾値）とmaintenance wave処理は[shared/orchestrate/contract.md](../shared/orchestrate/contract.md)「Phase maintenance」が正で、本台帳へ複製しない。dotagents固有の境界: 原因と修理所有者が第三者製品または基盤toolchain本体である欠陥はdotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とし、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする（外部製品名が入力に現れるだけで範囲外へ逃がさない）。権限外変更（第三者本体のfork/patch）は範囲外として記録する。自作製品の本番deploy・credential利用・意図的障害試験は目的・影響・戻し方を記録して同一waveで進め、H承認待ちへ分解しない。"
+      "receiver_text": "- 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。"
     },
     {
       "receiver_path": "docs/02_models.md",
@@ -170,7 +170,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "3. **趣旨・原則・残件は [PLAN.md](PLAN.md)（憲章＝聖典 v4）が正**。文書は3分類で管理する——①趣旨 ②プラン（docs/ に作る。目的・判断理由・受入条件と工程正本への導線を持つ） ③役目を終えたら [docs/archive/](docs/archive/) へ退避。環境まわりの作業はまず PLAN.md の残件と docs/ の進行中プランで現在地を拾い、判断に迷ったら原則に立ち返る。調査の前に [rag/INDEX.md](rag/INDEX.md) と caveat を検索する（同じ調査を繰り返さない）。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 文書はregistry上の5種へ機械分類する。変動する現行値は構造化正本から生成し、current文書は[工場の現行状態](factory-current-state.md)を参照する。完了した文書は `archive/` へ退避し、証拠は`evidence/`へ固定する。"
+      "receiver_text": "- 文書はregistry上の5種と所有roleへ機械分類する。変動する現行値は構造化正本から生成し、current文書は[工場の現行状態](factory-current-state.md)を参照する。完了文書は`archive/`、固定証拠は`evidence/`へ置き、製品内部契約は各製品repoへ返す。"
     },
     {
       "receiver_path": "docs/01_project-layout.md",
@@ -197,7 +197,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "- **規範**: ベルの共通憲法（`shared/constitution.md`正本＋host delta）・本憲章の原則・orchestrate（統括の型）・02_models.md（役割→モデル対応の唯一の参照点）・01_project-layout.md（フォルダ構成標準）\n- **同期ハブ**: install.sh が skill / command / agents / rule / bin / 罠DB を全端末へ symlink 配布。GitHub が真実の源\n- **知識台帳**: rag/（調査の複利棚）・docs/（決定と計画）。罠DB は Caveat 自身が管理（`~/.caveat/own` → private の Caveat-Private・v0.15+。dotagents 外）",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する。Latticeがdigestで束縛した既存のroot receiptだけはpathを動かさず`evidence`へ分類し、新しい証拠は`docs/evidence/`へ置く（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
+      "receiver_text": "- 規範の入口: ルート [../AGENTS.md](../AGENTS.md) は全AI向けのproject正典であり、Claude Code はルート [../CLAUDE.md](../CLAUDE.md) の `@AGENTS.md` 経由で取り込む。共通憲法は `shared/constitution.md`、host固有差分は各host delta、runtime配布物は生成物として管理する。\n- 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-wsl-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。"
     },
     {
       "receiver_path": "docs/00_overview.md",
@@ -215,7 +215,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "- **役目を終えた文書は docs/archive/ へ退避**し、docs/ 直下は生きた文書だけに保つ。本憲章の旧版は [docs/archive/2026-07_plan-v3-fable-era.md](docs/archive/2026-07_plan-v3-fable-era.md)。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "# docs/ の地図（正典入口）\n\ndotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は**生きた文書だけ**を置き、役目を終えた文書は [archive/](archive/) へ退避する。Latticeがdigestで束縛した既存のroot receiptだけはpathを動かさず`evidence`へ分類し、新しい証拠は`docs/evidence/`へ置く（文書3分類の規約は [../PLAN.md](../PLAN.md) 憲章「文書の作法」）。\n"
+      "receiver_text": "dotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は原則として生きた文書だけを置き、役目を終えた文書は [archive/](archive/) へ退避する。ControlやLatticeが固定パスを束縛する履歴・証拠・互換stubだけは直下の同じpathを保ち、registryで`history`／`evidence`へ落として通常の読書入口から外す。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",
@@ -224,7 +224,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- **工場管理対象11製品**: 自作コア10製品＝Caveat（罠知識）・Throughline（セッション継続）・Spotter（未使用ツール監査）・Lattice（工程graphとコード構造理解）・gpt-connector（ChatGPT接続）・aiterm-mcp（PTYと外部モデル枠）・codex-sidecar（Claude親からのCodex実行）・AIShell（macOS native開発面）・Observer（親watchと監査）・ServerManager（中央運用管理）。MarkItDownは自作コアではなく、公開CLIだけを使う第三者管理製品。LatticeはCodegraphを完全吸収した正式後継で、独立Codegraphはretired／not_applicableの履歴だけを保持する。Claude Code CLI・Codex CLI・Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用。BugHubはServerManager内部コンポーネント（[Lattice編入記録](docs/archive/plan_lattice-factory-integration.md)・[Observer編入記録](docs/archive/plan_observer-core-integration.md)）。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は各製品のversion入口・診断・adapter・禁止事項を所有する。AIShellはmacOS arm64専用で、非対応hostは構造的`unsupported`とする。LatticeはCodegraphの正式後継であり独立Codegraphを現役の製品・依存・配線へ含めない。Observerは2026-08-16に工場コアから撤去し、現役の製品・依存・配線・`products.observer`へ含めない。unaiはv0.2.0で正規CLI・read-only診断・4 host公式installerを備え、wire v8で編入済みである。Claude Code CLI、Codex CLI、Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用である。"
+      "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は製品ID、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host/wire互換、製品文書へのpointerだけを所有する。"
     },
     {
       "receiver_path": "docs/02_models.md",

@@ -2,6 +2,7 @@
 *.swp
 *.swo
 *~
+/node_modules/
 
 # Python 実行時生成物（lib/orchestrate/hook_state.py 等を import した端末で発生）
 __pycache__/

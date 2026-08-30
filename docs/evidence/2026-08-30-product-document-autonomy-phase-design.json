@@ -1,0 +1,22 @@
+{
+  "cwd": "/Users/kite/Developer/dotagents",
+  "control_id": "product-document-autonomy-20260830",
+  "actor_id": "bell-parent-20260830",
+  "expected_revision": 3,
+  "phase": "design",
+  "state": "completed",
+  "evidence": [
+    {
+      "type": "file",
+      "ref": "docs/evidence/2026-08-30-product-document-autonomy-audit.md",
+      "digest": "21844c729601057524710b987b002f1932370687f7c729185cc5e4f652b82440",
+      "observed_at": "2026-08-30T01:25:00.000Z"
+    }
+  ],
+  "decision": {
+    "type": "decision",
+    "ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+    "digest": "d95c8541d7871bf992f6f0a0f76bd7b14ca003ba598e442e314e270d2de9a064",
+    "observed_at": "2026-08-30T00:59:55.000Z"
+  }
+}

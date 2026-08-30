@@ -26,6 +26,7 @@ jobs:
     uses: ./.github/workflows/factory-full-ci.yml
     with:
       environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
-      documentation-command: make lint-md
+      dependency-command: npm ci --ignore-scripts
+      documentation-command: make lint-md lint-current-docs
       full-command: >-
         node --version && npm --version && shellcheck --version && rg --version && codex --version && make ci

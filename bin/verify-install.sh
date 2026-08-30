@@ -805,6 +805,7 @@ for f in "$REPO/bin"/*.sh; do
 done
 for f in "$REPO/bin"/*.mjs; do
   if [ -e "$f" ]; then
+    [ "$(basename "$f")" != render-current-docs.mjs ] || continue
     installed="$HOME/.local/bin/$(basename "$f" .mjs)"
     check "$installed" "$f"
     if [ ! -x "$installed" ]; then echo "FAIL: 配布CLIが実行不能: $installed"; fail=1; fi

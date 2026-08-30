@@ -1,10 +1,199 @@
 {
-  "schema": "dotagents.document-registry.v1",
+  "schema": "dotagents.document-registry.v3",
   "fact_sources": {
     "factory_current_state": "lib/factory/deployment-contract.mjs",
     "global_policy": "shared/constitution.md"
   },
   "generated_current_state": "docs/factory-current-state.md",
+  "ownership_policy": {
+    "dotagents_owns": [
+      "integration",
+      "product-pointer",
+      "policy",
+      "generated",
+      "history",
+      "evidence"
+    ],
+    "product_repo_owns": [
+      "install",
+      "configuration",
+      "state",
+      "schema",
+      "migration",
+      "diagnostic-semantics",
+      "recovery",
+      "update",
+      "ci",
+      "release"
+    ],
+    "product_contract_allowed_fields": [
+      "id",
+      "repo",
+      "version_entry",
+      "diagnostics_entry",
+      "schema_id",
+      "adapter_projection",
+      "privacy",
+      "host_ref",
+      "product_doc_ref"
+    ],
+    "product_contract_table_columns": [
+      "ID / repo",
+      "version・公開diagnostics",
+      "工場projection",
+      "製品側の正本"
+    ],
+    "product_contract_column_fields": {
+      "ID / repo": [
+        "id",
+        "repo"
+      ],
+      "version・公開diagnostics": [
+        "version_entry",
+        "diagnostics_entry",
+        "schema_id"
+      ],
+      "工場projection": [
+        "adapter_projection",
+        "privacy",
+        "host_ref"
+      ],
+      "製品側の正本": [
+        "product_doc_ref"
+      ]
+    },
+    "product_pointer_allowed_headings": [
+      "工場契約",
+      "工場での位置付け",
+      "製品側の正本",
+      "工場が所有する接続",
+      "跨製品の順序"
+    ],
+    "product_pointer_forbidden_headings": [
+      "導入",
+      "設定",
+      "状態",
+      "schema",
+      "migration",
+      "診断",
+      "復旧",
+      "更新",
+      "ci",
+      "release",
+      "build",
+      "deploy"
+    ]
+  },
+  "archive_relocations": [
+    {
+      "old_path": "docs/06_gpt-connector.md",
+      "new_path": "docs/archive/2026-08_06_gpt-connector-product-control-history.md",
+      "preserve_old_path": true,
+      "old_path_mode": "current-replacement",
+      "archive_sha256": "83f8454796f7eb4ef1a3e381396ecfaf3aa5485a409151b164768faf4c88b62c"
+    },
+    {
+      "old_path": "docs/06_oracle-mcp.md",
+      "new_path": "docs/archive/2026-08_06_oracle-mcp.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "82ec0e6fd2f0d187583e760d3425fe3705d65ccced1269aa2c48fe3ce8f268c1"
+    },
+    {
+      "old_path": "docs/factory-product-contracts.md",
+      "new_path": "docs/archive/2026-08_factory-product-contracts-pre-autonomy.md",
+      "preserve_old_path": true,
+      "old_path_mode": "current-replacement",
+      "archive_sha256": "59abbaa76e61145786c8d3301d8504c5e80fadb07b8d5da78c5e2da49c80518c"
+    },
+    {
+      "old_path": "docs/factory-reporter-runbook.md",
+      "new_path": "docs/archive/2026-08_factory-reporter-runbook-v1-v8-history.md",
+      "preserve_old_path": true,
+      "old_path_mode": "current-replacement",
+      "archive_sha256": "7048b44e8c864eefe24c17847089aa462b83c111e8b1d498d683e8a85271d907"
+    },
+    {
+      "old_path": "docs/plan_canon-zerobase-audit.md",
+      "new_path": "docs/archive/2026-08_plan_canon-zerobase-audit.md",
+      "preserve_old_path": true,
+      "old_path_mode": "compatibility-stub",
+      "archive_sha256": "bb849b937b3fa9f0e2f0b99d37e644ea0097d8fd3540f446908ce2f69352f14c",
+      "old_path_sha256": "6f942275af58e0856135b385c7117133a2c5f5abc3df33d152263c7c603ca4b6"
+    },
+    {
+      "old_path": "docs/plan_cursor-parent-host.md",
+      "new_path": "docs/archive/2026-08_plan_cursor-parent-host.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "baf941649cbd71e5d655d2775137f0cd51f8f54ed0ef4da37d49d4dd0ee6250b"
+    },
+    {
+      "old_path": "docs/plan_factory-ci-efficiency.md",
+      "new_path": "docs/archive/2026-08_plan_factory-ci-efficiency.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "68d90ee9a92b126aad3137155e6f12f4f2cee601af8ba5d01bf1c26de5bef48f"
+    },
+    {
+      "old_path": "docs/plan_factory-master.md",
+      "new_path": "docs/archive/2026-08_plan_factory-master.md",
+      "preserve_old_path": true,
+      "old_path_mode": "compatibility-stub",
+      "archive_sha256": "2316b9288798433a12518a9ad36d1c2bb98b5f3f92759c440cf6e325c8213357",
+      "old_path_sha256": "ca7e3290e67d0975960354c3dd93855ebd1fbf148fb69a0f71dc621eafba1e3e"
+    },
+    {
+      "old_path": "docs/plan_harness-terminology-refactor-20260824.md",
+      "new_path": "docs/archive/2026-08_plan_harness-terminology-refactor-20260824.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "156d2934c172ac72ca9149fb5e507440acf03aa18e61ff1955d583bea03f426b"
+    },
+    {
+      "old_path": "docs/plan_lattice-session-context-hook.md",
+      "new_path": "docs/archive/2026-08_plan_lattice-session-context-hook.md",
+      "preserve_old_path": true,
+      "old_path_mode": "compatibility-stub",
+      "archive_sha256": "91c22bbd30864c9899d41df177254109bc798f896c733f8ae945360deecd5257",
+      "old_path_sha256": "37ec568505cbce2e843a7256208adf40380a991da280e3f0ac1a76da76de5f32"
+    },
+    {
+      "old_path": "shared/runbooks/grok-build-community-overlay.md",
+      "new_path": "docs/archive/2026-08_grok-build-community-overlay-runbook.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "662c1443350316334566d9ff32aeab4248809988d9acd63821f75cc124886aa6"
+    },
+    {
+      "old_path": "docs/plan_grok-parent-host.md",
+      "new_path": "docs/archive/2026-08_plan_grok-parent-host.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "d4d4b5319914b324897b7677af38a3dd81cbef64a401a1ce45cb4bf833e4a634"
+    },
+    {
+      "old_path": "docs/plan_windows-pwsh7-aiterm-psmux-normalization-20260825.md",
+      "new_path": "docs/archive/2026-08_plan_windows-pwsh7-aiterm-psmux-normalization-20260825.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "fc2ba2da2b832a17b7ed9f44e0698d6fabd0cff59177ed27fc282b95d47b6fe3"
+    },
+    {
+      "old_path": "docs/handoff_factory-deployment-closure-20260811.md",
+      "new_path": "docs/archive/handoff_factory-deployment-closure-20260811.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "42e009f1390131e5f5806dbc55de15af12d660d8bdf14cc3ab37697d361f567d"
+    },
+    {
+      "old_path": "docs/factory-host-product-matrix.md",
+      "new_path": "docs/archive/2026-08_factory-host-product-matrix-pre-autonomy.md",
+      "preserve_old_path": true,
+      "old_path_mode": "current-replacement",
+      "archive_sha256": "ab74a4d505a55465353c369672e96614d77972f4b7ac484d649d7e438f8ebb25"
+    }
+  ],
   "document_extensions": [
     ".md",
     ".mdc"
@@ -13,32 +202,199 @@
     {
       "id": "factory-current-state",
       "kind": "generated",
+      "owner_scope": "dotagents",
+      "role": "generated",
       "path_regex": "^docs/factory-current-state\\.md$"
     },
     {
       "id": "host-constitution",
       "kind": "generated",
+      "owner_scope": "dotagents",
+      "role": "policy",
       "path_regex": "^(?:claude/CLAUDE\\.md|codex/AGENTS\\.md|grok/AGENTS\\.md|cursor/AGENTS\\.md|cursor/rules/factory\\.mdc)$"
     },
     {
       "id": "immutable-evidence",
       "kind": "evidence",
-      "path_regex": "^(?:docs/evidence/|docs/r2-.*(?:receipt|baseline)-).*\\.md$"
+      "owner_scope": "dotagents",
+      "role": "evidence",
+      "path_regex": "^(?:docs/evidence/|evidence/|docs/r2-.*(?:receipt|baseline)-).*\\.md$"
+    },
+    {
+      "id": "raw-research-sources",
+      "kind": "evidence",
+      "owner_scope": "dotagents",
+      "role": "evidence",
+      "path_regex": "^rag/.*/raw/"
+    },
+    {
+      "id": "factory-integration-contracts",
+      "kind": "current",
+      "owner_scope": "dotagents",
+      "role": "integration",
+      "path_regex": "^docs/(?:factory-product-contracts|factory-reporter-runbook|factory-host-product-matrix)\\.md$"
+    },
+    {
+      "id": "product-pointers",
+      "kind": "current",
+      "owner_scope": "dotagents",
+      "role": "product-pointer",
+      "path_regex": "^docs/(?:06_gpt-connector|factory-grok-build-community-overlay)\\.md$"
+    },
+    {
+      "id": "fixed-path-history-and-stubs",
+      "kind": "history",
+      "owner_scope": "dotagents",
+      "role": "history",
+      "path_regex": "^docs/(?:elastic-orchestrator-.*|codex-native-routing-repair|plan_callout-hooks|plan_canon-zerobase-audit|plan_elastic-orchestrator|plan_factory-master|plan_gpt56-rewiring|plan_lattice-session-context-hook|plan_observer-core-integration|plan_peertable-onboarding|plan_peertable-wire-v7-execution)\\.md$"
     },
     {
       "id": "historical-record",
       "kind": "history",
+      "owner_scope": "dotagents",
+      "role": "history",
       "path_regex": "^(?:docs/archive/|docs/adr/|docs/migration/|docs/wire-v[1-7]-design\\.md$|docs/handoff_).*"
     },
     {
       "id": "versioned-wire-contract",
       "kind": "contract",
+      "owner_scope": "dotagents",
+      "role": "integration",
       "path_regex": "^docs/wire-v[0-9]+-design\\.md$"
     },
     {
       "id": "current-guidance",
       "kind": "current",
+      "owner_scope": "dotagents",
+      "role": "policy",
       "path_regex": ".*\\.(?:md|mdc)$"
+    }
+  ],
+  "archive_inventory": {
+    "roots": [
+      "docs/archive"
+    ],
+    "all_path_count": 89,
+    "all_paths_sha256": "df0e921854c69caac38f4143437fd4b34fd646cd07efc760fa73abc010b7242f",
+    "legacy_path_count": 74,
+    "legacy_paths_sha256": "01c1e6d06be0655fed973447341247f55476e6b8786e4b3cceb1ed1e86a51e03"
+  },
+  "current_surface_policies": [
+    {
+      "id": "gpt-connector-host-skills",
+      "path_regex": "^(?:claude|codex|grok|cursor)/skills/gpt-connector/SKILL\\.md$",
+      "required_regexes": [
+        "gpt_connector",
+        "https://github\\.com/kitepon/gpt-connector#readme",
+        "製品の操作契約を複製しない"
+      ],
+      "forbidden_regexes": [
+        "専用Chrome",
+        "product-owned state",
+        "timeout後",
+        "sessions?[^\\n]{0,20}回収",
+        "既知model slug",
+        "未知slug",
+        "暗黙fallback",
+        "通常Chrome",
+        "Oracle",
+        "login、送信",
+        "prompt再"
+      ]
+    },
+    {
+      "id": "gpt-connector-codex-section",
+      "path_regex": "^docs/05_codex-fragments\\.md$",
+      "section_heading_regex": "^## 3b\\. gpt-connector MCP",
+      "required_regexes": [
+        "gpt_connector",
+        "https://github\\.com/kitepon/gpt-connector#readme"
+      ],
+      "forbidden_regexes": [
+        "専用Chrome",
+        "product-owned state",
+        "timeout後",
+        "sessions?[^\\n]{0,20}回収",
+        "既知model slug",
+        "未知slug",
+        "暗黙fallback",
+        "通常Chrome",
+        "Oracle",
+        "prompt再"
+      ]
+    },
+    {
+      "id": "gpt-connector-orchestrate-routing",
+      "path_regex": "^(?:codex|grok|cursor)/skills/orchestrate/SKILL\\.md$",
+      "line_contains_regex": "gpt_connector",
+      "required_regexes": [
+        "../gpt-connector/SKILL\\.md",
+        "このappendixへ複製しない"
+      ],
+      "forbidden_regexes": [
+        "timeout",
+        "sessions?",
+        "既知slug",
+        "専用Chrome",
+        "product-owned state"
+      ]
+    },
+    {
+      "id": "gpt-connector-pointer",
+      "path_regex": "^docs/06_gpt-connector\\.md$",
+      "required_regexes": [
+        "gpt_connector",
+        "https://github\\.com/kitepon/gpt-connector#readme",
+        "製品側の正本"
+      ],
+      "forbidden_regexes": [
+        "専用Chrome",
+        "product-owned state",
+        "timeout後",
+        "sessions?[^\\n]{0,20}回収",
+        "既知model slug",
+        "未知slug",
+        "暗黙fallback",
+        "通常Chrome",
+        "Oracle",
+        "prompt再"
+      ]
+    },
+    {
+      "id": "gpt-connector-overview-row",
+      "path_regex": "^docs/00_overview\\.md$",
+      "line_contains_regex": "06_gpt-connector.md",
+      "required_regexes": [
+        "薄い接続pointer"
+      ],
+      "forbidden_regexes": [
+        "専用Chrome",
+        "session回収",
+        "復旧手順",
+        "製品状態"
+      ]
+    },
+    {
+      "id": "stable-host-matrix",
+      "path_regex": "^docs/factory-host-product-matrix\\.md$",
+      "required_regexes": [
+        "このmatrixは、工場が各hostと親AIへ要求する接続状態だけを定める",
+        "製品の操作手順を持たない"
+      ],
+      "forbidden_regexes": [
+        "Wave\\s*\\d",
+        "\\b01[a-z0-9]{6,}\\b",
+        "20\\d{2}-\\d{2}-\\d{2}",
+        "\\b\\d+\\.\\d+\\.\\d+\\b",
+        "\\b(?:install|apply|upsert|wired)\\b",
+        "実測済み",
+        "導入実測",
+        "着地",
+        "閉じた",
+        "\\.grok/hooks",
+        "\\.cursor/hooks",
+        "tool-db"
+      ]
     }
   ]
 }

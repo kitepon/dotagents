@@ -1,10 +1,8 @@
 ---
 name: gpt-connector
-description: ChatGPTのsecond opinion、gpt-connector MCPの診断・利用・timeout後のsession回収を頼まれた時に使う。
+description: ChatGPTのsecond opinionをgpt-connector MCP経由で依頼された時に使う。
 ---
 
 # gpt-connector
 
-正規MCP server IDは `gpt_connector`、commandは `gpt-connector-mcp`。詳細は [docs/06_gpt-connector.md](../../../docs/06_gpt-connector.md)。
-
-専用Chrome・product-owned state・明示model/effort・caller既知slugを守る。timeout時は `sessions` で回収し、Oracle/OpenAI APIへの暗黙fallbackはしない。Oracleは互換・rollback専用である。
+正規MCP server IDは `gpt_connector`、commandは `gpt-connector-mcp`。工場への接続は[dotagentsのpointer](../../../docs/06_gpt-connector.md)、製品の使い方は[gpt-connectorの正本](https://github.com/kitepon/gpt-connector#readme)に従う。このskillはClaude親から公開MCPを選ぶ入口だけを持ち、製品の操作契約を複製しない。

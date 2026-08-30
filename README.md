@@ -40,7 +40,7 @@ dotagents/
 │   ├── rules/factory.mdc … 同一本文の alwaysApply 規則（→ ~/.cursor/rules/factory.mdc）
 │   ├── skills/          … → ~/.cursor/skills/<name>
 │   └── agents/          … → ~/.cursor/agents/<name>.md
-└── bin/                 … → ~/.local/bin/<name>（.sh / .mjs は外れる。実行言語は shebang）
+└── bin/                 … 配布scriptだけ → ~/.local/bin/<name>（拡張子は外れる。repo専用rendererは非配布）
 ```
 
 ```mermaid
@@ -127,7 +127,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Grok skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Grok appendix。`~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
-| bin | `render-current-docs.mjs` | 配備契約から工場の現行状態を生成し、全document分類とcurrent文書の手書き現行値を検査 |
+| repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、archive inventory、凍結digestを検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場MCP 6を dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | bin | `apply-cursor-config` | Cursor の工場MCP 6を `~/.cursor/mcp.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
@@ -156,14 +156,14 @@ Claude command の Codex 正規入口は slash command の模造ではなく、�
 
 ### 工場コア製品の変更管理
 
-[工場の現行状態](docs/factory-current-state.md)に列挙された管理製品の追加・削除・第三者化・所有移管は、`PRODUCT_IDS`や表の1行だけを変えて終わりにしない。変更前に対象repo、所有者、自作コア/第三者管理区分、version入口、正規diagnostics、state/schema/migration、runtime error、host/connector期待、修正先repoを [有限契約台帳](docs/factory-product-contracts.md) へ記録する。
+[工場の現行状態](docs/factory-current-state.md)に列挙された管理製品の追加・削除・第三者化・所有移管は、`PRODUCT_IDS`や表の1行だけを変えて終わりにしない。製品repoで導入・設定・状態・schema・migration・診断・復旧・更新・releaseの正本を先に確定し、dotagentsの[統合契約台帳](docs/factory-product-contracts.md)には製品ID、repo、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host参照、製品文書へのpointerだけを記録する。
 
-1. 追加は、製品側の正規入口（第三者は公開CLI/APIだけ）を確定し、host matrix、更新経路、adapter、BugHubの固定product集合と期待matrix、privacy fixture、install/verifyを同じ独立waveで追加する。自作製品はnative diagnosticsを先に作り、dotagentsが内部DBを推測しない。
+1. 追加は、製品repoで単独導入・更新・診断・復旧・releaseを確定してから、dotagentsへhost matrix、adapter、BugHubの固定product集合と期待matrix、privacy fixture、工場rollout/verifyだけを追加する。自作製品はnative diagnosticsを先に作り、dotagentsが内部DBを推測しない。
 2. 削除は、`rg -a`とLattice sensorでconsumerを確認し、scheduler/outbox/runtime cursorを停止・drainしてから行う。BugHubの履歴を物理削除せず、移行中の旧clientは対象を`not_applicable`で報告し、server期待matrixから外す時期とclient/server双方が旧reportを扱う期間を明示する。
 3. 第三者化は、製品repoへのinstrumentation・内部state解釈・fork/patchを撤去し、version範囲付きblack-box adapterへ切り替える。追従不能な状態は`unsupported`または`unverified`であり、greenへ丸めない。
-4. 所有移管は、source/state/schemaの所有者、release/update経路、修正先repo、credential責務を更新する。dotagentsが持つのは統合契約であり、製品のsourceやstateを無断で移動しない。基準path・repo移動はこの変更とは別にオーナーの明示承認を取る。
-5. wire schema majorを変える時は [factory reporterランブック](docs/factory-reporter-runbook.md#11-bughub-wire-schema-major互換matrix) のserver-first・別endpoint・dual-run手順を使う。全repoを独立commit/rollback可能にし、各full gateとcanary後にだけ旧majorをretireする。
-6. 自作コア製品はdotagents統括AIの管理対象であり、必要な製品側修正、version更新、release準備、publish、公開後smokeまで担当する。公開前に対象version、変更範囲、互換性、影響、rollbackを提示してH承認を取り、各repoのfull gate→pack/install smoke→独立commit/push/tag→registry publish→`latest`/実CLI確認の順に進める。公開後の不具合は既存versionを黙って上書き・unpublishせず、dist-tag退避または修正版patch releaseで戻す。
+4. 所有移管は、製品repo側でsource/state/schema、release/update、credential責務と修正先を更新し、dotagentsは統合pointerとadapterだけを追従する。製品のsourceやstateをdotagentsへ移さない。基準path・repo移動はこの変更とは別にオーナーの明示承認を取る。
+5. wire schema majorを変える時は [factory reporterランブック](docs/factory-reporter-runbook.md#現役wire互換rollback) のserver-first・別endpoint・host単位cutoverを使う。全repoを独立commit/rollback可能にし、各gateとcanary後にだけ旧majorをretireする。
+6. 自作コア製品の修理・releaseは各製品repoの正典と機械gateで完遂する。dotagentsはその手順を中央規定せず、公開後のversion/diagnostics probe、host rollout、wire横断受入だけを行う。公開不具合のrollback方式も製品repoが所有する。
 
 ### Codex 9面の対応状況
 
@@ -336,17 +336,17 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 
 ## 自動アップデート（常設・全端末必須）
 
-`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。失敗は製品名付きで記録し、更新後のfactory contract scan/reportも継続する。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#9-agents-updateとの接続) を参照。
+`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。失敗は製品名付きで記録し、更新後のfactory contract scan/reportも継続する。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateとpost-update-gate) を参照。
 
 常設schedulerの生成・旧schedulerの整理・読み戻しは、上記host別一撃展開スクリプトだけが所有する。
 手書きのplist／crontab／Task XMLを第二の正本にしない。
 
 | host | 登録される入口 | 読み戻し・受入 |
 |---|---|---|
-| macOS | LaunchAgent `com.kite.agents-update` → `~/.local/bin/agents-update` | plist構文、登録状態、初回一撃展開中のfresh v8 delivery |
-| Linux | cron `# dotagents-agents-update-linux` → `setup-linux-factory --scheduled-update` | `server` profile、完全一致行、15製品、fresh delivery receipt |
-| WSL2 | cron `# dotagents-agents-update-wsl` → `setup-wsl-factory --scheduled-update` | 完全一致行、batch token、全15製品、fresh delivery receipt |
-| Windows native | Task `dotagents-agents-update` → `setup-windows-native-factory.ps1 -ScheduledRun` | SID／02:00／action、実Task起動、終了code、全15製品、fresh delivery receipt |
+| macOS | LaunchAgent `com.kite.agents-update` → `~/.local/bin/agents-update` | plist構文、登録状態、初回一撃展開中のfresh delivery。majorと製品集合は[工場の現行状態](docs/factory-current-state.md)と一致 |
+| Linux | cron `# dotagents-agents-update-linux` → `setup-linux-factory --scheduled-update` | `server` profile、完全一致行、現行製品集合、fresh delivery receipt |
+| WSL2 | cron `# dotagents-agents-update-wsl` → `setup-wsl-factory --scheduled-update` | 完全一致行、batch token、現行製品集合、fresh delivery receipt |
+| Windows native | Task `dotagents-agents-update` → `setup-windows-native-factory.ps1 -ScheduledRun` | SID／02:00／action、実Task起動、終了code、現行製品集合、fresh delivery receipt |
 
 旧自動更新を手動で調査する場合だけ、次を使う。一撃展開は自管理entryを冪等に置換し、既知の旧
 `agents-update`／`update-npm-globals` entryを整理する。

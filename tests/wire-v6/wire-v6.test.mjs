@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
@@ -14,11 +14,11 @@ const EXPECTED = [...V5_PRODUCT_IDS];
 test('v6正典はObserverをwire必須キーから外し、MarkItDownを第三者管理として固定する', async () => {
   const contracts = await readFile(resolve(import.meta.dirname, '../../docs/factory-product-contracts.md'), 'utf8');
   const matrix = await readFile(resolve(import.meta.dirname, '../../docs/factory-host-product-matrix.md'), 'utf8');
-  assert.match(contracts, /^# 工場管理製品と基盤toolchainの有限契約台帳$/mu);
-  assert.match(contracts, /### `markitdown`[\s\S]*所有\/修正先: 第三者/u);
-  assert.match(contracts, /### `observer`[\s\S]*wire v6\/v7の製品キーから削除/u);
+  assert.match(contracts, /^# 工場の製品統合契約台帳$/mu);
+  assert.match(contracts, /## 第三者・基盤toolchain[\s\S]*### `markitdown`[\s\S]*第三者のblack-box adapter/u);
+  assert.match(contracts, /### `observer`[\s\S]*wire v6\/v7を含む現役・rollback製品キーへ`products\.observer`を出さない/u);
   assert.doesNotMatch(matrix, /^\| Observer \|/mu);
-  assert.match(matrix, /Observerは[\s\S]*wire v6\/v7の必須キーからも削除/u);
+  assert.match(matrix, /独立CodegraphとObserverは現役製品またはconnectorとして扱わない/u);
   assert.doesNotMatch(contracts, /Observerは予約枠のまま未編入/u);
 });
 
@@ -53,6 +53,39 @@ test('wire v6のCodex routing診断は正典のmulti_agent_v2を検査する', a
   const source = await readFile(resolve(import.meta.dirname, '../../lib/factory/v5.mjs'), 'utf8');
   assert.match(source, /features\\\.multi_agent_v2/u);
   assert.doesNotMatch(source, /features\\\.multi_agent_v4/u);
+});
+
+test('Community overlay接続器は製品所有入口だけを呼ぶ', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'community-overlay-entrypoint-'));
+  try {
+    const desktop = join(root, 'desktop');
+    const afk = join(root, 'afk');
+    const log = join(root, 'calls.log');
+    const wrapper = resolve(import.meta.dirname, '../../bin/update-grok-community-overlay.sh');
+    const source = await readFile(wrapper, 'utf8');
+
+    assert.match(source, /scripts\/update-overlay\.sh/u);
+    assert.doesNotMatch(source, /git -C|vitest|electron-builder|docker compose|force-with-lease/u);
+
+    for (const [directory, name] of [[desktop, 'desktop'], [afk, 'afk']]) {
+      await mkdir(join(directory, 'scripts'), { recursive: true });
+      await writeFile(
+        join(directory, 'scripts', 'update-overlay.sh'),
+        `#!/bin/sh\nprintf '%s:%s\\n' '${name}' "$*" >> "$OVERLAY_CALL_LOG"\n`,
+        { mode: 0o755 },
+      );
+    }
+
+    const result = await runBash(wrapper, ['--push'], {
+      GROK_COMMUNITY_DESKTOP: desktop,
+      GROK_COMMUNITY_AFK: afk,
+      OVERLAY_CALL_LOG: log,
+    });
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(await readFile(log, 'utf8'), 'desktop:--push\nafk:--push\n');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 const product = (contractVersion = '6.0') => ({
@@ -119,6 +152,20 @@ function run(script, args, env = {}) {
       stderr,
       json: stdout ? JSON.parse(stdout) : null,
     }));
+  });
+}
+
+function runBash(script, args, env = {}) {
+  return new Promise((resolveRun) => {
+    const child = spawn('/bin/bash', [script, ...args], {
+      env: { ...process.env, ...env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('close', (code) => resolveRun({ code, stdout, stderr }));
   });
 }
 
