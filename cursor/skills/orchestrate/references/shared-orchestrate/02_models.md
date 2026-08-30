@@ -3,9 +3,9 @@
 <!-- Regenerate: node bin/render-orchestrate-skill-references.mjs --write -->
 # 02_models — 役割→モデル×エフォート順位表（唯一の参照点）
 
-<!-- 前提: 2026-08-19 更新（Claude 5 / GPT-5.6 / Grok 4.6 世代）。バージョン固定禁止（PLAN 原則9）。モデル名をこの表以外＋公認例外（codex/agents/*.toml・.codex-sidecar.yml）に書き散らさない -->
+<!-- 前提: 2026-08-19 更新（Claude 5 / GPT-5.6 / Grok 4.6 世代）。バージョン固定禁止（PLAN 原則9）。モデル名を判断としてこの表以外へ書き散らさない。runtimeが具体値を要求する実行projectionだけは下記の公認面へ置き、CIで本表との一致を固定する -->
 
-方針: skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への解決はこの表だけが担う。本書は役割を先に定義し、役割ごとに適したモデル×effortを1位〜3位で与える。ベンダー別レーンの表構造は撤廃した（オーナー裁定 2026-08-19）。世代交代時は**この1枚＋公認例外2種を更新して push すれば全端末が追従**する。更新トリガーはオーナーの宣言（PLAN 原則6）。
+方針: skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への判断はこの表だけが担う。本書は役割を先に定義し、役割ごとに適したモデル×effortを1位〜3位で与える。ベンダー別レーンの表構造は撤廃した（オーナー裁定 2026-08-19）。runtimeが具体値を要求する`codex/agents/*.toml`、`.codex-sidecar.yml`、`claude/agents/*.md`のfrontmatter、Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない。世代交代時は**この一枚と公認projectionを同じcommitで更新し、CIで一致を確認してpushする**。更新トリガーはオーナーの宣言（PLAN 原則6）。
 
 背骨: **役割が要求する能力で選び、順位は実測で昇降格する。ただし、現状維持に候補側だけの立証責任を負わせない。** 新しい有力候補は代表実務へ期限・範囲を切って投入し、成功率・手戻り・監査工数・総token・所要時間・quotaで現役と比較する。未検証の現役を「安全」、未検証の新顔を「危険」とは扱わない。
 
@@ -100,7 +100,7 @@ xAI公式値ではoffice/agentic系で最前線級、DeepSWE・TerminalBenchで�
 ## 指定と世代交代時の更新手順
 
 - Claude Code内はfloating alias（`fable`/`opus`/`sonnet`/`haiku`）だけを使う。Agent/Workflowのmodelとeffortは対応する場合に毎回明示し、Haikuへeffortを付けない。
-- Codexにfloating aliasがないため、`codex/agents/*.toml`と`.codex-sidecar.yml`は具体slugを持つ公認例外。世代交代時は本書と同一commitで更新する。
+- Codexにfloating aliasがないため、`codex/agents/*.toml`と`.codex-sidecar.yml`は具体slugを持つ公認projection。ClaudeのAgent frontmatterとWorkflow per-call値も、runtimeが要求する実行projectionとして本書と同一commitで更新する。
 - 外部CLIはpinせず`agents-update`でlatest追従する。model live catalogは実行直前に見る。
 - オーナーの世代交代宣言後、`grep -rn "前提:"`で影響面を列挙し、本書、公認例外、focused fixture、RAGを同時更新する。新規候補は小さな実戦比較を行い、失敗も次の配置判断へ残す。
 - 順位の変更は実測（役割配置実験の再走または実戦の成功率・手戻り）を根拠にし、実験記録をRAGへ残してから表を書き換える。
