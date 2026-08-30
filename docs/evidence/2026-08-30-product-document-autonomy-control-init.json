@@ -1,0 +1,38 @@
+{
+  "cwd": "/Users/kite/Developer/dotagents",
+  "control_id": "product-document-autonomy-20260830",
+  "objective_ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+  "actor_id": "bell-parent-20260830",
+  "document_refs": [
+    "docs/adr/0126-factory-documentation-ownership-sync.md",
+    "docs/adr/0132-document-current-state-registry.md",
+    "docs/adr/0133-product-document-autonomy-and-archive.md",
+    "docs/evidence/2026-08-30-product-document-autonomy-lattice-extraction.json",
+    "docs/evidence/2026-08-30-product-document-autonomy-scope-review.json"
+  ],
+  "budget": {
+    "max_worker_runs": 12,
+    "max_consultations": 2,
+    "max_external_runs": 2,
+    "max_wall_time_seconds": null,
+    "max_cost_microusd": null,
+    "max_runs_per_approach_family": 3,
+    "max_retries_per_assignment": 1,
+    "max_integration_runs": 4
+  },
+  "lane_admission": {
+    "contract_version": "dotagents.lane-admission.v1",
+    "conditions": {
+      "planned_interruption": false,
+      "chained_acceptance": true,
+      "multi_repo_write_coordination": true,
+      "decision_evidence_required": true
+    },
+    "decision": {
+      "type": "decision",
+      "ref": "docs/adr/0133-product-document-autonomy-and-archive.md",
+      "digest": "d95c8541d7871bf992f6f0a0f76bd7b14ca003ba598e442e314e270d2de9a064",
+      "observed_at": "2026-08-30T00:59:55.000Z"
+    }
+  }
+}
