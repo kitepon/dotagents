@@ -22,6 +22,11 @@ on:
         required: false
         default: all
         type: string
+      comparison_base:
+        description: workflow_dispatchまたはtagで使う明示的な比較元commit/ref
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -31,6 +36,7 @@ jobs:
     runs-on: [self-hosted, factory, linux-native]
     outputs:
       product_change: ${{ steps.changes.outputs.product_change }}
+      comparison_base: ${{ steps.changes.outputs.comparison_base }}
     steps:
       - name: checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -43,41 +49,58 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          DISPATCH_BASE: ${{ inputs.comparison_base }}
         run: |
           product_change=true
           reason="product change"
+          base=""
+
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            base="$DISPATCH_BASE"
+          elif [[ "$EVENT_NAME" == pull_request ]]; then
+            base="$BASE_SHA"
+          elif [[ "$EVENT_NAME" == push ]]; then
+            base="$BEFORE_SHA"
+          elif [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+            base="$DISPATCH_BASE"
+          fi
+
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            printf 'CI comparison base is required and must resolve to a commit (event=%s, base=%s).\n' "$EVENT_NAME" "$base" >&2
+            exit 2
+          fi
+          if ! base=$(git rev-parse --verify "$base^{commit}"); then
+            printf 'CI comparison base is required and must resolve to a commit (event=%s, base=%s).\n' "$EVENT_NAME" "$base" >&2
+            exit 2
+          fi
+          if [[ "$base" == "$GITHUB_SHA" ]] || ! git merge-base --is-ancestor "$base" "$GITHUB_SHA"; then
+            printf 'CI comparison base must be an earlier ancestor of GITHUB_SHA (base=%s, head=%s).\n' "$base" "$GITHUB_SHA" >&2
+            exit 2
+          fi
 
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then
             reason="tag"
           elif [[ "$EVENT_NAME" == workflow_dispatch ]]; then
             reason="manual run"
           else
-            base="$BEFORE_SHA"
-            if [[ "$EVENT_NAME" == pull_request ]]; then
-              base="$BASE_SHA"
-            fi
-
-            if [[ -n "$base" && ! "$base" =~ ^0+$ ]] && git cat-file -e "$base^{commit}"; then
-              found=false
-              non_markdown=false
-              while IFS= read -r -d '' file; do
-                found=true
-                if [[ "$file" != *.md ]]; then
-                  non_markdown=true
-                  break
-                fi
-              done < <(git diff --name-only -z "$base" "$GITHUB_SHA")
-
-              if [[ "$found" == true && "$non_markdown" == false ]]; then
-                product_change=false
-                reason="Markdown only"
+            found=false
+            non_markdown=false
+            while IFS= read -r -d '' file; do
+              found=true
+              if [[ "$file" != *.md ]]; then
+                non_markdown=true
+                break
               fi
-            else
-              reason="comparison base unavailable"
+            done < <(git diff --name-only -z "$base" "$GITHUB_SHA")
+
+            if [[ "$found" == true && "$non_markdown" == false ]]; then
+              product_change=false
+              reason="Markdown only"
             fi
           fi
 
           printf 'product_change=%s\n' "$product_change" >> "$GITHUB_OUTPUT"
+          printf 'comparison_base=%s\n' "$base" >> "$GITHUB_OUTPUT"
           printf 'CI classification: %s\n' "$reason"
       - name: documentation dependency install
         if: steps.changes.outputs.product_change == 'false' && inputs.documentation-command != '' && inputs.dependency-command != ''
@@ -86,6 +109,8 @@ jobs:
       - name: documentation check
         if: steps.changes.outputs.product_change == 'false' && inputs.documentation-command != ''
         shell: bash
+        env:
+          DOCUMENT_REGISTRY_BASE_REF: ${{ steps.changes.outputs.comparison_base }}
         run: ${{ inputs.documentation-command }}
       - name: skip product full CI
         if: steps.changes.outputs.product_change == 'false'
@@ -96,6 +121,8 @@ jobs:
   full:
     needs: classify
     if: needs.classify.outputs.product_change == 'true'
+    env:
+      DOCUMENT_REGISTRY_BASE_REF: ${{ needs.classify.outputs.comparison_base }}
     strategy:
       fail-fast: false
       matrix:

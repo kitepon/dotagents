@@ -4,7 +4,7 @@ set -euo pipefail
 
 DESKTOP_ROOT="${GROK_COMMUNITY_DESKTOP:-$HOME/Developer/grok-build-vscode}"
 AFK_ROOT="${GROK_COMMUNITY_AFK:-$HOME/Developer/afkpilot}"
-FORWARD_ARGS=()
+PUSH_REQUESTED=false
 
 usage() {
   cat <<'EOF'
@@ -23,7 +23,7 @@ EOF
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --push) FORWARD_ARGS=(--push) ;;
+    --push) PUSH_REQUESTED=true ;;
     -h|--help) usage; exit 0 ;;
     *) echo "未対応の引数です: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -41,7 +41,11 @@ run_product_entrypoint() {
   fi
 
   echo "=== $product_name ==="
-  "$entrypoint" "${FORWARD_ARGS[@]}"
+  if [ "$PUSH_REQUESTED" = true ]; then
+    "$entrypoint" --push
+  else
+    "$entrypoint"
+  fi
 }
 
 run_product_entrypoint "$DESKTOP_ROOT" "grok-build-desktop-kitepon"

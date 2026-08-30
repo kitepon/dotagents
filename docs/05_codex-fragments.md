@@ -189,18 +189,11 @@ directoryかつsymlinkでないことを先に確認し、不適合ならcache�
 
 中継はClaude側と共通で、owner-ownedかつsymlinkでない`$XDG_CACHE_HOME`（未設定時は`~/.cache`）配下の`dotagents/hooks/`に`SHA-256(session_id).SHA-256(repo-root).lattice-gantt.*`として置き、`.pending`／`.waiting`／`.result`／`.consumed`を7日後に掃除する。
 
-`lattice` CLI不在時は未導入INFOを一行返す。導入済みでstoreがないrepo、非git、`resume|compact`は
-沈黙する。storeが存在するのにtimeoutなら「status取得が期限超過」、CLI失敗なら「CLI実行失敗」、
-`lattice.todo_status_result.v1`／`v2`／`v3`不一致なら「status応答を検証できない」と区別したINFO一行を返す。正規status取得時は
-`.lattice/generated/gantt.html`の絶対`file://` URIと`active`／`next-ready`を、どちらかが存在する時だけ案内し、
-両方空なら沈黙する。HTML未生成時もhook自身は生成しない。`DOTAGENTS_LATTICE_HOOK=off`で無効化できる。HTMLやstore journalを直接parseする
-fallbackは持たない。
+受理するschema、案内対象、表示文、失敗時の分類は[`lib/lattice-hook.py`](../lib/lattice-hook.py)とfocused hook testを正とし、本書へ版別に複製しない。HTMLやstore journalを直接parseするfallbackと工程表の自動生成は持たない。`DOTAGENTS_LATTICE_HOOK=off`で無効化できる。
 
 ### Spotter Codex hook（工場コア・Spotter所有）
 
-対象projectで `spotter install -y` を実行する。Spotterがuser-level `SessionStart` / `UserPromptSubmit` / `Stop` の3本を同期command schemaでcanonical化し、projectの `.spotter/marker.json` がある時だけ発火する。`SessionStart` を `async:true` にしない（Codex CLI 0.144.1はasync hookをskipする）。dotagentsの `apply-codex-config` はSpotter entryを保持し、再実装・削除・trust変更をしない。
-
-検証は `spotter codex-hook diagnostics --project <project>` で `installed / compatible / canonical` を確認した後、対話Codex CLIの`/hooks`で3本をreviewし、新規sessionで `.spotter/hook-events.jsonl` の `spotter.hook_event.v1` を実火する。App／IDEでは`/hooks`をtrust入口にせず、CLI trust後にその入口の新規sessionを使う。機械診断の `configured-unverified` は設定合格であって、trust・実火完了を意味しない。
+対象projectで `spotter install -y` を実行する。生成entry、発火条件、診断、導入後確認は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とする。dotagentsの `apply-codex-config` はSpotter所有entryを保持し、再実装・削除・trust変更をしない。
 
 ## 10. MCP の親別 matrix と登録 / 疎通
 

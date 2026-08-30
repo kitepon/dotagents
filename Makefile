@@ -14,7 +14,7 @@ PYTHON := python3
 endif
 endif
 
-.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration canon-migration-gate lint-skills lint-hooks test-constitution test-current-docs test-install test-observer-hook-config test-observer-package test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ci help
+.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration canon-migration-gate lint-skills lint-hooks test-constitution test-current-docs test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ci help
 
 lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration lint-skills lint-hooks ## 静的 lint + skill/hook smoke
 
@@ -34,7 +34,11 @@ lint-constitution: ## 共通憲法＋host deltaと生成物の完全一致を照
 	./bin/verify-constitution-parity.sh
 
 lint-current-docs: ## 全document分類・現行状態生成物・手書き現行値を検証
-	node bin/render-current-docs.mjs --check
+	@if [ "$$GITHUB_ACTIONS" = "true" ] && [ -z "$$DOCUMENT_REGISTRY_BASE_REF" ]; then \
+		printf '%s\n' 'GitHub ActionsではDOCUMENT_REGISTRY_BASE_REFが必須です' >&2; \
+		exit 2; \
+	fi
+	node bin/render-current-docs.mjs --check --base-ref "$${DOCUMENT_REGISTRY_BASE_REF:-HEAD}"
 
 lint-canon-migration: ## 正典移設manifestの受け皿・L0ポインタ必須句を検証
 	node scripts/verify-canon-migration.mjs
@@ -69,12 +73,6 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/setup-linux-factory.sh
 	bash tests/install/setup-macos-factory.sh
 
-test-observer-hook-config: ## 隔離 HOME のObserver parent Stop hook transaction検証
-	bash tests/install/observer-hook-config.sh
-
-test-observer-package: ## sibling Observerの隔離install/reinstall/verify/rollback検証
-	bash tests/install/observer-package.sh
-
 test-update: ## cron 最小 PATH で NVM 配下の npm を解決できることを検証
 	bash tests/update/cron-env.sh
 
@@ -101,7 +99,7 @@ test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽
 	node --test tests/lattice-cutover/*.test.mjs
 	node bin/lattice-todo-inventory.mjs --verify-cutover
 
-ci: lint test-constitution test-current-docs test-install test-observer-hook-config test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ## ローカル/CI 共通の全ゲート
+ci: lint test-constitution test-current-docs test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ## ローカル/CI 共通の全ゲート
 
 help: ## タスク一覧
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \

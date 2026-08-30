@@ -40,7 +40,7 @@ const anthropicInput = (overrides = {}) => ({
   ...overrides,
 });
 
-// Codex CLI 0.144.3 の実測token_count rate_limits（rag/orchestration/provider-quota-and-claude-runtime.md）
+// Codex CLI 0.144.3 の実測token_count rate_limits（docs/archive/research/2026-07-15-provider-quota-and-claude-runtime.md）
 const makeCodexEvent = (overrides = {}) => ({
   limit_id: "codex",
   primary: { used_percent: 2.0, window_minutes: 10080, resets_at: 1784666224 },

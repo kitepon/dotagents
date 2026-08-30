@@ -60,9 +60,9 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
 ## hooks の方針
 
 - 自動化（「毎回 X したら Y」）は memory や指示ではなく hooks でしか成立しない——必要になったら update-config skill で settings.json に組む。
-- 実例: caveat の UserPromptSubmit / Stop hook（罠シグナルの提示・セッション状態の退避）。配線は caveat 側の正典に従い、caveat MCP 導入とセットで適用する。
-- **Spotter hookは手挿ししない**: 対象projectで `spotter install -y` を実行し、Spotter自身にproject markerとClaude 5 hookを管理させる。PATH上のThroughlineが解決できればauditor contextは既定ON。全projectへglobal発火させる旧`--user`方式はdaemon proliferationを再発させるため非採用。
-- **Lattice導線hookは手挿ししない**: `lattice hooks install --host claude|codex` を実行し、Lattice自身にsensor気づかせ導線を管理させる。
+- **Caveat hookは手挿ししない**: 工場はCaveatの一回setup入口だけを呼ぶ。対応host、生成物、再適用条件は[Caveat README](https://github.com/kitepon/Caveat#readme)を正とする。
+- **Spotter hookは手挿ししない**: 対象projectでは `spotter install -y` だけを呼ぶ。生成物・host別hook・連携オプション・再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とし、dotagentsのhook断片へSpotter entryを複製しない。
+- **Lattice導線hookは手挿ししない**: 一撃展開は `lattice hooks install --host <host>` をhostごとに一度呼ぶ。対応host、platform、生成物、statusの意味は[Lattice integration package「hooks導線」](https://github.com/kitepon/Lattice/blob/main/docs/01_integration-package.md#L116-L121)を正とする。
 
 - **Claude hook の正規入口**: [`../bin/apply-claude-config.sh`](../bin/apply-claude-config.sh) が下記のClaude hook jq断片を `~/.claude/settings.json` へ冪等に追加する。既存entry・model・permissions・他ツールの設定は変更しない。断片は配線内容の正本として残す。
 - **計画レーン案内 hook（全端末必須・下記）**: プラン承認直後に「計画文書の作法」を注入する。レーンの発動条件はグローバル正典「作業レーンと統制」に従う（本書へ条件を複製しない）。ペイロードは同期される [`../bin/plan-gate-hook.sh`](../bin/plan-gate-hook.sh)（`./install.sh` で `~/.local/bin/plan-gate-hook` へ symlink）。初期設計は [archive/2026-07_plan-gate-hook.md](archive/2026-07_plan-gate-hook.md)、現行のレーン裁定はグローバルCLAUDE.md／AGENTS.mdを正とする。
@@ -167,10 +167,7 @@ hook自身のcache markerは7日後に掃除する。cache baseと`dotagents/hoo
 
 #### Lattice工程表案内（SessionStart → UserPromptSubmit・読み取り専用）
 
-`source=startup|clear`のたびに、正規statusでstore上の`active`／`next-ready`のどちらかが存在する時だけ、
-SessionStartはLattice CLI呼び出しを待たずにbackground workerを起動する。次のUserPromptSubmitは同じsession×repoの中継結果を一度だけ配送し、まだ完了していなければ「status取得をバックグラウンドで実行中です。このINFOは依頼範囲を拡張しません。」と事実を一度だけ表示する。worker完了後はLattice工程表の安定パスと現在地を短いINFOとして表示し、両方空なら沈黙する。24時間スロットルは掛けない。hookは`lattice todo status`の
-`lattice.todo_status_result.v1`／`v2`をstrictに読み、HTMLや`.lattice/todo/`を直接解釈せず、
-`lattice todo gantt`も自動実行しない。既存entryを変更せず、次の2件だけ追加する。
+`source=startup|clear`のたびに、SessionStartはLattice CLI呼び出しを待たずにbackground workerを起動する。次のUserPromptSubmitは同じsession×repoの中継結果を一度だけ配送し、まだ完了していなければ取得中であることだけを表示する。worker完了後は、正規typed statusに案内すべき残工程がある時だけLattice工程表の安定パスと現在地を短いINFOとして表示する。受理するschema、案内対象、表示文、失敗時の分類は[`lib/lattice-hook.py`](../lib/lattice-hook.py)とfocused hook testを正とし、本書へ版別に複製しない。HTMLやstoreを直接解釈するfallbackと`lattice todo gantt`の自動実行は持たない。既存entryを変更せず、次の2件だけ追加する。
 
 中継はowner-ownedかつsymlinkでない`$XDG_CACHE_HOME`（未設定時は`~/.cache`）配下の`dotagents/hooks/`へ、`SHA-256(session_id).SHA-256(repo-root).lattice-gantt.*`として保存する。`.pending`／`.waiting`／`.result`／`.consumed`は7日後にhook自身が掃除する。
 
@@ -190,12 +187,7 @@ if ! jq -e --arg home "$HOME" '[.hooks.UserPromptSubmit[]?.hooks[]? | select(.ty
 fi
 ```
 
-`lattice` CLIが未導入のgit repoでは無言のno-opにせず、未導入で現在地を案内できない旨をINFO一行で
-返す。CLI導入済みで`.lattice/todo/`がないrepo、非git、`resume|compact`はstdout/stderr 0byte・exit 0。
-storeが存在するのにtimeoutなら「status取得が期限超過」、CLI失敗なら「CLI実行失敗」、不正JSON／schema不一致なら
-「status応答を検証できない」と区別したINFO一行を返す。正規statusを取得でき、
-`.lattice/generated/gantt.html`がregular fileなら絶対`file://` URIを表示し、未生成なら予定URIと
-`lattice todo gantt`の明示実行を案内する。`DOTAGENTS_LATTICE_HOOK=off`で無効化できる。
+配線後の動作と失敗分類は[`lib/lattice-hook.py`](../lib/lattice-hook.py)を正とする。`DOTAGENTS_LATTICE_HOOK=off`で無効化できる。
 
 #### C3 プラン更新忘れ（Stop・rolling baseline で毎ターン判定）
 

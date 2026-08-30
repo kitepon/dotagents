@@ -154,18 +154,11 @@ for f in "$HERE/cursor/agents"/*.md; do
   link_one "$f" "$HOME/.cursor/agents/$(basename "$f")"
 done
 
-# caveat own entries — Caveat v0.15+ manages its own sync (dotagents no longer
-# owns the trap DB). The knowledge repo lives at ~/.caveat/own as a standalone
-# git repo whose remote is the PRIVATE github.com/<you>/Caveat-Private (public
-# + private entries; the public subset is mirrored to Caveat-Public via
-# `caveat publish`). Set it up per machine with the tool, not a symlink:
-#   caveat sync --init            # first machine: gh-creates Caveat-Private, pushes
-#   caveat sync --init --repo <Caveat-Private-url>   # later machines: clones it
-# and thereafter `caveat sync` round-trips. This installer intentionally does
-# not wire ~/.caveat/own — that is Caveat's job now.
+# Caveatの状態はsymlink配布しない。host別一撃展開はCaveat READMEが定める
+# 製品setup入口を一度だけ呼び、dotagentsは内部path・remote・認証を判定しない。
 if [ -d "$HERE/caveat" ]; then
-  echo "NOTE: dotagents/caveat is a leftover from the pre-v0.15 symlink model." >&2
-  echo "      Caveat now syncs ~/.caveat/own to Caveat-Private itself; see comment above." >&2
+  echo "NOTE: dotagents/caveat is retired and is not a Caveat state source." >&2
+  echo "      Caveat product setup owns current state; see https://github.com/kitepon/Caveat#readme." >&2
 fi
 
 # bin scripts (extension dropped at the destination, e.g. agents-update.sh -> agents-update)
@@ -176,6 +169,12 @@ remove_retired_link \
 remove_retired_link \
   "$HOME/.local/bin/render-current-docs" \
   "$HERE/bin/render-current-docs.mjs"
+remove_retired_link \
+  "$HOME/.local/bin/apply-observer-hook-config" \
+  "$HERE/bin/apply-observer-hook-config.sh"
+remove_retired_link \
+  "$HOME/.local/bin/verify-observer-package" \
+  "$HERE/bin/verify-observer-package.sh"
 for f in "$HERE/bin"/*.sh; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .sh)"

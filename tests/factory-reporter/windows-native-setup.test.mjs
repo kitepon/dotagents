@@ -16,9 +16,8 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
     'agents-update.sh',
     'apply-codex-config.sh',
     'apply-grok-config.sh',
-    "@('init')",
+    "@('init', '--sync', '--yes')",
     'throughline',
-    "@('codex-hook', 'install')",
     'markitdown',
     'lattice hooks install --host claude',
     'lattice hooks install --host codex',
@@ -50,7 +49,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Normalize-WindowsCodexHooks.*codex-callout-hook.*orchestrate-advisory-hook.*codex-lattice-gantt-hook/su);
   assert.match(source, /CODEX_HOME.*native-product-wiring: caveat/su);
   assert.match(source, /\$null \| & \$File @Arguments/u);
-  assert.match(source, /caveat' -Arguments @\('init'\) -ClosedStdin/u);
+  assert.equal(source.match(/caveat' -Arguments @\('init', '--sync', '--yes'\) -ClosedStdin/gu)?.length, 1);
   assert.match(source, /legacy undefined HOME/su);
   assert.match(source, /function Test-External.*Get-Command.*ErrorActionPreference = 'Continue'.*return \$code -eq 0/su);
   assert.match(source, /function Invoke-Checked.*& \$File @Arguments \| ForEach-Object \{ Write-Host \$_ \}.*\$LASTEXITCODE/su);
@@ -58,9 +57,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Remove-WindowsGlobalNpmLink.*npm root --global.*LinkType.*npm unlink --global.*Global npm link remains.*Remove-WindowsGlobalNpmLink 'aiterm-mcp'.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Update-WindowsNativeClaude.*\.local\\bin\\claude\.exe.*factory-products-bootstrap: Claude native update.*install\.sh.*Update-WindowsNativeClaude.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
-  assert.match(source, /gh' -Arguments @\('auth', 'switch', '--hostname', 'github\.com', '--user', 'quolu'\).*gh' -Arguments @\('auth', 'setup-git'\).*https:\/\/github\.com\/quolu\/Caveat-Private\.git/su);
-  assert.ok(source.indexOf("Label 'caveat-sync-init'") < source.indexOf("Label 'native-product-wiring: caveat init'"),
-    '初回Caveat syncはinitが未追跡.gitignoreを作る前に実行する');
+  assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|github-auth-switch|github-auth-setup-git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /--post-update.*--finalize-update/su);
   assert.match(source, /Set-ToolchainPostGateSuccess.*--post-gate', 'success'/su);
@@ -97,7 +94,6 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
     'lattice-hooks',
     'spotter-project',
     'mcp-registration',
-    'caveat-sync',
     'verify-install',
     'fresh-bughub-delivery',
     'toolchain-finalization',

@@ -101,18 +101,19 @@ contains "$ROOT/shared/orchestrate/contract.md" '統括レーンへ入った後�
 # shellcheck disable=SC2016 # backticks are literal Markdown from the contract.
 contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。'
 contains "$ROOT/shared/orchestrate/control-record.md" 'docs計画正本（実行TODOの正本はtyped discoveryで解決）'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '反証は親と同値のaliasを明示×high。finderはsonnet×low'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '親と同値のaliasを明示×順位表のeffort'
-contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
+contains "$ROOT/claude/skills/orchestrate/SKILL.md" '役割に対するmodel×effortの解決と順位は[docs/02_models.md]'
+contains "$ROOT/docs/02_models.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
+contains "$ROOT/docs/02_models.md" '| 監査・発見 | Grok 4.6×medium（実測recall 7/10・FP 0） | Sonnet 5×medium'
+contains "$ROOT/docs/02_models.md" '| 反証 | Grok 4.6×high（実測14/14） | Sol×high（実測14/14。同着はGrok優先＝オーナー裁定 2026-08-19） | Opus 5×high'
+contains "$ROOT/docs/02_models.md" '| 実装 | Terra×high（Terminal-Bench 2.1 78.4%） | Sonnet 5×medium〜high'
+absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'medium'"
-contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "const PARENT_ALIAS = 'opus'; // copy時に親と同値のfloating aliasへ変更（docs/02_models.md 順位表「反証」行）"
+contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "const VERIFY_MODEL = 'opus'; // Claude内反証projection。順位の判断正本はdocs/02_models.md"
 assert_order "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" \
   "phase('Verify')" \
-  "model:PARENT_ALIAS, effort:'high'" \
+  "model:VERIFY_MODEL, effort:'high'" \
   "phase('Critic')" \
-  "model:PARENT_ALIAS, effort:'high'"
-# shellcheck disable=SC2016 # backticks are literal Markdown from the workflow contract.
-contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" '`fable×high`の使用は、親が最上位未満かつ契約クリティカルのPhase gateで1回だけ（02_models 順位表「相談」行のFable 5×highスポット）。雛形の既定にしない。'
+  "model:VERIFY_MODEL, effort:'high'"
 [ ! -e "$ROOT/claude/skills/orchestrate/references/delegation-contract.md" ] || fail 'Claude 固有の旧 delegation-contract.md が残っている'
 contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'agent_type=<role>'
 contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'fork_turns="none"'
@@ -205,7 +206,9 @@ for harness in claude codex grok cursor; do
   file="$ROOT/$harness/skills/gpt-connector/SKILL.md"
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"
+  # shellcheck disable=SC2016 # backticksを含むMarkdownのliteralを検査する。
   contains "$file" '`gpt_connector`'
+  # shellcheck disable=SC2016 # backticksを含むMarkdownのliteralを検査する。
   contains "$file" '`gpt-connector-mcp`'
   contains "$file" 'https://github.com/kitepon/gpt-connector#readme'
   contains "$file" '製品の操作契約を複製しない'

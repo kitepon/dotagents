@@ -58,6 +58,6 @@ connect24h の記事は「Fable 5 の賢さは買うしかないが、**行動�
 3. **effort 据え置きの正当化を確保**: xhigh 維持は capability-sensitive ゆえ妥当（L638）と公式で裏付け。
 
 ## 関連
-- [[orchestration/ai-collaboration-as-code]] — 委譲構造（worker への指示は agent 焼き込みで渡す＝判定2の裏付け）
+- [AI協業をコード化する（履歴）](../../docs/archive/research/orchestration/ai-collaboration-as-code.md) — 委譲構造（worker への指示は agent 焼き込みで渡す＝判定2の裏付け）
 - docs/02_models.md — 役割→モデル解決の唯一の参照点（effort 換算の越境を退けた根拠）
 - 一次資料 verbatim: raw/prompting-fable-5.md, raw/output-styles.md, raw/migration-guide.md, raw/introducing-fable-5-mythos-5.md, raw/release-notes-system-prompts.md, raw/excellentprompts-fable-5-notes.md

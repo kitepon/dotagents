@@ -168,7 +168,6 @@ cat >"$STUB_BIN/caveat" <<'EOF'
 #!/usr/bin/env bash
 set -e
 printf 'caveat %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
-mkdir -p "$HOME/.caveat/own/.git"
 EOF
 cat >"$STUB_BIN/claude" <<'EOF'
 #!/usr/bin/env bash
@@ -315,18 +314,17 @@ if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
 fi
 grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展開しない'
 grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
-grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
-grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-macos-factory.sh" || fail 'caveat init を非対話にしない'
-grep -Fq 'gh auth switch --hostname github.com --user quolu' "$ROOT/bin/setup-macos-factory.sh" \
-  || fail 'Caveat-Private同期前に工場ownerへ切り替えない'
-grep -Fq 'gh auth setup-git' "$ROOT/bin/setup-macos-factory.sh" \
-  || fail 'Caveat-Private同期前にGitHub HTTPS credential helperを配線しない'
-grep -Fq 'caveat sync --init --repo https://github.com/quolu/Caveat-Private.git' "$ROOT/bin/setup-macos-factory.sh" \
-  || fail 'Caveat-Privateの初回同期が公式HTTPS経路でない'
+[ "$(grep -Fc 'caveat init --sync --yes' "$CALLS")" -eq 2 ] \
+  || fail '2回のsetupがCaveat製品入口を各1回呼ばない'
+[ "$(grep -Fc 'caveat init --sync --yes </dev/null' "$ROOT/bin/setup-macos-factory.sh")" -eq 1 ] \
+  || fail 'Caveat製品setup入口を非対話で一度だけ定義しない'
+if grep -Eq 'ensure_caveat_sync|Caveat-Private|\.caveat/own/\.git|gh auth switch.*quolu|caveat sync' "$ROOT/bin/setup-macos-factory.sh"; then
+  fail '工場setupがCaveat内部state・remote・認証を制御する'
+fi
 grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
-grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
 grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
 grep -Fq 'lattice hooks install --host codex' "$CALLS" || fail 'Codex Lattice hookを配線しない'
+grep -Fq 'lattice hooks install --host cursor' "$CALLS" || fail 'Cursor Lattice hookを配線しない'
 grep -Fq 'spotter install -y' "$CALLS" || fail 'Spotterを配線しない'
 grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを実行しない'
 [ "$(grep -Fc 'claude-mcp-add aishell aishell-mcp' "$CALLS")" -eq 1 ] \

@@ -78,5 +78,5 @@ Spotter/Throughline hook修理後、Aitermから新規Grok 4.6 sessionをhighと
 ## 関連
 
 - [[../../docs/02_models.md]] — 役割→model×effortの運用正本
-- [[xai-grok45-composer25.md]] — 旧世代snapshot
+- [旧世代snapshot](../../docs/archive/research/models/xai-grok45-composer25.md)
 - [[claude-5-family.md]] — Claude 5のeffortとscope creep観測

@@ -8,9 +8,9 @@ CI（`tests/orchestrate/recipes-conformance.test.mjs`）で強制される——
 先に変え、両面を同一commitで更新する**。
 
 コピーして DIMENSIONS/CTX/TARGETS/検証観点をタスクに合わせて書き換える。`agent()` の
-`model`・`effort` は docs/02_models.md の順位表どおり明示する（検証・反証系も親と同値のaliasを明示し、省略は不可）。
-省略で親任せにしない——親が最上位のとき全子が張り付く。
-`fable×high`の使用は、親が最上位未満かつ契約クリティカルのPhase gateで1回だけ（02_models 順位表「相談」行のFable 5×highスポット）。雛形の既定にしない。
+`model`・`effort` は[docs/02_models.md](../../../../docs/02_models.md)の順位表どおり明示し、省略で親任せにしない。
+本書の具体値はruntimeが要求する実行projectionであり、別の配置判断を持たない。順位変更時は同じcommitで同期し、
+`tests/skills/smoke.sh`で一致を確認する。
 
 型の使用はレーンを問わない（ADR 0061 技法と儀式の分離）。統括レーン専用なのはControl儀式だけで、
 Controlが選択されている場合だけterminal resultをstrict Worker Reportへ投影する。
@@ -27,7 +27,7 @@ export const meta = {
   description: '<対象>の多視点監査＋敵対的検証',
   phases: [{ title: 'Find' }, { title: 'Dedup' }, { title: 'Verify' }, { title: 'Critic' }],
 }
-const PARENT_ALIAS = 'opus'; // copy時に親と同値のfloating aliasへ変更（docs/02_models.md 順位表「反証」行）
+const VERIFY_MODEL = 'opus'; // Claude内反証projection。順位の判断正本はdocs/02_models.md
 const CTX = `<リポジトリ・規約・「誤検知を避けるための前提」（意図的な設計を指摘させない）・
 読み取り専用の明言・「evidence に file:line 必須・推測禁止・確度の高いものだけ最大N件」>`
 // schema正本: shared/orchestrate/recipes/adversarial-audit.v1.json（CI一致gateあり）
@@ -46,7 +46,7 @@ const CRITIC = { type:'object', required:['blind_spots'], properties:{ blind_spo
 
 phase('Find')
 const found = (await parallel(DIMENSIONS.map(d => () =>
-  agent(CTX + '\n\n【担当】' + d.prompt, { label:'find:'+d.key, phase:'Find', schema:FINDINGS, agentType:'Explore', model:'sonnet', effort:'low' })
+  agent(CTX + '\n\n【担当】' + d.prompt, { label:'find:'+d.key, phase:'Find', schema:FINDINGS, agentType:'Explore', model:'sonnet', effort:'medium' })
     .then(r => r && { key:d.key, findings:r.findings })))).filter(Boolean)
 // failed/unknownの子は成功へ丸めない: 落ちた視点はterminal resultのaggregateへ立てる（recipes.md共通契約）
 const failedDimensions = DIMENSIONS.length - found.length
@@ -60,13 +60,13 @@ const verified = await parallel(uniq.map((f,i) => () => {
   const lenses = f.contract_critical ? ['existence','value'] : ['existence']  // 契約クリティカル判定はCTX側で定義
   return parallel(lenses.map(lens => () =>
     agent(`${CTX}\nあなたは懐疑的な検証者。反証を試みよ。観点:${lens}。疑わしい場合は false。\n指摘:${JSON.stringify(f)}`,
-      { label:`verify:${i}:${lens}`, phase:'Verify', schema:VERDICT, agentType:'Explore', model:PARENT_ALIAS, effort:'high' })
+      { label:`verify:${i}:${lens}`, phase:'Verify', schema:VERDICT, agentType:'Explore', model:VERIFY_MODEL, effort:'high' })
   )).then(vs => ({ ...f, verdicts: vs.filter(Boolean),
     confirmed: vs.filter(Boolean).length > 0 && vs.filter(Boolean).every(v => v.real && v.worth_it) }))
 }))
 
 phase('Critic') // 「この監査に漏れている観点・どの指摘にも登場しない重要領域」を実ファイル確認つきで最大5件
-// const critic = await agent(`${CTX}\nこの監査の盲点を挙げよ`, { schema:CRITIC, model:PARENT_ALIAS, effort:'high' })
+// const critic = await agent(`${CTX}\nこの監査の盲点を挙げよ`, { schema:CRITIC, model:VERIFY_MODEL, effort:'high' })
 // → 盲点が出たら同型の第2ラウンドを高々1回回す（静的展開。汎用loopにしない）
 return { confirmed: verified.filter(f=>f.confirmed), rejected: verified.filter(f=>!f.confirmed),
   aggregate: failedDimensions > 0 ? 'partial_failure' : 'success' /*棄却理由も残す*/ }

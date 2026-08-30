@@ -24,7 +24,7 @@
 | `docs/` | **00_ 番号順の正典**（00=overview から連番）＋ `adr/`（決定記録）＋ 監査ダイジェスト `audit-YYYY-MM/` ＋ **進行中プラン（docs/ に作り TODO を兼ねる。役目を終えた文書は `archive/` へ）**。命名: 正典=`NN_` 連番・小文字ケバブ／一時文書=`plan_`・`queue_` 接頭辞／archive 内=`YYYY-MM_` 接頭辞（dotagents/docs/adr/0004） |
 | `rag/` | 調査・研究の再利用棚。`INDEX.md`（1行台帳）＋ `<topic>/raw/`（一次ソース）＋コンパイル記事。運用は dotagents/PLAN.md 原則10（還流・Lint・選球眼） |
 | `.claude/settings.json` | 読み取り系 allowlist（fewer-permission-prompts で生成）。端末固有につき gitignore 対象なら生成手順を CLAUDE.md に書く |
-| Spotter project install | `spotter install -y` で `.spotter/marker.json`、Claude/Codex hook、host別catalogを生成。ThroughlineがPATHにある状態で実行しauditor contextを既定ONにする。`.spotter/` と `.claude/settings.json` は端末固有としてgitignoreし、marker/hookをリポへ複製しない |
+| Spotter project install | 一撃展開は対象projectで `spotter install -y` を呼ぶ。生成物・host別挙動・再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とし、dotagentsはmarkerやhookを複製せず配布接続だけを所有する |
 | 工場コア互換 | 自作コアと第三者管理の現行集合は[工場の現行状態](factory-current-state.md)から読む。MarkItDownは公開CLIだけを使う第三者管理製品。独立CodegraphとObserverはretiredで導入しない。Claude Code CLI／Codex CLI／Grok Buildは基盤toolchainとして別管理する。Oracleは互換・rollback専用 |
 | テスト＋CI | 各機能をfocused testで確認し、CI・E2E・full regressionは全関連確認後の最終通し試験だけに使う。試験がないリポで大きな作業を始めるなら、対象機能を確認できる最小の試験から用意する |
 | `.gitignore` 衛生 | `.env`・鍵・`.obsidian/`・`.venv/`・ビルド生成物。**gitignore された貴重物は push で保護されない**ことを常に意識 |

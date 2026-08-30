@@ -277,16 +277,6 @@ ensure_toolchain_bootstrap() {
   codex --version >/dev/null 2>&1 || die 'Codex CLIを公式npm経路で復旧できない'
 }
 
-ensure_caveat_sync() {
-  gh auth switch --hostname github.com --user quolu
-  gh auth setup-git
-  if [ -d "$HOME/.caveat/own/.git" ]; then
-    caveat sync
-  else
-    caveat sync --init --repo https://github.com/quolu/Caveat-Private.git
-  fi
-}
-
 grok_is_logged_in() {
   [ -n "${XAI_API_KEY:-}" ] && return 0
   [ -s "$HOME/.grok/auth.json" ]
@@ -393,12 +383,9 @@ run_setup() {
   "$ROOT/install.sh" --profile official
   "$ROOT/bin/install-unai.sh"
   ensure_managed_commands
-  # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。Cursor は MCP＋工場hook（apply-cursor-config）。
-  # init は TTY だと公開ミラー確認で止まるので stdin を閉じる。
-  caveat init </dev/null
-  ensure_caveat_sync
+  # Caveatの状態・private同期・利用可能なhost連携は製品setup入口へ一括委譲する。
+  caveat init --sync --yes </dev/null
   throughline install
-  caveat codex-hook install
   ensure_mcp
   lattice hooks install --host claude
   lattice hooks install --host codex

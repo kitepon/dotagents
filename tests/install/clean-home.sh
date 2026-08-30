@@ -25,7 +25,7 @@ set -u
 mode="${LATTICE_HOOKS_TEST_MODE:-wired}"
 if [ "${1:-}" = hooks ] && [ "${2:-}" = --help ]; then
   [ "$mode" != unsupported ] || exit 2
-  echo 'Usage: lattice hooks <install|status|uninstall|emit> --host <claude|codex>'
+  echo 'Usage: lattice hooks <install|status|uninstall|emit> --host <claude|codex|cursor>'
   exit 0
 fi
 if [ "${1:-}" = hooks ] && [ "${2:-}" = status ] && [ "${3:-}" = --host ]; then
@@ -80,25 +80,30 @@ SUPPORTED_MAC_HOST_BIN="$(mktemp -d)"
 SUPPORTED_WINDOWS_HOST_BIN="$(mktemp -d)"
 WINDOWS_UNAI_HOME="$(mktemp -d)"
 trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN" "$FACTORY_TEST_BIN" "$UNKNOWN_OS_BIN" "$SUPPORTED_MAC_HOST_BIN" "$SUPPORTED_WINDOWS_HOST_BIN" "$WINDOWS_UNAI_HOME"' EXIT
-for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client unai aishell-mcp; do
+for factory_cli in throughline markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client unai aishell-mcp; do
   printf '#!/usr/bin/env bash\nexit 0\n' >"$FACTORY_TEST_BIN/$factory_cli"
   chmod +x "$FACTORY_TEST_BIN/$factory_cli"
 done
+cat >"$FACTORY_TEST_BIN/caveat" <<'EOF'
+#!/usr/bin/env bash
+if [ "$#" -eq 2 ] && [ "$1" = factory-diagnostics ] && [ "$2" = --json ]; then
+  printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"ready"}}'
+  exit 0
+fi
+exit 64
+EOF
+chmod +x "$FACTORY_TEST_BIN/caveat"
 cat >"$FACTORY_TEST_BIN/spotter" <<'EOF'
 #!/usr/bin/env bash
-if [ "$1 $2 $3" = 'codex-hook diagnostics --project' ]; then
-  printf '%s\n' '{"availability":"available","readiness":"ready","installedHooks":{"sessionStart":"installed","userPromptSubmit":"installed","stop":"installed"},"validation":{"sessionStart":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]},"userPromptSubmit":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]},"stop":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]}}}'
+if [ "$#" -eq 2 ] && [ "$1" = diagnostics ] && [ "$2" = factory ]; then
+  printf '%s\n' '{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"unverified","marker_schema_version":"2","throughline_context":"disabled","catalogs":{"claude":"available","codex":"available"},"codex_hook_readiness":"configured-unverified","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"pass"},{"check_id":"marker_schema","status":"pass"},{"check_id":"throughline_context","status":"skipped","reason_code":"evaluation_evidence_disabled"},{"check_id":"claude_catalog","status":"pass"},{"check_id":"codex_catalog","status":"pass"},{"check_id":"audit_catalog_readiness","status":"pass"},{"check_id":"codex_hooks","status":"unverified","reason_code":"trust_not_machine_verifiable"}]}'
+  exit 0
 fi
+exit 64
 EOF
 chmod +x "$FACTORY_TEST_BIN/spotter"
 FACTORY_PROJECT="$VERIFY_FIXTURE/factory-project"
-mkdir -p "$FACTORY_PROJECT/.spotter" "$FACTORY_PROJECT/.claude"
-printf '%s\n' '{"markerVersion":"2","auditorContext":{"mode":"throughline","command":"'"$FACTORY_TEST_BIN/spotter"'"}}' >"$FACTORY_PROJECT/.spotter/marker.json"
-printf '%s\n' '{}' >"$FACTORY_PROJECT/.spotter/tool-db.json"
-printf '%s\n' '{}' >"$FACTORY_PROJECT/.spotter/tool-db.codex.json"
-cat >"$FACTORY_PROJECT/.claude/settings.json" <<EOF
-{"hooks":{"SessionStart":[{"hooks":[{"command":"$FACTORY_TEST_BIN/spotter.mjs hook session-start"}]}],"UserPromptSubmit":[{"hooks":[{"command":"$FACTORY_TEST_BIN/spotter.mjs hook user-prompt"}]}],"PreToolUse":[{"hooks":[{"command":"$FACTORY_TEST_BIN/spotter.mjs hook pre-tool-use"}]}],"Stop":[{"hooks":[{"command":"$FACTORY_TEST_BIN/spotter.mjs hook stop"}]}],"SessionEnd":[{"hooks":[{"command":"$FACTORY_TEST_BIN/spotter.mjs hook session-end"}]}]}}
-EOF
+mkdir -p "$FACTORY_PROJECT"
 # shellcheck disable=SC2016 # 生成するfixtureの実行時に$1/$2を展開する。
 printf '#!/usr/bin/env bash\n[ "$1 $2" = "tool list" ] && printf "markitdown 0.1.0\\n"\n' >"$FACTORY_TEST_BIN/uv"
 chmod +x "$FACTORY_TEST_BIN/uv"
@@ -192,6 +197,8 @@ ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.agents/skills/audit-g
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.codex/skills/audit-gauntlet"
 ln -s "$ROOT/bin/windows-native-product-smoke.mjs" "$OFFICIAL_HOME/.local/bin/windows-native-product-smoke"
 ln -s "$ROOT/bin/render-current-docs.mjs" "$OFFICIAL_HOME/.local/bin/render-current-docs"
+ln -s "$ROOT/bin/apply-observer-hook-config.sh" "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config"
+ln -s "$ROOT/bin/verify-observer-package.sh" "$OFFICIAL_HOME/.local/bin/verify-observer-package"
 if HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official --profile official >/dev/null 2>&1; then
   fail 'install が重複 profile を受理した'
 fi
@@ -259,7 +266,7 @@ agents = true
 hooks = true
 skills = true
 EOF
-if grok_compat_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
+if grok_compat_output="$(XAI_API_KEY=clean-home-login-fixture verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok compat切断欠落をverifyが見逃した'
 fi
 grep -Fq 'compat.claude.agents が false でない' <<<"$grok_compat_output" \
@@ -287,6 +294,10 @@ assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
   || fail 'Windows native内部helperの旧global CLI linkを除去しない'
 [ ! -e "$OFFICIAL_HOME/.local/bin/render-current-docs" ] \
   || fail 'repo専用の文書rendererをglobal CLIへ配布した'
+[ ! -L "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config" ] \
+  || fail '廃止済みObserver hook applierの旧global CLI linkを除去しない'
+[ ! -L "$OFFICIAL_HOME/.local/bin/verify-observer-package" ] \
+  || fail '廃止済みObserver package verifierの旧global CLI linkを除去しない'
 before_config="$(cat "$OFFICIAL_HOME/.codex/config.toml")"
 before_hooks="$(cat "$OFFICIAL_HOME/.codex/hooks.json")"
 archive_count_before="$(count_archives "$OFFICIAL_HOME")"
@@ -306,6 +317,8 @@ if lattice_drift_output="$(LATTICE_HOOKS_TEST_MODE=drift verify "$OFFICIAL_HOME"
 fi
 grep -Fq 'lattice hooks install --host claude' <<<"$lattice_drift_output" \
   || fail 'Lattice hooks drift のFAILがinstall commandを名指ししない'
+grep -Fq 'lattice hooks install --host cursor' <<<"$lattice_drift_output" \
+  || fail 'Cursor Lattice hooks drift のFAILがinstall commandを名指ししない'
 LATTICE_HOOKS_TEST_MODE=unsupported verify "$OFFICIAL_HOME" official >/dev/null
 if lattice_platform_unsupported_output="$(LATTICE_HOOKS_TEST_MODE=platform_unsupported verify "$OFFICIAL_HOME" official 2>&1)"; then
   grep -Fq 'OK  Lattice hooks: skip（platform非対応）' <<<"$lattice_platform_unsupported_output" \

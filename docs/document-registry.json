@@ -1,5 +1,5 @@
 {
-  "schema": "dotagents.document-registry.v3",
+  "schema": "dotagents.document-registry.v4",
   "fact_sources": {
     "factory_current_state": "lib/factory/deployment-contract.mjs",
     "global_policy": "shared/constitution.md"
@@ -9,6 +9,7 @@
     "dotagents_owns": [
       "integration",
       "product-pointer",
+      "factory-skill",
       "policy",
       "generated",
       "history",
@@ -192,7 +193,88 @@
       "preserve_old_path": true,
       "old_path_mode": "current-replacement",
       "archive_sha256": "ab74a4d505a55465353c369672e96614d77972f4b7ac484d649d7e438f8ebb25"
+    },
+    {
+      "old_path": "docs/wire-v8-design.md",
+      "new_path": "docs/archive/wire-v8-unai-cutover-2026-08-30.md",
+      "preserve_old_path": true,
+      "old_path_mode": "current-replacement",
+      "archive_sha256": "bda65eb2a5238180064c7f19d5d37e70001c885159110977cde98846f9277e90"
+    },
+    {
+      "old_path": "rag/mcp-observer/observer-stdio-contract.md",
+      "new_path": "docs/archive/2026-07_observer-mcp-stdio-contract.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "5ca244f521d40dd9642fb4082473fc20f2a3894f4362a5487d335995e34c03ca"
+    },
+    {
+      "old_path": "rag/tools/gpt-connector-macos-window-launch.md",
+      "new_path": "docs/archive/2026-07_gpt-connector-macos-window-launch.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "429af66735dec3d1798fa9b53e77cd12277d6c824e8bbd20f4e47f829344aafb"
+    },
+    {
+      "old_path": "rag/tools/chatgpt-chat-quota-mcp-survey.md",
+      "new_path": "docs/archive/research/2026-07-11-chatgpt-chat-quota-mcp-survey.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "96f5f298eaa3447cafc5a487e232d82d1a2fcafe0d1c8ec5067e74739d5b091b"
+    },
+    {
+      "old_path": "rag/orchestration/provider-quota-and-claude-runtime.md",
+      "new_path": "docs/archive/research/2026-07-15-provider-quota-and-claude-runtime.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "aec87d64a0763d28e4a051d31e28571c55c58f47a17728995831214d5ddcb564"
+    },
+    {
+      "old_path": "rag/orchestration/ai-collaboration-as-code.md",
+      "new_path": "docs/archive/research/orchestration/ai-collaboration-as-code.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "e22d29de270aafc38997e46c269c179ad2371b1f73101386b8aa257c72479526"
+    },
+    {
+      "old_path": "rag/orchestration/smux-terminal-agent-mesh.md",
+      "new_path": "docs/archive/research/orchestration/smux-terminal-agent-mesh.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "e89f83905c6f978a2bae529d2034772870928dfd4e736f5c111a8a585354f327"
+    },
+    {
+      "old_path": "rag/orchestration/bell-orchestration-map.md",
+      "new_path": "docs/archive/research/orchestration/bell-orchestration-map.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "8a944fc870dc98b77eb7bef70f9df997cd96fa975aa2ac0e9833be442d8f0cd9"
+    },
+    {
+      "old_path": "rag/models/xai-grok45-composer25.md",
+      "new_path": "docs/archive/research/models/xai-grok45-composer25.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "d05065d98b65fa096c9789e347a258e4f4d6ed2a908da41b740fe6cc7bf22af6"
+    },
+    {
+      "old_path": "rag/second-brain/longterm-memory-tools-survey.md",
+      "new_path": "docs/archive/research/second-brain/longterm-memory-tools-survey.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "beff975353cad38752430ebb13d98376cac9d6988ee68dee27c591f436c468c1"
     }
+  ],
+  "compatibility_stub_paths": [
+    "docs/plan_callout-hooks.md",
+    "docs/plan_canon-zerobase-audit.md",
+    "docs/plan_elastic-orchestrator.md",
+    "docs/plan_factory-master.md",
+    "docs/plan_gpt56-rewiring.md",
+    "docs/plan_lattice-session-context-hook.md",
+    "docs/plan_observer-core-integration.md",
+    "docs/plan_peertable-onboarding.md",
+    "docs/plan_peertable-wire-v7-execution.md"
   ],
   "document_extensions": [
     ".md",
@@ -218,7 +300,7 @@
       "kind": "evidence",
       "owner_scope": "dotagents",
       "role": "evidence",
-      "path_regex": "^(?:docs/evidence/|evidence/|docs/r2-.*(?:receipt|baseline)-).*\\.md$"
+      "path_regex": "^(?:docs/evidence/|evidence/|\\.lattice/todo/evidence/|docs/r2-.*(?:receipt|baseline)-).*\\.md$"
     },
     {
       "id": "raw-research-sources",
@@ -232,14 +314,34 @@
       "kind": "current",
       "owner_scope": "dotagents",
       "role": "integration",
-      "path_regex": "^docs/(?:factory-product-contracts|factory-reporter-runbook|factory-host-product-matrix)\\.md$"
+      "paths": [
+        "docs/factory-host-product-matrix.md",
+        "docs/factory-product-contracts.md",
+        "docs/factory-reporter-runbook.md",
+        "shared/runbooks/factory-ci.md"
+      ]
     },
     {
       "id": "product-pointers",
       "kind": "current",
       "owner_scope": "dotagents",
       "role": "product-pointer",
-      "path_regex": "^docs/(?:06_gpt-connector|factory-grok-build-community-overlay)\\.md$"
+      "paths": [
+        "docs/06_gpt-connector.md",
+        "docs/factory-grok-build-community-overlay.md"
+      ]
+    },
+    {
+      "id": "factory-product-skills",
+      "kind": "current",
+      "owner_scope": "dotagents",
+      "role": "factory-skill",
+      "paths": [
+        "claude/skills/gpt-connector/SKILL.md",
+        "codex/skills/gpt-connector/SKILL.md",
+        "cursor/skills/gpt-connector/SKILL.md",
+        "grok/skills/gpt-connector/SKILL.md"
+      ]
     },
     {
       "id": "fixed-path-history-and-stubs",
@@ -267,22 +369,126 @@
       "kind": "current",
       "owner_scope": "dotagents",
       "role": "policy",
-      "path_regex": ".*\\.(?:md|mdc)$"
+      "paths": [
+        ".lattice/candidates/unai-core-integration/revision-source.md",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "PLAN.md",
+        "README.md",
+        "claude/CLAUDE.delta.md",
+        "claude/agents/implementer.md",
+        "claude/agents/refuter.md",
+        "claude/commands/auto-deploy-on-push.md",
+        "claude/commands/polish-github.md",
+        "claude/skills/auto-deploy-on-push/SKILL.md",
+        "claude/skills/orchestrate/SKILL.md",
+        "claude/skills/orchestrate/references/workflow-templates.md",
+        "codex/AGENTS.delta.md",
+        "codex/skills/auto-deploy-on-push/SKILL.md",
+        "codex/skills/oracle/SKILL.md",
+        "codex/skills/orchestrate/SKILL.md",
+        "codex/skills/polish-github/SKILL.md",
+        "cursor/AGENTS.delta.md",
+        "cursor/agents/implementer.md",
+        "cursor/agents/refuter.md",
+        "cursor/skills/auto-deploy-on-push/SKILL.md",
+        "cursor/skills/orchestrate/SKILL.md",
+        "cursor/skills/polish-github/SKILL.md",
+        "docs/00_overview.md",
+        "docs/01_project-layout.md",
+        "docs/02_models.md",
+        "docs/03_settings-fragments.md",
+        "docs/04_ci.md",
+        "docs/05_codex-fragments.md",
+        "docs/07_grok-fragments.md",
+        "docs/08_cursor-fragments.md",
+        "grok/AGENTS.delta.md",
+        "grok/agents/implementer.md",
+        "grok/agents/refuter.md",
+        "grok/skills/auto-deploy-on-push/SKILL.md",
+        "grok/skills/orchestrate/SKILL.md",
+        "grok/skills/polish-github/SKILL.md",
+        "rag/INDEX.md",
+        "rag/agent-config/agents-md-vs-claude-md-2026.md",
+        "rag/codex/codex-full-support-foundations.md",
+        "rag/codex/hook-trust-surface-2026.md",
+        "rag/codex/subagent-thread-limits.md",
+        "rag/codex/windows-hook-shell-contract.md",
+        "rag/hooks/callout-hooks-firing-behavior.md",
+        "rag/macos-launchd-local-network/apple-tn3179-launchd.md",
+        "rag/model-steering/fable-behavior-porting-audit.md",
+        "rag/models/benchmark-snapshot-20260811.md",
+        "rag/models/claude-5-family.md",
+        "rag/models/gpt-5.6-family.md",
+        "rag/models/role-placement-experiment-20260819.md",
+        "rag/models/xai-grok46.md",
+        "rag/orchestration/openai-cdc-prompt-concepts.md",
+        "rag/second-brain/karpathy-obsidian-llm-knowledge-base.md",
+        "rag/second-brain/notebooklm-second-brain-critique.md",
+        "rag/windows-powershell7/factory-shell-contract.md",
+        "rag/wsl-relay-recovery/wslrelay-banner-timeout.md",
+        "shared/constitution.md",
+        "shared/orchestrate/aiterm-dispatch.md",
+        "shared/orchestrate/composition.md",
+        "shared/orchestrate/contract.md",
+        "shared/orchestrate/control-record.md",
+        "shared/orchestrate/delegation-contract.md",
+        "shared/orchestrate/executor-adapters.md",
+        "shared/orchestrate/recipes.md",
+        "shared/runbooks/canon-authoring.md",
+        "shared/runbooks/cursor-origin.md",
+        "shared/runbooks/git-hygiene.md",
+        "shared/runbooks/knowledge-return.md",
+        "shared/runbooks/lattice-workflow.md",
+        "shared/runbooks/reporting.md"
+      ]
     }
   ],
   "archive_inventory": {
     "roots": [
       "docs/archive"
     ],
-    "all_path_count": 89,
-    "all_paths_sha256": "df0e921854c69caac38f4143437fd4b34fd646cd07efc760fa73abc010b7242f",
-    "legacy_path_count": 74,
-    "legacy_paths_sha256": "01c1e6d06be0655fed973447341247f55476e6b8786e4b3cceb1ed1e86a51e03"
+    "all_path_count": 101,
+    "all_paths_sha256": "026a2411f759ddaba74bfd3fa651af74269267033c06bd44e6c6d6d0695b0f77",
+    "legacy_path_count": 76,
+    "legacy_paths_sha256": "3873d8ed514b17ff7bd08e7950835830b0fb84755583640fc5ffcc473511b3d7"
   },
   "current_surface_policies": [
     {
+      "id": "factory-integration-documents",
+      "path_regex": "^(?:docs/(?:factory-host-product-matrix|factory-product-contracts|factory-reporter-runbook|wire-v[0-9]+-design)\\.md|shared/runbooks/factory-ci\\.md)$",
+      "expected_role": "integration",
+      "exact_sha256_by_path": {
+        "docs/factory-host-product-matrix.md": "e6cc53223ddf981976863569f825a3f9b504bea05bfb91210ccb788788efb3e0",
+        "docs/factory-product-contracts.md": "a0b7072e50c465eda472eb497e07783987c00de696e833dc8c53c73ecd4cffe2",
+        "docs/factory-reporter-runbook.md": "a9389ab2305daca4b596397dcbc7984f4510ba68ac68533714fc45064b7fe767",
+        "docs/wire-v8-design.md": "d710dc8205ad4da3ce8c31e15bffe1c26458a299228e6b6552fa904636b317ac",
+        "shared/runbooks/factory-ci.md": "7d929919c73814fabaa06cf812c6cf99d9c3bf87e2c2a7f9439aa89fb35fc6b3"
+      },
+      "required_regexes": [],
+      "forbidden_regexes": []
+    },
+    {
+      "id": "factory-product-pointers",
+      "path_regex": "^docs/(?:06_gpt-connector|factory-grok-build-community-overlay)\\.md$",
+      "expected_role": "product-pointer",
+      "exact_sha256_by_path": {
+        "docs/06_gpt-connector.md": "d840f87aaa2cd64a570639a6bd6397931f1976d58d923e5c583ff63b45631cf4",
+        "docs/factory-grok-build-community-overlay.md": "0cf8e9be298ae6870269f662ebb03c9b6ca6f993df827bd6d68c3ad198fea605"
+      },
+      "required_regexes": [],
+      "forbidden_regexes": []
+    },
+    {
       "id": "gpt-connector-host-skills",
       "path_regex": "^(?:claude|codex|grok|cursor)/skills/gpt-connector/SKILL\\.md$",
+      "expected_role": "factory-skill",
+      "exact_sha256_by_path": {
+        "claude/skills/gpt-connector/SKILL.md": "547c0bbb86e4f065662a823cb57c62a811a224bfdb01113cc87019b44ac4b867",
+        "codex/skills/gpt-connector/SKILL.md": "d2f4a3d68ec63a539e62d8efe118d15bf7ac61332644967c916c3a274931366b",
+        "cursor/skills/gpt-connector/SKILL.md": "a78171016d2f6c94c8a47731b7e3d0f0efd7c945e2341a105859961772dc9023",
+        "grok/skills/gpt-connector/SKILL.md": "ad45a16d49ae73ca7473b33c65926242937f775cb485da06be1db0acc4d1e90b"
+      },
       "required_regexes": [
         "gpt_connector",
         "https://github\\.com/kitepon/gpt-connector#readme",
@@ -305,96 +511,34 @@
     {
       "id": "gpt-connector-codex-section",
       "path_regex": "^docs/05_codex-fragments\\.md$",
-      "section_heading_regex": "^## 3b\\. gpt-connector MCP",
-      "required_regexes": [
-        "gpt_connector",
-        "https://github\\.com/kitepon/gpt-connector#readme"
-      ],
-      "forbidden_regexes": [
-        "専用Chrome",
-        "product-owned state",
-        "timeout後",
-        "sessions?[^\\n]{0,20}回収",
-        "既知model slug",
-        "未知slug",
-        "暗黙fallback",
-        "通常Chrome",
-        "Oracle",
-        "prompt再"
-      ]
+      "expected_role": "policy",
+      "exact_sha256_by_path": {
+        "docs/05_codex-fragments.md": "957a0e2e2217ad154753bded9415bcd92bcc264bf67f34c89097e95182c932bd"
+      },
+      "required_regexes": [],
+      "forbidden_regexes": []
     },
     {
       "id": "gpt-connector-orchestrate-routing",
       "path_regex": "^(?:codex|grok|cursor)/skills/orchestrate/SKILL\\.md$",
-      "line_contains_regex": "gpt_connector",
-      "required_regexes": [
-        "../gpt-connector/SKILL\\.md",
-        "このappendixへ複製しない"
-      ],
-      "forbidden_regexes": [
-        "timeout",
-        "sessions?",
-        "既知slug",
-        "専用Chrome",
-        "product-owned state"
-      ]
-    },
-    {
-      "id": "gpt-connector-pointer",
-      "path_regex": "^docs/06_gpt-connector\\.md$",
-      "required_regexes": [
-        "gpt_connector",
-        "https://github\\.com/kitepon/gpt-connector#readme",
-        "製品側の正本"
-      ],
-      "forbidden_regexes": [
-        "専用Chrome",
-        "product-owned state",
-        "timeout後",
-        "sessions?[^\\n]{0,20}回収",
-        "既知model slug",
-        "未知slug",
-        "暗黙fallback",
-        "通常Chrome",
-        "Oracle",
-        "prompt再"
-      ]
+      "expected_role": "policy",
+      "exact_sha256_by_path": {
+        "codex/skills/orchestrate/SKILL.md": "8ac2fdba0e1fa42f5d41258810671dbf5df90fbaaf8c83c43c7e3db0734641bd",
+        "cursor/skills/orchestrate/SKILL.md": "bfc847783bf8960d79fb6ff3f9c6eeed7834e7511329a202e6a60c93aa15bced",
+        "grok/skills/orchestrate/SKILL.md": "5bfc435ee10b49f2a894a442d49220752871e042418fb23c4d50fead2d7dc241"
+      },
+      "required_regexes": [],
+      "forbidden_regexes": []
     },
     {
       "id": "gpt-connector-overview-row",
       "path_regex": "^docs/00_overview\\.md$",
-      "line_contains_regex": "06_gpt-connector.md",
-      "required_regexes": [
-        "薄い接続pointer"
-      ],
-      "forbidden_regexes": [
-        "専用Chrome",
-        "session回収",
-        "復旧手順",
-        "製品状態"
-      ]
-    },
-    {
-      "id": "stable-host-matrix",
-      "path_regex": "^docs/factory-host-product-matrix\\.md$",
-      "required_regexes": [
-        "このmatrixは、工場が各hostと親AIへ要求する接続状態だけを定める",
-        "製品の操作手順を持たない"
-      ],
-      "forbidden_regexes": [
-        "Wave\\s*\\d",
-        "\\b01[a-z0-9]{6,}\\b",
-        "20\\d{2}-\\d{2}-\\d{2}",
-        "\\b\\d+\\.\\d+\\.\\d+\\b",
-        "\\b(?:install|apply|upsert|wired)\\b",
-        "実測済み",
-        "導入実測",
-        "着地",
-        "閉じた",
-        "\\.grok/hooks",
-        "\\.cursor/hooks",
-        "tool-db"
-      ]
+      "expected_role": "policy",
+      "exact_sha256_by_path": {
+        "docs/00_overview.md": "74c06a01709c4ca222de50033ded96f4a42230c2e205ba1cac39dba5efd56f3e"
+      },
+      "required_regexes": [],
+      "forbidden_regexes": []
     }
   ]
 }

@@ -30,6 +30,15 @@ archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文di
 | [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式） |
 | [adr/](adr/) / [evidence/](evidence/) | 固定された判断・証拠。個別の現行文書から必要な時だけ辿り、通常の読む順には入れない |
 
+ADR本文と状態は裁定時点の不変記録であり、後から改稿しない。現行効力は次のsupersession表を正とし、後続裁定が増えた時はこの表だけへ追記する。
+
+| 先行ADR | 現行効力 | 後続裁定 |
+|---|---|---|
+| [0085](adr/0085-agents-update-throughline-migration-gate.md) | 決定1〜4を失効。決定5の製品DB・SQL・schema非所有は維持 | [0137](adr/0137-product-owned-update-lifecycle.md) |
+| [0086](adr/0086-throughline-migration-four-host-acceptance.md) | 当時の受入証拠は維持。親裁定のThroughline固有二段呼出しと内部JSON解釈は失効 | [0137](adr/0137-product-owned-update-lifecycle.md) |
+| [0132](adr/0132-document-current-state-registry.md) | 決定1のうち新規文書をcatch-allでcurrentへする部分だけ失効。他の決定は維持 | [0136](adr/0136-document-ci-ownership-and-base-relative-immutability.md) |
+| [0134](adr/0134-product-owned-document-ci.md) | 決定3〜5を失効。製品CI所有を定める決定1〜2は維持 | [0136](adr/0136-document-ci-ownership-and-base-relative-immutability.md) |
+
 ## 工場（管理対象製品）の正典
 
 変動する現行値と恒久契約は次へ分離し、他文書へ複製しない。

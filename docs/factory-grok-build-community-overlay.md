@@ -28,6 +28,7 @@
 
 - 公開relayの工場上の接続先は`https://afk.kitepon.dev`、配置hostはmain-serverである。
 - `bin/update-grok-community-overlay.sh`は、工場から両repoの`scripts/update-overlay.sh`を呼ぶだけの接続器である。更新・検証・pushは各製品入口が所有し、この接続器へ製品内部のcommandやrelease・deploy判断を置かない。
+- この責務境界のDecisionは[ADR 0135](adr/0135-community-overlay-product-owned-update.md)を正とする。
 - host対応と工場での利用可否は[host matrix](factory-host-product-matrix.md)へ記録する。
 
 ## 跨製品の順序

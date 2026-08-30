@@ -57,4 +57,4 @@ Xには、任された工程を越えて独自の物語・要件・追加変更�
 - [[../../docs/02_models.md]] — 役割→ティア×effort の正本
 - [[gpt-5.6-family.md]] — Codex レーンの現行ファミリー
 - [[xai-grok46.md]] — xAI現行レーン
-- [[xai-grok45-composer25.md]] — xAI旧世代snapshot
+- [xAI旧世代snapshot](../../docs/archive/research/models/xai-grok45-composer25.md)

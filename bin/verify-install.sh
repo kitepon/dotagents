@@ -228,27 +228,8 @@ fetch(url).then(async (response) => {
     fail=1
   fi
 
-  if [ "${DOTAGENTS_FACTORY_CORE_TEST:-0}" = 1 ]; then
-    echo "OK  Caveat ownership: clean-home fixture"
-  elif [ -d "$HOME/.caveat/own/.git" ]; then
-    local caveat_remote
-    caveat_remote="$(git -C "$HOME/.caveat/own" remote get-url origin 2>/dev/null || true)"
-    case "$caveat_remote" in
-      *Caveat-Private*) echo "OK  ~/.caveat/own → $caveat_remote" ;;
-      "")
-        echo "FAIL: ~/.caveat/own に origin がない（caveat sync --init を実行）"
-        fail=1 ;;
-      *)
-        echo "FAIL: ~/.caveat/own の origin が Caveat-Private でない: $caveat_remote"
-        fail=1 ;;
-    esac
-  else
-    echo "FAIL: ~/.caveat/own はgit repoでない（caveat sync --init --repo <Caveat-Private-url> を実行）"
-    fail=1
-  fi
-
   if ! command -v python3 >/dev/null 2>&1; then
-    echo "FAIL: python3 不在（Spotter project marker / hook / catalog を検証できない）"
+    echo "FAIL: python3 不在（製品公開diagnosticsのJSON契約を検証できない）"
     fail=1
     return
   fi
@@ -257,123 +238,128 @@ fetch(url).then(async (response) => {
     verify_aishell_host_registration
   fi
 
-  if ! python3 - "$project_root" <<'PY'
+  local caveat_diagnostics caveat_diagnostics_exit=0
+  if ! caveat_diagnostics="$(mktemp)"; then
+    echo "FAIL: Caveat diagnostics用の一時ファイルを作れない"
+    fail=1
+    return
+  fi
+  (cd "$project_root" && caveat factory-diagnostics --json) >"$caveat_diagnostics" 2>/dev/null \
+    || caveat_diagnostics_exit=$?
+  if ! python3 - "$caveat_diagnostics" "$caveat_diagnostics_exit" <<'PY'
 import json
+import re
 import sys
-from pathlib import Path, PurePosixPath, PureWindowsPath
+from pathlib import Path
 
-root = Path(sys.argv[1])
-marker_path = root / ".spotter" / "marker.json"
-claude_settings_path = root / ".claude" / "settings.json"
-catalog_paths = [
-    root / ".spotter" / "tool-db.json",
-    root / ".spotter" / "tool-db.codex.json",
-]
+path = Path(sys.argv[1])
+exit_code = int(sys.argv[2])
 
 try:
-    marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8"))
 except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-    print(f"FAIL: Spotter marker を読めない: {marker_path}: {exc}")
+    print("FAIL: Caveat factory-diagnostics が単一のJSON objectを返さない")
     raise SystemExit(1)
-context = marker.get("auditorContext")
-context = context if isinstance(context, dict) else {}
-command = context.get("command")
-if marker.get("markerVersion") != "2" or context.get("mode") != "throughline":
-    print("FAIL: Spotter marker は markerVersion=2 / auditorContext.mode=throughline でない")
+if not isinstance(data, dict):
+    print("FAIL: Caveat factory-diagnostics の公開JSON shapeが不正")
     raise SystemExit(1)
-if not isinstance(command, str) or not (
-    PurePosixPath(command).is_absolute() or PureWindowsPath(command).is_absolute()
-):
-    print("FAIL: Spotter Throughline connector の command が絶対パスでない")
+version = data.get("version")
+overall = data.get("overall")
+valid_contract = (
+    data.get("schema") == "caveat.native_factory_diagnostics.v1"
+    and data.get("product") == "caveat"
+    and isinstance(version, str)
+    and re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", version)
+    and isinstance(overall, dict)
+    and overall.get("status") in {"ready", "not_ready", "unverified"}
+)
+if not valid_contract:
+    print("FAIL: Caveat factory-diagnostics の公開schema / product / version / overallが不正")
     raise SystemExit(1)
-
-try:
-    settings = json.loads(claude_settings_path.read_text(encoding="utf-8"))
-except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-    print(f"FAIL: Spotter Claude hook 設定を読めない: {claude_settings_path}: {exc}")
+if overall["status"] != "ready" or exit_code != 0:
+    print(f"FAIL: Caveat public diagnostics はcompatibleでない（overall={overall['status']} / exit={exit_code}）")
     raise SystemExit(1)
-required = {
-    "SessionStart": "session-start",
-    "UserPromptSubmit": "user-prompt",
-    "PreToolUse": "pre-tool-use",
-    "Stop": "stop",
-    "SessionEnd": "session-end",
-}
-missing = []
-for event, subcommand in required.items():
-    matches = [
-        hook
-        for entry in settings.get("hooks", {}).get(event, [])
-        if isinstance(entry, dict)
-        for hook in entry.get("hooks", [])
-        if isinstance(hook, dict)
-        and isinstance(hook.get("command"), str)
-        and "spotter.mjs" in hook["command"]
-        and f"hook {subcommand}" in hook["command"]
-    ]
-    if len(matches) != 1:
-        missing.append(f"{event}: hook {subcommand}（{len(matches)}件）")
-if missing:
-    print("FAIL: Spotter Claude canonical hook が欠落/重複: " + "、".join(missing))
-    raise SystemExit(1)
-
-for path in catalog_paths:
-    try:
-        json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        print(f"FAIL: Spotter host別catalogを読めない: {path}: {exc}")
-        raise SystemExit(1)
-print(f"OK  Spotter project: {root}（marker v2 / Throughline context / Claude 5 hooks / host別catalog）")
+print(f"OK  Caveat public diagnostics: installed / compatible / {version}")
 PY
   then
     fail=1
   fi
+  rm -f "$caveat_diagnostics"
 
-  if command -v spotter >/dev/null 2>&1; then
-    local diagnostics
-    diagnostics="$(mktemp)"
-    if spotter codex-hook diagnostics --project "$project_root" >"$diagnostics" 2>/dev/null \
-      && python3 - "$diagnostics" <<'PY'
+  local spotter_diagnostics spotter_diagnostics_exit=0
+  if ! spotter_diagnostics="$(mktemp)"; then
+    echo "FAIL: Spotter diagnostics用の一時ファイルを作れない"
+    fail=1
+    return
+  fi
+  (cd "$project_root" && spotter diagnostics factory) >"$spotter_diagnostics" 2>/dev/null \
+    || spotter_diagnostics_exit=$?
+  if ! python3 - "$spotter_diagnostics" "$spotter_diagnostics_exit" <<'PY'
 import json
+import re
 import sys
 from pathlib import Path
 
+path = Path(sys.argv[1])
+exit_code = int(sys.argv[2])
 try:
-    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-    print(f"FAIL: Spotter Codex diagnostics のJSONを読めない: {exc}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+    print("FAIL: spotter diagnostics factory が単一のJSON objectを返さない")
     raise SystemExit(1)
-required = ("sessionStart", "userPromptSubmit", "stop")
-if data.get("availability") != "available":
-    print(f"FAIL: Spotter Codex hook availability={data.get('availability')!r}")
+if not isinstance(data, dict):
+    print("FAIL: Spotter factory diagnostics の公開JSON shapeが不正")
     raise SystemExit(1)
-if data.get("readiness") not in {"configured-unverified", "ready"}:
-    print(f"FAIL: Spotter Codex hook readiness={data.get('readiness')!r}")
+version = data.get("version")
+checks = data.get("checks")
+valid_contract = (
+    data.get("schema_version") == "1.0"
+    and data.get("product") == "spotter"
+    and isinstance(version, str)
+    and re.fullmatch(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?", version)
+    and data.get("overall_status") in {"pass", "fail", "unverified", "not_applicable"}
+    and isinstance(checks, list)
+)
+if not valid_contract or exit_code != 0:
+    print(f"FAIL: Spotter factory diagnostics の公開schema / product / version / exitが不正（exit={exit_code}）")
     raise SystemExit(1)
-for key in required:
-    if data.get("installedHooks", {}).get(key) != "installed":
-        print(f"FAIL: Spotter Codex hook {key} が installed でない")
-        raise SystemExit(1)
-    validation = data.get("validation", {}).get(key, {})
-    if not (
-        validation.get("registered") is True
-        and validation.get("compatible") is True
-        and validation.get("misconfigured") is False
-        and validation.get("canonical") is True
-        and validation.get("issues") == []
-    ):
-        print(f"FAIL: Spotter Codex hook {key} が canonical でない")
-        raise SystemExit(1)
-print("OK  Spotter Codex 3 hooks: installed / compatible / canonical")
+if any(not isinstance(item, dict) or item.get("status") not in {"pass", "fail", "skipped", "unverified"} for item in checks):
+    print("FAIL: Spotter factory diagnostics のchecksが公開契約外")
+    raise SystemExit(1)
+by_id = {item.get("check_id"): item for item in checks if isinstance(item.get("check_id"), str)}
+if len(by_id) != len(checks):
+    print("FAIL: Spotter factory diagnostics のcheck_idが欠落/重複")
+    raise SystemExit(1)
+required_pass = (
+    "project_activation",
+    "marker_schema",
+    "claude_catalog",
+    "codex_catalog",
+    "audit_catalog_readiness",
+)
+if any(by_id.get(check_id, {}).get("status") != "pass" for check_id in required_pass):
+    print("FAIL: Spotter public diagnostics は必須host面をcompatibleと報告していない")
+    raise SystemExit(1)
+if data.get("catalogs") != {"claude": "available", "codex": "available"}:
+    print("FAIL: Spotter public diagnostics はClaude/Codex catalogをavailableと報告していない")
+    raise SystemExit(1)
+codex_hooks = by_id.get("codex_hooks", {})
+if not (
+    data.get("codex_hook_readiness") == "configured-unverified"
+    and codex_hooks.get("status") == "unverified"
+    and codex_hooks.get("reason_code") == "trust_not_machine_verifiable"
+):
+    print("FAIL: Spotter public diagnostics はCodex hook登録をcompatible-unverifiedと報告していない")
+    raise SystemExit(1)
+if data.get("overall_status") not in {"pass", "unverified"} or any(item["status"] == "fail" for item in checks):
+    print(f"FAIL: Spotter public diagnostics はcompatibleでない（overall={data.get('overall_status')}）")
+    raise SystemExit(1)
+print(f"OK  Spotter public diagnostics: installed / compatible / {version}")
 PY
-    then
-      :
-    else
-      echo "FAIL: spotter codex-hook diagnostics が不合格"
-      fail=1
-    fi
-    rm -f "$diagnostics"
+  then
+    fail=1
   fi
+  rm -f "$spotter_diagnostics"
 
   if [ ! -x "$HOME/.local/bin/oracle-mcp-stable" ]; then
     echo "FAIL: Oracle canonical wrapper が実行不能: $HOME/.local/bin/oracle-mcp-stable"
@@ -409,7 +395,7 @@ verify_lattice_hooks() {
   fi
 
   local host status_output state
-  for host in claude codex; do
+  for host in claude codex cursor; do
     if [ "$host" = codex ] && ! command -v codex >/dev/null 2>&1; then
       continue
     fi

@@ -12,7 +12,7 @@
 - 製品CIのworkflowと合否は各製品repoが所有する。dotagentsは共通runnerとhost横断接続を提供し、製品からdotagentsのworkflowを参照させない。
 - reportへsecret、credential、prompt、session/file本文、生log、絶対pathを出さない。
 - 製品の修理とreleaseは製品repoの正典に従う。dotagentsは公開後probeとhost/wire横断受入だけを判定する。
-- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、製品側gate通過後の公開probeとhost/wire横断受入だけを担当する。publish対象を既定ブランチの祖先に限る共通規則は維持する。
+- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、製品側gate通過後の公開probeとhost/wire横断受入だけを担当する。dotagentsが製品publishを実行する場合は、対象を既定ブランチの祖先に限る。これは工場側の共通git安全条件であり、製品release gateの定義ではない。
 - 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。
 
 ## 自作コア製品

@@ -1,6 +1,6 @@
 # dotagents
 
-Claude Code / Codex の環境そのもの（skill・command・agents・rule・グローバル共通憲法・調査資産・環境整備の聖典）を**複数端末で同期する個人 dotfiles**。GitHub が真実の源（罠DBは v0.15+ で Caveat 自身が dotagents 外で管理）。
+Claude Code / Codex の環境そのもの（skill・command・agents・rule・グローバル共通憲法・調査資産・環境整備の聖典）を**複数端末で同期する個人 dotfiles**。GitHub が真実の源。
 
 - **趣旨・原則・残件**: [PLAN.md](PLAN.md)（憲章＝聖典 v4。プランは docs/ に作る。目的・判断理由・受入条件と工程正本への導線を持つ）
 - **AI 向けの掟（全エージェント共通）**: [AGENTS.md](AGENTS.md)（Claude は [CLAUDE.md](CLAUDE.md) が `@AGENTS.md` で取り込む）。**URL を渡された AI のオンボーディング入口も AGENTS.md**（「AI オンボーディング」節）
@@ -138,7 +138,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `factory-external-event.mjs` | Pi5等の外部監視結果をmain-serverの所有者限定stateへ固定ServerManager eventとしてappend-only記録し、BugHub受理後だけack |
 | bin | `verify-codex-agent-routing.sh` | Control配下の書込みWorkerのspawn後、role/model/effort/developer instructionsを検証し、親継承のsandbox実効値を観測表示 |
 | bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
-| データ | `~/.caveat/own`（dotagents 外） | 外部仕様の罠DB（caveat MCP が参照）。**v0.15+ で Caveat 自身が管理**——`~/.caveat/own` は独立 git repo で remote は private の `Caveat-Private`（全端末同期）。public 部分集合は `caveat publish` で `Caveat-Public` にミラー。dotagents は所有しない |
+| 工場接続 | Caveat（dotagents 外） | 工場は `caveat mcp-server` と `caveat factory-diagnostics --json` の公開面だけを呼ぶ。導入・罠DB・同期・公開は [Caveat README](https://github.com/kitepon/Caveat#readme) が正 |
 | 自作コア製品 | [工場の現行状態](docs/factory-current-state.md)に列挙（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。各製品の編入版は[製品契約台帳](docs/factory-product-contracts.md)が持つ |
 | 第三者管理製品 | MarkItDown | 自作コアではなく、公開CLIだけをblack-box管理する資料変換器。fork・内部patchは行わない |
 | 基盤toolchain | Claude Code CLI／Codex CLI／Grok Build | コア製品とは別区分。Oracleはv1互換・rollback専用。Mac自前 Desktop と main-server 自前 AFK は overlay で、正典は [docs/factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md) |
@@ -238,8 +238,6 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 [ -f ~/.grok/rules/AGENTS.md ] && [ ! -L ~/.grok/rules/AGENTS.md ] && rm ~/.grok/rules/AGENTS.md
 ```
 
-**caveat の own は Caveat 自身が同期する**（v0.15+。dotagents は所有しない）: 新端末では `caveat sync --init --repo https://github.com/quolu/Caveat-Private.git` で `~/.caveat/own` に Caveat-Private を clone → 以降 `caveat sync` で往復する。一撃setupは先に`gh auth switch --hostname github.com --user quolu`と`gh auth setup-git`を実行し、非対話のschedulerでもHTTPS remoteへ認証できる状態を作る。既存端末に端末ローカルの罠が残っていたら、`caveat sync` の前に中身を `~/.caveat/own/entries/<category>/` へマージしてから同期する（同名衝突は中身を見て統合）。`verify-install` は own が Caveat-Private をremoteに持つか確認する。
-
 ### 3. 一撃展開 → 検証バッテリー
 
 席への手作業の展開（SSHで1箇所から他席を回す場合を含む）は次だけとする。その席のdotagents作業ディレクトリへ移り、そこで親AI（Grok／Claude／Codex）を起動し、その親に下表の正規入口を実行させる。失敗はその席で原因を直してから閉じる。スクリプトをSSH先で無人実行して成功扱いにしない。`verify-install`やsetupのexit 0を親session受入の代用にしない。定期更新のcron／Taskはこの節の対象外。
@@ -287,16 +285,16 @@ callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`
 ./bin/apply-claude-config.sh --apply
 ./bin/apply-grok-config.sh --apply   # login済みだけ。未loginならスキップ（H）
 ./bin/apply-cursor-config.sh --apply
-caveat init
+caveat init --sync --yes </dev/null
 throughline install
-caveat codex-hook install
 lattice hooks install --host claude
 lattice hooks install --host codex
+lattice hooks install --host cursor
 spotter install -y
 ./bin/verify-install.sh --profile official
 ```
 
-両方の `--apply` は `~/Archives/` に backup を作り、途中失敗時は rollbackする。`apply-claude-config` は本書のjq断片が正とするdotagents hookだけを追加し、model / effort / permissions / OAuth / trust / 他ツールのhookは変更しない。`apply-grok-config` は `[models]` / permission / login と個人MCPを触らず、`compat.claude.skills` と `compat.claude.mcps` は切らない。`apply-cursor-config` は `cli-config.json` の model / permission / login と個人MCPを触らない。legacyを選ぶのは旧入口の検証時だけで、`--profile legacy`をinstall / verifyの両方へ付ける。
+上記4つの工場設定applierの `--apply` は `~/Archives/` に backup を作り、途中失敗時は rollbackする。`apply-claude-config` は本書のjq断片が正とするdotagents hookだけを追加し、model / effort / permissions / OAuth / trust / 他ツールのhookは変更しない。`apply-grok-config` は `[models]` / permission / login と個人MCPを触らず、`compat.claude.skills` と `compat.claude.mcps` は切らない。`apply-cursor-config` は `cli-config.json` の model / permission / login と個人MCPを触らない。legacyを選ぶのは旧入口の検証時だけで、`--profile legacy`をinstall / verifyの両方へ付ける。
 
 Grok親の所有面は次だけである。Claude面を吸うことを完成形にしない。
 
@@ -306,7 +304,7 @@ Grok親の所有面は次だけである。Claude面を吸うことを完成形�
 | runbook | `~/.grok/runbooks` | 吸わない |
 | skill / agent | `~/.grok/skills` / `~/.grok/agents` | `compat.claude.skills`は切らない（Wave 2: `~/.grok/skills`が同名に勝つ） |
 | 工場MCP | `~/.grok/config.toml` | `compat.claude.mcps`は切らない。同名はtomlが勝つ |
-| 工場hook | `~/.grok/hooks/factory.json` | `compat.claude.hooks=false`。工場hookに製品hookは載せない。Throughline製品hookは `~/.grok/hooks/throughline.json`（`throughline install`）。Spotter / Caveat 製品hookはGrokで起動しない |
+| 工場hook | `~/.grok/hooks/factory.json` | `compat.claude.hooks=false`。工場hookに製品hookは載せない |
 | Lattice工程表 | `grok-lattice-gantt-hook`（dotagents所有の案内） | `lattice hooks install --host` にGrokを足さない |
 
 Cursor親の所有面は次だけである。Claude面を吸うことを完成形にしない。
@@ -317,16 +315,18 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 | runbook | `~/.cursor/runbooks` | |
 | skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
 | 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
-| 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せる。Throughline製品hookは `throughline install` が同じ `hooks.json` へ upsert（絶対 node + `throughline.mjs`）。Spotter / Caveat 製品hookは起動しない |
+| 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せない |
 
-`spotter install -y` はSpotterの正規project-scoped入口である。dotagentsの `.claude/settings.json` と `.spotter/`（どちらも端末ローカル・gitignore）を作り、user-level Codex hook 3本をcanonical化し、Claude/Codex別catalogをseedする。PATH上のThroughlineを絶対実行パスへ解決できる時はauditor contextが既定ONになる。Spotter自身のCLI以外でmarkerやhookを複製・手書きしない。
+`throughline install` は一撃展開が呼ぶ Throughline の製品管理入口である。生成物、host別hook、再適用条件は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) を正とし、dotagentsは製品hookを生成・再収録しない。
 
-`lattice hooks install --host claude|codex` はLattice 0.40.0+の製品管理入口である。sensor気づかせ導線はLattice自身に管理させ、Claude/Codex設定へ手挿ししない。Codex未導入端末では`--host codex`を省略する。Grok hostは増やさない。Cursor hostも増やさない。
+`spotter install -y` は一撃展開が呼ぶSpotterのproject-scoped配布入口である。生成物、host別hook、連携オプション、再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とする。dotagentsはSpotterのmarkerやhookを複製・手書きせず、製品CLIへの接続だけを所有する。
 
-- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostで必要な工場管理製品CLI、Lattice製品管理hookの`wired`状態、Spotter marker v2、Throughline context、Claude 5 hook、Codex 3 hook、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSON、host別catalogをFAIL行で名指しする。Grok login済み時だけWindows hookのinterpreter化と`compat.claude.agents` / `hooks` の切断を見る。未loginではThroughlineが空の`config.toml`を作ってもFAILにせず、配布symlinkの整合だけを見る。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
+`lattice hooks install --host <host>` は一撃展開がhostごとに一度呼ぶLatticeの公開入口である。対応host、platform、生成物、statusの意味は[Lattice integration package「hooks導線」](https://github.com/kitepon/Lattice/blob/main/docs/01_integration-package.md#L116-L121)を正とし、dotagentsは製品内部のhook仕様を複製しない。
+
+- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostの必須CLI、ServerManager readiness、Caveat / Spotterの公開diagnostics、Latticeの公開hook status、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSONをFAIL行で名指しする。これは全製品diagnosticsの代替ではなく、全製品の更新後確認と工場横断受入はhost別一撃setupが最後に実行するfresh factory reporterとdeliveryまでを含めて閉じる。製品ごとの診断項目と合否は各製品READMEを正とする。Grok login済み時だけWindows hookのinterpreter化と`compat.claude.agents` / `hooks` の切断を見る。未loginではThroughlineが空の`config.toml`を作ってもFAILにせず、配布symlinkの整合だけを見る。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
 - **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
-- 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／SpotterのUserPromptSubmit・Stop eventが記録される／極小タスクを implementer に委譲して契約どおりの報告が返る
-- 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotter 3 hookを対話Codex CLIの`/hooks`でreviewし、対象入口の新規sessionで`spotter.hook_event.v1`が記録される
+- 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす／極小タスクを implementer に委譲して契約どおりの報告が返る
+- 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす
 - 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／工場MCP 6のhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
 - 新しい Cursor セッションで（対話確認・H）: user hooks を load 済みの Desktop 窓で人が文を送ったチャットを数える（Cmd+Shift+L の新規、または `hooks.json` を live reload 済みの既存窓）。憲法は `cursor-constitution-hook` が beforeSubmitPrompt で cap 内案内を載せ、同一本文は `~/.cursor/rules/factory.mdc` の Read（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない）。証拠は hook ログに `cursor-constitution-hook` が `from user config` で出ることと `~/.cursor/factory-hook-state/constitution-delivered/` の stamp。goal continuation・Task/cloud・`cursor --chat` は Desktop hook を踏まないので数えない／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／工場MCP 6のhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない
 
@@ -386,11 +386,9 @@ report／outbox／credentialを削除しない。
 - `~/.codex/{config.toml,auth.json,sessions,*.sqlite}` — 同上
 - `~/.codex/skills/.system/` — Codex CLI バンドルのシステム skill
 - ~~`~/.codex/AGENTS.md`~~ — 2026-07 にリポ正本化（`shared/constitution.md`＋`codex/AGENTS.delta.md`から作る`codex/AGENTS.md`をsymlink配布）。端末ローカルの緊急上書きは `~/.codex/AGENTS.override.md`（非コミット・`bin/verify-install.sh` が非空を FAIL 名指し）
-- 罠DB（旧 `caveat/`）は **v0.15+ で dotagents の外**へ移管済み。`~/.caveat/own` を Caveat 自身が private の Caveat-Private へ同期する（public/private とも）。第三者共有は `caveat publish` が public のみ Caveat-Public へ抽出。旧 `*.private.md` gitignore ガードは死に文だったため撤廃
 - リポ直下の `.claude/` `.vscode/` `.obsidian/` — 端末固有状態（gitignore 済み）
 
 ## 既知の罠
 
 - 旧clone path `~/projects/dotagents` は廃止済み。古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。
 - Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。
-- Throughlineが端末側で実体管理する `sc-detail`、`tl`、`tl-trim` と `~/.codex/skills/throughline` はrepoへ再収録しない。

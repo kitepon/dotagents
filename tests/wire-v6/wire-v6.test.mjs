@@ -83,6 +83,15 @@ test('Community overlay接続器は製品所有入口だけを呼ぶ', async () 
     });
     assert.equal(result.code, 0, result.stderr);
     assert.equal(await readFile(log, 'utf8'), 'desktop:--push\nafk:--push\n');
+
+    await writeFile(log, '');
+    const localResult = await runBash(wrapper, [], {
+      GROK_COMMUNITY_DESKTOP: desktop,
+      GROK_COMMUNITY_AFK: afk,
+      OVERLAY_CALL_LOG: log,
+    });
+    assert.equal(localResult.code, 0, localResult.stderr);
+    assert.equal(await readFile(log, 'utf8'), 'desktop:\nafk:\n');
   } finally {
     await rm(root, { recursive: true, force: true });
   }

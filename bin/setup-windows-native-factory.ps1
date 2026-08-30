@@ -17,7 +17,6 @@ $Plan = @(
   'lattice-hooks',
   'spotter-project',
   'mcp-registration',
-  'caveat-sync',
   'verify-install',
   'fresh-bughub-delivery',
   'toolchain-finalization',
@@ -567,24 +566,13 @@ try {
   } finally {
     $env:HOME = $previousCursorHome
   }
-  # 初回syncより先に caveat init を実行すると、initが作る未追跡
-  # ~/.caveat/own/.gitignore とprivate repoのcheckoutが衝突する。
-  Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
-  Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
-  $caveatOwn = Join-Path $env:USERPROFILE '.caveat\own\.git'
-  if (Test-Path -LiteralPath $caveatOwn -PathType Container) {
-    Invoke-Checked -File 'caveat' -Arguments @('sync') -Label 'caveat-sync'
-  } else {
-    Invoke-Checked -File 'caveat' -Arguments @('sync', '--init', '--repo', 'https://github.com/quolu/Caveat-Private.git') -Label 'caveat-sync-init'
-  }
   $previousHome = $env:HOME
   $previousCodexHome = $env:CODEX_HOME
   $env:HOME = $env:USERPROFILE
   $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
   try {
-    Invoke-Checked -File 'caveat' -Arguments @('init') -ClosedStdin -Label 'native-product-wiring: caveat init'
+    Invoke-Checked -File 'caveat' -Arguments @('init', '--sync', '--yes') -ClosedStdin -Label 'native-product-wiring: caveat setup'
     Invoke-Checked -File 'throughline' -Arguments @('install') -Label 'native-product-wiring: throughline'
-    Invoke-Checked -File 'caveat' -Arguments @('codex-hook', 'install') -Label 'native-product-wiring: caveat codex-hook'
   } finally {
     $env:HOME = $previousHome
     $env:CODEX_HOME = $previousCodexHome

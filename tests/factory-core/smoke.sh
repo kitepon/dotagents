@@ -12,43 +12,52 @@ trap 'rm -rf "$TMP"' EXIT
 
 fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
-mkdir -p "$HOME_DIR/.caveat/own" "$HOME_DIR/.local/bin" "$PROJECT/.spotter" "$PROJECT/.claude" "$BIN_DIR"
-for runtime in node git; do
-  printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v "$runtime")" > "$BIN_DIR/$runtime"
-  chmod +x "$BIN_DIR/$runtime"
-done
+mkdir -p "$HOME_DIR/.local/bin" "$PROJECT" "$BIN_DIR"
+printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v node)" > "$BIN_DIR/node"
+chmod +x "$BIN_DIR/node"
 PYTHON_RUNTIME=python3
 case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*) PYTHON_RUNTIME=python ;;
 esac
 printf '#!/bin/sh\nexec "%s" "$@"\n' "$(command -v "$PYTHON_RUNTIME")" > "$BIN_DIR/python3"
 chmod +x "$BIN_DIR/python3"
-git -C "$HOME_DIR/.caveat/own" init -q
-git -C "$HOME_DIR/.caveat/own" remote add origin 'git@github.com:quolu/Caveat-Private.git'
-cat > "$PROJECT/.spotter/marker.json" <<EOF
-{"markerVersion":"2","auditorContext":{"mode":"throughline","command":"$BIN_DIR/throughline"}}
-EOF
-printf '{}\n' > "$PROJECT/.spotter/tool-db.json"
-printf '{}\n' > "$PROJECT/.spotter/tool-db.codex.json"
-cat > "$PROJECT/.claude/settings.json" <<'EOF'
-{
-  "hooks": {
-    "SessionStart": [{"hooks": [{"type": "command", "command": "spotter.mjs hook session-start"}]}],
-    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "spotter.mjs hook user-prompt"}]}],
-    "PreToolUse": [{"hooks": [{"type": "command", "command": "spotter.mjs hook pre-tool-use"}]}],
-    "Stop": [{"hooks": [{"type": "command", "command": "spotter.mjs hook stop"}]}],
-    "SessionEnd": [{"hooks": [{"type": "command", "command": "spotter.mjs hook session-end"}]}]
-  }
-}
-EOF
-
-for command in caveat throughline markitdown; do
+for command in throughline markitdown; do
   cat > "$BIN_DIR/$command" <<'EOF'
 #!/bin/sh
 exit 0
 EOF
   chmod +x "$BIN_DIR/$command"
 done
+cat > "$BIN_DIR/caveat" <<'EOF'
+#!/bin/sh
+if [ "$#" -ne 2 ] || [ "$1" != factory-diagnostics ] || [ "$2" != --json ]; then
+  exit 64
+fi
+if [ -n "${CAVEAT_DIAGNOSTICS_CALL_LOG:-}" ]; then
+  [ ! -s "$CAVEAT_DIAGNOSTICS_CALL_LOG" ] || exit 65
+  printf 'factory-diagnostics --json\n' > "$CAVEAT_DIAGNOSTICS_CALL_LOG"
+fi
+case "${CAVEAT_DIAGNOSTICS_MODE:-valid}" in
+  valid)
+    printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"ready"},"database":{"status":"ready"},"sync":{"status":"ready"},"connectors":{"claude":{"status":"ready"},"codex":{"status":"ready"}}}'
+    exit 0
+    ;;
+  not_ready)
+    printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"not_ready"}}'
+    exit 1
+    ;;
+  invalid_schema)
+    printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v2","product":"caveat","version":"0.18.1","overall":{"status":"ready"}}'
+    exit 0
+    ;;
+  ready_nonzero)
+    printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"ready"}}'
+    exit 1
+    ;;
+esac
+exit 64
+EOF
+chmod +x "$BIN_DIR/caveat"
 cat > "$BIN_DIR/uv" <<'EOF'
 #!/bin/sh
 if [ "$1" = tool ] && [ "$2" = list ]; then
@@ -112,27 +121,52 @@ chmod +x "$HOME_DIR/.local/bin/oracle-mcp-stable"
 
 cat > "$BIN_DIR/spotter" <<'EOF'
 #!/bin/sh
-if [ "$1" = codex-hook ] && [ "$2" = diagnostics ] && [ "$3" = --project ]; then
-  case "${SPOTTER_DIAGNOSTICS_MODE:-valid}" in
-    valid)
-      printf '%s\n' '{"availability":"available","installedHooks":{"sessionStart":"installed","userPromptSubmit":"installed","stop":"installed"},"readiness":"configured-unverified","validation":{"sessionStart":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]},"userPromptSubmit":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]},"stop":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]}}}'
-      ;;
-    noncanonical)
-      printf '%s\n' '{"availability":"available","installedHooks":{"sessionStart":"installed","userPromptSubmit":"installed","stop":"installed"},"readiness":"configured-unverified","validation":{"sessionStart":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]},"userPromptSubmit":{"registered":true,"compatible":true,"misconfigured":false,"canonical":false,"issues":["noncanonical"]},"stop":{"registered":true,"compatible":true,"misconfigured":false,"canonical":true,"issues":[]}}}'
-      ;;
-  esac
-  exit 0
+if [ "$#" -ne 2 ] || [ "$1" != diagnostics ] || [ "$2" != factory ]; then
+  exit 64
 fi
-exit 64
+if [ -n "${SPOTTER_DIAGNOSTICS_CALL_LOG:-}" ]; then
+  [ ! -s "$SPOTTER_DIAGNOSTICS_CALL_LOG" ] || exit 65
+  printf 'diagnostics factory\n' > "$SPOTTER_DIAGNOSTICS_CALL_LOG"
+fi
+case "${SPOTTER_DIAGNOSTICS_MODE:-valid}" in
+  valid)
+    cat <<'JSON'
+{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"unverified","marker_schema_version":"2","throughline_context":"disabled","catalogs":{"claude":"available","codex":"available"},"codex_hook_readiness":"configured-unverified","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"pass"},{"check_id":"marker_schema","status":"pass"},{"check_id":"throughline_context","status":"skipped","reason_code":"evaluation_evidence_disabled"},{"check_id":"claude_catalog","status":"pass"},{"check_id":"codex_catalog","status":"pass"},{"check_id":"audit_catalog_readiness","status":"pass"},{"check_id":"codex_hooks","status":"unverified","reason_code":"trust_not_machine_verifiable"}]}
+JSON
+    ;;
+  inactive)
+    cat <<'JSON'
+{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"not_applicable","marker_schema_version":null,"throughline_context":"unverified","catalogs":{"claude":"not_applicable","codex":"not_applicable"},"codex_hook_readiness":"not_applicable","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"skipped","reason_code":"project_not_activated"}]}
+JSON
+    ;;
+  missing_catalog)
+    cat <<'JSON'
+{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"unverified","marker_schema_version":"2","throughline_context":"disabled","catalogs":{"claude":"missing","codex":"available"},"codex_hook_readiness":"configured-unverified","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"pass"},{"check_id":"marker_schema","status":"pass"},{"check_id":"throughline_context","status":"skipped","reason_code":"evaluation_evidence_disabled"},{"check_id":"claude_catalog","status":"skipped","reason_code":"catalog_missing"},{"check_id":"codex_catalog","status":"pass"},{"check_id":"audit_catalog_readiness","status":"pass"},{"check_id":"codex_hooks","status":"unverified","reason_code":"trust_not_machine_verifiable"}]}
+JSON
+    ;;
+  failed)
+    cat <<'JSON'
+{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"fail","marker_schema_version":null,"throughline_context":"disabled","catalogs":{"claude":"available","codex":"available"},"codex_hook_readiness":"configured-unverified","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"pass"},{"check_id":"marker_schema","status":"fail","reason_code":"unsupported_marker_schema"},{"check_id":"throughline_context","status":"skipped","reason_code":"evaluation_evidence_disabled"},{"check_id":"claude_catalog","status":"pass"},{"check_id":"codex_catalog","status":"pass"},{"check_id":"audit_catalog_readiness","status":"pass"},{"check_id":"codex_hooks","status":"unverified","reason_code":"trust_not_machine_verifiable"}]}
+JSON
+    ;;
+  invalid_schema)
+    printf '%s\n' '{"schema_version":"2.0","product":"spotter","version":"1.6.3","overall_status":"pass","checks":[]}'
+    ;;
+esac
+exit 0
 EOF
 chmod +x "$BIN_DIR/spotter"
 
 SERVERMANAGER_TEST_READY_URL='data:application/json,{"checks":[{"id":"database","status":"pass"},{"id":"schema","status":"pass"},{"id":"source_revision","status":"pass"}],"source_revision":"fixture-revision"}'
 verify_core() {
+  : > "$TMP/caveat-diagnostics.calls"
+  : > "$TMP/spotter-diagnostics.calls"
   HOME="$HOME_DIR" PATH="$BIN_DIR:/usr/bin:/bin" \
     SERVERMANAGER_READY_URL="$SERVERMANAGER_TEST_READY_URL" \
     DOTAGENTS_FACTORY_CORE_ONLY=1 \
     DOTAGENTS_FACTORY_PROJECT_ROOT="$PROJECT" \
+    CAVEAT_DIAGNOSTICS_CALL_LOG="$TMP/caveat-diagnostics.calls" \
+    SPOTTER_DIAGNOSTICS_CALL_LOG="$TMP/spotter-diagnostics.calls" \
     "$ROOT/bin/verify-install.sh" --profile official
 }
 
@@ -146,6 +180,8 @@ assert_rejected() {
 [ "$(grep -Ec '^  advisory:$' "$ROOT/.codex-sidecar.yml")" -eq 1 ] || fail 'codex-sidecar advisory preset がない'
 
 verify_core || fail '有効な factory core fixture が verify-install に拒否された'
+[ "$(wc -l < "$TMP/caveat-diagnostics.calls" | tr -d ' ')" -eq 1 ] || fail 'Caveat diagnosticsを一回だけ呼んでいない'
+[ "$(wc -l < "$TMP/spotter-diagnostics.calls" | tr -d ' ')" -eq 1 ] || fail 'Spotter diagnosticsを一回だけ呼んでいない'
 
 mv "$BIN_DIR/caveat" "$BIN_DIR/caveat.off"
 assert_rejected 'caveat CLI 欠落'
@@ -194,22 +230,13 @@ fi
 # Oracle はv1 rollback互換だけに残す。v2の通常導入・更新対象ではないため、
 # v2 factory core smokeはOracle wrapperの正常性を要求しない。
 
-git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:quolu/not-private.git'
-assert_rejected 'Caveat-Private remote 欠落'
-git -C "$HOME_DIR/.caveat/own" remote set-url origin 'git@github.com:quolu/Caveat-Private.git'
+CAVEAT_DIAGNOSTICS_MODE=not_ready assert_rejected 'Caveat diagnostics not_ready'
+CAVEAT_DIAGNOSTICS_MODE=invalid_schema assert_rejected 'Caveat diagnostics schema不一致'
+CAVEAT_DIAGNOSTICS_MODE=ready_nonzero assert_rejected 'Caveat diagnostics exit不一致'
 
-mv "$PROJECT/.spotter/marker.json" "$PROJECT/.spotter/marker.json.off"
-assert_rejected 'Spotter marker 欠落'
-mv "$PROJECT/.spotter/marker.json.off" "$PROJECT/.spotter/marker.json"
-
-cat > "$PROJECT/.spotter/marker.json" <<EOF
-{"markerVersion":"2","auditorContext":{"mode":"none","command":"$BIN_DIR/throughline"}}
-EOF
-assert_rejected 'Throughline 以外の auditor context'
-cat > "$PROJECT/.spotter/marker.json" <<EOF
-{"markerVersion":"2","auditorContext":{"mode":"throughline","command":"$BIN_DIR/throughline"}}
-EOF
-
-SPOTTER_DIAGNOSTICS_MODE=noncanonical assert_rejected '非 canonical Spotter diagnostics'
+SPOTTER_DIAGNOSTICS_MODE=inactive assert_rejected 'Spotter project非activation'
+SPOTTER_DIAGNOSTICS_MODE=missing_catalog assert_rejected 'Spotter host catalog欠落'
+SPOTTER_DIAGNOSTICS_MODE=failed assert_rejected 'Spotter diagnostics fail'
+SPOTTER_DIAGNOSTICS_MODE=invalid_schema assert_rejected 'Spotter diagnostics schema不一致'
 
 printf 'factory core smoke: OK\n'

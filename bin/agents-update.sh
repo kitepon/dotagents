@@ -71,18 +71,6 @@ TOOLCHAIN_LEDGER_FILE="${TOOLCHAIN_LEDGER_FILE:-$LOG_DIR/toolchain-ledger.json}"
 
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
-validate_throughline_migration() { node -e '
-  let v; try { v = JSON.parse(require("fs").readFileSync(0, "utf8")); } catch { process.exit(1); }
-  const exact = ["afterSchemaVersion", "beforeSchemaVersion", "schema", "status", "supportedSchemaVersion"];
-  if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).sort().join("\0") !== exact.sort().join("\0") ||
-      v.schema !== "throughline.database_migration.v1" || !["migrated", "already_current", "not_applicable"].includes(v.status) ||
-      !Number.isInteger(v.supportedSchemaVersion) || v.supportedSchemaVersion < 1) process.exit(1);
-  if (v.status === "not_applicable") process.exit(v.beforeSchemaVersion === null && v.afterSchemaVersion === null ? 0 : 1);
-  if (!Number.isInteger(v.beforeSchemaVersion) || !Number.isInteger(v.afterSchemaVersion) ||
-      v.afterSchemaVersion !== v.supportedSchemaVersion) process.exit(1);
-  if (v.status === "already_current") process.exit(v.beforeSchemaVersion === v.afterSchemaVersion ? 0 : 1);
-  process.exit(v.beforeSchemaVersion < v.afterSchemaVersion ? 0 : 1);
-'; }
 resolve_npm_global_bin() {
   local prefix bin
   prefix="$(npm prefix -g)" || return 1
@@ -153,6 +141,14 @@ fi
     fi
     for pkg in "${PACKAGES[@]}"; do
       printf -- '--- %s ---\n' "$pkg"
+      if [[ "$pkg" = throughline ]]; then
+        # package更新・host配線・DB migration・結果確認はThroughline製品入口が連続実行する。
+        if ! throughline self-update --json; then
+          printf 'FAILED: throughline self-update\n'
+          update_failed=1
+        fi
+        continue
+      fi
       product=''; cli=''
       case "$pkg" in
         '@anthropic-ai/claude-code') product='claude-code'; cli='claude' ;;
@@ -182,18 +178,6 @@ fi
         printf 'FAILED: %s\n' "$pkg"
         update_failed=1
         operation=failed; reason=install_failed
-      fi
-      if [[ "$pkg" = throughline && "$operation" = success ]]; then
-        printf -- '--- throughline:database-migration ---\n'
-        throughline_migration_output="$(throughline migrate --json)"
-        throughline_migration_rc=$?
-        printf '%s\n' "$throughline_migration_output"
-        if [[ "$throughline_migration_rc" -ne 0 ]] ||
-          ! printf '%s' "$throughline_migration_output" | validate_throughline_migration; then
-          printf 'FAILED: throughline database migration\n'
-          update_failed=1
-          operation=failed; reason=migration_failed
-        fi
       fi
       if [[ -n "$product" ]]; then
         if [[ "$skip_install" -eq 0 && -n "$npm_global_bin" ]]; then

@@ -17,6 +17,10 @@ on:
           - linux-native
           - windows-native
           - wsl2
+      comparison_base:
+        description: "文書不変性を比較する既存commit/ref（例: origin/main~1）"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -26,6 +30,7 @@ jobs:
     uses: ./.github/workflows/factory-full-ci.yml
     with:
       environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
+      comparison_base: ${{ github.event_name == 'workflow_dispatch' && inputs.comparison_base || '' }}
       dependency-command: npm ci --ignore-scripts
       documentation-command: make lint-md lint-current-docs
       full-command: >-
