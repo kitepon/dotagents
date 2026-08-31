@@ -166,7 +166,10 @@ function run(script, args, env = {}) {
 
 function runBash(script, args, env = {}) {
   return new Promise((resolveRun) => {
-    const child = spawn('/bin/bash', [script, ...args], {
+    const bash = process.platform === 'win32'
+      ? join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Git', 'bin', 'bash.exe')
+      : '/bin/bash';
+    const child = spawn(bash, [script, ...args], {
       env: { ...process.env, ...env },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
