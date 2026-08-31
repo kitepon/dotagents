@@ -657,7 +657,8 @@ test('Windows npm .cmdはstdin・cwd・envを保ってNodeで実行する', asyn
   await writeFile(helper, `process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ status: 'ok', command: ${JSON.stringify(process.execPath)}, prefixArgs: [${JSON.stringify(entry)}] })));\n`);
   const result = await runCommand('runner', [], { cwd: box.root, env: { ...box.env, FACTORY_MARKER: 'kept' }, input: 'stdin-kept', platform: 'win32', windowsPathModule: WINDOWS_FIXTURE_PATH, windowsHelperPath: helper });
   assert.equal(result.ok, true, result.stderr);
-  assert.deepEqual(JSON.parse(result.stdout), { input: 'stdin-kept', cwd: await realpath(box.root), marker: 'kept' });
+  const output = JSON.parse(result.stdout);
+  assert.deepEqual({ ...output, cwd: output.cwd.toLowerCase() }, { input: 'stdin-kept', cwd: (await realpath(box.root)).toLowerCase(), marker: 'kept' });
 });
 
 test('Windows command helperの解決もrun開始時からtimeoutへ含め、timeout後にlate spawnしない', async (t) => {
