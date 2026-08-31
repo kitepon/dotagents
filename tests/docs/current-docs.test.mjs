@@ -1363,7 +1363,7 @@ test('工場CIはevent別の比較基準を全document checkへ渡す', async ()
     },
   });
   assert.equal(missingBase.status, 2);
-  assert.match(missingBase.stderr, /GitHub ActionsではDOCUMENT_REGISTRY_BASE_REFが必須/);
+  assert.match(missingBase.stderr, /DOCUMENT_REGISTRY_BASE_REF is required in GitHub Actions/);
 });
 
 test('一般policyは製品内部のSpotter契約とLattice schema版を再掲しない', async () => {
