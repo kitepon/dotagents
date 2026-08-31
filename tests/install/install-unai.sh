@@ -31,11 +31,62 @@ chmod +x "$HOME/.local/bin/unai"
 INSTALLER
 chmod +x "$INSTALLER_ROOT/install.sh"
 
-HOME="$TEST_HOME" UNAI_INSTALLER_BASE_URL="file://$INSTALLER_ROOT" \
+cat >"$INSTALLER_ROOT/install.ps1" <<'INSTALLER'
+$ErrorActionPreference = 'Stop'
+$bin = Join-Path $env:HOME '.local/bin'
+New-Item -ItemType Directory -Force -Path $bin | Out-Null
+@'
+param(
+  [Parameter(ValueFromRemainingArguments = $true)]
+  [string[]] $CliArgs
+)
+
+switch ($CliArgs[0]) {
+  '--version' {
+    '0.4.0'
+    exit 0
+  }
+  'factory-diagnostics' {
+    $projectionStatus = if ($env:UNAI_TEST_PROJECTION_STATUS) {
+      $env:UNAI_TEST_PROJECTION_STATUS
+    } else {
+      'ready'
+    }
+    $overall = if ($projectionStatus -eq 'ready') { 'ready' } else { 'not_ready' }
+    [ordered]@{
+      schema = 'unai.native_factory_diagnostics.v2'
+      product = [ordered]@{ name = 'unai'; version = '0.4.0' }
+      checks = [ordered]@{
+        manifest_consistency = 'pass'
+        node_runtime = 'pass'
+        skill_bundle = 'pass'
+        skill_projections = [ordered]@{
+          claude = 'ready'
+          codex = $projectionStatus
+          grok = 'ready'
+          cursor = 'ready'
+        }
+      }
+      overall = $overall
+    } | ConvertTo-Json -Compress -Depth 4
+    if ($overall -ne 'ready') { exit 1 }
+    exit 0
+  }
+  default { exit 64 }
+}
+'@ | Set-Content -LiteralPath (Join-Path $bin 'unai.ps1') -Encoding utf8
+INSTALLER
+
+case "${OS:-$(uname -s)}" in
+  MINGW*|MSYS*|Windows_NT) INSTALLER_BASE_URL="file:///$(cygpath -m "$INSTALLER_ROOT")" ;;
+  *) INSTALLER_BASE_URL="file://$INSTALLER_ROOT" ;;
+esac
+
+HOME="$TEST_HOME" UNAI_INSTALLER_BASE_URL="$INSTALLER_BASE_URL" \
   "$ROOT/bin/install-unai.sh" >/dev/null
 
 if HOME="$TEST_HOME" UNAI_TEST_PROJECTION_STATUS=stale \
-  UNAI_INSTALLER_BASE_URL="file://$INSTALLER_ROOT" \
+  UNAI_INSTALLER_BASE_URL="$INSTALLER_BASE_URL" \
   "$ROOT/bin/install-unai.sh" >"$TEST_HOME/not-ready.out" 2>&1; then
   fail 'unai v2のstale projectionを受理した'
 fi
