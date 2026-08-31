@@ -14,6 +14,7 @@
 | 現役wire | v8（schema `8.0`、15製品） |
 | 本番BugHub endpoint | `/api/factory/v8/reports` |
 | host別rollback先 | wire v7 |
+| self-hosted CI runner | 4席 |
 
 ## 製品集合
 
@@ -21,6 +22,17 @@
 - 第三者管理: `markitdown`
 - 現役wire: `caveat`、`throughline`、`spotter`、`lattice`、`markitdown`、`gpt-connector`、`aiterm-mcp`、`codex-sidecar`、`servermanager`、`claude-code`、`codex-cli`、`grok-build`、`aishell`、`peertable`、`unai`
 
+## CI runner
+
+| runner | host label |
+|---|---|
+| `factory-macos-m5` | `macos-native` |
+| `factory-linux-main` | `linux-server` |
+| `factory-linux-rabbit` | `linux-workstation` |
+| `factory-windows-fox` | `windows-native` |
+
+WSL2 runnerと`wsl2` labelは現役集合へ含めない。Windows CIは`windows-native`だけを使う。
+
 ## 更新方法
 
-製品の追加・削除・区分変更・wire更新では、`lib/factory/deployment-contract.mjs`を先に更新し、`node bin/render-current-docs.mjs --write`でこのページを再生成する。ほかの現行案内は数やwire番号を手入力せず、このページを参照する。
+製品の追加・削除・区分変更、wire更新、runner変更では、`lib/factory/deployment-contract.mjs`を先に更新し、`node bin/render-current-docs.mjs --write`でこのページを再生成する。ほかの現行案内は数、wire番号、runner名を手入力せず、このページを参照する。

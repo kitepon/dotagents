@@ -49,7 +49,7 @@ unaiの診断command、JSON shape、check、成功・失敗の意味は
 
 ## host expectationと文章面
 
-unaiはMac、main-server、FOX WSL2、FOX Windows nativeの4 hostで`required`、欠落severityは`high`とする。
+unaiはMac、main-server、rabbit native Linux、FOX Windows nativeの4 hostで`required`、欠落severityは`high`とする。
 製品面は各hostへ公式installerで配り、利用面は`shared/constitution.md`の同じ一行を全host生成物へ配る。
 host deltaへ別表現を置かず、unai規範本文をdotagentsへ複製しない。
 

@@ -149,6 +149,9 @@ export const CURRENT_WIRE_SCHEMA_VERSION = '8.0';
 export const CURRENT_WIRE_ENDPOINT = '/api/factory/v8/reports';
 export const ROLLBACK_WIRE_MAJOR = 7;
 export const CURRENT_WIRE_PRODUCT_IDS = Object.freeze(['alpha', 'third', 'tool']);
+export const FACTORY_RUNNERS = Object.freeze([
+  Object.freeze({ name: 'factory-linux-test', label: 'linux-server' }),
+]);
 `;
 
 async function fixture(t) {
@@ -270,6 +273,8 @@ test('構造化正本から現行状態ページを冪等生成する', async (t
   assert.match(state, /現役管理対象 \| 2製品/);
   assert.match(state, /現役wire \| v8（schema `8\.0`、3製品）/);
   assert.match(state, /`\/api\/factory\/v8\/reports`/);
+  assert.match(state, /self-hosted CI runner \| 1席/);
+  assert.match(state, /`factory-linux-test` \| `linux-server`/);
   assert.equal(run(root, '--check').status, 0);
   assert.equal(run(root, '--write').status, 0);
   assert.equal(await readFile(join(root, 'docs', 'factory-current-state.md'), 'utf8'), state);

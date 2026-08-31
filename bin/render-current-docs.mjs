@@ -385,7 +385,8 @@ function renderCurrentState(facts) {
   const core = facts.CORE_PRODUCT_IDS;
   const thirdParty = facts.THIRD_PARTY_PRODUCT_IDS;
   const wire = facts.CURRENT_WIRE_PRODUCT_IDS;
-  for (const [name, value] of Object.entries({ managed, core, thirdParty, wire })) {
+  const runners = facts.FACTORY_RUNNERS;
+  for (const [name, value] of Object.entries({ managed, core, thirdParty, wire, runners })) {
     if (!Array.isArray(value) || value.length === 0) throw new Error(`${name}が不正です`);
   }
   if (!Number.isInteger(facts.CURRENT_WIRE_MAJOR) || !Number.isInteger(facts.ROLLBACK_WIRE_MAJOR)) {
@@ -402,6 +403,12 @@ function renderCurrentState(facts) {
   if (managed.some((id) => !core.includes(id) && !thirdParty.includes(id))) throw new Error('未分類の管理製品があります');
   if (new Set(wire).size !== wire.length || managed.some((id) => !wire.includes(id))) {
     throw new Error('現役wire製品集合が管理製品集合と不整合です');
+  }
+  if (runners.some((runner) => typeof runner?.name !== 'string' || runner.name.length === 0 ||
+    typeof runner?.label !== 'string' || runner.label.length === 0) ||
+    new Set(runners.map((runner) => runner.name)).size !== runners.length ||
+    new Set(runners.map((runner) => runner.label)).size !== runners.length) {
+    throw new Error('工場runner集合が不正です');
   }
 
   return `# 工場の現行状態
@@ -420,6 +427,7 @@ function renderCurrentState(facts) {
 | 現役wire | v${facts.CURRENT_WIRE_MAJOR}（schema \`${facts.CURRENT_WIRE_SCHEMA_VERSION}\`、${wire.length}製品） |
 | 本番BugHub endpoint | \`${facts.CURRENT_WIRE_ENDPOINT}\` |
 | host別rollback先 | wire v${facts.ROLLBACK_WIRE_MAJOR} |
+| self-hosted CI runner | ${runners.length}席 |
 
 ## 製品集合
 
@@ -427,9 +435,17 @@ function renderCurrentState(facts) {
 - 第三者管理: ${thirdParty.map((id) => `\`${id}\``).join('、')}
 - 現役wire: ${wire.map((id) => `\`${id}\``).join('、')}
 
+## CI runner
+
+| runner | host label |
+|---|---|
+${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` |`).join('\n')}
+
+WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。Windows CIは\`windows-native\`だけを使う。
+
 ## 更新方法
 
-製品の追加・削除・区分変更・wire更新では、\`lib/factory/deployment-contract.mjs\`を先に更新し、\`node bin/render-current-docs.mjs --write\`でこのページを再生成する。ほかの現行案内は数やwire番号を手入力せず、このページを参照する。
+製品の追加・削除・区分変更、wire更新、runner変更では、\`lib/factory/deployment-contract.mjs\`を先に更新し、\`node bin/render-current-docs.mjs --write\`でこのページを再生成する。ほかの現行案内は数、wire番号、runner名を手入力せず、このページを参照する。
 `;
 }
 
