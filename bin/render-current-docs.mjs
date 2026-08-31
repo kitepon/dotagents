@@ -386,6 +386,7 @@ function renderCurrentState(facts) {
   const thirdParty = facts.THIRD_PARTY_PRODUCT_IDS;
   const wire = facts.CURRENT_WIRE_PRODUCT_IDS;
   const runners = facts.FACTORY_RUNNERS;
+  const fullCiRunners = runners?.filter((runner) => runner.fullCi);
   for (const [name, value] of Object.entries({ managed, core, thirdParty, wire, runners })) {
     if (!Array.isArray(value) || value.length === 0) throw new Error(`${name}が不正です`);
   }
@@ -405,9 +406,9 @@ function renderCurrentState(facts) {
     throw new Error('現役wire製品集合が管理製品集合と不整合です');
   }
   if (runners.some((runner) => typeof runner?.name !== 'string' || runner.name.length === 0 ||
-    typeof runner?.label !== 'string' || runner.label.length === 0) ||
+    typeof runner?.label !== 'string' || runner.label.length === 0 || typeof runner?.fullCi !== 'boolean') ||
     new Set(runners.map((runner) => runner.name)).size !== runners.length ||
-    new Set(runners.map((runner) => runner.label)).size !== runners.length) {
+    new Set(runners.map((runner) => runner.label)).size !== runners.length || fullCiRunners.length === 0) {
     throw new Error('工場runner集合が不正です');
   }
 
@@ -427,7 +428,8 @@ function renderCurrentState(facts) {
 | 現役wire | v${facts.CURRENT_WIRE_MAJOR}（schema \`${facts.CURRENT_WIRE_SCHEMA_VERSION}\`、${wire.length}製品） |
 | 本番BugHub endpoint | \`${facts.CURRENT_WIRE_ENDPOINT}\` |
 | host別rollback先 | wire v${facts.ROLLBACK_WIRE_MAJOR} |
-| self-hosted CI runner | ${runners.length}席 |
+| self-hosted runner | ${runners.length}席 |
+| full CI環境 | ${fullCiRunners.length}環境 |
 
 ## 製品集合
 
@@ -437,11 +439,11 @@ function renderCurrentState(facts) {
 
 ## CI runner
 
-| runner | host label |
-|---|---|
-${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` |`).join('\n')}
+| runner | host label | 利用面 |
+|---|---|---|
+${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} |`).join('\n')}
 
-WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。Windows CIは\`windows-native\`だけを使う。
+full CIは\`full CI\`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。
 
 ## 更新方法
 

@@ -9,6 +9,7 @@
 ## 工場runner契約
 
 - self-hosted runnerは`factory`とhostを表すlabelを持つ。現役runner名とhost labelの対応は[工場の現行状態](../../docs/factory-current-state.md)が正である。どのlabelを製品が要求するかは製品repoが決める。
+- dotagentsの通常full CIと変更分類jobは、現行状態で`full CI`としたrunnerだけを使う。main-server runnerは運用workflow専用とし、通常CIの重複実行へ使わない。
 - WSL2 runnerと`wsl2` labelは退役済みであり、Organizationへ再登録せず、workflowの実行対象にも戻さない。Windows CIは`windows-native` runnerだけを使い、PowerShell 7とGit for Windowsで閉じる。
 - runner groupのrepo access、同時実行capacity、online/busy、標準toolchainを工場の観測対象にする。
 - runnerは個人用PATHや対話sessionを前提にしない。runnerやtoolchainの障害を別環境への迂回で隠さない。

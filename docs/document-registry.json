@@ -470,7 +470,7 @@
         "docs/factory-product-contracts.md": "54cacb72497acaf1cd07396f3c60b4d0e7bd961938af38be877c0b7e08ec0b4d",
         "docs/factory-reporter-runbook.md": "52a1a9cfceecb810cff22abba893e0ec68eb7cf763d88555e3c8081db8b7c9c1",
       "docs/wire-v8-design.md": "8ff770ea5d16a4aca1be15f4c3be725789e0f6af67d74a00c029d16d4cc15082",
-      "shared/runbooks/factory-ci.md": "c6ab7d885809a15861295b358da28af2448491d8defe7249fe842f82b12ad759"
+      "shared/runbooks/factory-ci.md": "1d55773c2592d9910085be25665d037c97a10b79f1d43b92620f98e63d44b885"
       },
       "required_regexes": [],
       "forbidden_regexes": []

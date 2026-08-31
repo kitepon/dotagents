@@ -150,7 +150,8 @@ export const CURRENT_WIRE_ENDPOINT = '/api/factory/v8/reports';
 export const ROLLBACK_WIRE_MAJOR = 7;
 export const CURRENT_WIRE_PRODUCT_IDS = Object.freeze(['alpha', 'third', 'tool']);
 export const FACTORY_RUNNERS = Object.freeze([
-  Object.freeze({ name: 'factory-linux-test', label: 'linux-server' }),
+  Object.freeze({ name: 'factory-linux-test', label: 'linux-workstation', fullCi: true }),
+  Object.freeze({ name: 'factory-linux-ops', label: 'linux-server', fullCi: false }),
 ]);
 `;
 
@@ -273,8 +274,10 @@ test('構造化正本から現行状態ページを冪等生成する', async (t
   assert.match(state, /現役管理対象 \| 2製品/);
   assert.match(state, /現役wire \| v8（schema `8\.0`、3製品）/);
   assert.match(state, /`\/api\/factory\/v8\/reports`/);
-  assert.match(state, /self-hosted CI runner \| 1席/);
-  assert.match(state, /`factory-linux-test` \| `linux-server`/);
+  assert.match(state, /self-hosted runner \| 2席/);
+  assert.match(state, /full CI環境 \| 1環境/);
+  assert.match(state, /`factory-linux-test` \| `linux-workstation` \| full CI/);
+  assert.match(state, /`factory-linux-ops` \| `linux-server` \| 運用workflow/);
   assert.equal(run(root, '--check').status, 0);
   assert.equal(run(root, '--write').status, 0);
   assert.equal(await readFile(join(root, 'docs', 'factory-current-state.md'), 'utf8'), state);
@@ -1340,6 +1343,9 @@ test('実repoの文書台帳は製品制御を製品repo所有として固定す
 
 test('工場CIはevent別の比較基準を全document checkへ渡す', async () => {
   const workflow = await readFile(join(ROOT, '.github', 'workflows', 'factory-full-ci.yml'), 'utf8');
+  assert.match(workflow, /runs-on: \[self-hosted, factory, linux-workstation\]/);
+  assert.match(workflow, /\["macos-native","linux-workstation","windows-native"\]/);
+  assert.doesNotMatch(workflow, /linux-server/);
   assert.equal(workflow.match(/fetch-depth: 0/g)?.length, 2);
   assert.match(workflow, /EVENT_NAME" == pull_request[\s\S]{0,120}base="\$BASE_SHA"/);
   assert.match(workflow, /EVENT_NAME" == push[\s\S]{0,120}base="\$BEFORE_SHA"/);
@@ -1353,6 +1359,7 @@ test('工場CIはevent別の比較基準を全document checkへ渡す', async ()
   assert.match(workflow, /DOCUMENT_REGISTRY_BASE_REF: \$\{\{ needs\.classify\.outputs\.comparison_base \}\}/);
   assert.match(workflow, /CI comparison base is required and must resolve to a commit/);
   const entry = await readFile(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+  assert.doesNotMatch(entry, /^\s+- linux-server$/m);
   assert.match(entry, /comparison_base:[\s\S]{0,160}required: true/);
   assert.match(entry, /comparison_base: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.comparison_base \|\| '' \}\}/);
   const makefile = await readFile(join(ROOT, 'Makefile'), 'utf8');

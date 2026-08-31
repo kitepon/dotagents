@@ -14,7 +14,8 @@
 | 現役wire | v8（schema `8.0`、15製品） |
 | 本番BugHub endpoint | `/api/factory/v8/reports` |
 | host別rollback先 | wire v7 |
-| self-hosted CI runner | 4席 |
+| self-hosted runner | 4席 |
+| full CI環境 | 3環境 |
 
 ## 製品集合
 
@@ -24,14 +25,14 @@
 
 ## CI runner
 
-| runner | host label |
-|---|---|
-| `factory-macos-m5` | `macos-native` |
-| `factory-linux-main` | `linux-server` |
-| `factory-linux-rabbit` | `linux-workstation` |
-| `factory-windows-fox` | `windows-native` |
+| runner | host label | 利用面 |
+|---|---|---|
+| `factory-macos-m5` | `macos-native` | full CI |
+| `factory-linux-main` | `linux-server` | 運用workflow |
+| `factory-linux-rabbit` | `linux-workstation` | full CI |
+| `factory-windows-fox` | `windows-native` | full CI |
 
-WSL2 runnerと`wsl2` labelは現役集合へ含めない。Windows CIは`windows-native`だけを使う。
+full CIは`full CI`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと`wsl2` labelは現役集合へ含めない。
 
 ## 更新方法
 
