@@ -118,7 +118,8 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
 });
 
 test('Windows native一撃setupはWindows PowerShell 5.1を明示拒否する', { skip: process.platform !== 'win32' }, () => {
-  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SETUP, '-PlanOnly'], { encoding: 'utf8' });
+  const windowsPowerShell = join(process.env.WINDIR ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+  const result = spawnSync(windowsPowerShell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SETUP, '-PlanOnly'], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /PowerShell 7.*official GitHub release.*MSI.*machine scope/u);
 });
