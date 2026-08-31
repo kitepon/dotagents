@@ -39,7 +39,7 @@ lint-constitution: ## 共通憲法＋host deltaと生成物の完全一致を照
 
 lint-current-docs: ## 全document分類・現行状態生成物・手書き現行値を検証
 	@if [ "$$GITHUB_ACTIONS" = "true" ] && [ -z "$$DOCUMENT_REGISTRY_BASE_REF" ]; then \
-		printf '%s\n' 'GitHub ActionsではDOCUMENT_REGISTRY_BASE_REFが必須です' >&2; \
+		printf '%s\n' 'DOCUMENT_REGISTRY_BASE_REF is required in GitHub Actions' >&2; \
 		exit 2; \
 	fi
 	node bin/render-current-docs.mjs --check --base-ref "$${DOCUMENT_REGISTRY_BASE_REF:-HEAD}"
