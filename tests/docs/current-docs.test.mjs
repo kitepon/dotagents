@@ -1343,21 +1343,28 @@ test('実repoの文書台帳は製品制御を製品repo所有として固定す
 
 test('工場CIはevent別の比較基準を全document checkへ渡す', async () => {
   const workflow = await readFile(join(ROOT, '.github', 'workflows', 'factory-full-ci.yml'), 'utf8');
+  const planner = await readFile(join(ROOT, 'scripts', 'dotagents-ci-plan.mjs'), 'utf8');
   assert.match(workflow, /runs-on: \[self-hosted, factory, linux-workstation\]/);
-  assert.match(workflow, /\["macos-native","linux-workstation","windows-native"\]/);
+  assert.match(workflow, /environment: \$\{\{ fromJSON\(needs\.classify\.outputs\.environments\) \}\}/);
   assert.doesNotMatch(workflow, /linux-server/);
   assert.equal(workflow.match(/fetch-depth: 0/g)?.length, 2);
-  assert.match(workflow, /EVENT_NAME" == pull_request[\s\S]{0,120}base="\$BASE_SHA"/);
-  assert.match(workflow, /EVENT_NAME" == push[\s\S]{0,120}base="\$BEFORE_SHA"/);
-  assert.match(workflow, /EVENT_NAME" == workflow_dispatch[\s\S]{0,180}base="\$DISPATCH_BASE"/);
-  assert.ok(workflow.indexOf('GITHUB_REF" == refs/tags/*') < workflow.indexOf('EVENT_NAME" == push'));
-  assert.match(workflow, /base=\$\(git rev-parse --verify "\$base\^\{commit\}"\)/);
-  assert.match(workflow, /git merge-base --is-ancestor "\$base" "\$GITHUB_SHA"/);
-  assert.match(workflow, /base" == "\$GITHUB_SHA"/);
+  assert.match(workflow, /EVENT_NAME: \$\{\{ github\.event_name \}\}/);
+  assert.match(workflow, /BEFORE_SHA: \$\{\{ github\.event\.before \}\}/);
+  assert.match(workflow, /BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
+  assert.match(workflow, /DISPATCH_BASE: \$\{\{ inputs\.comparison_base \}\}/);
+  assert.match(workflow, /run: node scripts\/dotagents-ci-plan\.mjs plan/);
   assert.match(workflow, /comparison_base: \$\{\{ steps\.changes\.outputs\.comparison_base \}\}/);
   assert.match(workflow, /DOCUMENT_REGISTRY_BASE_REF: \$\{\{ steps\.changes\.outputs\.comparison_base \}\}/);
   assert.match(workflow, /DOCUMENT_REGISTRY_BASE_REF: \$\{\{ needs\.classify\.outputs\.comparison_base \}\}/);
-  assert.match(workflow, /CI comparison base is required and must resolve to a commit/);
+  assert.match(workflow, /needs: \[classify, full\][\s\S]{0,40}if: always\(\)/);
+  assert.match(workflow, /CLASSIFY_RESULT: \$\{\{ needs\.classify\.result \}\}/);
+  assert.match(workflow, /FULL_RESULT: \$\{\{ needs\.full\.result \}\}/);
+  assert.match(workflow, /run: node scripts\/dotagents-ci-plan\.mjs verify/);
+  assert.match(planner, /eventName === "pull_request"[\s\S]{0,80}environment\.BASE_SHA/u);
+  assert.match(planner, /eventName === "push"[\s\S]{0,80}environment\.BEFORE_SHA/u);
+  assert.match(planner, /eventName === "workflow_dispatch"[\s\S]{0,80}environment\.DISPATCH_BASE/u);
+  assert.match(planner, /"merge-base", "--is-ancestor", base, head/u);
+  assert.match(planner, /CI comparison baseが必要です/u);
   const entry = await readFile(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
   assert.doesNotMatch(entry, /^\s+- linux-server$/m);
   assert.match(entry, /make --jobs="\$FACTORY_CI_JOBS" ci/);

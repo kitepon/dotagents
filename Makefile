@@ -18,7 +18,7 @@ PYTHON := python3
 endif
 endif
 
-.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration canon-migration-gate lint-skills lint-hooks test-constitution test-current-docs test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ci help
+.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration canon-migration-gate lint-skills lint-hooks test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ci help
 
 lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration lint-skills lint-hooks ## 静的 lint + skill/hook smoke
 
@@ -28,8 +28,8 @@ lint-sh: ## shellcheck: install.sh + bin/ と tests/ の shell スクリプト�
 lint-py: ## bin/ と lib/ の Python script を構文チェック（py_compile・依存なし）
 	@for f in $$(grep -lE '^#!.*python' bin/*.sh) lib/*.py lib/orchestrate/*.py; do $(PYTHON) -m py_compile "$$f" && echo "py-syntax OK: $$f"; done
 
-lint-js: ## bin/ と lib/orchestrate/ の Node.js script を構文チェック
-	@for f in bin/*.mjs lib/orchestrate/*.mjs; do node --check "$$f"; done
+lint-js: ## bin/・scripts/・lib/orchestrate/ の Node.js script を構文チェック
+	@for f in bin/*.mjs scripts/*.mjs lib/orchestrate/*.mjs; do node --check "$$f"; done
 
 lint-md: ## markdownlint（緩い設定・生きた正典のみ / .markdownlint-cli2.jsonc）
 	$(MDLINT)
@@ -65,6 +65,9 @@ test-constitution: ## 共通憲法generatorの冪等性とdrift拒否
 
 test-current-docs: ## document registryの自動分類・生成・drift拒否
 	node --test tests/docs/current-docs.test.mjs
+
+test-ci-plan: ## 変更分類と最終合否のfail-closed契約
+	node --test tests/ci/*.test.mjs
 
 test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/apply-claude-config.sh
@@ -103,7 +106,7 @@ test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽
 	node --test tests/lattice-cutover/*.test.mjs
 	node bin/lattice-todo-inventory.mjs --verify-cutover
 
-ci: lint test-constitution test-current-docs test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ## ローカル/CI 共通の全ゲート
+ci: lint test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-orchestrate test-lattice-cutover ## ローカル/CI 共通の全ゲート
 
 help: ## タスク一覧
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \

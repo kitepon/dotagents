@@ -14,8 +14,7 @@ on:
         type: string
       documentation-command:
         description: Markdownだけの変更時にLinux 1環境で実行する文書確認
-        required: false
-        default: ""
+        required: true
         type: string
       environment:
         description: all または単一の工場環境
@@ -34,9 +33,11 @@ permissions:
 jobs:
   classify:
     runs-on: [self-hosted, factory, linux-workstation]
+    timeout-minutes: 5
     outputs:
       product_change: ${{ steps.changes.outputs.product_change }}
       comparison_base: ${{ steps.changes.outputs.comparison_base }}
+      environments: ${{ steps.changes.outputs.environments }}
     steps:
       - name: checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -50,64 +51,14 @@ jobs:
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           DISPATCH_BASE: ${{ inputs.comparison_base }}
-        run: |
-          product_change=true
-          reason="product change"
-          base=""
-
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            base="$DISPATCH_BASE"
-          elif [[ "$EVENT_NAME" == pull_request ]]; then
-            base="$BASE_SHA"
-          elif [[ "$EVENT_NAME" == push ]]; then
-            base="$BEFORE_SHA"
-          elif [[ "$EVENT_NAME" == workflow_dispatch ]]; then
-            base="$DISPATCH_BASE"
-          fi
-
-          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
-            printf 'CI comparison base is required and must resolve to a commit (event=%s, base=%s).\n' "$EVENT_NAME" "$base" >&2
-            exit 2
-          fi
-          if ! base=$(git rev-parse --verify "$base^{commit}"); then
-            printf 'CI comparison base is required and must resolve to a commit (event=%s, base=%s).\n' "$EVENT_NAME" "$base" >&2
-            exit 2
-          fi
-          if [[ "$base" == "$GITHUB_SHA" ]] || ! git merge-base --is-ancestor "$base" "$GITHUB_SHA"; then
-            printf 'CI comparison base must be an earlier ancestor of GITHUB_SHA (base=%s, head=%s).\n' "$base" "$GITHUB_SHA" >&2
-            exit 2
-          fi
-
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
-            reason="tag"
-          elif [[ "$EVENT_NAME" == workflow_dispatch ]]; then
-            reason="manual run"
-          else
-            found=false
-            non_markdown=false
-            while IFS= read -r -d '' file; do
-              found=true
-              if [[ "$file" != *.md ]]; then
-                non_markdown=true
-                break
-              fi
-            done < <(git diff --name-only -z "$base" "$GITHUB_SHA")
-
-            if [[ "$found" == true && "$non_markdown" == false ]]; then
-              product_change=false
-              reason="Markdown only"
-            fi
-          fi
-
-          printf 'product_change=%s\n' "$product_change" >> "$GITHUB_OUTPUT"
-          printf 'comparison_base=%s\n' "$base" >> "$GITHUB_OUTPUT"
-          printf 'CI classification: %s\n' "$reason"
+          REQUESTED_ENVIRONMENT: ${{ inputs.environment }}
+        run: node scripts/dotagents-ci-plan.mjs plan
       - name: documentation dependency install
-        if: steps.changes.outputs.product_change == 'false' && inputs.documentation-command != '' && inputs.dependency-command != ''
+        if: steps.changes.outputs.product_change == 'false' && inputs.dependency-command != ''
         shell: bash
         run: ${{ inputs.dependency-command }}
       - name: documentation check
-        if: steps.changes.outputs.product_change == 'false' && inputs.documentation-command != ''
+        if: steps.changes.outputs.product_change == 'false'
         shell: bash
         env:
           DOCUMENT_REGISTRY_BASE_REF: ${{ steps.changes.outputs.comparison_base }}
@@ -126,7 +77,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: ${{ fromJSON(inputs.environment != 'all' && format('["{0}"]', inputs.environment) || '["macos-native","linux-workstation","windows-native"]') }}
+        environment: ${{ fromJSON(needs.classify.outputs.environments) }}
     timeout-minutes: 30
     runs-on: [self-hosted, factory, "${{ matrix.environment }}"]
     steps:
@@ -162,3 +113,19 @@ jobs:
         if: matrix.environment == 'windows-native'
         shell: C:\Progra~1\Git\bin\bash.exe --noprofile --norc -e -o pipefail {0}
         run: ${{ inputs.full-command }}
+
+  gate:
+    needs: [classify, full]
+    if: always()
+    runs-on: [self-hosted, factory, linux-workstation]
+    timeout-minutes: 5
+    steps:
+      - name: checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: verify selected CI results
+        shell: bash
+        env:
+          CLASSIFY_RESULT: ${{ needs.classify.result }}
+          FULL_RESULT: ${{ needs.full.result }}
+          PRODUCT_CHANGE: ${{ needs.classify.outputs.product_change }}
+        run: node scripts/dotagents-ci-plan.mjs verify

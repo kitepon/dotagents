@@ -24,6 +24,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   full:
     uses: ./.github/workflows/factory-full-ci.yml
@@ -31,6 +35,6 @@ jobs:
       environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
       comparison_base: ${{ github.event_name == 'workflow_dispatch' && inputs.comparison_base || '' }}
       dependency-command: npm ci --ignore-scripts
-      documentation-command: make lint-md lint-current-docs
+      documentation-command: make lint-md lint-current-docs lint-constitution lint-canon-migration lint-skills test-constitution test-current-docs
       full-command: >-
         node --version && npm --version && shellcheck --version && rg --version && codex --version && make --jobs="$FACTORY_CI_JOBS" ci

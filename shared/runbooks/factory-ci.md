@@ -6,6 +6,16 @@
 
 各製品はworkflow名、起動条件、対応OS、依存導入、試験command、文書検査、並列度、timeout、release gateと合否を自身のrepoで所有する。dotagentsは共通self-hosted runner、label、capacity、repo access、標準toolchain、host障害と横断結果だけを所有する。製品CIをdotagentsのworkflowへ委譲せず、このrunbookへ製品workflowの内部構造を複製しない。
 
+## 製品CIの選択と合否
+
+- 各製品は変更内容と自身が所有する依存関係から必要な検査を選び、選択理由と実行結果を自身のCIで機械判定する。分類不能、差分取得失敗、未知の入力は、製品が定めた広い検査または明示失敗だけを許す。
+- 条件付きjobを持つ製品は、変更分類の成功、選択されたjobの成功、選択されなかったjobの明示skipが一致した時だけ最終gateを成功させる。選択されたjobのskip、cancel、timeout、結果欠落は失敗とする。
+- pull request、merge queue、default branch、定期実行、releaseで検査範囲を変える判断は各製品が所有する。マージを防ぐ契約はマージ前に完了する検査へ置き、遅れて検出してよい健康診断だけを定期実行へ置く。
+- 同じcommandと入力による検査は一つの正規実装から呼ぶ。イベントごとに検査範囲や対応環境を変える時は、その差が検出する欠陥の違いを製品repoで説明できる形にする。
+- 新しい重いjobまたはrequired checkを追加できるのは、既存検査が防げない欠陥と起動条件を同じ変更で示せる時だけとする。CI変更は直近実行の所要時間、critical path、同じcommandと入力の重複を実測してから行う。
+
+本節は製品CIの合否契約だけを定める。変更分類の実装、job名、GitHub Actionsの構成、cache、検査command、時間予算は各製品repoが所有する。
+
 ## 工場runner契約
 
 - self-hosted runnerは`factory`とhostを表すlabelを持つ。現役runner名とhost labelの対応は[工場の現行状態](../../docs/factory-current-state.md)が正である。どのlabelを製品が要求するかは製品repoが決める。
