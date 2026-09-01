@@ -33,4 +33,4 @@ jobs:
       dependency-command: npm ci --ignore-scripts
       documentation-command: make lint-md lint-current-docs
       full-command: >-
-        node --version && npm --version && shellcheck --version && rg --version && codex --version && make ci
+        node --version && npm --version && shellcheck --version && rg --version && codex --version && make --jobs="$FACTORY_CI_JOBS" ci

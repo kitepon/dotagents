@@ -1360,6 +1360,7 @@ test('工場CIはevent別の比較基準を全document checkへ渡す', async ()
   assert.match(workflow, /CI comparison base is required and must resolve to a commit/);
   const entry = await readFile(join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
   assert.doesNotMatch(entry, /^\s+- linux-server$/m);
+  assert.match(entry, /make --jobs="\$FACTORY_CI_JOBS" ci/);
   assert.match(entry, /comparison_base:[\s\S]{0,160}required: true/);
   assert.match(entry, /comparison_base: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.comparison_base \|\| '' \}\}/);
   const makefile = await readFile(join(ROOT, 'Makefile'), 'utf8');
