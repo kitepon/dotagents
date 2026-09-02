@@ -16,6 +16,13 @@
 
 本節は製品CIの合否契約だけを定める。変更分類の実装、job名、GitHub Actionsの構成、cache、検査command、時間予算は各製品repoが所有する。
 
+## 検査範囲の既定と所要時間
+
+- CIの目的には、欠陥検出と同じ重みで所有者の待ち時間と費用を含める。検査を増やす判断も減らす判断も、この両方を実測で比べてから行う。
+- push／pull requestの既定はLinux 1環境で、変更に関係する検査だけとする。他OSは、そのOS固有pathを触った変更、週1回の定期健康診断、手動実行だけで回す。version番号や配布metadataだけの変更を全環境展開の理由にしない。
+- releaseの公開jobは、同じcommitの他eventのCI結果を前提にしない。tagが公開の決定であり、gateは既定ブランチの祖先確認と配布物の検査だけとする。
+- 実測（2026-09-02、Aitermとdotagents）: Linux 2〜3分、macOS 2分、Windows 5〜6分。全環境展開ではWindowsが常にcritical pathになり、release 1回あたり約6分の待ちが所有者の費用として発生していた。
+
 ## 工場runner契約
 
 - self-hosted runnerは`factory`とhostを表すlabelを持つ。現役runner名とhost labelの対応は[工場の現行状態](../../docs/factory-current-state.md)が正である。どのlabelを製品が要求するかは製品repoが決める。

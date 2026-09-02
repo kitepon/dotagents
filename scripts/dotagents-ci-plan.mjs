@@ -10,6 +10,10 @@ export const ALL_ENVIRONMENTS = Object.freeze([
   "windows-native",
 ]);
 
+// push／pull requestの既定はLinux 1環境。実測（2026-09-02）ではWindows runnerが毎回critical pathを
+// 5〜6分占める。他OSはそのOS固有pathを触った変更、定期健康診断、手動実行だけ（factory-ci runbook）。
+export const PUSH_ENVIRONMENTS = Object.freeze(["linux-workstation"]);
+
 const HOST_PATH_RULES = Object.freeze([
   Object.freeze({
     environment: "macos-native",
@@ -39,7 +43,7 @@ const HOST_PATH_RULES = Object.freeze([
 
 export function classifyPaths(paths) {
   const normalizedPaths = [...new Set(paths)].toSorted();
-  if (normalizedPaths.length === 0) return fullPlan(normalizedPaths, "差分なしを広い検査へ分類");
+  if (normalizedPaths.length === 0) return fullPlan(normalizedPaths, "差分なしをLinux全検査へ分類");
   if (normalizedPaths.length > 0 && normalizedPaths.every(isDocumentationPath)) {
     return Object.freeze({
       schema: "dotagents.ci-plan.v1",
@@ -55,7 +59,7 @@ export function classifyPaths(paths) {
     if (isDocumentationPath(path)) continue;
     const matchedRules = HOST_PATH_RULES.filter((rule) =>
       rule.patterns.some((pattern) => pattern.test(path)));
-    if (matchedRules.length === 0) return fullPlan(normalizedPaths, "共通または未分類の変更");
+    if (matchedRules.length === 0) return fullPlan(normalizedPaths, "共通または未分類の変更をLinux全検査へ");
     for (const rule of matchedRules) selected.add(rule.environment);
   }
 
@@ -86,11 +90,11 @@ function isDocumentationPath(path) {
   return /\.(?:md|mdc)$/u.test(path);
 }
 
-function fullPlan(paths, reason) {
+function fullPlan(paths, reason, environments = PUSH_ENVIRONMENTS) {
   return Object.freeze({
     schema: "dotagents.ci-plan.v1",
     productChange: true,
-    environments: ALL_ENVIRONMENTS,
+    environments,
     reason,
     changedPaths: Object.freeze(paths),
   });
@@ -129,6 +133,12 @@ function requestedEnvironments(requested) {
 }
 
 function createPlan(environment) {
+  if (environment.EVENT_NAME === "schedule") {
+    return {
+      ...fullPlan([], "定期健康診断", ALL_ENVIRONMENTS),
+      comparisonBase: resolveCommit(environment.GITHUB_SHA),
+    };
+  }
   const baseInput = comparisonBase(environment);
   if (!baseInput || /^0+$/u.test(baseInput)) {
     throw new Error(
@@ -146,8 +156,11 @@ function createPlan(environment) {
 
   if (environment.GITHUB_REF?.startsWith("refs/tags/") || environment.EVENT_NAME === "workflow_dispatch") {
     return {
-      ...fullPlan([], environment.GITHUB_REF?.startsWith("refs/tags/") ? "tag" : "手動実行"),
-      environments: requestedEnvironments(environment.REQUESTED_ENVIRONMENT),
+      ...fullPlan(
+        [],
+        environment.GITHUB_REF?.startsWith("refs/tags/") ? "tag" : "手動実行",
+        requestedEnvironments(environment.REQUESTED_ENVIRONMENT),
+      ),
       comparisonBase: base,
     };
   }

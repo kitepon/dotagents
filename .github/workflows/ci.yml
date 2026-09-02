@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # 週1回の健康診断だけ3環境の全検査を回す（月曜 03:30 JST）。
+    - cron: "30 18 * * 0"
   workflow_dispatch:
     inputs:
       environment:

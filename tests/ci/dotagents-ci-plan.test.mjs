@@ -7,6 +7,7 @@ import test from "node:test";
 
 import {
   ALL_ENVIRONMENTS,
+  PUSH_ENVIRONMENTS,
   classifyPaths,
   verifyResults,
 } from "../../scripts/dotagents-ci-plan.mjs";
@@ -60,12 +61,36 @@ test("MacとLinux固有変更は該当hostだけへ分類する", () => {
   assert.deepEqual(plan.environments, ["macos-native", "linux-workstation"]);
 });
 
-test("共通変更と未分類変更は全環境へ広げる", () => {
-  for (const paths of [["Makefile"], ["new-product/file.txt"], [".github/workflows/ci.yml"], []]) {
+test("共通変更と未分類変更はpush既定のLinux 1環境へ分類する", () => {
+  assert.deepEqual(PUSH_ENVIRONMENTS, ["linux-workstation"]);
+  for (const paths of [["lib/factory/core.mjs"], ["new-product/file.txt"], [".github/workflows/ci.yml"], ["package.json"], []]) {
     const plan = classifyPaths(paths);
     assert.equal(plan.productChange, true);
-    assert.deepEqual(plan.environments, ALL_ENVIRONMENTS);
+    assert.deepEqual(plan.environments, PUSH_ENVIRONMENTS);
   }
+});
+
+test("定期実行だけが全環境へ広がる", async (t) => {
+  const repo = await repository(t);
+  const output = join(repo.root, "github-output.txt");
+  const result = spawnSync(process.execPath, [SCRIPT, "plan"], {
+    cwd: repo.root,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      EVENT_NAME: "schedule",
+      BEFORE_SHA: "",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_SHA: repo.head,
+      GITHUB_OUTPUT: output,
+      REQUESTED_ENVIRONMENT: "all",
+    },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  const outputs = Object.fromEntries((await readFile(output, "utf8")).trim().split("\n")
+    .map((line) => line.split(/=(.*)/su).slice(0, 2)));
+  assert.deepEqual(JSON.parse(outputs.environments), ALL_ENVIRONMENTS);
+  assert.equal(outputs.product_change, "true");
 });
 
 test("結果判定は選択されたfullの成功と文書時の明示skipだけを受け入れる", () => {
