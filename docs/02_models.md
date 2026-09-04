@@ -35,10 +35,10 @@
 |---|---|---|---|
 | 統括 | **オーナー指定**（参考候補: Opus 5×high、Grok 4.6×high、Fable 5×highスポット。順位は参考情報でpinはオーナー） | — | — |
 | 反証 | Grok 4.6×high（実測14/14） | Sol×high（実測14/14。同着はGrok優先＝オーナー裁定 2026-08-19） | Opus 5×high（実測13/14。唯一の誤りは真だが無害な指摘を殺した方向） |
-| 監査・発見 | Grok 4.6×medium（実測recall 7/10・FP 0） | Sonnet 5×medium（実測6/10＋partial 1・FP 0） | Terra×medium（実測6/10・FP 0） |
+| 監査・発見 | Grok 4.6×medium（実測recall 7/10・FP 0。受入文言が曖昧な工程では縮小提出を通した＝[実測 2026-09-04](../rag/models/sprite-forge-roundtable-placement-20260904.md)） | Sonnet 5×medium（実測6/10＋partial 1・FP 0。円卓監査で証跡なし提出を差し戻した＝同実測） | Terra×medium（実測6/10・FP 0） |
 | 設計 | Opus 5×high（GDPval-AA・APEX首位 2026-08-19時点） | Grok 4.6×high（独立視点） | Sol×medium（過剰設計報告に注意） |
 | 相談 | ChatGPT（gpt-connector・別quota。[06_gpt-connector.md](06_gpt-connector.md)） | Grok 4.6×medium | Fable 5×highスポット（契約critical） |
-| 実装 | Terra×high（Terminal-Bench 2.1 78.4%） | Sonnet 5×medium〜high | Grok 4.6×medium（repo横断・長時間はhigh） |
+| 実装 | Terra×high（Terminal-Bench 2.1 78.4%。**受入が成果物・数値で書けている工程向け**。統合・配置・UI 受入など範囲判断を要する工程は Sol×high に置く＝[実測 2026-09-04](../rag/models/sprite-forge-roundtable-placement-20260904.md)） | Sonnet 5×medium〜high | Grok 4.6×medium（repo横断・長時間はhigh） |
 | 局所コーディング | Luna×medium（実測: maxと品質差なし・14/14） | Sonnet 5×medium | Grok 4.6×medium |
 | 軽作業 | Luna×low〜medium | Haiku（Claude枠で閉じる時。effortなし） | Grok 4.6×low |
 | 調査 | Grok 4.6×low（字面）〜medium（統合）。X直結は唯一 | Sonnet 5×medium＋Web | Sol/Terraで独立確認 |
