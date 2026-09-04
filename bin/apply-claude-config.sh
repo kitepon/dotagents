@@ -21,6 +21,7 @@ from pathlib import Path
 HOOKS = (
     ("PreToolUse", "Agent|Task|Workflow|mcp__codex-sidecar__codex_.*|mcp__aiterm__(codex|grok|composer)_agent", "delegation-gate-hook", (), 5),
     ("PreToolUse", "Bash", "git-destroy-gate-hook", (), 5),
+    ("PreToolUse", "Edit|Write|MultiEdit|NotebookEdit|Bash", "boundary-gate-hook", (), 5),
     ("SessionStart", None, "todo-gate-hook", ("session-start",), 10),
     ("SessionStart", None, "orchestrate-advisory-hook", (), 5),
     ("SessionStart", None, "lattice-gantt-hook", ("session-start",), 6),

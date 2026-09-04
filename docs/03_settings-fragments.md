@@ -130,6 +130,21 @@ if ! jq -e '.hooks.PreToolUse[]?.hooks[]?.command | select(.=="~/.local/bin/git-
 fi
 ```
 
+#### 責務境界ゲート（PreToolUse・Edit/Write/MultiEdit/NotebookEdit/Bash）
+
+セッションの作業repo（cwd の git toplevel）と異なる `~/Developer` 配下の製品repoへの書込（Edit 系の `file_path`、Bash の `git commit`／`git push`／`npm publish`。`cd` で移った先を追う）を、責務宣言が無い限り `P13_BOUNDARY_UNDECLARED` で deny する。宣言は `~/.local/state/dotagents/boundary/<対象repo名>.md` に `症状:` `所有者:` `理由:` `反証:` の4行（値を空にしない・当日限り有効）。同じrepo・製品外のpath・読み取りだけの command は allow。`DOTAGENTS_BOUNDARY_GATE=off` で無効化、`DOTAGENTS_PRODUCT_ROOT`／`DOTAGENTS_BOUNDARY_DIR` で場所を変えられる。背景は憲法「姿勢の原則」12（絆創膏で製品を直さない・止血は運用操作だけ。オーナー裁定 2026-09-04）。
+
+```bash
+S=~/.claude/settings.json
+MATCHER='Edit|Write|MultiEdit|NotebookEdit|Bash'
+if ! jq -e '.hooks.PreToolUse[]?.hooks[]?.command | select(.=="~/.local/bin/boundary-gate-hook")' "$S" >/dev/null; then
+  cp "$S" "$S.bak-boundary-gate"
+  tmp=$(mktemp)
+  jq --arg m "$MATCHER" '.hooks.PreToolUse += [{"matcher":$m,"hooks":[{"type":"command","command":"~/.local/bin/boundary-gate-hook","timeout":5}]}]' "$S" > "$tmp" \
+    && jq -e . "$tmp" >/dev/null && mv "$tmp" "$S"
+fi
+```
+
 #### C2 TODO 棚卸し（SessionStart・source=startup/clear のみ発火）
 
 docs/ の `plan_*.md`/`queue_*.md` の未消化・archive 未退避をリポ×24h スロットルで棚卸しし、観測事実と正典への参照だけを INFO で返す（[`../bin/todo-gate-hook.sh`](../bin/todo-gate-hook.sh) の `session-start` サブコマンド）。

@@ -803,5 +803,52 @@ EOF
 [[ "$RUN_OUT" == 'INFO: Lattice工程表:'* && "$RUN_OUT" == *'期限超過'* ]] \
   && pass lattice-context-timeout || fail_case lattice-context-timeout
 
+
+# --- boundary-gate: 作業repoと異なる製品repoへの書込は責務宣言が要る ---
+BOUNDARY_ROOT=$(mktemp -d)
+mkdir -p "$BOUNDARY_ROOT/session-repo" "$BOUNDARY_ROOT/other-product" "$STATE/boundary"
+( cd "$BOUNDARY_ROOT/session-repo" && git init -q . )
+( cd "$BOUNDARY_ROOT/other-product" && git init -q . )
+HB_SESSION=$(native_path "$BOUNDARY_ROOT/session-repo")
+HB_OTHER=$(native_path "$BOUNDARY_ROOT/other-product")
+HB_PRODUCTS=$(native_path "$BOUNDARY_ROOT")
+HB_DECL=$(native_path "$STATE/boundary")
+run boundary-cross-deny env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Edit","cwd":"$HB_SESSION","tool_input":{"file_path":"$HB_OTHER/src/a.mjs","old_string":"a","new_string":"b"}}
+EOF
+json && [[ "$RUN_OUT" == *'permissionDecision'* && "$RUN_OUT" == *'P13_BOUNDARY_UNDECLARED'* && "$RUN_OUT" == *'所有者:'* ]] && pass boundary-cross-deny || fail_case boundary-cross-deny
+run boundary-same-repo-noop env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Write","cwd":"$HB_SESSION","tool_input":{"file_path":"$HB_SESSION/src/a.mjs","content":"x"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass boundary-same-repo-noop || fail_case boundary-same-repo-noop
+run boundary-outside-products-noop env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Write","cwd":"$HB_SESSION","tool_input":{"file_path":"$HOOK_REPO/note.md","content":"x"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass boundary-outside-products-noop || fail_case boundary-outside-products-noop
+printf '%s\n' '症状: other-product の配達が詰まる' '所有者: other-product/bridge' '理由: 症状の場所と所有者が同じ' '反証: 未実施' >"$STATE/boundary/other-product.md"
+run boundary-declared-allow env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Edit","cwd":"$HB_SESSION","tool_input":{"file_path":"$HB_OTHER/src/a.mjs","old_string":"a","new_string":"b"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass boundary-declared-allow || fail_case boundary-declared-allow
+printf '%s\n' '症状: x' '所有者:' '理由: y' '反証: z' >"$STATE/boundary/other-product.md"
+run boundary-declared-incomplete-deny env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Edit","cwd":"$HB_SESSION","tool_input":{"file_path":"$HB_OTHER/src/a.mjs","old_string":"a","new_string":"b"}}
+EOF
+json && [[ "$RUN_OUT" == *'P13_BOUNDARY_UNDECLARED'* ]] && pass boundary-declared-incomplete-deny || fail_case boundary-declared-incomplete-deny
+rm -f "$STATE/boundary/other-product.md"
+run boundary-bash-commit-deny env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Bash","cwd":"$HB_SESSION","tool_input":{"command":"cd $HB_OTHER && git commit -q -m x && npm publish"}}
+EOF
+json && [[ "$RUN_OUT" == *'P13_BOUNDARY_UNDECLARED'* ]] && pass boundary-bash-commit-deny || fail_case boundary-bash-commit-deny
+run boundary-bash-read-noop env DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Bash","cwd":"$HB_SESSION","tool_input":{"command":"cd $HB_OTHER && git status && cat README.md"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass boundary-bash-read-noop || fail_case boundary-bash-read-noop
+run boundary-off env DOTAGENTS_BOUNDARY_GATE=off DOTAGENTS_PRODUCT_ROOT="$HB_PRODUCTS" DOTAGENTS_BOUNDARY_DIR="$HB_DECL" "$PYTHON_EXE" "$ROOT/bin/boundary-gate-hook.sh" <<EOF
+{"tool_name":"Edit","cwd":"$HB_SESSION","tool_input":{"file_path":"$HB_OTHER/src/a.mjs","old_string":"a","new_string":"b"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass boundary-off || fail_case boundary-off
+rm -rf "$BOUNDARY_ROOT"
+
 if [ "$fail" -ne 0 ]; then exit 1; fi
 printf 'ALL PASS\n'

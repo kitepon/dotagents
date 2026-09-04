@@ -139,7 +139,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `factory-reporter.mjs` | 明示opt-inされた工場reportを検証・outbox保存・BugHubへ冪等送信 |
 | bin | `factory-external-event.mjs` | Pi5等の外部監視結果をmain-serverの所有者限定stateへ固定ServerManager eventとしてappend-only記録し、BugHub受理後だけack |
 | bin | `verify-codex-agent-routing.sh` | Control配下の書込みWorkerのspawn後、role/model/effort/developer instructionsを検証し、親継承のsandbox実効値を観測表示 |
-| bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
+| bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作・責務境界hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
 | 工場接続 | Caveat（dotagents 外） | 工場は `caveat mcp-server` と `caveat factory-diagnostics --json` の公開面だけを呼ぶ。導入・罠DB・同期・公開は [Caveat README](https://github.com/kitepon/Caveat#readme) が正 |
 | 自作コア製品 | [工場の現行状態](docs/factory-current-state.md)に列挙（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。各製品の編入版は[製品契約台帳](docs/factory-product-contracts.md)が持つ |
 | 第三者管理製品 | MarkItDown | 自作コアではなく、公開CLIだけをblack-box管理する資料変換器。fork・内部patchは行わない |

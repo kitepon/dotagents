@@ -899,6 +899,7 @@ home = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
 required = (
     ("PreToolUse", "delegation-gate-hook"),
     ("PreToolUse", "git-destroy-gate-hook"),
+    ("PreToolUse", "boundary-gate-hook"),
     ("SessionStart", "todo-gate-hook session-start"),
     ("Stop", "todo-gate-hook stop"),
     ("UserPromptSubmit", "onset-gate-hook"),
