@@ -121,6 +121,8 @@ codex --profile work
 | `config.toml` | `[features.multi_agent_v2]` の `hide_spawn_agent_metadata = false` と `tool_namespace = "agents"`。旧`[features].codex_hooks`があれば現行`hooks`へ移行し、両方あれば現行値を保持して旧キーだけ除去 |
 | `hooks.json` | `SessionStart` / `PreToolUse` / `UserPromptSubmit` / `Stop` の dotagents callout handlerを各1件、PreToolUseの`codex-git-destroy-gate-hook`、SessionStartの`orchestrate-advisory-hook`、Lattice工程表のSessionStart / UserPromptSubmit entryを各1件のcanonical entryに正規化 |
 
+責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12・[docs/03](03_settings-fragments.md)）は Claude frontend だけを持つ。Codex の `hooks.json` へは未配線で、Codex 席からの越境書込は本ゲートで止まらない（追加時は `codex-boundary-gate-hook` を同じ規約で足す）。
+
 `--apply` は端末設定を書き換えるので、dry-run の差分を確認し、対象端末への適用承認を得てからだけ実行する。
 
 ```bash

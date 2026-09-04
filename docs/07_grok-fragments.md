@@ -34,7 +34,9 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 - `compat.claude.skills` / `mcps`（skillsはWave 2で切らない裁定済み。工場MCPの所有のために mcps は切らない）
 - 個人hook。所有面は `~/.grok/hooks/factory.json` と `~/.local/bin/grok-*-hook` だけ
 
-工場hookはGrok camelCaseをそのまま読む。Claude 形へ canonicalize しない。製品hookは工場hookに載せない。Throughline の導入・hook出力・再適用は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) が正である。
+工場hookはGrok camelCaseをそのまま読む。Claude 形へ canonicalize しない。製品hookは工場hookに載せない。
+
+責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12）は Claude frontend だけで、Grok の `factory.json` へは未配線。Grok 席からの越境書込は本ゲートで止まらない。Throughline の導入・hook出力・再適用は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) が正である。
 
 Windows native の工場hook command は shebang ファイルを直接実行しない。`apply-grok-config` が `~/.grok/hooks/factory.json` を symlink から実ファイルへ置き、解決できた `python.exe` / `sh.exe` を絶対パスで前置する。拡張子なしの hook を Windows が「次のアプリで開きますか？」で開くのを防ぐ。POSIX は repo の shebang command のまま。
 ここで使う`sh.exe`はGit for Windowsのnative executableであり、WSL／`System32\bash.exe`ではない。Windows nativeのGrok配線はWSL2・Docker・仮想化を要求せず、WSL側`~/.grok`へfallbackしない。

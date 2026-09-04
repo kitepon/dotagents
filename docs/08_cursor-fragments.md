@@ -34,6 +34,8 @@ Windows nativeのCursor配線はWindows側`~/.cursor`だけを所有し、WSL2�
 
 工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読み、Claude形（`permissionDecision`）へcanonicalizeしない。Spotter / Throughline / Caveatの製品hookは工場hookへ複製せず、各製品installerが同じ`~/.cursor/hooks.json`へupsertする。`apply-cursor-config`はそれらを保持し、製品hookの有無や内部commandを工場側で決めない。`cursor-constitution-hook`は`~/.cursor/rules/factory.mdc`をDesktop Agentへ配達する。10000字以内なら同一本文を`additional_context`へ載せ、超過時はcap内の案内と本文冒頭をinlineし、末尾のCursor deltaは切らず、同一全文は正本ファイルのReadで届ける。sessionStartはfire-and-forgetでhandle未作成だと落とすため、同じhookをawaitedのbeforeSubmitPromptと次ターンのpreToolUseにも置く。Cursorに`exit_plan_mode`がないためplan-gateは採用しない。
 
+責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12）は Claude frontend だけで、Cursor の `hooks.json` へは未配線。Cursor 席からの越境書込は本ゲートで止まらない。
+
 ## 3. 受入
 
 適用後の新規 Cursor session で工場6の handshake を見る。失敗はtypedのまま残し、登録成功へ丸めない。既存sessionの MCP catalog 見た目は受入に数えない。`hooks.json` は live reload される。憲法配達の受入は Cmd+Shift+L の新規ローカル Agent チャット。private worker / background composer の既存窓は、live reload 済みでも人間の follow-up で beforeSubmitPrompt を踏まない（2026-08-24 実測）。Task/cloud・goal continuation・`cursor --chat` も Desktop hook を踏まない。private worker の exec-daemon は起動時の `hooks.json` だけを見る。`cli-config.json` の model が適用前後で同じであること。Cursor は互換で `~/.claude/skills` も読む。工場所有は `~/.cursor/skills` であり、Claude 面の列挙を切断成功と読まない。
