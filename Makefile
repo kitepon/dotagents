@@ -55,6 +55,8 @@ lint-skills: ## Codex skill の frontmatter と安全契約を静的検証
 	bash tests/skills/smoke.sh
 
 lint-hooks: ## Claude / Codex / Grok / Cursor hook の空打ち smoke
+	$(PYTHON) -B tests/hooks/stocktake.py
+	$(PYTHON) -B tests/hooks/session-context.py
 	bash tests/hooks/smoke.sh
 	bash tests/hooks/codex-smoke.sh
 	bash tests/hooks/grok-smoke.sh

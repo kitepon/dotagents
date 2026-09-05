@@ -59,7 +59,6 @@ export function classifyPaths(paths) {
     if (isDocumentationPath(path)) continue;
     const matchedRules = HOST_PATH_RULES.filter((rule) =>
       rule.patterns.some((pattern) => pattern.test(path)));
-    if (matchedRules.length === 0) return fullPlan(normalizedPaths, "共通または未分類の変更をLinux全検査へ");
     for (const rule of matchedRules) selected.add(rule.environment);
   }
 
@@ -67,7 +66,7 @@ export function classifyPaths(paths) {
     schema: "dotagents.ci-plan.v1",
     productChange: true,
     environments: Object.freeze(ALL_ENVIRONMENTS.filter((environment) => selected.has(environment))),
-    reason: "host固有の変更",
+    reason: selected.size > 1 ? "共通検査と変更したhostの検査" : "Linux全検査",
     changedPaths: Object.freeze(normalizedPaths),
   });
 }

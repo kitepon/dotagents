@@ -16,6 +16,7 @@ for stream in (sys.stdin, sys.stdout, sys.stderr):
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "lib" / "orchestrate"))
 from hook_state import safe_append, safe_exists, safe_mtime, safe_read, safe_touch, safe_unlink, safe_write, state_dir, writer_reserve
+from plan_stocktake import plan_files, plan_stocktake
 
 STATE_DIR = state_dir()
 
@@ -159,13 +160,6 @@ def write_snapshot(path, porcelain_hash, head, porcelain=""):
     safe_write(path, f"{porcelain_hash}\n{head}\n{paths}\n")
 
 
-def plan_files(root):
-    docs = os.path.join(root, "docs")
-    if not os.path.isdir(docs):
-        return []
-    return sorted(name for name in os.listdir(docs) if (name.startswith("plan_") or name.startswith("queue_")) and name.endswith(".md") and os.path.isfile(os.path.join(docs, name)))
-
-
 def status_paths(porcelain):
     paths = set()
     for line in porcelain.splitlines():
@@ -220,16 +214,7 @@ def session_start(data):
     stocktake_mtime = safe_mtime(stocktake)
     if stocktake_mtime is not None and time.time() - stocktake_mtime < 24 * 60 * 60:
         return
-    entries, complete = [], []
-    for name in plan_files(root):
-        path = os.path.join(root, "docs", name)
-        text = open(path, encoding="utf-8").read()
-        unchecked = text.count("- [ ]")
-        if unchecked:
-            days = max(0, int((time.time() - os.path.getmtime(path)) // 86400))
-            entries.append(f"{name}（未消化 {unchecked}・最終更新 {days} 日前）")
-        else:
-            complete.append(name)
+    entries, complete = plan_stocktake(root)
     archived = complete if not entries else []
     if not entries and not archived:
         return

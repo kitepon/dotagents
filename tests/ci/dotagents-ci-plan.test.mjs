@@ -70,6 +70,17 @@ test("共通変更と未分類変更はpush既定のLinux 1環境へ分類する
   }
 });
 
+test("共通変更が混ざっても該当hostの検査を落とさない", () => {
+  for (const common of ["Makefile", "install.sh", "package.json", "new-product/file.txt"]) {
+    assert.deepEqual(classifyPaths([common, "bin/setup-windows-native-factory.ps1"]).environments,
+      ["linux-workstation", "windows-native"]);
+    assert.deepEqual(classifyPaths(["bin/setup-macos-factory.sh", common]).environments,
+      ["macos-native", "linux-workstation"]);
+    assert.deepEqual(classifyPaths([common, "bin/setup-macos-factory.sh", "bin/setup-windows-native-factory.ps1"]).environments,
+      ALL_ENVIRONMENTS);
+  }
+});
+
 test("定期実行だけが全環境へ広がる", async (t) => {
   const repo = await repository(t);
   const output = join(repo.root, "github-output.txt");

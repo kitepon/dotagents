@@ -539,23 +539,66 @@ def read_session_context(lattice, root):
     return None, STATUS_INVALID_RESPONSE
 
 
-def parse_session_context(raw):
-    """必要fieldだけを取り出す（allowlist読み）。
+def parse_session_todo(value):
+    """session-context.v1の表示項目だけを検査する。内包TODOの版と未使用項目は製品が所有する。"""
+    if not isinstance(value, dict):
+        return None
+    projected = {}
+    for name in ("active_set", "next_ready"):
+        entries = value.get(name)
+        if not bounded_list(entries, lambda entry: isinstance(entry, dict)):
+            return None
+        tasks = []
+        for entry in entries:
+            if not isinstance(entry, dict):
+                return None
+            task = {key: entry[key] for key in ("plan_key", "task_id", "label", "unmet_dependencies") if key in entry}
+            if "unmet_dependencies" in task:
+                dependencies = task["unmet_dependencies"]
+                if not isinstance(dependencies, list) or not all(isinstance(item, dict) for item in dependencies):
+                    return None
+                task["unmet_dependencies"] = [
+                    {key: item[key] for key in ("plan_key", "project_id", "task_id") if key in item}
+                    for item in dependencies
+                ]
+            if not task_entry(task):
+                return None
+            tasks.append(task)
+        projected[name] = tasks
+    heads = value.get("member_heads", [])
+    if not bounded_list(heads, lambda entry: isinstance(entry, dict)):
+        return None
+    projected["member_heads"] = []
+    for entry in heads:
+        if not isinstance(entry, dict):
+            return None
+        if "reconciliation_state" in entry:
+            state = entry["reconciliation_state"]
+            if not isinstance(state, str) or state not in {"reconciled", "registered_unreconciled"}:
+                return None
+            projected["member_heads"].append({"reconciliation_state": state})
+        else:
+            projected["member_heads"].append({})
+    pending = value.get("audit_pending", [])
+    if not bounded_list(pending, lambda entry: isinstance(entry, dict)):
+        return None
+    projected["audit_pending"] = []
+    for entry in pending:
+        if not isinstance(entry, dict) or not identifier(entry.get("plan_key")) or not identifier(entry.get("phase_id")) or not bounded_text(entry.get("phase_status"), 64):
+            return None
+        projected["audit_pending"].append({key: entry[key] for key in ("plan_key", "phase_id", "phase_status")})
+    return projected
 
-    独立性の投影は版を上げずにキーが増えた実績がある。未知keyの追加でhookが
-    全端末で壊れる構造を新しい面へ持ち込まない。知っているkeyの型だけを検査し、
-    知らないkeyは無視する。`todo`部分木は todo_status_result.v4 そのものなので、
-    既存の厳密検証をそのまま通す。
-    """
+
+def parse_session_context(raw):
+    """公開session envelopeの既知項目だけ読む（Lattice製品契約・ADR 0131）。"""
     if raw is None or len(raw) > CAPTURE_LIMIT:
         return None
     try:
         value = json.loads(raw.decode("utf-8"))
     except (ValueError, UnicodeDecodeError):
         return None
-    if not isinstance(value, dict):
-        return None
-    if value.get("schema") != "lattice.session_context.v1":
+    if not isinstance(value, dict) or value.get("schema") != "lattice.session_context.v1":
         return None
     status = value.get("status")
     if not isinstance(status, dict):
@@ -563,19 +606,21 @@ def parse_session_context(raw):
     project_status = parse_project_status(json.dumps(status).encode("utf-8"))
     if project_status is None:
         return None
-    todo_raw = value.get("todo")
     todo = None
-    if todo_raw is not None:
-        if not isinstance(todo_raw, dict):
-            return None
-        todo = parse_status(json.dumps(todo_raw).encode("utf-8"))
+    if value.get("todo") is not None:
+        todo = parse_session_todo(value["todo"])
         if todo is None:
             return None
-    return {
-        "status": project_status,
-        "todo": todo,
-        "independence": parse_independence(value.get("independence")),
-    }
+        next_action = status.get("next_action")
+        if next_action is not None:
+            if (
+                not isinstance(next_action, dict)
+                or not bounded_text(next_action.get("command"), 1024)
+                or not bounded_text(next_action.get("reason"), 128)
+            ):
+                return None
+            todo["next_action"] = {key: next_action[key] for key in ("command", "reason")}
+    return {"status": project_status, "todo": todo, "independence": parse_independence(value.get("independence"))}
 
 
 def parse_independence(entries):
@@ -677,6 +722,7 @@ def has_guidance(status_value):
         status_value["active_set"]
         or status_value["next_ready"]
         or status_value.get("audit_pending")
+        or (status_value.get("next_action") is not None and status_value["next_action"]["reason"] != "no_ready_task")
     )
 
 
@@ -757,27 +803,12 @@ def independence_fragment(summaries):
 
 
 def status_message(root, status_value, independence=None):
-    dependency_count = 0
-    if status_value["schema"] in {
-        "lattice.todo_status_result.v2",
-        "lattice.todo_status_result.v3",
-        "lattice.todo_status_result.v4",
-        "lattice.todo_status_result.v5",
-        "lattice.todo_status_result.v6",
-    }:
-        dependency_count = sum(
-            1 for entry in status_value["active_set"] if entry.get("unmet_dependencies")
-        )
+    dependency_count = sum(1 for entry in status_value["active_set"] if entry.get("unmet_dependencies"))
     dependency_note = (
         f"未充足依存あり: active {dependency_count}件。" if dependency_count else ""
     )
     reconciliation_note = ""
-    if status_value["schema"] in {
-        "lattice.todo_status_result.v3",
-        "lattice.todo_status_result.v4",
-        "lattice.todo_status_result.v5",
-        "lattice.todo_status_result.v6",
-    }:
+    if status_value["member_heads"] and all("reconciliation_state" in entry for entry in status_value["member_heads"]):
         unreconciled = sum(
             1
             for entry in status_value["member_heads"]
@@ -785,10 +816,13 @@ def status_message(root, status_value, independence=None):
         )
         reconciled = len(status_value["member_heads"]) - unreconciled
         reconciliation_note = f"校正状態: reconciled={reconciled}, unreconciled={unreconciled}。"
+    next_action = status_value.get("next_action")
+    next_note = f"次の操作: {next_action['command']}（{next_action['reason']}）。" if next_action else ""
     return (
         f"INFO: Lattice工程表: {gantt_location(root)}。"
         f"現在地: active={task_summary(status_value['active_set'])}; "
         f"next-ready={task_summary(status_value['next_ready'])}。"
+        f"{next_note}"
         f"{dependency_note}"
         f"{reconciliation_note}"
         f"{audit_pending_fragment(status_value)}"

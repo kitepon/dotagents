@@ -110,9 +110,10 @@ contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあ�
 contains "$ROOT/shared/orchestrate/control-record.md" 'docs計画正本（実行TODOの正本はtyped discoveryで解決）'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '役割に対するmodel×effortの解決と順位は[docs/02_models.md]'
 contains "$ROOT/docs/02_models.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
-contains "$ROOT/docs/02_models.md" '| 監査・発見 | Grok 4.6×medium（実測recall 7/10・FP 0） | Sonnet 5×medium'
+# 補足文の追加を許し、役割ごとの候補と順位を検査する。
+rg -q '^\| 監査・発見 \| Grok 4\.6×medium[^|]*\| Sonnet 5×medium' "$ROOT/docs/02_models.md" || fail '監査・発見の候補順位が不一致'
 contains "$ROOT/docs/02_models.md" '| 反証 | Grok 4.6×high（実測14/14） | Sol×high（実測14/14。同着はGrok優先＝オーナー裁定 2026-08-19） | Opus 5×high'
-contains "$ROOT/docs/02_models.md" '| 実装 | Terra×high（Terminal-Bench 2.1 78.4%） | Sonnet 5×medium〜high'
+rg -q '^\| 実装 \| Terra×high[^|]*\| Sonnet 5×medium〜high' "$ROOT/docs/02_models.md" || fail '実装の候補順位が不一致'
 absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'medium'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "const VERIFY_MODEL = 'opus'; // Claude内反証projection。順位の判断正本はdocs/02_models.md"
