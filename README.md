@@ -262,7 +262,7 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 `lib/factory/deployment-contract.mjs`を消費し、Windows native固有配線やLinuxのserver/workstation役割を共有実装へ
 押し込まない。いずれも公式skill面、現役製品、MCP、Lattice／Spotter hook、定期更新、
 `verify-install`、[工場の現行状態](docs/factory-current-state.md)が示すwireのfresh reportとBugHub delivery receiptまでを一括検証する。
-Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。
+Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。工場hookの`factory.json`は、続く`apply-grok-config`がsandbox対応の実ファイルへ置き換え、以後もrepoの正本から反映する。
 工場MCPと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
 Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 

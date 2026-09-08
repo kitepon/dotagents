@@ -571,14 +571,14 @@ if [ -n "${XAI_API_KEY:-}" ] || [ -s "$HOME/.grok/auth.json" ]; then
 fi
 for f in "$REPO/grok/hooks"/*.json; do
   [ -e "$f" ] || continue
-  if [ "$windows_native" = 1 ] && [ "$(basename "$f")" = factory.json ]; then
+  if [ "$(basename "$f")" = factory.json ]; then
     dest="$HOME/.grok/hooks/factory.json"
     if [ "$grok_logged_in" -ne 1 ]; then
       check "$dest" "$f"
     elif [ ! -f "$dest" ]; then
-      echo "FAIL: $dest 不在（Windows 工場hookは apply-grok-config が実ファイルを書く）"; fail=1
+      echo "FAIL: $dest 不在（工場hookは apply-grok-config が実ファイルを書く）"; fail=1
     elif [ -L "$dest" ]; then
-      echo "FAIL: $dest が symlink のまま（Windows では interpreter 付き実ファイルが正）"; fail=1
+      echo "FAIL: $dest が symlink のまま（Grok sandbox用の実ファイルが正）"; fail=1
     fi
     continue
   fi

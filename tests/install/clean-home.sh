@@ -69,10 +69,8 @@ EOF
 EOF
 }
 apply_config() { HOME="$1" CODEX_HOME="$1/.codex" "$PYTHON_BIN" "$1/.local/bin/apply-codex-config" "$2"; }
-apply_grok_config_on_windows() {
-  case "$(uname -s)" in
-    MINGW*|MSYS*) HOME="$1" "$PYTHON_BIN" "$1/.local/bin/apply-grok-config" --apply >/dev/null ;;
-  esac
+apply_grok_config() {
+  HOME="$1" "$PYTHON_BIN" "$1/.local/bin/apply-grok-config" --apply >/dev/null
 }
 count_archives() {
   if [ -d "$1/Archives" ]; then
@@ -270,7 +268,7 @@ grep -Fq 'FAIL: Grok 工場hook が欠落' <<<"$grok_hooks_missing_output" \
 rm -f "$OFFICIAL_HOME/.grok/hooks/factory.json"
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
-apply_grok_config_on_windows "$OFFICIAL_HOME"
+apply_grok_config "$OFFICIAL_HOME"
 mkdir -p "$OFFICIAL_HOME/.grok"
 cat >"$OFFICIAL_HOME/.grok/config.toml" <<'EOF'
 [compat.claude]
@@ -718,7 +716,7 @@ assert_link "$LEGACY_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orche
 assert_orchestrate_references "$LEGACY_HOME/.cursor/skills/orchestrate"
 assert_link "$LEGACY_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 [ ! -e "$LEGACY_HOME/.cursor/AGENTS.md" ] || fail 'legacy が Cursor AGENTS.md を ~/.cursor へ置いた'
-apply_grok_config_on_windows "$LEGACY_HOME"
+apply_grok_config "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply
 verify "$LEGACY_HOME" legacy
 assert_link "$LEGACY_HOME/.codex/skills/orchestrate" "$ROOT/codex/skills/orchestrate"

@@ -34,10 +34,11 @@ FACTORY_SERVERS = (
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Grok の工場MCPと compat.claude.agents/hooks、Windows 工場hook command を差分適用する。")
+    parser = argparse.ArgumentParser(description="Grok の工場MCPと compat.claude.agents/hooks、工場hook 実ファイルを差分適用する。")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--dry-run", action="store_true", help="差分を表示する（既定）")
     group.add_argument("--apply", action="store_true", help="backup 後に差分を適用する")
+    parser.add_argument("--hooks-only", action="store_true", help="工場hookだけを反映し、config.tomlは変更しない")
     return parser.parse_args()
 
 
@@ -397,19 +398,21 @@ def rewrite_factory_hooks(data: dict, home: Path) -> dict:
 
 
 def propose_factory_hooks(home: Path) -> tuple[Path | None, str | None, str | None]:
-    if os.name != "nt":
-        return None, None, None
     dest = grok_home(home) / "hooks" / "factory.json"
     if not dest.exists() and not dest.is_symlink():
         return None, None, None
     original = dest.read_text(encoding="utf-8")
+    source = Path(__file__).resolve().parent.parent / "grok" / "hooks" / "factory.json"
     try:
-        data = json.loads(original)
+        data = json.loads(source.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
-        raise ValueError(f"{dest}: JSON パース失敗: {exc}") from exc
+        raise ValueError(f"{source}: JSON パース失敗: {exc}") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"{dest}: top-level object が必要です")
-    proposed = json.dumps(rewrite_factory_hooks(data, home), ensure_ascii=False, indent=2) + "\n"
+        raise ValueError(f"{source}: top-level object が必要です")
+    # Grok sandboxはhook sourceのsymlinkを拒否する。全OSで正本から実ファイルを生成する。
+    if os.name == "nt":
+        data = rewrite_factory_hooks(data, home)
+    proposed = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
     if proposed == original and not dest.is_symlink():
         return dest, None, original
     return dest, proposed, original
@@ -509,12 +512,12 @@ def main() -> int:
     args = parse_args()
     home = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
     path = grok_home(home) / "config.toml"
-    if path.is_symlink():
+    if not args.hooks_only and path.is_symlink():
         raise ValueError("config.toml は symlink では適用できません")
     existed = path.exists()
-    original = path.read_text(encoding="utf-8") if existed else ""
-    proposed = propose(original)
-    config_changed = proposed != normalize_toml(original)
+    original = path.read_text(encoding="utf-8") if existed and not args.hooks_only else ""
+    proposed = original if args.hooks_only else propose(original)
+    config_changed = not args.hooks_only and proposed != normalize_toml(original)
     hook_path, hook_proposed, hook_original = propose_factory_hooks(home)
     hook_changed = hook_proposed is not None
     if not config_changed and not hook_changed:
@@ -524,6 +527,8 @@ def main() -> int:
         if config_changed:
             print(show_diff(path, original, proposed), end="")
         if hook_changed and hook_path is not None and hook_original is not None:
+            if hook_path.is_symlink():
+                print(f"{hook_path}: symlink → 実ファイル")
             print(show_diff(hook_path, hook_original, hook_proposed), end="")
         return 0
     extras: list[tuple[Path, str]] = []

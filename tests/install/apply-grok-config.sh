@@ -51,12 +51,19 @@ agents = true
 hooks = true
 EOF
 before="$(cat "$HOME_FIXTURE/.grok/config.toml")"
+hook_dry="$(HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --hooks-only --dry-run)"
+grep -Fq 'symlink → 実ファイル' <<<"$hook_dry" || fail 'hook限定dry-runが実ファイル化を示さない'
+if grep -Fq 'config.toml' <<<"$hook_dry"; then
+  fail 'hook限定dry-runがconfig変更を含む'
+fi
 dry="$(HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --dry-run)"
 grep -Fq 'agents = false' <<<"$dry" || fail 'dry-run が agents = false を出さない'
 grep -Fq 'hooks = false' <<<"$dry" || fail 'dry-run が hooks = false を出さない'
 grep -Fq '[mcp_servers.aiterm]' <<<"$dry" || fail 'dry-run が工場MCPを出さない'
 [ "$(cat "$HOME_FIXTURE/.grok/config.toml")" = "$before" ] || fail 'dry-run が config.toml を書き換えた'
 [ ! -d "$HOME_FIXTURE/Archives" ] || fail 'dry-run が backup を作った'
+grep -Fq 'symlink → 実ファイル' <<<"$dry" || fail 'dry-run がhookの実ファイル化を示さない'
+assert_link "$HOME_FIXTURE/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
 applied="$(cat "$HOME_FIXTURE/.grok/config.toml")"
@@ -82,9 +89,9 @@ if ! grep -Eqi 'command = "([^"]*[/\\])?caveat(\.cmd)?"' <<<"$applied"; then
 fi
 grep -Fq 'args = ["mcp-server"]' <<<"$applied" || fail 'caveat args が契約と違う'
 grep -Fq 'AISHELL_CAPABILITY_SET = "expanded-v1"' <<<"$applied" || fail 'aishell env が契約と違う'
+[ ! -L "$HOME_FIXTURE/.grok/hooks/factory.json" ] \
+  || fail 'factory.json が symlink のまま'
 if [ "${OS:-}" = "Windows_NT" ]; then
-  [ ! -L "$HOME_FIXTURE/.grok/hooks/factory.json" ] \
-    || fail 'Windows で factory.json が symlink のまま'
   grep -Fq 'grok-lattice-gantt-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
     || fail 'Windows factory.json に工場hook名が無い'
   grep -Eiq 'python' "$HOME_FIXTURE/.grok/hooks/factory.json" \
@@ -93,6 +100,17 @@ fi
 
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply | grep -Fq '変更なし' \
   || fail '2回目 apply が冪等でない'
+
+printf '%s\n' '{"hooks":{}}' >"$HOME_FIXTURE/.grok/hooks/factory.json"
+printf '%s\n' "$before" >"$HOME_FIXTURE/.grok/config.toml"
+hook_only_config="$(cat "$HOME_FIXTURE/.grok/config.toml")"
+HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --hooks-only --apply >/dev/null
+[ "$(cat "$HOME_FIXTURE/.grok/config.toml")" = "$hook_only_config" ] \
+  || fail 'hook限定適用がconfig.tomlを変更した'
+grep -Fq 'grok-lattice-gantt-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
+  || fail '実ファイル化後のapplyがrepo正本を再反映しない'
+HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --hooks-only --apply | grep -Fq '変更なし' \
+  || fail '正本再反映後のapplyが冪等でない'
 
 HOME="$ABSENT_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
 grep -Fq '[compat.claude]' "$ABSENT_HOME/.grok/config.toml" || fail '不在の config.toml を作らない'

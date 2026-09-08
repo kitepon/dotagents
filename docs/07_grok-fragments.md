@@ -3,6 +3,7 @@
 `~/.grok/config.toml` は端末固有（コミットしない）。このファイルは工場が所有する断片と、限定適用器の正典である。親の model×effort と permission と login はオーナー領分であり、適用器は触らない。
 
 適用器は [`../bin/apply-grok-config.sh`](../bin/apply-grok-config.sh)。`--apply` は端末承認後。backup は `$HOME/Archives/dotagents-grok-config-*.tar.gz`。
+工場hookだけの再反映は`--hooks-only --apply`で行い、`config.toml`を保持する。事前差分は`--hooks-only --dry-run`で確認する。
 
 ## 1. 工場が書く面
 
@@ -38,7 +39,7 @@ Windows native では同じ契約を Windows の語に写す。`env.PATH` の区
 
 責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12）は Claude frontend だけで、Grok の `factory.json` へは未配線。Grok 席からの越境書込は本ゲートで止まらない。Throughline の導入・hook出力・再適用は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) が正である。
 
-Windows native の工場hook command は shebang ファイルを直接実行しない。`apply-grok-config` が `~/.grok/hooks/factory.json` を symlink から実ファイルへ置き、解決できた `python.exe` / `sh.exe` を絶対パスで前置する。拡張子なしの hook を Windows が「次のアプリで開きますか？」で開くのを防ぐ。POSIX は repo の shebang command のまま。
+工場hookは全OSで`apply-grok-config`がrepoの正本から`~/.grok/hooks/factory.json`へ実ファイルとして反映する。Grokのsandboxがhook sourceのsymlinkを拒否するため、初回のsymlink配置は適用時に置き換える。以後の更新もrepoの正本から反映する。Windows nativeでは、解決できた`python.exe` / `sh.exe`を絶対パスで前置し、拡張子なしのhookがアプリ選択画面を開くのを防ぐ。POSIXはrepoのshebang commandを使う。
 ここで使う`sh.exe`はGit for Windowsのnative executableであり、WSL／`System32\bash.exe`ではない。Windows nativeのGrok配線はWSL2・Docker・仮想化を要求せず、WSL側`~/.grok`へfallbackしない。
 
 Grokの `UserPromptSubmit` / `SessionStart` / `PostToolUse` は stdout を制御に使わない。観察系工場hookは exit 0 と空または非block JSONだけを返し、Stop で `decision=block` や exit 2 を出さない。
