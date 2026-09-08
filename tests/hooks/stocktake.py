@@ -19,11 +19,11 @@ class StocktakeTest(unittest.TestCase):
                     subprocess.run(["git", "init", "-q", str(repo)], check=True)
                     subprocess.run(["git", "-C", str(repo), "-c", "user.name=test", "-c", "user.email=test@example.invalid", "commit", "--allow-empty", "-qm", "fixture"], check=True)
                     (repo / "docs").mkdir()
-                    (repo / "docs/plan_example.md").write_text(text)
+                    (repo / "docs/plan_example.md").write_text(text, encoding="utf-8")
                     env = {**os.environ, "HOME": temp, "XDG_CACHE_HOME": temp, "XDG_STATE_HOME": temp}
                     result = subprocess.run([sys.executable, str(ROOT / "bin" / frontend), "session-start"],
                                             input=json.dumps({"session_id": "stocktake", "source": "startup", "cwd": str(repo)}),
-                                            text=True, capture_output=True, env=env, check=True)
+                                            text=True, encoding="utf-8", capture_output=True, env=env, check=True)
                     self.assertEqual("INFO: docs/" in result.stdout, expected, result.stdout)
 
 
