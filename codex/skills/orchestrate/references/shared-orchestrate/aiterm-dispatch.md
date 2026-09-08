@@ -13,12 +13,11 @@
 - 親は待ち時間に、承認済みの範囲で独立に進められる受入・準備・調査を進める。独立作業が尽きた場合の外部完了待ちは、共通憲法の待機・再開規則に従う。
 - 追加dispatchは、進行中の依頼で独立に切れる作業があり、その利益が準備・受入コストを上回る時だけ行う。依存衝突、費用、実capacity、受入負担から追加を抑制できる。同じ作業集合の並列化判断は再利用し、新たな依存や空き枠が生じた時だけ見直す。
 
-## 完了受信（v0.16契約）
+## Aitermの操作契約
 
-- 起動・送信は非ブロックdispatchだけを使う（launcher／`pty_send`は`event_cursor`付きで即返る。待つMCP呼び出しは存在しない）。
-- 完了受信は**レーンごとにhostバックグラウンドの`aiterm-wait --session <id> [--cursor <event_cursor>] --timeout <作業長に応じた秒数>` 1本だけ**で行う。waiterのexit時はreceiptの`outcome`を読んでから処理する——完了として扱ってよいのは`done`だけ。`timeout`は未完了＝同一sessionで再武装、`closed`はsession消滅として扱う（exit codeでの完了判定は誤り）。
-- 結果回収は`pty_read(agent_transcript:true)`だけ。走行中レーンへの先回りtranscript取得・同一レーンへのwaiter多重・自前pollingループは、正規の完了受信に対する劣化コピーなので作らない。
-- token削減で折りたたまれた長文報告は、同一sessionへの再掲dispatch、または「指定1ファイルだけ書込許可」の追撃指示で回収し、次レーンのPacketへはそのファイルパスで渡す。
+起動・送信・完了受信・回答回収・復旧の操作は、[Aitermの公開契約](https://github.com/kitepon/aiterm-mcp#readme)と各toolが返す手順を正とする。
+dotagentsにはtool引数、待機コマンド、CLIごとの操作方法を複製しない。
+工場は依頼先との相関を保持し、製品が返した完了状態と成果物を確認して受け入れる。
 
 ## レーン構成
 

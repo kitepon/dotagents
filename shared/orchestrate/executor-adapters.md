@@ -103,20 +103,11 @@ raw log、shell commandやhost tool実行結果の任意payloadはschema外と�
 strict Worker Report参照を要求し、`buildWorkerControlObservation`はcaller提供resultによる直接成功化を
 `WORKER_REPORT_IMPORT_REQUIRED`で拒否する。成功の記録は後続のstrict Worker Report importだけが行う。
 
-## aiterm interactive-session packet / projection
+## Aitermの観測結果の投影
 
-配布済みaitermの一次source（`dist/index.js`）に従い、`aitermAgentStartRequest`は
-`codex_agent`、`grok_agent`、`composer_agent`の実schemaへ、prompt、`cwd`、`session_name`、model、
-`reasoning_effort`を投影する。managed completionはlauncherが常時有効化するため、存在しない`agent_done`
-tool引数を生成しない。対応modelとeffortはAitermが起動時のlive catalogへ照合し、
-不在・非対応を別modelへfallbackせず明示エラーにする。起動後のopaque handleはControl契約と同じ
-`session_id / agent_kind`だけで相関し、`workspace_cwd`はlaunch observationのmetadataとして分離する。
-別sessionへfollow-upしない。
-
-`aitermFollowupRequest`は同じhandleの`session_id`へ`pty_send`を作り、`wait="agent_done"`、
-`enter=true`、`screen=true`、`raw=false`を固定する。timeout後の`aitermTimeoutRecoveryRequest`は同じ
-sessionの`pty_read(screen=true, wait=false)`を返すだけで、timeoutをfailedやcompletedへ昇格しない。
-`aitermKeyRequest`、`aitermCloseRequest`、`aitermListRequest`も同様に純粋なrequestである。
+Aitermの起動、送信、待機、結果回収、復旧は[Aitermの公開契約](https://github.com/kitepon/aiterm-mcp#readme)を使う。
+dotagentsは操作requestの生成関数を持たず、MCPが公開するtoolとschemaを直接利用する。
+工場への記録は、Aitermが返した同一sessionの観測結果と証拠参照だけを扱う。
 
 `projectAitermLaunchObservation`はsession作成を`running`としてだけ表し、agent起動・batch exit status・
 terminal成功を捏造しない。`projectAitermObservation`はhandle、`running / completed / failed / unknown /
@@ -247,8 +238,7 @@ consultation laneへ返さない。lane未定義の組はcodeを捏造せず`ADA
 | `claude-internal`×host-projection | not-applicable | not-applicable | not-applicable | not-applicable | not-applicable | not-applicable | caller-event | なし |
 
 caller timeoutはterminal failedへ丸めず、`state="unknown"`とadapter固有のrecovery operationだけを
-残す。providerがterminal failureとして返した`UPLOAD_TIMEOUT`はfailedのまま保持する。既存の`codexSidecarResultRequest`、`aitermTimeoutRecoveryRequest`、
-`gptConnectorTimeoutRecoveryRequest`が同一handleを実際の製品入口へ渡す。`ADAPTER_NON_ZERO_EXIT`や
+残す。providerがterminal failureとして返した`UPLOAD_TIMEOUT`はfailedのまま保持する。既存の`codexSidecarResultRequest`と`gptConnectorTimeoutRecoveryRequest`が同一handleを実際の製品入口へ渡す。Aitermの回収は製品が返す手順に従う。`ADAPTER_NON_ZERO_EXIT`や
 `ADAPTER_RATE_LIMITED`のような架空の共通codeは受理せず、実provider codeがないfamilyは`unknown`のまま
 成功も失敗も主張しない。
 
