@@ -1,6 +1,6 @@
 # 05_codex-fragments — Codex 端末設定（`~/.codex/config.toml` 等）の推奨断片カタログ
 
-<!-- 前提: GPT-5.6 世代（2026-08-11 時点）。defaults の正は docs/02_models.md。本ファイルの体裁・構成は
+<!-- 前提: 2026-09-08 Astra移行指針を更新。版を明記したCodex実測は当時の記録。defaults の正は docs/02_models.md。本ファイルの体裁・構成は
      docs/03_settings-fragments.md（Claude Code settings.json の推奨断片カタログ）を踏襲する -->
 
 `~/.codex/config.toml` と `~/.codex/hooks.json` は端末固有（コミットしない）。このファイルは「各端末で貼る断片」と限定適用器の正典である。routing 必須2キー、deprecated hook flag移行、dotagents callout hook 4イベント、PreToolUseのGit破壊操作ゲート、SessionStart advisory 1件、Lattice工程表のSessionStart / UserPromptSubmit entryだけは [`../bin/apply-codex-config.sh`](../bin/apply-codex-config.sh) が安全に扱い、それ以外は手で判断する。スキーマの根拠は [公式 Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)・[公式Feature Flags](https://developers.openai.com/codex/config-basic#feature-flags)・[公式 Subagents 文書](https://learn.chatgpt.com/docs/agent-configuration/subagents)と、端末Codexの実効parser。端末バイナリと実セッションrolloutも突合し、未再現の主張には確度を明記する。
@@ -12,7 +12,7 @@
 - 現在値の点検は各端末で `grep -E '^model|^model_reasoning_effort' ~/.codex/config.toml`（端末の現状値は共有文書に書かない＝端末メモリ側へ）。
 - **ultra の事実**: ultra = 最大推論（max 相当）＋ proactive な自動マルチエージェント委譲 ON。使用量急増の公式警告（CLI 0.144.0 以降・並列スレッド数閾値。閾値の具体値はローカル裏取り不能＝確度: 中、前セッション由来）。
 - **Codex CLI 0.147.0 の実効カタログ（`codex debug models`・2026-08-11 実測）**: `gpt-5.6-sol` の `default_reasoning_level` は **low**、`gpt-5.6-terra` と `gpt-5.6-luna` は **medium**。Sol/Terra は low〜ultra、Luna は low〜max を列挙する。
-- **OpenAI公式指針**: `medium`を均衡の出発点、`low`を遅延優先、`high`/`xhigh`を実測で品質向上が出る仕事、`max`を最難関の品質優先用途とする。最高値を一般既定にせず、代表タスクの成功率・総token・遅延・費用で比較する（[Model guidance](https://developers.openai.com/api/docs/guides/latest-model)）。
+- **OpenAI公式のAstra移行指針**: `none`／`minimal`を使っていた場合は`low`から比較し、それ以外は現在の実効effortを維持する。Astraは`none`非対応。親の設定はオーナー領分のまま、移行を理由に一律`medium`へ変更しない。APIとCodexの対応段階は区別し、Codexでは実効catalogを確認する（[Astra移行手順](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)、[取得時の根拠](../rag/models/gpt-6-astra.md)）。
 - 推奨値の提示（適用はオーナー判断）: 親に一律のpresetは置かない。用途別の子配置は[順位表](02_models.md)を使う。proactive 自動委譲を意図せず踏みたくない場合は ultra を避ける。
 
 ## 2. 再ピン問題

@@ -1,6 +1,6 @@
 # 02_models — 役割→モデル×エフォート順位表（唯一の参照点）
 
-<!-- 前提: 2026-08-19 更新（Claude 5 / GPT-5.6 / Grok 4.6 世代）。バージョン固定禁止（PLAN 原則9）。モデル名を判断としてこの表以外へ書き散らさない。runtimeが具体値を要求する実行projectionだけは下記の公認面へ置き、CIで本表との一致を固定する -->
+<!-- 前提: 2026-09-08 Astraの公式仕様と未評価の配置を追加。既存順位の根拠は各実測日を維持。バージョン固定禁止（PLAN 原則9）。モデル名を判断としてこの表以外へ書き散らさない。runtimeが具体値を要求する実行projectionだけは下記の公認面へ置き、CIで本表との一致を固定する -->
 
 方針: skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への判断はこの表だけが担う。本書は役割を先に定義し、役割ごとに適したモデル×effortを1位〜3位で与える。ベンダー別レーンの表構造は撤廃した（オーナー裁定 2026-08-19）。runtimeが具体値を要求する`codex/agents/*.toml`、`.codex-sidecar.yml`、`claude/agents/*.md`のfrontmatter、Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない。世代交代時は**この一枚と公認projectionを同じcommitで更新し、CIで一致を確認してpushする**。更新トリガーはオーナーの宣言（PLAN 原則6）。
 
@@ -49,6 +49,12 @@
 2. **順位は既定であって拘束ではない。** quota逼迫・入口障害・catalog不在時は次順位へ落とし、落とした事実を報告する。存在しないmodel/effortへはfallbackせず明示エラーにする。
 3. **見逃し対策は2段構造で行う。** finderの増席でなく「疑いを列挙→反証役に裁かせる」工程を挟む（実測: finder 3席が全員見逃した欠陥3件を反証工程が回収した）。
 
+### Astraの評価状態
+
+Astraは公式仕様を確認済みで、役割別の配置比較は未実施。既存の順位と子モデルを一括置換せず、代表実務で成功率・手戻り・総token・所要時間・quotaを比較して順位を決める。親のモデル×effortはオーナー指定を維持する。移行時は`none`／`minimal`から`low`、それ以外は現在の実効effortを出発点にする（[公式ガイド](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart)、[取得日・確度と監査結果](../rag/models/gpt-6-astra.md)）。
+
+Codexの軽作業projectionは`sorter`とsidecarの`advisory`をLuna×mediumに揃える。sidecarのその他のpresetは既存のTerra×mediumを維持し、Astraへの移行と混同しない。
+
 ## モデル台帳（slug・価格の解決はここだけ）
 
 | モデル | slug | API定価（入力/出力 per Mtok） | context | effort段階 |
@@ -57,6 +63,7 @@
 | Claude Opus 5 | alias `opus` | $5/$25 | 1M | low〜xhigh/max |
 | Claude Sonnet 5 | alias `sonnet` | **$2/$10（恒久価格）** | 1M | low〜xhigh/max |
 | Claude Haiku 4.5 | alias `haiku` | $1/$5 | 200K | **effortなし** |
+| GPT-6 Astra | `gpt-6-astra` | [公式pricing](https://developers.openai.com/api/docs/pricing)を利用時に確認 | 1.05M | API: low / medium / high / xhigh / max。Codexは実効catalog確認 |
 | GPT-5.6 Sol | `gpt-5.6-sol` | $5/$30（長contextは$10/$45） | 1.05M | none〜max（Codex CLIはultraあり） |
 | GPT-5.6 Terra | `gpt-5.6-terra` | $2/$12（長contextは$4/$18） | 1.05M | 同上 |
 | GPT-5.6 Luna | `gpt-5.6-luna` | $0.20/$1.20（長contextは$0.40/$1.80） | 1.05M | none〜max（ultraなし） |

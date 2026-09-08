@@ -8,7 +8,7 @@
       "l0_pointer_phrase": "lattice-workflow runbook",
       "source_text": "- **工程正本はLatticeのtyped discoveryで決める**: projectで工程を読む／作る前に`lattice status --json`を実行し、\n  `.lattice/`の有無を接続判定へ使わない。`ready`／`active_run`ならtask、依存、状態、完了証拠の正本はLattice\n  storeだけであり、Markdownへ二重化しない。`invalid`はエラーとして止め、Markdownへfallbackしない。\n  `uninitialized`は利用可能な未初期化状態であり、plan導入が作業scopeなら返された`next_action`から\n  `lattice plan create`を使う。Markdownを正本にするのは、Lattice CLIが利用不能か、未初期化projectで\n  project方針／オーナー裁定により導入しない場合だけとする。統括plan Markdownは目的、思想、判断理由、\n  非目標、受入条件、Lattice planへの導線を所有する。新規・変更ToDoはLattice authoring transactionで更新し、\n  Markdown checkboxから移転する時はToDo単位のsource cutoverを同じrevision transactionへ含める。\n  移転済みcheckboxをlive文書へ残したり、Markdownから暗黙再同期したりしない。役目を終えたplan・凍結台帳は\n  `docs/archive/`へ退避し、`docs/`直下は生きた文書だけに保つ。",
       "source_ref": "shared/constitution.md@50d12e4",
-      "receiver_text": "- **工程正本はLatticeのtyped discoveryで決める**: projectで工程を読む／作る前に`lattice status --json`を実行し、\n  `.lattice/`の有無を接続判定へ使わない。`ready`／`active_run`ならtask、依存、状態、完了証拠の正本はLattice\n  storeだけであり、Markdownへ二重化しない。`invalid`はエラーとして止め、Markdownへfallbackしない。\n  `uninitialized`は利用可能な未初期化状態であり、plan導入が作業scopeなら返された`next_action`から\n  `lattice plan create`を使う。Markdownを正本にするのは、Lattice CLIが利用不能か、未初期化projectで\n  project方針／オーナー裁定により導入しない場合だけとする。統括plan Markdownは目的、思想、判断理由、\n  非目標、受入条件、Lattice planへの導線を所有する。新規・変更ToDoはLattice authoring transactionで更新し、\n  Markdown checkboxから移転する時はToDo単位のsource cutoverを同じrevision transactionへ含める。\n  移転済みcheckboxをlive文書へ残したり、Markdownから暗黙再同期したりしない。役目を終えたplan・凍結台帳は\n  `docs/archive/`へ退避し、`docs/`直下は生きた文書だけに保つ。"
+      "receiver_text": "- **工程正本はLatticeのtyped discoveryで決める**: Latticeの明示適用が決まった作業、またはオーナー承認済みの既存Lattice工程を継続する時だけ、工程を読む／作る前に`lattice status --json`を実行し、\n  `.lattice/`の有無を接続判定へ使わない。`ready`／`active_run`ならtask、依存、状態、完了証拠の正本はLattice\n  storeだけであり、Markdownへ二重化しない。`invalid`はエラーとして止め、Markdownへfallbackしない。\n  `uninitialized`は利用可能な未初期化状態であり、plan導入が作業scopeなら返された`next_action`から\n  `lattice plan create`を使う。Markdownを正本にするのは、Lattice CLIが利用不能か、未初期化projectで\n  project方針／オーナー裁定により導入しない場合だけとする。統括plan Markdownは目的、思想、判断理由、\n  非目標、受入条件、Lattice planへの導線を所有する。新規・変更ToDoはLattice authoring transactionで更新し、\n  Markdown checkboxから移転する時はToDo単位のsource cutoverを同じrevision transactionへ含める。\n  移転済みcheckboxをlive文書へ残したり、Markdownから暗黙再同期したりしない。役目を終えたplan・凍結台帳は\n  `docs/archive/`へ退避し、`docs/`直下は生きた文書だけに保つ。"
     },
     {
       "receiver_path": "shared/runbooks/knowledge-return.md",
@@ -296,7 +296,7 @@
       "l0_pointer_phrase": "lattice-workflow runbook",
       "source_text": "- **実行TODOの正本はLattice typed discoveryで決める**: `lattice status --json` が`ready`／`active_run`ならtask・依存・状態・完了証拠はLattice storeだけに置き、Markdown checkboxへ二重化しない。`invalid`をMarkdownへfallbackさせない。Latticeを導入しない場合だけMarkdownを正本とする。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- **工程正本はLatticeのtyped discoveryで決める**: projectで工程を読む／作る前に`lattice status --json`を実行し、"
+      "receiver_text": "- **工程正本はLatticeのtyped discoveryで決める**: Latticeの明示適用が決まった作業、またはオーナー承認済みの既存Lattice工程を継続する時だけ、工程を読む／作る前に`lattice status --json`を実行し、"
     },
     {
       "receiver_path": "shared/runbooks/canon-authoring.md",
@@ -422,7 +422,7 @@
       "l0_pointer_phrase": "lattice-workflow runbook",
       "source_text": "- **既存runとの照合**: 着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、active runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぎ、引き継がない場合は`run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し新規runを作る（無言の放置・無言の二重起動の両方を禁じる）。`run`面の継続・close・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない——この面の違いを混同しない。",
       "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "### 既存runとの照合と引継ぎ\n\n着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、\nactive runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぐ。引き継がない場合は\n`run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し、新規runを作る。`run`面の継続・\nclose・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない。\nこの面の違いを混同しない。"
+      "receiver_text": "### 既存runとの照合と引継ぎ\n\n上記の適用対象でrunを使う時は、着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、\nactive runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぐ。引き継がない場合は\n`run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し、新規runを作る。`run`面の継続・\nclose・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない。\nこの面の違いを混同しない。"
     },
     {
       "receiver_path": "docs/adr/0113-composable-orchestration-invariants.md",

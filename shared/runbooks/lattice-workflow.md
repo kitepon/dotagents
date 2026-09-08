@@ -6,7 +6,7 @@
 
 ## 工程正本の判定と運用
 
-- **工程正本はLatticeのtyped discoveryで決める**: projectで工程を読む／作る前に`lattice status --json`を実行し、
+- **工程正本はLatticeのtyped discoveryで決める**: Latticeの明示適用が決まった作業、またはオーナー承認済みの既存Lattice工程を継続する時だけ、工程を読む／作る前に`lattice status --json`を実行し、
   `.lattice/`の有無を接続判定へ使わない。`ready`／`active_run`ならtask、依存、状態、完了証拠の正本はLattice
   storeだけであり、Markdownへ二重化しない。`invalid`はエラーとして止め、Markdownへfallbackしない。
   `uninitialized`は利用可能な未初期化状態であり、plan導入が作業scopeなら返された`next_action`から
@@ -19,7 +19,7 @@
 
 ### 既存runとの照合と引継ぎ
 
-着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、
+上記の適用対象でrunを使う時は、着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、
 active runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぐ。引き継がない場合は
 `run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し、新規runを作る。`run`面の継続・
 close・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない。

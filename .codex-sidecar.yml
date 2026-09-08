@@ -1,4 +1,4 @@
-# 前提: GPT-5.6世代（2026-08-14時点）。defaultsの正はdocs/02_models.md
+# 前提: GPT-5.6の役割別配置を維持（2026-09-08整合）。defaults・presetsの正はdocs/02_models.md
 #
 # スキーマは codex-sidecar-core/dist/{config.js,presets.js,types.js,profiles.js} を実読して確認
 # （2026-07-11・/opt/homebrew/lib/node_modules/codex-sidecar-core）。USAGE.md 等の文書は端末に
@@ -7,7 +7,7 @@
 
 project: dotagents
 
-# defaults: 端末 config.toml の model/effort ピン（現状 Sol×ultra 相当）が sidecar 委譲へ
+# defaults: 端末 config.toml の model/effort ピンが sidecar 委譲へ
 # 継承される事故を遮断する構造的バックストップ。model_reasoning_effort は
 # codex-sidecar-core が受理する low/medium/high/xhigh のみ（ultra/max はスキーマ外）。
 defaults:
@@ -32,8 +32,10 @@ presets:
   advisory:
     workflow: explore
     readonly: true
-    # Luna×maxはsidecar schema外。Luna×lowへ落とさずdefaultsのTerra×mediumを使う。
-    prompt: "Return concise Caveat hook advisory with concrete next steps."
+    # 配置表の軽作業に合わせる。preset単位のmodel・effort指定は製品schemaで受理される。
+    model: gpt-5.6-luna
+    model_reasoning_effort: medium
+    prompt: "Caveat hookの助言を、具体的な次の操作とともに簡潔な日本語で返す。"
   auditor:
     workflow: auditor
     readonly: true

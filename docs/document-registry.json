@@ -427,6 +427,7 @@
         "rag/models/benchmark-snapshot-20260811.md",
         "rag/models/claude-5-family.md",
         "rag/models/gpt-5.6-family.md",
+        "rag/models/gpt-6-astra.md",
         "rag/models/role-placement-experiment-20260819.md",
         "rag/models/sprite-forge-roundtable-placement-20260904.md",
         "rag/models/xai-grok46.md",
@@ -521,7 +522,7 @@
       "path_regex": "^docs/05_codex-fragments\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/05_codex-fragments.md": "0d97ac5588236c7fa59bdba8d116ba749b1203f3ebe197b10966b993b2635aec"
+        "docs/05_codex-fragments.md": "29ea46cf53cfc0b4843256380134b07d4167a057bc3f5c55f1d2e6901a428f8a"
       },
       "required_regexes": [],
       "forbidden_regexes": []
@@ -531,7 +532,7 @@
       "path_regex": "^(?:codex|grok|cursor)/skills/orchestrate/SKILL\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "codex/skills/orchestrate/SKILL.md": "2a84bee6117b06c35fa85cdcc2056339bc8dcf88a654b22a8a155dd92c2bddd4",
+        "codex/skills/orchestrate/SKILL.md": "87a17b219bf705742a702fce7eb83c90886511f274fd58e83e48c952428fc76e",
         "cursor/skills/orchestrate/SKILL.md": "3242dcf283dd171d742b6ef6fac60eeb09019bb86f910d15da2c2be322777685",
         "grok/skills/orchestrate/SKILL.md": "21937efac24aa25e36fea6bc385d3699e7bbe9976f63d9364669c42df3e69f06"
       },

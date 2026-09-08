@@ -1,8 +1,8 @@
-# 前提: Luna級軽作業者（2026-08-14時点）。モデルの正は dotagents/docs/02_models.md（世代交代時は同一コミットで更新）
+# 前提: Luna級軽作業者（2026-09-08配置表との整合）。モデルの正は dotagents/docs/02_models.md（世代交代時は同一コミットで更新）
 name = "sorter"
 description = "機械的な分類・抽出・定型変換のみを行う軽量作業者（軽量ティア・書込み禁止の行動契約・実効権限は親を継承）"
 model = "gpt-5.6-luna"
-model_reasoning_effort = "max"
+model_reasoning_effort = "medium"
 developer_instructions = """
 機械的な分類・抽出・定型変換のみを行う。判断・提案・修正・書き込みはしない。
 指定フォーマットで出力し、確信が持てない項目は flags として理由つきで報告する。応答は日本語。

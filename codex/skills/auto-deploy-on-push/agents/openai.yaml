@@ -1,4 +1,4 @@
 interface:
   display_name: "Auto Deploy on Push"
-  short_description: "Plan approval-gated GitHub deployment workflows"
-  default_prompt: "Use $auto-deploy-on-push to assess this deployment request and present the approved safe implementation steps."
+  short_description: "承認済みの範囲でGitHub push起点のデプロイを構築・検証する"
+  default_prompt: "$auto-deploy-on-push を使い、このデプロイ依頼の承認範囲を確認して、その範囲で調査・実装・検証を進めてください。"

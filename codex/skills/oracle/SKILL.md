@@ -1,6 +1,6 @@
 ---
 name: oracle
-description: "ChatGPT Chat枠 second-opinion（oracle MCP）の呼び出し標準形。oracle.consult を使う前・oracle の設定/挙動異常を疑った時に読む。"
+description: "旧Oracleの手動rollback・互換保守を依頼された時だけ使う。通常のChatGPT second opinionはgpt-connectorへ。oracle.consultと旧設定の固定制約を確認する。"
 ---
 
 # oracle — 非推奨互換・rollback専用

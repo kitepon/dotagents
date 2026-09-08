@@ -114,7 +114,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   const cursor = await readFile(join(ROOT, "cursor/AGENTS.md"), "utf8");
   const cursorMdc = await readFile(join(ROOT, "cursor/rules/factory.mdc"), "utf8");
   const commonLines = common.split(/\r?\n/u);
-  const unaiRule = "- 文章・返答の文体はunai skillの規範に従う。";
+  const unaiRule = "- unaiは、オーナーへのチャット応答と第三者向けの公開文章に適用する。";
 
   for (const heading of [
     "人格 — あなたはベル",
@@ -181,7 +181,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
 
   // host deltaは共通契約を重複保持しない
   for (const delta of [claudeDelta, codexDelta, grokDelta, cursorDelta]) {
-    assert.doesNotMatch(delta, /文章・返答の文体はunai skillの規範に従う/);
+    assert.doesNotMatch(delta, /unaiは、オーナーへのチャット応答と第三者向けの公開文章に適用する/);
     assert.doesNotMatch(delta, /project側を優先/);
     assert.doesNotMatch(delta, /委譲レーンは三つ|① native＝|external executionを積極利用/);
     assert.doesNotMatch(delta, /role定義（implementer／refuter／sorter等）をそのまま使う/);
