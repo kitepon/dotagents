@@ -61,8 +61,8 @@ test("MacとLinux固有変更は該当hostだけへ分類する", () => {
   assert.deepEqual(plan.environments, ["macos-native", "linux-workstation"]);
 });
 
-test("共通変更と未分類変更はpush既定のLinux 1環境へ分類する", () => {
-  assert.deepEqual(PUSH_ENVIRONMENTS, ["linux-workstation"]);
+test("共通変更と未分類変更はMac・Linux・Windowsへ分類する", () => {
+  assert.deepEqual(PUSH_ENVIRONMENTS, ALL_ENVIRONMENTS);
   for (const paths of [["lib/factory/core.mjs"], ["new-product/file.txt"], [".github/workflows/ci.yml"], ["package.json"], []]) {
     const plan = classifyPaths(paths);
     assert.equal(plan.productChange, true);
@@ -73,15 +73,15 @@ test("共通変更と未分類変更はpush既定のLinux 1環境へ分類する
 test("共通変更が混ざっても該当hostの検査を落とさない", () => {
   for (const common of ["Makefile", "install.sh", "package.json", "new-product/file.txt"]) {
     assert.deepEqual(classifyPaths([common, "bin/setup-windows-native-factory.ps1"]).environments,
-      ["linux-workstation", "windows-native"]);
+      ALL_ENVIRONMENTS);
     assert.deepEqual(classifyPaths(["bin/setup-macos-factory.sh", common]).environments,
-      ["macos-native", "linux-workstation"]);
+      ALL_ENVIRONMENTS);
     assert.deepEqual(classifyPaths([common, "bin/setup-macos-factory.sh", "bin/setup-windows-native-factory.ps1"]).environments,
       ALL_ENVIRONMENTS);
   }
 });
 
-test("定期実行だけが全環境へ広がる", async (t) => {
+test("定期実行は全環境へ広がる", async (t) => {
   const repo = await repository(t);
   const output = join(repo.root, "github-output.txt");
   const result = spawnSync(process.execPath, [SCRIPT, "plan"], {

@@ -10,9 +10,8 @@ export const ALL_ENVIRONMENTS = Object.freeze([
   "windows-native",
 ]);
 
-// push／pull requestの既定はLinux 1環境。実測（2026-09-02）ではWindows runnerが毎回critical pathを
-// 5〜6分占める。他OSはそのOS固有pathを触った変更、定期健康診断、手動実行だけ（factory-ci runbook）。
-export const PUSH_ENVIRONMENTS = Object.freeze(["linux-workstation"]);
+// 共通実装の変更は対応する全OSで検証する。文書とOS固有の変更だけ検査環境を絞る。
+export const PUSH_ENVIRONMENTS = ALL_ENVIRONMENTS;
 
 const HOST_PATH_RULES = Object.freeze([
   Object.freeze({
@@ -43,7 +42,7 @@ const HOST_PATH_RULES = Object.freeze([
 
 export function classifyPaths(paths) {
   const normalizedPaths = [...new Set(paths)].toSorted();
-  if (normalizedPaths.length === 0) return fullPlan(normalizedPaths, "差分なしをLinux全検査へ分類");
+  if (normalizedPaths.length === 0) return fullPlan(normalizedPaths, "差分なしを全OSの検査へ分類");
   if (normalizedPaths.length > 0 && normalizedPaths.every(isDocumentationPath)) {
     return Object.freeze({
       schema: "dotagents.ci-plan.v1",
@@ -59,6 +58,7 @@ export function classifyPaths(paths) {
     if (isDocumentationPath(path)) continue;
     const matchedRules = HOST_PATH_RULES.filter((rule) =>
       rule.patterns.some((pattern) => pattern.test(path)));
+    if (matchedRules.length === 0) return fullPlan(normalizedPaths, "共通または未分類の変更を全OSの検査へ");
     for (const rule of matchedRules) selected.add(rule.environment);
   }
 
