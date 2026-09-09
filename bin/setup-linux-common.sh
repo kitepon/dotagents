@@ -40,24 +40,27 @@ UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.lo
 die() { echo "FAIL: $*" >&2; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "必須commandがない: $1"; }
 
-org_runner_id() {
-  local runner_name="$1"
-  gh api orgs/kitepon/actions/runners | node -e '
-    let input="";
-    process.stdin.setEncoding("utf8");
-    process.stdin.on("data", (chunk) => { input += chunk; });
-    process.stdin.on("end", () => {
-      const matches=JSON.parse(input).runners.filter((runner) => runner.name === process.argv[1]);
-      if (matches.length !== 1) process.exit(1);
-      process.stdout.write(String(matches[0].id));
-    });
-  ' "$runner_name"
+org_runner_record() {
+  local runner_name="$1" response
+  response="$(gh api orgs/kitepon/actions/runners)" || return 1
+  node -e '
+    const matches=JSON.parse(process.argv[2]).runners.filter((runner) => runner.name === process.argv[1]);
+    if (matches.length !== 1) process.exit(1);
+    process.stdout.write(JSON.stringify(matches[0]));
+  ' "$runner_name" "$response"
 }
 
 set_org_runner_labels() {
-  local runner_name="$1" runner_label="$2" runner_id labels_json
-  runner_id="$(org_runner_id "$runner_name")" \
+  local runner_name="$1" runner_label="$2" runner_id labels_json runner_json
+  runner_json="$(org_runner_record "$runner_name")" \
     || die "GitHub Actions runnerを一意に取得できない: $runner_name"
+  if node -e '
+    const labels=new Set(JSON.parse(process.argv[1]).labels.map((label) => label.name));
+    process.exit(labels.has("factory") && labels.has(process.argv[2]) ? 0 : 1);
+  ' "$runner_json" "$runner_label"; then
+    return 0
+  fi
+  runner_id="$(node -e 'process.stdout.write(String(JSON.parse(process.argv[1]).id))' "$runner_json")"
   labels_json="$(node -e 'process.stdout.write(JSON.stringify({labels:["factory",process.argv[1]]}))' "$runner_label")"
   gh api --method PUT "orgs/kitepon/actions/runners/$runner_id/labels" --input - \
     <<<"$labels_json" >/dev/null \
@@ -67,11 +70,11 @@ set_org_runner_labels() {
 verify_org_runner_online() {
   local runner_name="$1" runner_label="$2" runner_json
   for _ in {1..15}; do
-    runner_json="$(gh api orgs/kitepon/actions/runners --jq \
-      '.runners[] | select(.name == "'"$runner_name"'") | {status,labels:[.labels[].name]}' 2>/dev/null || true)"
+    runner_json="$(org_runner_record "$runner_name")" \
+      || die "GitHub Actions runnerの状態を取得できない: $runner_name"
     if node -e '
       const value=JSON.parse(process.argv[1]);
-      const labels=new Set(value.labels);
+      const labels=new Set(value.labels.map((label) => label.name));
       process.exit(value.status === "online" && labels.has("factory") && labels.has(process.argv[2]) ? 0 : 1);
     ' "$runner_json" "$runner_label" 2>/dev/null; then
       echo "INFO: GitHub Actions runner online: $runner_name ($runner_label)"
@@ -157,11 +160,14 @@ ensure_github_actions_runner() {
 
 linux_root_prerequisites_ready() {
   local package_name
-  for package_name in ca-certificates cron curl docker.io gh git jq make openssh-client \
+  for package_name in ca-certificates cron curl gh git jq make openssh-client \
     openssh-server python3 python3-venv ripgrep shellcheck tmux xz-utils; do
     dpkg-query -W -f='${db:Status-Abbrev}' "$package_name" 2>/dev/null | grep -Fq 'ii ' \
       || return 1
   done
+  { dpkg-query -W -f='${db:Status-Abbrev}' docker-ce 2>/dev/null | grep -Fq 'ii ' \
+    || dpkg-query -W -f='${db:Status-Abbrev}' docker.io 2>/dev/null | grep -Fq 'ii '; } \
+    || return 1
   systemctl is-enabled cron >/dev/null 2>&1 \
     && systemctl is-active cron >/dev/null 2>&1 \
     && systemctl is-enabled docker >/dev/null 2>&1 \

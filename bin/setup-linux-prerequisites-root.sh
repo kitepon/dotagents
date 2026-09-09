@@ -23,20 +23,39 @@ fi
   || { echo "FAIL: 自動導入はUbuntuだけを対象とします（検出: ${ID:-unknown}）" >&2; exit 1; }
 
 packages=(
-  ca-certificates cron curl docker.io gh git jq make openssh-client openssh-server
+  ca-certificates cron curl gh git jq make openssh-client openssh-server
   python3 python3-venv ripgrep shellcheck tmux xz-utils
 )
-install_needed=false
+missing_packages=()
 for package_name in "${packages[@]}"; do
   if ! dpkg-query -W -f='${db:Status-Abbrev}' "$package_name" 2>/dev/null | grep -Fq 'ii '; then
-    install_needed=true
-    break
+    missing_packages+=("$package_name")
   fi
 done
-if [ "$install_needed" = true ]; then
+if [ "${#missing_packages[@]}" -gt 0 ]; then
   echo 'INFO: Ubuntu公式archiveから工場の前提packageを導入します'
   apt-get update
-  env DEBIAN_FRONTEND=noninteractive apt-get install -y "${packages[@]}"
+  env DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing_packages[@]}"
+fi
+
+# 既存Engineの配布元は保持する。未導入時だけDocker公式apt repositoryを使う。
+if ! dpkg-query -W -f='${db:Status-Abbrev}' docker-ce 2>/dev/null | grep -Fq 'ii ' \
+  && ! dpkg-query -W -f='${db:Status-Abbrev}' docker.io 2>/dev/null | grep -Fq 'ii '; then
+  echo 'INFO: Docker公式apt repositoryからEngineを導入します'
+  install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  chmod a+r /etc/apt/keyrings/docker.asc
+  cat <<EOF | tee /etc/apt/sources.list.d/docker.sources >/dev/null
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: ${UBUNTU_CODENAME:-$VERSION_CODENAME}
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+  apt-get update
+  env DEBIAN_FRONTEND=noninteractive apt-get install --no-remove -y \
+    docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 fi
 
 systemctl enable --now cron

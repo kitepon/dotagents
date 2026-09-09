@@ -256,6 +256,8 @@ tar czf ~/Archives/claude-pre-dotagents-$(date +%Y%m%d).tar.gz -C "$HOME" .claud
 
 ### 3. 一撃展開 → 検証バッテリー
 
+Linuxの前提packageは不足分だけを導入する。既存のDocker Engineは配布元を保持し、未導入時は[Docker公式apt repository](https://docs.docker.com/engine/install/ubuntu/)を使う。導入に既存packageの削除が必要な場合は停止し、競合の原因を確認する。
+
 席への手作業の展開（SSHで1箇所から他席を回す場合を含む）は次だけとする。その席のdotagents作業ディレクトリへ移り、そこで親AI（Grok／Claude／Codex）を起動し、その親に下表の正規入口を実行させる。失敗はその席で原因を直してから閉じる。スクリプトをSSH先で無人実行して成功扱いにしない。`verify-install`やsetupのexit 0を親session受入の代用にしない。定期更新のcron／Taskはこの節の対象外。
 
 初回導入と再適用の正規入口はhost別の一撃展開スクリプトである。4入口は同じ
