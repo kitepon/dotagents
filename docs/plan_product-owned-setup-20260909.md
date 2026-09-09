@@ -20,10 +20,10 @@
 |---|---|---|---|
 | Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | 着手 |
 | runner | 既存runnerへの不要な再設定と403後の誤った継続を整理 | 変更が必要な場合だけ設定し、権限不足を元の原因として表示 | focused検証済み |
-| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 未着手 |
-| Throughline | 未導入時の更新順序を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | 未着手 |
+| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 4 AI登録を実装、隔離設定で初回・再実行・MCP検索を確認、公開前検証中 |
+| Throughline | 未導入時の更新順序を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | Linuxの初回・再実行・失敗のfocused試験済み |
 | unai | 工場の固定pathと詳細診断の重複を整理 | 公式installerの公開結果だけで判定 | 未着手 |
-| Aiterm | 製品所有の準備・MCP登録入口 | 対応OSと各AIで単体導入を検証 | Windowsの隔離npm導入・再実行済み、公開前反証中 |
+| Aiterm | 製品所有の準備・MCP登録入口 | 対応OSと各AIで単体導入を検証 | 公開・npm導入・4 AI実設定・公開MCP実行確認済み、修正後3 OS CI成功 |
 | gpt-connector | 製品所有の一括setup入口 | 非Macの読取り機能を保ち、live機能のOS制約を明示 | 未着手 |
 | codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 未着手 |
 | AIShell | 製品所有のMac導入・登録入口 | 対応hostだけ登録し、非対応hostへ工場が登録しない | 未着手 |
@@ -53,5 +53,24 @@ Spotterは既存project単位の入口を保持する。製品側の不足が確
 ## 現在地
 
 LinuxのDocker保持とrunner再設定条件はfocused testで検証済み。Docker修理は別ベンダーの反証で受入可。
-Aitermの一括入口とWindowsのGrok記録先を修正し、Windowsの隔離npm導入で初回・再実行を確認した。
-Grokの既存監査セッションは、修正した公開入口から完了通知と回答を回収できた。公開・実設定への導入はまだ実施していない。
+Aitermの一括入口とWindowsのGrok記録先を修正し、公開・npm導入・4 AIの実設定と公開MCP実行を確認した。
+Windows CIで見つかったパス期待値のテスト不備も修正し、3 OS CIは成功した。
+Caveatは工場が代行していたMCP登録を製品へ移し、4 AIの隔離設定で初回・再実行・MCP検索を確認した。
+
+## 中断と再開
+
+2026-09-09、オーナーの「落ち着いたところでストップしよう」により中断した。全体のゴールは未完了。
+
+- Aitermは公開・このWindows席への導入・公開MCPの動作確認・修正後CIまで完了した。
+- Caveatは未commit。ビルド、型検査、公開前smoke、全workspaceテストが成功した。
+  4 AIの隔離設定で初回・再実行とMCP検索を確認済み。最後に合わせた`uninstall`の
+  `CLAUDE_CONFIG_DIR`対応は、次回の最初にfocused確認とCLI再buildを行う。
+  別ベンダーの境界反証は回答前に中断し、外部セッションを閉じた。受入可とは判定していない。
+  再開時は境界反証、全current文書の最終照合、commit・push、CI、公開、npm導入、公開後smokeの順に続ける。
+- dotagentsのThroughline初回導入修理は未commit。3ケースのfocused試験済みで、関連cron試験は未実行。
+  Caveat公開後にLinuxの内部scaffold復旧を削除し、工場から製品MCP登録を段階的に外す。
+- gpt-connectorの追加調査は中断した。非Macのread-only MCPと既存4 AI配線を維持する条件は確定済み。
+- それ以外の未着手項目とServerManager/BugHubの既存作業は、上の一覧と既存計画を引き継ぐ。
+
+未commit差分の退避先は、この席の一時ディレクトリ内の`dotagents-installer-checkpoint-20260909`。
+製品公開や次の製品への着手を再開指示なしで進めない。
