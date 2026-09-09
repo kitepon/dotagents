@@ -37,14 +37,17 @@ Spotterは既存project単位の入口を保持する。製品側の不足が確
 
 ## 順序と責務
 
-契約・依存方向・公開・本番操作は親が担当する。仕様固定後の実装物量は委譲する。独立した別repoの作業は並列化できる。同一repoのwriterは一人に限定し、Lattice未適用のまま複数writerを同時配置しない。現在はAitermの読み取り専用設計反証と親のLinux修理を並行する。
+2026-09-09の追加指示により、各製品フォルダで起動したAIが、その製品の修理・公開・単体検証を担当する。
+dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受入を行う。各製品担当は別製品repoを変更せず、
+依存の不足をその所有製品へ返す。実装と隔離試験は並行できるが、同一端末の共有設定への本番導入は順番に行う。
+引継ぎ文は[製品ごとの改修依頼文](evidence/20260909-product-repair-prompts.md)を使う。
 
 各製品を先に修理・公開・導入し、その公開入口に工場を切り替える。責務境界を動かす設計は別ベンダーの反証を公開前に受ける。最後に工場の関連gateと対象hostの通し確認を行う。契約ごとのfocused testが通る前に通し試験を動作確認へ使わない。
 
 ## 既知の罠と戻し方
 
-- dotagentsの既存未commit変更は`codex/rules/default.rules`。本改修へ混入させない。
-- ServerManagerの通知修理は既存の隔離worktreeに未commitで残る。他のcheckoutで作り直さない。
+- 作業開始前からあった`codex/rules/default.rules`の読取許可は、追加指示により別commitへ保存済み。
+- ServerManagerの通知修理は既存の作業ブランチへcommit・push済み。差分を引き継ぎ、他のcheckoutで作り直さない。
 - Linuxの以前の実行でDocker CEがUbuntu配布へ置換された。稼働状態と依存を確認してから復旧を判断し、無観測で入れ替えない。
 - 製品ごとの対応OS差を統一仕様で隠さない。非Macのgpt-connectorを一括削除しない。
 - 公開対象commitはoriginの既定ブランチの祖先だけとする。変更は製品単位で戻せるcommitへ分割し、本番は所有repoのbackup・rollbackを使う。
