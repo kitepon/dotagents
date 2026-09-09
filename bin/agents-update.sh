@@ -117,6 +117,16 @@ npm_install_global() {
   esac
 }
 
+update_throughline() {
+  if command -v throughline >/dev/null 2>&1; then
+    throughline self-update --json
+  else
+    # 初回だけpackageを取得し、製品所有の導入入口で配線とmigrationを完了する。
+    npm_install_global throughline "$(npm_install_spec throughline)" || return 1
+    throughline install
+  fi
+}
+
 # 現役製品のOS/arch別更新集合はdeployment contractだけが所有する。
 PACKAGES=()
 while IFS= read -r package_line; do
@@ -153,8 +163,8 @@ fi
       printf -- '--- %s ---\n' "$pkg"
       if [[ "$pkg" = throughline ]]; then
         # package更新・host配線・DB migration・結果確認はThroughline製品入口が連続実行する。
-        if ! throughline self-update --json; then
-          printf 'FAILED: throughline self-update\n'
+        if ! update_throughline; then
+          printf 'FAILED: throughline setup/update\n'
           update_failed=1
         fi
         continue

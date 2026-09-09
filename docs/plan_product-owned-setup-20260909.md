@@ -62,15 +62,17 @@ Caveatは工場が代行していたMCP登録を製品へ移し、4 AIの隔離�
 2026-09-09、オーナーの「落ち着いたところでストップしよう」により中断した。全体のゴールは未完了。
 
 - Aitermは公開・このWindows席への導入・公開MCPの動作確認・修正後CIまで完了した。
-- Caveatは未commit。ビルド、型検査、公開前smoke、全workspaceテストが成功した。
+- Caveatは作業ブランチ`codex/product-owned-setup`へ保存する。ビルド、型検査、公開前smoke、全workspaceテストが成功した。
   4 AIの隔離設定で初回・再実行とMCP検索を確認済み。最後に合わせた`uninstall`の
   `CLAUDE_CONFIG_DIR`対応は、次回の最初にfocused確認とCLI再buildを行う。
   別ベンダーの境界反証は回答前に中断し、外部セッションを閉じた。受入可とは判定していない。
-  再開時は境界反証、全current文書の最終照合、commit・push、CI、公開、npm導入、公開後smokeの順に続ける。
-- dotagentsのThroughline初回導入修理は未commit。3ケースのfocused試験済みで、関連cron試験は未実行。
+  再開時は境界反証、全current文書の最終照合、mainへの統合、CI、公開、npm導入、公開後smokeの順に続ける。
+- dotagentsのThroughline初回導入修理はcommit・pushして保存する。3ケースのfocused試験済みで、関連cron試験は未実行。
   Caveat公開後にLinuxの内部scaffold復旧を削除し、工場から製品MCP登録を段階的に外す。
 - gpt-connectorの追加調査は中断した。非Macのread-only MCPと既存4 AI配線を維持する条件は確定済み。
 - それ以外の未着手項目とServerManager/BugHubの既存作業は、上の一覧と既存計画を引き継ぐ。
 
-未commit差分の退避先は、この席の一時ディレクトリ内の`dotagents-installer-checkpoint-20260909`。
+中断時の差分退避先は、この席の一時ディレクトリ内の`dotagents-installer-checkpoint-20260909`。
+追加指示により、未commit差分は既存のCodex読取許可を含めてcommit・pushして保存する。
+ServerManager/BugHubは既存の作業ブランチ`fix/bughub-new-only-20260909`へ保存する。
 製品公開や次の製品への着手を再開指示なしで進めない。

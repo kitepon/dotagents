@@ -85,6 +85,7 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/setup-macos-factory.sh
 
 test-update: ## cron 最小 PATH で NVM 配下の npm を解決できることを検証
+	bash tests/update/throughline-bootstrap.sh
 	bash tests/update/cron-env.sh
 
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証

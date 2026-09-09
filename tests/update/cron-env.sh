@@ -417,7 +417,7 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/throughline-self-update-fail.out" 2>&1; then
   fail 'Throughline self-update失敗を更新成功扱いした'
 fi
-grep -q '^FAILED: throughline self-update$' "$TEST_HOME/throughline-self-update-fail.out" \
+grep -q '^FAILED: throughline setup/update$' "$TEST_HOME/throughline-self-update-fail.out" \
   || fail 'Throughline self-update失敗を名指ししない'
 [ "$(grep -c '^throughline-self-update-fail:' "$TEST_HOME/reporter-calls.log")" -eq 2 ] \
   || fail 'Throughline self-update失敗後もfactory reporterを実行していない'
