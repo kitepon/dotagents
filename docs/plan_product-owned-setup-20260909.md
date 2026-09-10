@@ -6,6 +6,8 @@
 
 複数repoの書込み調整と公開後受入が連鎖するため統括レーンとする。工程正本は本書。Lattice工程管理は選択していない。通知修理はServerManagerの既存計画を継続する。
 
+2026-09-10、オーナーは公式Codex CLIの導入・更新を工場の責務として承認した。製品の公式導入・更新を通常セットアップへ組み込み、CI専用の固定コピーやデスクトップ内部pathへの依存は追加しない。
+
 ## 受入条件
 
 - 製品は必要な設定、hook、MCP登録、移行、OS差を所有し、正規入口の一回の呼出しで結果を返す。
@@ -61,11 +63,11 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 工場統合の順序は、製品の公開契約・実機受入記録の回収、公式入口への切替、関連focused試験、最終通し試験、現役端末への順次展開、fresh reportとBugHub受入とする。製品記録の読取りは親の工場調査と並列に行う。書込みは同一repoの導入・更新順序が結合するため直列とし、共有AI設定への本番反映も端末ごとに直列とする。既存の日次・週次の頻度とSpotterのproject選択を維持する。
 
-製品公開入口への切替、Caveat内部補完の削除、Windowsの予約更新分離、同一reportへの更新結果確定を実装し、関連focused試験と文書gateが成功した。[別ベンダー反証](evidence/20260910-product-owned-boundary-review.md)は採用指摘0件で完了し、最終通し試験も成功した。実端末への工場反映は未実施で、Aitermの既存MCP再接続とAIShell修正版公開を待っている。実測と未完条件は[途中記録](evidence/20260910-product-owned-integration-progress.md)を参照する。
+製品公開入口への切替、Caveat内部補完の削除、Windowsの予約更新分離、同一reportへの更新結果確定を実装し、関連focused試験と文書gateが成功した。[別ベンダー反証](evidence/20260910-product-owned-boundary-review.md)は採用指摘0件で完了し、最終通し試験も成功した。実端末への工場反映は未実施で、AitermのMCP再接続とSSH先PowerShellの完了検知は確認済みで、AIShell修正版公開を待っている。実測と未完条件は[途中記録](evidence/20260910-product-owned-integration-progress.md)を参照する。
 
 Windowsの公開Caveat診断はCodex hookの既存明示無効化を保持してnot_readyを返す。製品担当と工場契約を照合し、今回の切替では無効化を解除しない。[実測と契約](evidence/20260910-windows-caveat-preflight.md)に従い、実端末受入でもこの状態を隠さない。
 
-工場コードは`4df3346`でmainへ保存・pushした。公開CIはMac/Linux成功、Windowsは通常CLI未導入で試験前に停止した。[公式CLIの通常導入](evidence/20260910-ci-codex-dependency.md)を行い、初回セットアップも修正した。CI専用の固定版追加は撤回した。公開CIを再確認する。
+工場コードは`4df3346`でmainへ保存・pushした。公開CIはMac/Linux成功、Windowsは通常CLI未導入で試験前に停止した。[公式CLIの通常導入](evidence/20260910-ci-codex-dependency.md)を行い、初回セットアップも`6bb6efe`で修正した。CI専用の固定版追加は撤回した。[修正後の公開CI](https://github.com/kitepon/dotagents/actions/runs/34426961717)はWindows/Linuxの全検査と最終gateが成功した。Macは今回のWindows固有変更では非選択であり、先行した工場変更の全検査は成功済み。
 
 以下は中断時点の記録であり、最新の製品受入結果とは区別する。
 
