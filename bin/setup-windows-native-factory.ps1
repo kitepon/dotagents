@@ -741,8 +741,8 @@ try {
   Normalize-WindowsReporterConfig
   $install = Convert-ToGitBashPath (Join-Path $RepoRoot 'install.sh')
   $update = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\agents-update.sh')
-  $applyCodex = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\apply-codex-config.sh')
-  $applyClaude = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\apply-claude-config.sh')
+  $applyCodex = Join-Path $RepoRoot 'bin\apply-codex-config.sh'
+  $applyClaude = Join-Path $RepoRoot 'bin\apply-claude-config.sh'
   $applyGrok = Join-Path $RepoRoot 'bin\apply-grok-config.sh'
   $applyCursor = Join-Path $RepoRoot 'bin\apply-cursor-config.sh'
   $verify = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\verify-install.sh')
@@ -764,11 +764,11 @@ try {
   Invoke-Checked -File $GitBash -Arguments @($install, '--profile', 'official') -Label 'dotagents-links: install.sh'
   Remove-WindowsGlobalNpmLink 'aiterm-mcp'
   # apply-codex-config.sh
-  Invoke-Checked -File $GitBash -Arguments @('-lc', 'python3 "$1" --apply', 'dotagents-apply-codex', $applyCodex) -Label 'codex-config: apply-codex-config.sh'
+  Invoke-Checked -File 'python' -Arguments @($applyCodex, '--apply') -Label 'codex-config: apply-codex-config.sh'
   Normalize-WindowsCodexHooks
   # verify-install は既存の Claude settings.json がある時だけ Claude hook を必須検査する。
   if (Test-Path -LiteralPath (Join-Path $env:USERPROFILE '.claude\settings.json') -PathType Leaf) {
-    Invoke-Checked -File $GitBash -Arguments @('-lc', 'python3 "$1" --apply', 'dotagents-apply-claude', $applyClaude) -Label 'claude-config: apply-claude-config.sh'
+    Invoke-Checked -File 'python' -Arguments @($applyClaude, '--apply') -Label 'claude-config: apply-claude-config.sh'
   }
   $grokAuth = Join-Path $env:USERPROFILE '.grok\auth.json'
   $grokLoggedIn = -not [string]::IsNullOrWhiteSpace($env:XAI_API_KEY)
