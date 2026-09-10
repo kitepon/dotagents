@@ -12,18 +12,13 @@ $Plan = @(
   'factory-reporter-config',
   'retire-legacy-schedulers',
   'dotagents-links',
-  'factory-products-bootstrap',
-  'codex-config',
+  'factory-config',
   'main-server-ssh',
-  'native-product-wiring',
-  'lattice-hooks',
-  'spotter-project',
-  'mcp-registration',
-  'verify-install',
+  'daily-0200-task',
+  'product-update-and-setup',
   'fresh-bughub-delivery',
-  'toolchain-finalization',
   'all-product-smoke',
-  'daily-0200-task'
+  'verify-install'
 )
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
@@ -73,10 +68,11 @@ $MainServerHostKey = '192.168.1.2 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIWU1zJ02l
 $MainServerHostKeyFingerprint = 'SHA256:TLhN/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'
 $RunId = [guid]::NewGuid().ToString()
 $RunLock = $null
+$RunClock = [Diagnostics.Stopwatch]::StartNew()
 $TranscriptPath = Join-Path $StateDirectory "run-$RunId.log"
 
 function Write-Step([string]$Name) {
-  Write-Host "[windows-native-factory] $Name"
+  Write-Host "[windows-native-factory] $Name ($([int]$RunClock.Elapsed.TotalSeconds)秒)"
 }
 
 function Refresh-ProcessPath {
@@ -172,20 +168,6 @@ function Test-External {
     $ErrorActionPreference = $previousPreference
   }
   return $code -eq 0
-}
-
-function Ensure-ClaudeMcp {
-  param([string]$Name, [string]$Command, [string[]]$Arguments = @())
-  if (Test-External -File 'claude' -Arguments @('mcp', 'get', $Name)) { return }
-  $mcpArguments = @('mcp', 'add', '--scope', 'user', $Name, '--', $Command) + $Arguments
-  Invoke-Checked -File 'claude' -Arguments $mcpArguments -Label "Claude MCP: $Name"
-}
-
-function Ensure-CodexMcp {
-  param([string]$Name, [string]$Command, [string[]]$Arguments = @())
-  if (Test-External -File 'codex' -Arguments @('mcp', 'get', $Name)) { return }
-  $mcpArguments = @('mcp', 'add', $Name, '--', $Command) + $Arguments
-  Invoke-Checked -File 'codex' -Arguments $mcpArguments -Label "Codex MCP: $Name"
 }
 
 function Set-OwnerOnlyAcl([string]$Path) {
@@ -489,31 +471,6 @@ function Normalize-WindowsReporterConfig {
   Assert-ReporterConfig
 }
 
-function Invoke-BootstrapUpdate([string]$UpdateScript) {
-  Write-Step 'factory-products-bootstrap: agents-update.sh'
-  $previousRunner = $env:FACTORY_REPORTER_RUNNER
-  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
-  $bootstrapLog = Join-Path $StateDirectory "bootstrap-$RunId.log"
-  try {
-    & $GitBash $UpdateScript *> $bootstrapLog
-    $code = $LASTEXITCODE
-  } finally {
-    $env:FACTORY_REPORTER_RUNNER = $previousRunner
-  }
-  if (Test-Path -LiteralPath $bootstrapLog -PathType Leaf) {
-    Set-OwnerOnlyAcl $bootstrapLog
-    Get-Content -LiteralPath $bootstrapLog | ForEach-Object { Write-Host $_ }
-  }
-  if ($code -eq 0) { return }
-  $log = Join-Path $env:LOCALAPPDATA 'dotagents\agents-update\agents-update.log'
-  if (-not (Test-Path -LiteralPath $log -PathType Leaf)) { throw "Bootstrap agents-update failed with exit $code and produced no result log" }
-  $matches = [regex]::Matches((Get-Content -Raw -LiteralPath $log), 'agents-update result: update=(success|failed) report=(success|failed)')
-  if ($matches.Count -eq 0 -or $matches[$matches.Count - 1].Groups[1].Value -ne 'success') {
-    throw "Bootstrap agents-update product installation failed with exit $code"
-  }
-  Write-Warning 'Bootstrap installed the products but the pre-wiring post-update gate failed. A green fresh run remains mandatory.'
-}
-
 function Remove-WindowsGlobalNpmLink([string]$PackageName) {
   $globalRootOutput = & npm root --global
   $code = $LASTEXITCODE
@@ -539,37 +496,8 @@ function Update-WindowsNativeClaude {
   Invoke-Checked -File $nativeClaude -Arguments @('update') -Label 'factory-products-bootstrap: Claude native update'
 }
 
-function Set-ToolchainPostGateSuccess([string]$LedgerHelper) {
-  Write-Step 'toolchain-finalization: post-gate success'
-  $ledgerPath = Join-Path $env:LOCALAPPDATA 'dotagents\agents-update\toolchain-ledger.json'
-  if (-not (Test-Path -LiteralPath $ledgerPath -PathType Leaf)) { throw 'toolchain update ledger is missing' }
-  $ledger = Get-Content -Raw -LiteralPath $ledgerPath | ConvertFrom-Json
-  if ($ledger.schema_version -ne 'dotagents.toolchain-update.v1') { throw 'toolchain update ledger schema is invalid' }
-  $expected = @('claude-code', 'codex-cli', 'grok-build')
-  $actual = @($ledger.products.PSObject.Properties.Name | Sort-Object)
-  if (@(Compare-Object -ReferenceObject ($expected | Sort-Object) -DifferenceObject $actual).Count -ne 0) {
-    throw 'toolchain update ledger does not contain the exact product set'
-  }
-  $observedAt = [DateTimeOffset]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
-  foreach ($product in $expected) {
-    $record = $ledger.products.$product
-    if ([string]$record.operation_status -notin @('success', 'skipped')) {
-      throw "$product update operation is not successful"
-    }
-    $arguments = @(
-      $LedgerHelper, 'record', '--file', $ledgerPath, '--product', $product,
-      '--before', $(if ($null -eq $record.before_version) { 'none' } else { [string]$record.before_version }),
-      '--latest', $(if ($null -eq $record.latest_version) { 'none' } else { [string]$record.latest_version }),
-      '--operation', [string]$record.operation_status,
-      '--after', $(if ($null -eq $record.after_version) { 'none' } else { [string]$record.after_version }),
-      '--post-gate', 'success', '--reason', [string]$record.reason_code, '--observed-at', $observedAt
-    )
-    Invoke-Checked -File 'node' -Arguments $arguments -Label "toolchain-finalization: $product"
-  }
-}
-
-function Invoke-FreshDelivery([string]$Runner, [string]$LedgerHelper, [string]$ProductSmoke) {
-  Write-Step 'fresh-bughub-delivery: factory-reporter-v8-schedule-runner.mjs'
+function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
+  Write-Step '製品更新・公開入口の実行・fresh BugHub配送'
   $state = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter-v8'
   $reportPath = Join-Path $state 'latest-report.json'
   $deliveryPath = Join-Path $state 'delivery-receipt.json'
@@ -581,29 +509,28 @@ function Invoke-FreshDelivery([string]$Runner, [string]$LedgerHelper, [string]$P
   $previousPreference = $ErrorActionPreference
   $previousHome = $env:HOME
   $previousCodexHome = $env:CODEX_HOME
+  $previousRunner = $env:FACTORY_REPORTER_RUNNER
   $previousBatchToken = $env:AGENTS_UPDATE_BATCH_TOKEN
   $previousThroughlineThread = $env:THROUGHLINE_CODEX_THREAD_ID
   $previousCodexThread = $env:CODEX_THREAD_ID
   $ErrorActionPreference = 'Continue'
   $env:HOME = $env:USERPROFILE
   $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
+  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
   $env:AGENTS_UPDATE_BATCH_TOKEN = $batchToken
   $env:THROUGHLINE_CODEX_THREAD_ID = $null
   $env:CODEX_THREAD_ID = $null
   try {
-    $postOutput = & node $Runner '--config' $ConfigPath '--post-update' 2>&1
-    $postCode = $LASTEXITCODE
-    $postOutput | ForEach-Object { Write-Host $_ }
-    if ($postCode -ne 0) { throw "Fresh factory post-update gate failed with exit $postCode" }
-    Set-ToolchainPostGateSuccess $LedgerHelper
-    $finalOutput = & node $Runner '--config' $ConfigPath '--finalize-update' 2>&1
-    $finalCode = $LASTEXITCODE
-    $finalOutput | ForEach-Object { Write-Host $_ }
-    if ($finalCode -ne 0) { throw "Fresh BugHub finalize delivery failed with exit $finalCode" }
+    $updateArguments = @($UpdateScript)
+    if (-not $ScheduledRun) { $updateArguments += '--setup' }
+    & $GitBash @updateArguments | ForEach-Object { Write-Host $_ }
+    $updateCode = $LASTEXITCODE
+    if ($updateCode -ne 0) { throw "工場更新・製品setup・配送が失敗しました: exit $updateCode" }
   } finally {
     $ErrorActionPreference = $previousPreference
     $env:HOME = $previousHome
     $env:CODEX_HOME = $previousCodexHome
+    $env:FACTORY_REPORTER_RUNNER = $previousRunner
     $env:AGENTS_UPDATE_BATCH_TOKEN = $previousBatchToken
     $env:THROUGHLINE_CODEX_THREAD_ID = $previousThroughlineThread
     $env:CODEX_THREAD_ID = $previousCodexThread
@@ -637,24 +564,6 @@ filtered="$(printf '%s\n' "$current" | awk '!/dotagents-factory-reporter/ && !/(
 if [ "$filtered" != "$current" ]; then printf '%s\n' "$filtered" | crontab -; fi
 '@
   Invoke-Checked -File $GitBash -Arguments @('-lc', $program) -Label 'retire-legacy-cron'
-}
-
-function Invoke-LatticeHookInstall([string]$HostName) {
-  $label = "lattice hooks install --host $HostName"
-  Write-Step $label
-  $output = & lattice hooks install --host $HostName 2>&1
-  $code = $LASTEXITCODE
-  $text = (@($output) | ForEach-Object { [string]$_ }) -join [Environment]::NewLine
-  if ($code -eq 0) {
-    $output | ForEach-Object { Write-Host $_ }
-    return
-  }
-  if ($text -match 'HOST_PLATFORM_UNSUPPORTED') {
-    Write-Warning "${label}: native Windows is structurally unsupported; dotagents-owned hooks remain active"
-    return
-  }
-  $output | ForEach-Object { Write-Host $_ }
-  throw "$label failed with exit $code"
 }
 
 function Normalize-WindowsCodexHooks {
@@ -802,7 +711,7 @@ function Wait-ScheduledSmoke([string]$PriorRunId) {
   throw 'The daily 02:00 task smoke did not complete within 20 minutes'
 }
 
-Ensure-WindowsPrerequisites
+if (-not $ScheduledRun) { Ensure-WindowsPrerequisites } else { Refresh-ProcessPath }
 if (-not (Test-Path -LiteralPath $GitBash -PathType Leaf)) { throw "Git Bash is missing after Git.Git installation: $GitBash" }
 foreach ($command in @('git', 'node', 'npm', 'gh', 'python', 'uv', 'make', 'shellcheck', 'rg')) {
   if (-not (Get-Command $command -ErrorAction SilentlyContinue)) { throw "Required command is missing: $command" }
@@ -832,12 +741,11 @@ try {
   $applyGrok = Join-Path $RepoRoot 'bin\apply-grok-config.sh'
   $applyCursor = Join-Path $RepoRoot 'bin\apply-cursor-config.sh'
   $verify = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\verify-install.sh')
-  $deliveryRunner = Join-Path $RepoRoot 'bin\factory-reporter-v8-schedule-runner.mjs'
-  $ledgerHelper = Join-Path $RepoRoot 'bin\factory-toolchain-ledger.mjs'
   $productSmoke = Join-Path $RepoRoot 'lib\factory\windows-native-product-smoke.mjs'
   $reporterScheduler = Join-Path $RepoRoot 'bin\factory-reporter-scheduler.mjs'
   $dailyScheduler = Join-Path $RepoRoot 'bin\agents-update-scheduler.mjs'
 
+  if (-not $ScheduledRun) {
   $legacyReporterTask = Get-ScheduledTask -TaskName $ReporterTaskName -ErrorAction SilentlyContinue
   if ($legacyReporterTask -and $legacyReporterTask.State -ne 'Ready') {
     Write-Step 'retire-hourly-reporter-task: stop running instance'
@@ -849,10 +757,7 @@ try {
 
   # install.sh
   Invoke-Checked -File $GitBash -Arguments @($install, '--profile', 'official') -Label 'dotagents-links: install.sh'
-  Update-WindowsNativeClaude
   Remove-WindowsGlobalNpmLink 'aiterm-mcp'
-  # agents-update.sh
-  Invoke-BootstrapUpdate $update
   # apply-codex-config.sh
   Invoke-Checked -File $GitBash -Arguments @('-lc', 'python3 "$1" --apply', 'dotagents-apply-codex', $applyCodex) -Label 'codex-config: apply-codex-config.sh'
   Normalize-WindowsCodexHooks
@@ -887,58 +792,14 @@ try {
   Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
   Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
   Ensure-MainServerSsh
-  $previousHome = $env:HOME
-  $previousCodexHome = $env:CODEX_HOME
-  $env:HOME = $env:USERPROFILE
-  $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
-  try {
-    Invoke-Checked -File 'caveat' -Arguments @('init', '--sync', '--yes') -ClosedStdin -Label 'native-product-wiring: caveat setup'
-    Invoke-Checked -File 'throughline' -Arguments @('install') -Label 'native-product-wiring: throughline'
-  } finally {
-    $env:HOME = $previousHome
-    $env:CODEX_HOME = $previousCodexHome
-  }
-  $legacyUndefined = Join-Path $RepoRoot 'undefined'
-  if (Test-Path -LiteralPath $legacyUndefined -PathType Container) {
-    $allowedLegacy = @('undefined\.codex\config.toml', 'undefined\.codex\hooks.json')
-    $unexpectedLegacy = @(Get-ChildItem -LiteralPath $legacyUndefined -Recurse -File -Force | Where-Object {
-      $relative = $_.FullName.Substring($RepoRoot.Length + 1)
-      $relative -notin $allowedLegacy
-    })
-    if ($unexpectedLegacy.Count -gt 0) { throw 'Refusing to remove unexpected files from the legacy undefined HOME' }
-    Remove-Item -LiteralPath $legacyUndefined -Recurse -Force
-  }
-  if (-not (Test-External -File 'markitdown' -Arguments @('--version'))) {
-    Invoke-Checked -File 'uv' -Arguments @('tool', 'install', 'markitdown', '--reinstall') -Label 'native-product-wiring: markitdown'
-  }
-  # lattice hooks install --host claude
-  Invoke-LatticeHookInstall -HostName 'claude'
-  # lattice hooks install --host codex
-  Invoke-LatticeHookInstall -HostName 'codex'
-  # spotter install -y
-  Invoke-Checked -File 'spotter' -Arguments @('install', '-y') -Label 'spotter install -y'
-
-  Ensure-ClaudeMcp -Name 'aiterm' -Command 'aiterm-mcp'
-  Ensure-ClaudeMcp -Name 'caveat' -Command 'caveat' -Arguments @('mcp-server')
-  Ensure-ClaudeMcp -Name 'lattice' -Command 'lattice-mcp'
-  Ensure-ClaudeMcp -Name 'codex-sidecar' -Command 'codex-sidecar-mcp'
-  Ensure-ClaudeMcp -Name 'gpt_connector' -Command 'gpt-connector-mcp'
-  Ensure-CodexMcp -Name 'aiterm' -Command 'aiterm-mcp'
-  Ensure-CodexMcp -Name 'codex-sidecar' -Command 'codex-sidecar-mcp'
-  Ensure-CodexMcp -Name 'gpt_connector' -Command 'gpt-connector-mcp'
-  Ensure-CodexMcp -Name 'lattice' -Command 'lattice-mcp'
-
-  # verify-install.sh
-  $verifyStatus = Invoke-VerifyInstall $verify
-  # factory-reporter-v8-schedule-runner.mjs
-  $delivery = Invoke-FreshDelivery $deliveryRunner $ledgerHelper $productSmoke
-  # agents-update-scheduler.mjs install --apply
-  if (-not $ScheduledRun) {
-    Invoke-Checked -File 'node' -Arguments @($dailyScheduler, 'install', '--apply') -Label 'daily-0200-task'
+  Invoke-Checked -File 'node' -Arguments @($dailyScheduler, 'install', '--apply') -Label 'daily-0200-task'
   }
   Assert-DailyTask
   if (Get-ScheduledTask -TaskName $ReporterTaskName -ErrorAction SilentlyContinue) { throw "$ReporterTaskName still exists" }
-
+  Update-WindowsNativeClaude
+  $delivery = Invoke-FactoryUpdate $update $productSmoke
+  # verify-install.sh
+  $verifyStatus = Invoke-VerifyInstall $verify
   $receipt = Write-Receipt -Delivery $delivery -ScheduledSmoke:$ScheduledRun -VerifyStatus $verifyStatus
 } finally {
   if ($null -ne $RunLock) { $RunLock.Dispose() }

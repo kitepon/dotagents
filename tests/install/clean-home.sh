@@ -161,15 +161,22 @@ case "$TEST_HOST_OS" in
 esac
 chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/uname"
 mkdir -p "$WINDOWS_UNAI_HOME/.local/bin"
-printf 'Write-Output "unai fixture"\n' >"$WINDOWS_UNAI_HOME/.local/bin/unai.ps1"
+cat >"$SUPPORTED_WINDOWS_HOST_BIN/pwsh.exe" <<'EOF'
+#!/usr/bin/env bash
+case "$*" in
+  *'Get-Command unai'*) printf 'C:\\PublicTools\\unai.ps1\n' ;;
+  *) exit 64 ;;
+esac
+EOF
+chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/pwsh.exe"
 printf '#!/usr/bin/env bash\nexit 0\n' >"$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
 chmod +x "$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
 if ! PATH="$WINDOWS_VERIFY_PATH" HOME="$WINDOWS_UNAI_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_CORE_ONLY=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$WINDOWS_UNAI_HOME/windows-unai-ps1.out" 2>&1; then
   sed -n '1,120p' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" >&2
   fail 'Windows公式installer fixtureのverify-installが不合格'
 fi
-grep -Fq "factory core CLI: unai → $WINDOWS_UNAI_HOME/.local/bin/unai.ps1" "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" \
-  || fail 'Windows固定unai.ps1の検出結果を表示しない'
+grep -Fq 'factory core CLI: unai → C:\PublicTools\unai.ps1' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" \
+  || fail 'Windowsの公開command解決結果を表示しない'
 assert_stop_count() {
   "$PYTHON_BIN" - "$1" <<'PY'
 import json

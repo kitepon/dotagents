@@ -30,10 +30,6 @@ macos_major() {
   printf '%s\n' "$major"
 }
 
-supports_aishell() {
-  [ "${DOTAGENTS_SETUP_MACOS_ARCH:-$(uname -m)}" = arm64 ] && [ "$(macos_major)" -ge 15 ]
-}
-
 validate_report_config() {
   [ -f "$REPORT_CONFIG" ] || die "factory reporter configがない: $REPORT_CONFIG"
   node - "$REPORT_CONFIG" <<'NODE' || exit 1
@@ -140,7 +136,7 @@ run_factory_update() {
   major="$(macos_major)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
     FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
-    "$ROOT/bin/agents-update.sh"
+    "$ROOT/bin/agents-update.sh" --setup
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
@@ -189,124 +185,6 @@ ensure_toolchain_bootstrap() {
   codex --version >/dev/null 2>&1 || die 'Codex CLIを公式npm経路で復旧できない'
 }
 
-ensure_claude_mcp() {
-  local name="$1"
-  shift
-  local output=''
-  if output="$(NO_COLOR=1 TERM=dumb claude mcp get "$name" 2>&1)" \
-    && grep -Eq '^  Scope: User config' <<<"$output" \
-    && grep -Eq '^  Status: .*Connected$' <<<"$output"; then
-    return 0
-  fi
-  claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
-  claude mcp add --scope user "$name" -- "$@"
-  output="$(NO_COLOR=1 TERM=dumb claude mcp get "$name" 2>&1)" \
-    || die "Claude MCPを取得できない: $name"
-  if ! grep -Eq '^  Scope: User config' <<<"$output" \
-    || ! grep -Eq '^  Status: .*Connected$' <<<"$output"; then
-    die "Claude MCPがuser scopeでConnectedでない: $name"
-  fi
-}
-
-ensure_claude_aishell() {
-  local output=''
-  if output="$(NO_COLOR=1 TERM=dumb claude mcp get aishell 2>&1)" \
-    && grep -Eq '^  Scope: User config' <<<"$output" \
-    && grep -Eq '^  Status: .*Connected$' <<<"$output" \
-    && grep -Eq '^  Command: aishell-mcp$' <<<"$output" \
-    && grep -Eq '^    AISHELL_CAPABILITY_SET=expanded-v1$' <<<"$output"; then
-    return 0
-  fi
-  claude mcp remove --scope user aishell >/dev/null 2>&1 || true
-  claude mcp add --scope user aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
-  output="$(NO_COLOR=1 TERM=dumb claude mcp get aishell 2>&1)" \
-    || die 'Claude AIShell MCPを取得できない'
-  if ! grep -Eq '^  Status: .*Connected$' <<<"$output" \
-    || ! grep -Eq '^  Command: aishell-mcp$' <<<"$output" \
-    || ! grep -Eq '^    AISHELL_CAPABILITY_SET=expanded-v1$' <<<"$output"; then
-    die 'Claude AIShell MCPがcanonicalでない'
-  fi
-}
-
-codex_mcp_matches() {
-  local name="$1" command_name="$2"
-  codex mcp get "$name" --json 2>/dev/null | node -e '
-    let value;
-    try { value = JSON.parse(require("fs").readFileSync(0, "utf8")); }
-    catch { process.exit(1); }
-    const transport = value?.transport;
-    process.exit(value?.enabled === true && transport?.type === "stdio"
-      && transport?.command === process.argv[1]
-      && Array.isArray(transport?.args) && transport.args.length === 0 ? 0 : 1);
-  ' "$command_name"
-}
-
-ensure_codex_mcp() {
-  local name="$1" command_name="$2"
-  if codex_mcp_matches "$name" "$command_name"; then
-    return 0
-  fi
-  codex mcp remove "$name" >/dev/null 2>&1 || true
-  codex mcp add "$name" -- "$command_name"
-  codex_mcp_matches "$name" "$command_name" \
-    || die "Codex MCPがcanonicalでない: $name"
-}
-
-codex_aishell_matches() {
-  codex mcp get aishell --json 2>/dev/null | node -e '
-    let value;
-    try { value = JSON.parse(require("fs").readFileSync(0, "utf8")); }
-    catch { process.exit(1); }
-    const transport = value?.transport;
-    process.exit(value?.enabled === true && transport?.type === "stdio"
-      && transport?.command === "aishell-mcp"
-      && Array.isArray(transport?.args) && transport.args.length === 0
-      && transport?.env?.AISHELL_CAPABILITY_SET === "expanded-v1" ? 0 : 1);
-  '
-}
-
-ensure_codex_aishell() {
-  if codex_aishell_matches; then
-    return 0
-  fi
-  codex mcp remove aishell >/dev/null 2>&1 || true
-  codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
-  codex_aishell_matches || die 'Codex AIShell MCPがcanonicalでない'
-}
-
-ensure_managed_commands() {
-  local -a commands=(caveat throughline spotter lattice markitdown gpt-connector
-    aiterm-mcp codex-sidecar-mcp peertable-client unai)
-  supports_aishell && commands+=(aishell-mcp)
-  local command_name package_name npm_bin npm_prefix
-  for command_name in "${commands[@]}"; do
-    command -v "$command_name" >/dev/null 2>&1 && continue
-    echo "INFO: factory managed commandを公式経路で補完する: $command_name"
-    case "$command_name" in
-      caveat) package_name=caveat-cli ;;
-      throughline) package_name=throughline ;;
-      spotter) package_name=claude-spotter ;;
-      lattice) package_name=@quolu/lattice ;;
-      gpt-connector) package_name=gpt-connector ;;
-      aiterm-mcp) package_name=aiterm-mcp ;;
-      codex-sidecar-mcp) package_name=codex-sidecar-mcp ;;
-      peertable-client) package_name=peertable ;;
-      aishell-mcp) package_name=@quolu/aishell ;;
-      markitdown) uv tool install markitdown; continue ;;
-      unai) "$ROOT/bin/install-unai.sh"; continue ;;
-    esac
-    npm install -g "$package_name"
-  done
-  npm_prefix="$(npm prefix -g)" || die 'npm global prefixを取得できない'
-  case "$npm_prefix" in /*) ;; *) die 'npm global prefixが絶対pathでない' ;; esac
-  npm_bin="$npm_prefix/bin"
-  [ -d "$npm_bin" ] || die "npm global binがない: $npm_bin"
-  export PATH="$npm_bin:$PATH"
-  for command_name in "${commands[@]}"; do
-    need "$command_name"
-  done
-}
-
 grok_is_logged_in() {
   [ -n "${XAI_API_KEY:-}" ] && return 0
   [ -s "$HOME/.grok/auth.json" ]
@@ -322,22 +200,6 @@ maybe_apply_grok_config() {
 
 apply_cursor_config() {
   "$ROOT/bin/apply-cursor-config.sh" --apply
-}
-
-ensure_mcp() {
-  ensure_claude_mcp aiterm aiterm-mcp
-  ensure_claude_mcp caveat caveat mcp-server
-  ensure_claude_mcp lattice lattice-mcp
-  ensure_claude_mcp codex-sidecar codex-sidecar-mcp
-  ensure_claude_mcp gpt_connector gpt-connector-mcp
-  ensure_codex_mcp aiterm aiterm-mcp
-  ensure_codex_mcp lattice lattice-mcp
-  ensure_codex_mcp codex-sidecar codex-sidecar-mcp
-  ensure_codex_mcp gpt_connector gpt-connector-mcp
-  if supports_aishell; then
-    ensure_claude_aishell
-    ensure_codex_aishell
-  fi
 }
 
 install_launch_agent() {
@@ -403,7 +265,7 @@ run_setup() {
   # install.sh の配布面はここへ置くので、入口自身が PATH を完結させる。
   export PATH="$HOME/.local/bin:$PATH"
   local command_name
-  for command_name in git gh node npm docker python3 claude codex uv plutil launchctl sw_vers; do
+  for command_name in git gh node npm docker python3 uv plutil launchctl sw_vers; do
     need "$command_name"
   done
   local node_major
@@ -422,19 +284,9 @@ run_setup() {
   maybe_apply_grok_config
   apply_cursor_config
   "$ROOT/install.sh" --profile official
-  "$ROOT/bin/install-unai.sh"
-  ensure_managed_commands
-  # Caveatの状態・private同期・利用可能なhost連携は製品setup入口へ一括委譲する。
-  caveat init --sync --yes </dev/null
-  throughline install
-  ensure_mcp
-  lattice hooks install --host claude
-  lattice hooks install --host codex
-  lattice hooks install --host cursor
-  spotter install -y
   install_launch_agent
-  "$ROOT/bin/verify-install.sh" --profile official
   run_factory_update
+  "$ROOT/bin/verify-install.sh" --profile official
   echo 'setup-macos-factory: OK'
 }
 

@@ -15,6 +15,9 @@ fail() { echo "FAIL: $*" >&2; exit 1; }
 
 mkdir -p "$TEST_HOME/.nvm/fake-bin" "$TEST_HOME/base-bin" "$TEST_HOME/npm-global/bin" "$TEST_HOME/shadow-bin" "$TEST_HOME/.local/bin"
 mkdir -p "$TEST_HOME/system-bin"
+if command -v sw_vers >/dev/null 2>&1; then
+  ln -s "$(command -v sw_vers)" "$TEST_HOME/base-bin/sw_vers"
+fi
 for command_path in /bin/date /bin/mkdir /usr/bin/tee "$(command -v readlink)" "$(command -v node)" "$(command -v uname)"; do
   [ -x "$command_path" ] || fail "test prerequisite がない: $command_path"
   ln -s "$command_path" "$TEST_HOME/base-bin/${command_path##*/}"
@@ -104,6 +107,15 @@ fi
 if [ "${THROUGHLINE_SELF_UPDATE_OPAQUE:-0}" -eq 1 ]; then echo 'product-owned-output'; exit 0; fi
 echo '{"schema":"throughline.self_update.v1","status":"already_current"}'
 EOF
+# 製品入口は公開commandとしてstub化し、工場の呼出し回数と順序を確認する。
+for setup_command in aiterm-setup caveat gpt-connector codex-sidecar lattice peertable aishell-setup; do
+  cat > "$TEST_HOME/npm-global/bin/$setup_command" <<'EOF'
+#!/bin/sh
+printf '%s:setup:%s:%s\n' "${RUN_ID:-default}" "${0##*/}" "$*" >> "$HOME/update-events.log"
+exit 0
+EOF
+  chmod +x "$TEST_HOME/npm-global/bin/$setup_command"
+done
 cat > "$TEST_HOME/shadow-bin/claude" <<'EOF'
 #!/bin/sh
 printf '%s:shadow-claude\n' "${RUN_ID:-default}" >> "$HOME/cli-calls.log"
@@ -140,8 +152,8 @@ printf '%s:%s\n' "${RUN_ID:-default}" "$*" >> "$HOME/reporter-calls.log"
 printf 'reporter:%s\n' "$*" >> "$HOME/update-events.log"
 if [ "${REPORT_FAIL:-0}" -ne 0 ]; then exit 1; fi
 case "$*" in
-  *--post-update) echo '{"ok":true,"post_gate_status":"success"}' ;;
-  *--finalize-update)
+  *--post-update) echo '{"ok":true,"post_gate_status":"success","report_id":"fixture-report"}' ;;
+  *'--finalize-update --report-id fixture-report')
     node -e 'const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(Object.values(v.products).some((r)=>r.post_gate_status==="pending"))process.exit(1)' "$HOME/.local/state/agents-update/toolchain-ledger.json" || exit 25
     echo '{"ok":true,"finalized":true}' ;;
 esac
@@ -205,9 +217,9 @@ if grep -Eq 'throughline migrate|throughline\.database_migration|validate_throug
 fi
 [ "$(grep -c '^normal:--config '"$REPORTER_CONFIG"' --post-update$' "$TEST_HOME/reporter-calls.log")" -eq 1 ] \
   || fail '更新後に factory reporter を1回実行していない'
-[ "$(grep -c '^normal:--config '"$REPORTER_CONFIG"' --finalize-update$' "$TEST_HOME/reporter-calls.log")" -eq 1 ] \
+[ "$(grep -c '^normal:--config '"$REPORTER_CONFIG"' --finalize-update --report-id fixture-report$' "$TEST_HOME/reporter-calls.log")" -eq 1 ] \
   || fail 'gate確定後に最終update observationを1回実行していない'
-[ "$(tail -n 1 "$TEST_HOME/update-events.log")" = "reporter:--config $REPORTER_CONFIG --finalize-update" ] \
+[ "$(tail -n 1 "$TEST_HOME/update-events.log")" = "reporter:--config $REPORTER_CONFIG --finalize-update --report-id fixture-report" ] \
   || fail 'factory reporter が更新処理より前に実行された'
 normal_migration_line="$(grep -n '^normal:throughline:self-update --json$' "$TEST_HOME/update-events.log" | cut -d: -f1)"
 normal_report_line="$(grep -n "^reporter:--config $REPORTER_CONFIG --post-update$" "$TEST_HOME/update-events.log" | head -n 1 | cut -d: -f1)"

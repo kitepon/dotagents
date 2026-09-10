@@ -23,18 +23,9 @@ SECTION = "compat.claude"
 COMPAT_FALSE_KEYS = ("agents", "hooks")
 VALUE = "false"
 
-FACTORY_SERVERS = (
-    ("aiterm", {"command": "aiterm-mcp"}),
-    ("caveat", {"command": "caveat", "args": ("mcp-server",)}),
-    ("lattice", {"command": "lattice-mcp"}),
-    ("codex-sidecar", {"command": "codex-sidecar-mcp"}),
-    ("gpt_connector", {"command": "gpt-connector-mcp"}),
-    ("aishell", {"command": "aishell-mcp", "env": {"AISHELL_CAPABILITY_SET": "expanded-v1"}}),
-)
-
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Grok の工場MCPと compat.claude.agents/hooks、工場hook 実ファイルを差分適用する。")
+    parser = argparse.ArgumentParser(description="Grok の compat.claude.agents/hooks、工場hook 実ファイルを差分適用する。")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--dry-run", action="store_true", help="差分を表示する（既定）")
     group.add_argument("--apply", action="store_true", help="backup 後に差分を適用する")
@@ -87,197 +78,6 @@ def set_compat_claude_false(text: str, key: str) -> str:
         insert_at += 1
     lines.insert(insert_at, f"{key} = {VALUE}\n")
     return "".join(lines)
-
-
-WINDOWS_COMMAND_SUFFIXES = {".exe", ".cmd", ".bat", ".com"}
-
-
-def toml_quote(value: str) -> str:
-    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
-
-
-def toml_unquote(value: str) -> str:
-    out: list[str] = []
-    index = 0
-    while index < len(value):
-        char = value[index]
-        if char == "\\" and index + 1 < len(value) and value[index + 1] in {"\\", '"'}:
-            out.append(value[index + 1])
-            index += 2
-            continue
-        out.append(char)
-        index += 1
-    return "".join(out)
-
-
-def command_name_matches(path: Path, logical_name: str) -> bool:
-    if path.name == logical_name:
-        return True
-    if os.name != "nt":
-        return False
-    return path.stem.lower() == logical_name.lower() and path.suffix.lower() in WINDOWS_COMMAND_SUFFIXES
-
-
-def realized_command(name: str) -> str:
-    found = shutil.which(name)
-    if not found:
-        return name
-    return str(Path(found))
-
-
-def existing_command(body: str) -> str | None:
-    match = re.search(r'^[ \t]*command[ \t]*=[ \t]*"((?:\\.|[^"\\])*)"[ \t]*(?:#.*)?$', body, re.M)
-    if match is None:
-        return None
-    return toml_unquote(match.group(1))
-
-
-def usable_absolute_command(command: str, name: str) -> bool:
-    path = Path(command)
-    if not path.is_absolute() or not command_name_matches(path, name) or not path.is_file():
-        return False
-    if os.name == "nt":
-        return True
-    return os.access(path, os.X_OK)
-
-
-def command_to_write(spec: dict, existing_body: str | None = None) -> str:
-    name = spec["command"]
-    realized = realized_command(name)
-    if realized != name:
-        return realized
-    if existing_body:
-        current = existing_command(existing_body)
-        if current and usable_absolute_command(current, name):
-            return current
-    return name
-
-
-def command_satisfies_contract(body: str, spec: dict) -> bool:
-    current = existing_command(body)
-    if current is None:
-        return False
-    name = spec["command"]
-    if current == name:
-        return shutil.which(name) is None
-    return usable_absolute_command(current, name)
-
-
-def windows_node_dir() -> str | None:
-    home_local = Path.home() / "AppData" / "Local"
-    candidates = (
-        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "nodejs" / "node.exe",
-        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / "nodejs" / "node.exe",
-        Path(os.environ.get("LOCALAPPDATA", str(home_local))) / "Programs" / "nodejs" / "node.exe",
-    )
-    for candidate in candidates:
-        if candidate.is_file():
-            return str(candidate.parent)
-    return None
-
-
-def default_gui_path_dirs() -> list[str]:
-    if os.name == "nt":
-        windir = Path(os.environ.get("WINDIR", r"C:\Windows"))
-        program_files = Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
-        local_app_data = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local")))
-        dirs = [
-            str(windir / "System32"),
-            str(windir),
-            str(windir / "System32" / "Wbem"),
-            str(program_files / "PowerShell" / "7"),
-            str(local_app_data / "Microsoft" / "WindowsApps"),
-        ]
-        node_dir = windows_node_dir()
-        if node_dir and node_dir not in dirs:
-            dirs.insert(0, node_dir)
-        return dirs
-    return ["/usr/bin", "/bin", "/usr/sbin", "/sbin"]
-
-
-def mcp_env(spec: dict, command: str) -> dict[str, str]:
-    env = dict(spec.get("env") or {})
-    path_dirs = default_gui_path_dirs()
-    command_path = Path(command)
-    if command_path.is_absolute():
-        bindir = str(command_path.parent)
-        if bindir not in path_dirs:
-            path_dirs.insert(0, bindir)
-    env["PATH"] = os.pathsep.join(path_dirs)
-    return env
-
-
-def render_mcp_section(name: str, spec: dict, existing_body: str | None = None) -> str:
-    command = command_to_write(spec, existing_body)
-    lines = [f"[mcp_servers.{name}]", f"command = {toml_quote(command)}"]
-    args = spec.get("args") or ()
-    if args:
-        rendered = ", ".join(toml_quote(item) for item in args)
-        lines.append(f"args = [{rendered}]")
-    env = mcp_env(spec, command)
-    if env:
-        rendered = ", ".join(f"{key} = {toml_quote(value)}" for key, value in env.items())
-        lines.append(f"env = {{ {rendered} }}")
-    lines.append("enabled = true")
-    return "\n".join(lines) + "\n"
-
-
-def table_ranges(text: str, header_re: re.Pattern[str]) -> list[tuple[int, int]]:
-    lines = text.splitlines(keepends=True)
-    next_header = re.compile(r"^[ \t]*\[")
-    starts = [index for index, line in enumerate(lines) if header_re.match(line.rstrip("\n"))]
-    ranges: list[tuple[int, int]] = []
-    for start in starts:
-        end = len(lines)
-        for index in range(start + 1, len(lines)):
-            if next_header.match(lines[index]):
-                end = index
-                break
-        ranges.append((start, end))
-    return ranges
-
-
-def factory_server_ranges(text: str, name: str) -> list[tuple[int, int]]:
-    header_re = re.compile(
-        rf"^[ \t]*\[mcp_servers\.{re.escape(name)}(?:\.[^\]]+)?\][ \t]*(?:#.*)?$"
-    )
-    return table_ranges(text, header_re)
-
-
-def section_has_factory_contract(body: str, spec: dict) -> bool:
-    if not command_satisfies_contract(body, spec):
-        return False
-    if re.search(r"^[ \t]*enabled[ \t]*=[ \t]*false[ \t]*(?:#.*)?$", body, re.M):
-        return False
-    args = spec.get("args") or ()
-    if args:
-        needle = ", ".join(f'"{item}"' for item in args)
-        if f"[{needle}]" not in body:
-            return False
-    command = command_to_write(spec, body)
-    for key, value in mcp_env(spec, command).items():
-        if key not in body or toml_quote(value) not in body:
-            return False
-    return True
-
-
-def upsert_factory_mcp(text: str) -> str:
-    body = normalize_toml(text)
-    for name, spec in FACTORY_SERVERS:
-        ranges = factory_server_ranges(body, name)
-        if not ranges:
-            prefix = "" if not body.strip() else "\n"
-            body = f"{body}{prefix}{render_mcp_section(name, spec)}"
-            continue
-        lines = body.splitlines(keepends=True)
-        existing = "".join("".join(lines[start:end]) for start, end in ranges)
-        if len(ranges) == 1 and section_has_factory_contract(existing, spec):
-            continue
-        drop = {index for start, end in ranges for index in range(start, end)}
-        kept = [line for index, line in enumerate(lines) if index not in drop]
-        insert_at = ranges[0][0]
-        body = "".join(kept[:insert_at]) + render_mcp_section(name, spec, existing) + "".join(kept[insert_at:])
-    return normalize_toml(body)
 
 
 def win_quote(token: str) -> str:
@@ -439,7 +239,7 @@ def propose(text: str) -> str:
     body = text
     for key in COMPAT_FALSE_KEYS:
         body = set_compat_claude_false(body, key)
-    return upsert_factory_mcp(body)
+    return normalize_toml(body)
 
 
 def show_diff(path: Path, before: str, after: str) -> str:

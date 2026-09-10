@@ -191,47 +191,30 @@ linux_root_prerequisites_ready() {
 }
 
 ensure_node24() {
-  local node_major runtime_arch archive_name version install_parent install_dir
-  local download_dir checksum_line staged_dir command_path
-  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)"
-  [ -z "$node_major" ] || [ "$node_major" -lt 24 ] || return 0
-  case "$(uname -m)" in
-    x86_64|amd64) runtime_arch=x64 ;;
-    aarch64|arm64) runtime_arch=arm64 ;;
-    *) die "Node.js公式binary未対応arch: $(uname -m)" ;;
-  esac
-  download_dir="$(mktemp -d)"
-  trap 'rm -rf "${download_dir:-}"' RETURN
-  echo 'INFO: Node.js公式配布から最新24.x binaryを取得し、SHA-256を検証します'
-  curl -fsSL https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt \
-    -o "$download_dir/SHASUMS256.txt"
-  checksum_line="$(awk -v suffix="-linux-$runtime_arch.tar.xz" '$2 ~ suffix "$" { print; exit }' "$download_dir/SHASUMS256.txt")"
-  [ -n "$checksum_line" ] || die 'Node.js 24の対象arch checksumを取得できない'
-  archive_name="${checksum_line#*  }"
-  version="${archive_name#node-}"
-  version="${version%-linux-"$runtime_arch".tar.xz}"
-  [[ "$version" =~ ^v24\.[0-9]+\.[0-9]+$ ]] || die "Node.js versionが不正: $version"
-  curl -fsSL "https://nodejs.org/dist/$version/$archive_name" -o "$download_dir/$archive_name"
-  (cd "$download_dir" && printf '%s\n' "$checksum_line" | sha256sum -c -)
-  install_parent="$HOME/.local/lib"
-  install_dir="$install_parent/node-v24"
-  staged_dir="$install_parent/.node-v24-$version-$$"
-  mkdir -p "$install_parent" "$HOME/.local/bin"
-  tar -xJf "$download_dir/$archive_name" -C "$install_parent"
-  mv "$install_parent/node-$version-linux-$runtime_arch" "$staged_dir"
-  if [ -e "$install_dir" ]; then
-    mv "$install_dir" "$install_parent/node-v24.previous-$(date +%Y%m%d-%H%M%S)"
+  export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+  if [ -s "$NVM_DIR/nvm.sh" ]; then
+    # shellcheck disable=SC1090,SC1091 # nvmは端末の公式installerが配置する。
+    . "$NVM_DIR/nvm.sh"
   fi
-  mv "$staged_dir" "$install_dir"
-  for command_path in node npm npx corepack; do
-    ln -sfn "$install_dir/bin/$command_path" "$HOME/.local/bin/$command_path"
-  done
-  hash -r
-  "$install_dir/bin/corepack" enable
-  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)"
-  [ "$node_major" -ge 24 ] || die 'Node.js 24 user-local導入のreadbackに失敗'
-  rm -rf "$download_dir"
-  trap - RETURN
+  local node_major installer
+  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\\1/' || true)"
+  [ -z "$node_major" ] || [ "$node_major" -lt 24 ] || return 0
+  if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+    installer="$(mktemp)"
+    mkdir -p "$NVM_DIR"
+    echo 'INFO: nvm公式installerでNode管理を準備します'
+    curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.7/install.sh -o "$installer" \
+      || { rm -f "$installer"; die 'nvm公式installerを取得できない'; }
+    bash "$installer" || { rm -f "$installer"; die 'nvm公式installerが失敗した'; }
+    rm -f "$installer"
+    # shellcheck disable=SC1090,SC1091 # nvmは端末の公式installerが配置する。
+    . "$NVM_DIR/nvm.sh"
+  fi
+  nvm install 24
+  nvm alias default 24
+  nvm use 24
+  node_major="$(node --version | sed -E 's/^v([0-9]+).*/\\1/')"
+  [ "$node_major" -ge 24 ] || die 'nvmのNode.js 24導入結果を確認できない'
 }
 
 ensure_linux_prerequisites() {
@@ -568,7 +551,7 @@ run_scheduled_update() {
   batch_token="$(new_batch_token)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
     FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
-    env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID "$ROOT/bin/agents-update.sh"
+    env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID "$ROOT/bin/agents-update.sh" "$@"
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
@@ -606,100 +589,6 @@ ensure_git_identity() {
   git config --global core.excludesfile "$HOME/.gitignore_global"
 }
 
-ensure_claude_mcp() {
-  local name="$1"
-  shift
-  local output=''
-  if output="$(NO_COLOR=1 TERM=dumb claude mcp get "$name" 2>&1)" \
-    && grep -Eq '^  Scope: User config' <<<"$output" \
-    && grep -Eq '^  Status: .*Connected$' <<<"$output"; then
-    return 0
-  fi
-  claude mcp remove --scope user "$name" >/dev/null 2>&1 || true
-  claude mcp add --scope user "$name" -- "$@"
-  output="$(NO_COLOR=1 TERM=dumb claude mcp get "$name" 2>&1)" \
-    || die "Claude MCPを取得できない: $name"
-  if ! grep -Eq '^  Scope: User config' <<<"$output" \
-    || ! grep -Eq '^  Status: .*Connected$' <<<"$output"; then
-    die "Claude MCPがuser scopeでConnectedでない: $name"
-  fi
-}
-
-codex_mcp_matches() {
-  local name="$1" command_name="$2"
-  codex mcp get "$name" --json 2>/dev/null | node -e '
-    let value;
-    try { value = JSON.parse(require("fs").readFileSync(0, "utf8")); }
-    catch { process.exit(1); }
-    const transport = value?.transport;
-    process.exit(value?.enabled === true && transport?.type === "stdio"
-      && transport?.command === process.argv[1]
-      && Array.isArray(transport?.args) && transport.args.length === 0 ? 0 : 1);
-  ' "$command_name"
-}
-
-ensure_codex_mcp() {
-  local name="$1" command_name="$2"
-  if codex_mcp_matches "$name" "$command_name"; then
-    return 0
-  fi
-  codex mcp remove "$name" >/dev/null 2>&1 || true
-  codex mcp add "$name" -- "$command_name"
-  codex_mcp_matches "$name" "$command_name" \
-    || die "Codex MCPがcanonicalでない: $name"
-}
-
-ensure_managed_commands() {
-  local command_name package_name npm_bin npm_prefix
-  for command_name in caveat throughline spotter lattice markitdown gpt-connector \
-    aiterm-mcp codex-sidecar-mcp peertable-client unai; do
-    command -v "$command_name" >/dev/null 2>&1 && continue
-    echo "INFO: factory managed commandを公式経路で補完する: $command_name"
-    case "$command_name" in
-      caveat) package_name=caveat-cli ;;
-      throughline) package_name=throughline ;;
-      spotter) package_name=claude-spotter ;;
-      lattice) package_name=@quolu/lattice ;;
-      gpt-connector) package_name=gpt-connector ;;
-      aiterm-mcp) package_name=aiterm-mcp ;;
-      codex-sidecar-mcp) package_name=codex-sidecar-mcp ;;
-      peertable-client) package_name=peertable ;;
-      markitdown) uv tool install markitdown; continue ;;
-      unai) "$ROOT/bin/install-unai.sh"; continue ;;
-    esac
-    case "$package_name" in
-      claude-spotter) npm install -g --allow-scripts=claude-spotter "$package_name" ;;
-      *) npm install -g "$package_name" ;;
-    esac
-  done
-  npm_prefix="$(npm prefix -g)" || die 'npm global prefixを取得できない'
-  case "$npm_prefix" in /*) ;; *) die 'npm global prefixが絶対pathでない' ;; esac
-  npm_bin="$npm_prefix/bin"
-  [ -d "$npm_bin" ] || die "npm global binがない: $npm_bin"
-  export PATH="$npm_bin:$PATH"
-  for command_name in lattice-mcp gpt-connector-mcp; do
-    if ! command -v "$command_name" >/dev/null 2>&1; then
-      case "$command_name" in
-        lattice-mcp) package_name=@quolu/lattice ;;
-        gpt-connector-mcp) package_name=gpt-connector ;;
-      esac
-      npm install -g "$package_name"
-    fi
-  done
-  install -d -m 700 "$HOME/.local/bin"
-  for command_name in caveat throughline spotter lattice lattice-mcp gpt-connector \
-    gpt-connector-mcp aiterm-mcp codex-sidecar codex-sidecar-mcp peertable-client; do
-    [ -x "$npm_bin/$command_name" ] || die "npm global binがない: $command_name"
-    if [ "$npm_bin/$command_name" != "$HOME/.local/bin/$command_name" ]; then
-      ln -sfn "$npm_bin/$command_name" "$HOME/.local/bin/$command_name"
-    fi
-  done
-  for command_name in caveat throughline spotter lattice markitdown gpt-connector \
-    lattice-mcp gpt-connector-mcp aiterm-mcp codex-sidecar-mcp peertable-client unai; do
-    need "$command_name"
-  done
-}
-
 ensure_toolchain_bootstrap() {
   local npm_bin npm_prefix
   npm_prefix="$(npm prefix -g)" || die 'npm global prefixを取得できない'
@@ -723,51 +612,6 @@ ensure_toolchain_bootstrap() {
   codex --version >/dev/null 2>&1 || die 'Codex CLIを公式npm経路で復旧できない'
 }
 
-recover_caveat_init_scaffold() {
-  local own="$HOME/.caveat/own"
-  local expected_gitignore_sha='80da0ea070097d58130210131000d20fa0de5d65846419a68698749ce2cdf32a'
-  local actual_gitignore_sha backup_dir unexpected
-  [ ! -d "$own/.git" ] || return 0
-  [ -e "$own" ] || return 0
-
-  # caveat init が初回syncより先に中断した場合だけ、公式scaffoldを退避して
-  # remote checkoutが可能な空の状態へ戻す。利用者のentryや未知のfileは触らない。
-  unexpected="$(find "$own" -mindepth 1 -maxdepth 1 \
-    ! -name .gitignore ! -name entries -print -quit)"
-  [ -z "$unexpected" ] \
-    || die "Caveat ownに未知のfileがあるため初回syncを拒否する: $unexpected"
-  [ -f "$own/.gitignore" ] && [ -d "$own/entries" ] \
-    || die "Caveat ownが既知の初期scaffoldでない: $own"
-  [ -z "$(find "$own/entries" -mindepth 1 -print -quit)" ] \
-    || die "Caveat ownに未同期entryがあるため初回syncを拒否する: $own/entries"
-  if command -v sha256sum >/dev/null 2>&1; then
-    actual_gitignore_sha="$(sha256sum "$own/.gitignore" | awk '{print $1}')"
-  elif command -v shasum >/dev/null 2>&1; then
-    actual_gitignore_sha="$(shasum -a 256 "$own/.gitignore" | awk '{print $1}')"
-  else
-    die 'SHA-256計算コマンドがない（sha256sum または shasum が必要）'
-  fi
-  [ "$actual_gitignore_sha" = "$expected_gitignore_sha" ] \
-    || die "Caveat .gitignoreが既知の初期scaffoldと異なるため初回syncを拒否する"
-
-  backup_dir="$HOME/.local/state/dotagents/backups/caveat-init-scaffold-$(date +%Y%m%d-%H%M%S)"
-  install -d -m 700 "$backup_dir"
-  mv "$own/.gitignore" "$backup_dir/.gitignore"
-  rmdir "$own/entries" "$own"
-  echo "INFO: 中断されたCaveat初期scaffoldを退避した: $backup_dir"
-}
-
-ensure_caveat_sync() {
-  gh auth switch --hostname github.com --user quolu
-  gh auth setup-git
-  if [ -d "$HOME/.caveat/own/.git" ]; then
-    caveat sync
-  else
-    recover_caveat_init_scaffold
-    caveat sync --init --repo https://github.com/quolu/Caveat-Private.git
-  fi
-}
-
 grok_is_logged_in() {
   [ -n "${XAI_API_KEY:-}" ] && return 0
   [ -s "$HOME/.grok/auth.json" ]
@@ -783,18 +627,6 @@ maybe_apply_grok_config() {
 
 apply_cursor_config() {
   "$ROOT/bin/apply-cursor-config.sh" --apply
-}
-
-ensure_mcp() {
-  ensure_claude_mcp aiterm aiterm-mcp
-  ensure_claude_mcp caveat caveat mcp-server
-  ensure_claude_mcp lattice lattice-mcp
-  ensure_claude_mcp codex-sidecar codex-sidecar-mcp
-  ensure_claude_mcp gpt_connector gpt-connector-mcp
-  ensure_codex_mcp aiterm aiterm-mcp
-  ensure_codex_mcp lattice lattice-mcp
-  ensure_codex_mcp codex-sidecar codex-sidecar-mcp
-  ensure_codex_mcp gpt_connector gpt-connector-mcp
 }
 
 cron_quote() {
@@ -840,26 +672,13 @@ run_setup() {
   # install.sh の配布面はここへ置くので、入口自身が PATH を完結させる。
   export PATH="$HOME/.local/bin:$PATH"
   ensure_linux_prerequisites
-  # 過去の導入でOpenJS公式Snap Nodeが既にある場合だけfallbackとして使う。
-  # /snap/bin全体を前へ出すとClaude等の別commandまで横取りするため禁止する。
-  local node_major snap_node_bin command_path
-  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)"
-  if { [ -z "$node_major" ] || [ "$node_major" -lt 24 ]; } \
-    && [ -x /snap/bin/node ] \
-    && [ "$(/snap/bin/node --version | sed -E 's/^v([0-9]+).*/\1/')" -ge 24 ]; then
-    snap_node_bin="$(mktemp -d)"
-    trap 'rm -rf "${snap_node_bin:-}"' EXIT
-    for command_path in node npm npx corepack; do
-      [ ! -x "/snap/bin/$command_path" ] || ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"
-    done
-    export PATH="$snap_node_bin:$PATH"
-  fi
+  local node_major
   local command_name
   for command_name in git gh node npm docker python3 uv crontab sudo systemctl; do
     need "$command_name"
   done
   node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
-  [ "$node_major" -ge 24 ] || die 'Node.js 24以上が必要（入口がNode.js公式配布をuser-localへ導入する）'
+  [ "$node_major" -ge 24 ] || die 'Node.js 24以上が必要（入口がnvm公式経路で導入する）'
   python3 -c 'print(1)' >/dev/null || die 'python3を実行できない'
   if ! docker info >/dev/null 2>&1; then
     if ! systemctl is-active docker >/dev/null 2>&1 \
@@ -882,31 +701,16 @@ run_setup() {
   maybe_apply_grok_config
   apply_cursor_config
   "$ROOT/install.sh" --profile official
-  "$ROOT/bin/install-unai.sh"
-  ensure_managed_commands
-  # 初回syncより先にinitすると、initが作る未追跡.gitignoreとprivate repoのcheckoutが衝突する。
-  ensure_caveat_sync
-  # Caveat Claude は init（MCP＋4 hooks）。Codex は native hook。Grok は MCP のみ（apply-grok-config）。Cursor は MCP＋工場hook（apply-cursor-config）。
-  # init は TTY だと公開ミラー確認で止まるので stdin を閉じる。
-  caveat init </dev/null
-  throughline install
-  caveat codex-hook install
-  ensure_mcp
-  lattice hooks install --host claude
-  lattice hooks install --host codex
-  lattice hooks install --host cursor
-  spotter install -y
   install_cron
+  run_scheduled_update --setup
   if [ "$HOST_PROFILE" = server ]; then
     # server readinessはfactory ingest鮮度も含む。先に今回のreportを届けてから検証する。
-    run_scheduled_update
     SERVERMANAGER_READY_URL="${SERVERMANAGER_READY_URL:-http://127.0.0.1:39310/readyz}" \
       DOTAGENTS_FACTORY_HOST_PROFILE=server \
       "$ROOT/bin/verify-install.sh" --profile official
   else
     DOTAGENTS_FACTORY_HOST_PROFILE="$HOST_PROFILE" \
       "$ROOT/bin/verify-install.sh" --profile official
-    run_scheduled_update
   fi
   echo "$SETUP_COMMAND: OK"
 }

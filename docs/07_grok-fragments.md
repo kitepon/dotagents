@@ -9,29 +9,16 @@
 
 - `[compat.claude] agents = false`（Wave 1。`~/.claude/CLAUDE.md` を吸わない）
 - `[compat.claude] hooks = false`（Wave 4。Claude `settings.json` の hook は `disabled` になり発火しない。`grok inspect` には vendor=claude の行が残ることがある）
-- 工場MCP 6サーバ（stdio）。同名が `~/.claude.json` にあっても **toml 側が勝つ**（2026-08-16 隔離HOME実測）。個人MCP（Gmail等）は Claude json に残してよい。`compat.claude.mcps` は切らない。
+- `~/.grok/hooks/factory.json`の工場hook。製品hookは各製品の公開入口が管理する。
 
-| name | command | args / env |
-|---|---|---|
-| `aiterm` | `aiterm-mcp` | — |
-| `caveat` | `caveat` | `mcp-server` |
-| `lattice` | `lattice-mcp` | — |
-| `codex-sidecar` | `codex-sidecar-mcp` | — |
-| `gpt_connector` | `gpt-connector-mcp` | — |
-| `aishell` | `aishell-mcp` | `AISHELL_CAPABILITY_SET=expanded-v1` |
-
-既存の工場セクションは command / args / 必須env / `enabled` が契約どおりなら触らない。`enabled = false` や command の食い違いは工場契約へ戻す。`[mcp_servers.<name>.env]` のような工場サーバのサブ表は inline `env` へ畳み、本体と二重に残さない。`[mcp_servers.x-article]` など工場外のセクションは触らない。
-
-command の論理名は上表どおり。適用時に `PATH` 上で解決できた command は絶対パスで書き、その親ディレクトリを `env.PATH` の先頭に置く。この解決は適用した席の PATH だけを見る。席への手作業の展開は、その席の親AIに正規入口を実行させる。Mac で書いた `config.toml` を他席 HOME へ転送して置かない。Grok Build Desktop の GUI PATH（`/usr/bin:/bin:/usr/sbin:/sbin`）では brew の名前解決も `#!/usr/bin/env node` もできない。未解決なら名前のまま残し、handshake は typed 失敗。既に実行可能な絶対パスがあり basename が論理名と一致し、`env.PATH` が契約どおりなら、適用器の PATH が空でも書き戻さない。
-
-Windows native では同じ契約を Windows の語に写す。`env.PATH` の区切りは `;`。解決できた command は PATHEXT どおり `.cmd` / `.exe` になりうる。npm の global bin と `node.exe` は別ディレクトリなので、よくある配置（`Program Files\\nodejs` 等）に `node.exe` があればその親も `env.PATH` に置く（`.cmd` shim が `node` を呼ぶため。macOS で command 親に node が同居するのと同型）。この判定は適用時 PATH に依存しない。TOML の `\` はエスケープする。Windows の GUI PATH 基底は上記 node 親（あれば）と `WINDIR\\System32` / `WINDIR` / Wbem / PowerShell だけとし、不足は実測のあとだけ足す。
+製品MCPの登録・command解決・OS差・既存設定の移行は各製品が所有する。工場は[公開入口の呼出し](../lib/factory/product-setup.mjs)だけを行い、この適用器はMCPセクションを変更しない。`compat.claude.mcps`は切らない。
 
 ## 2. 触らない面
 
 - `[models]` と `default_reasoning_effort`
 - `[ui] permission_mode` ほか permission
 - `[privacy]` と login
-- 工場6以外の MCP
+- すべてのMCP設定
 - `compat.claude.skills` / `mcps`（skillsはWave 2で切らない裁定済み。工場MCPの所有のために mcps は切らない）
 - 個人hook。所有面は `~/.grok/hooks/factory.json` と `~/.local/bin/grok-*-hook` だけ
 
@@ -46,4 +33,4 @@ Grokの `UserPromptSubmit` / `SessionStart` / `PostToolUse` は stdout を制御
 
 ## 3. 受入
 
-適用後の `grok inspect --json` で工場6の `source.type` が `configToml` であること。handshakeは `grok mcp doctor --json` で見る。失敗はtypedのまま残し、登録成功へ丸めない。
+適用器の受入は互換設定と工場hookの差分・再実行・既存MCP保持で確認する。製品MCPは製品setupの公開結果と、新しいGrokセッションのhandshakeで確認する。失敗や未対応は公開結果のまま残す。

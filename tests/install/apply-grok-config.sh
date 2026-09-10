@@ -8,10 +8,7 @@ case "$(uname -s)" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict ;; esac
 HOME_FIXTURE="$(mktemp -d)"
 ABSENT_HOME="$(mktemp -d)"
 SYMLINK_HOME="$(mktemp -d)"
-RESOLVE_HOME="$(mktemp -d)"
-SUBTABLE_HOME="$(mktemp -d)"
-STUB_BIN="$(mktemp -d)"
-trap 'rm -rf "$HOME_FIXTURE" "$ABSENT_HOME" "$SYMLINK_HOME" "$RESOLVE_HOME" "$SUBTABLE_HOME" "$STUB_BIN"' EXIT
+trap 'rm -rf "$HOME_FIXTURE" "$ABSENT_HOME" "$SYMLINK_HOME"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -59,7 +56,7 @@ fi
 dry="$(HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --dry-run)"
 grep -Fq 'agents = false' <<<"$dry" || fail 'dry-run が agents = false を出さない'
 grep -Fq 'hooks = false' <<<"$dry" || fail 'dry-run が hooks = false を出さない'
-grep -Fq '[mcp_servers.aiterm]' <<<"$dry" || fail 'dry-run が工場MCPを出さない'
+if grep -Fq '[mcp_servers.aiterm]' <<<"$dry"; then fail 'dry-run が製品MCP登録を追加した'; fi
 [ "$(cat "$HOME_FIXTURE/.grok/config.toml")" = "$before" ] || fail 'dry-run が config.toml を書き換えた'
 [ ! -d "$HOME_FIXTURE/Archives" ] || fail 'dry-run が backup を作った'
 grep -Fq 'symlink → 実ファイル' <<<"$dry" || fail 'dry-run がhookの実ファイル化を示さない'
@@ -81,14 +78,7 @@ if grep -Eq 'agents[ \t]*=[ \t]*true' <<<"$applied"; then
   fail 'agents = true が残っている'
 fi
 grep -Fq 'url = "https://example.invalid/mcp"' <<<"$applied" || fail '個人MCP x-article を消した'
-for name in aiterm caveat lattice codex-sidecar gpt_connector aishell; do
-  grep -Fq "[mcp_servers.$name]" <<<"$applied" || fail "工場MCP $name を書かない"
-done
-if ! grep -Eqi 'command = "([^"]*[/\\])?caveat(\.cmd)?"' <<<"$applied"; then
-  fail 'caveat command が契約と違う'
-fi
-grep -Fq 'args = ["mcp-server"]' <<<"$applied" || fail 'caveat args が契約と違う'
-grep -Fq 'AISHELL_CAPABILITY_SET = "expanded-v1"' <<<"$applied" || fail 'aishell env が契約と違う'
+if grep -Fq '[mcp_servers.aiterm]' <<<"$applied"; then fail '工場が製品MCP登録を追加した'; fi
 [ ! -L "$HOME_FIXTURE/.grok/hooks/factory.json" ] \
   || fail 'factory.json が symlink のまま'
 if [ "${OS:-}" = "Windows_NT" ]; then
@@ -116,7 +106,7 @@ HOME="$ABSENT_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/n
 grep -Fq '[compat.claude]' "$ABSENT_HOME/.grok/config.toml" || fail '不在の config.toml を作らない'
 grep -Fq 'agents = false' "$ABSENT_HOME/.grok/config.toml" || fail '新規 config に agents = false を書かない'
 grep -Fq 'hooks = false' "$ABSENT_HOME/.grok/config.toml" || fail '新規 config に hooks = false を書かない'
-grep -Fq '[mcp_servers.lattice]' "$ABSENT_HOME/.grok/config.toml" || fail '新規 config に工場MCPを書かない'
+if grep -Fq '[mcp_servers.' "$ABSENT_HOME/.grok/config.toml"; then fail '新規 config に製品MCPを書いた'; fi
 
 mkdir -p "$SYMLINK_HOME/.grok" "$SYMLINK_HOME/target"
 printf '%s\n' 'agents = true' >"$SYMLINK_HOME/target/config.toml"
@@ -126,63 +116,15 @@ if HOME="$SYMLINK_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/d
 fi
 grep -Fq 'agents = true' "$SYMLINK_HOME/target/config.toml" || fail 'symlink 先を書き換えた'
 
-if [ "${OS:-}" = "Windows_NT" ]; then
-  printf '%s\n' '@echo off' >"$STUB_BIN/caveat.cmd"
-  mkdir -p "$RESOLVE_HOME/.grok"
-  PATH="$STUB_BIN:$PATH" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
-  python - "$RESOLVE_HOME/.grok/config.toml" <<'PY'
-import sys
-from pathlib import Path
-
-text = Path(sys.argv[1]).read_text(encoding="utf-8")
-if "caveat.cmd" not in text.lower():
-    raise SystemExit("FAIL: 解決できた caveat を絶対パスで書かない")
-if ";" not in text or "PATH = " not in text:
-    raise SystemExit("FAIL: Windows の env.PATH が pathsep になっていない")
-PY
-  PATH="$STUB_BIN:$PATH" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply \
-    | grep -Fq '変更なし' || fail '絶対パス適用の2回目が冪等でない'
-  PYWIN="$(command -v python)"
-  PATH="/usr/bin:/bin" HOME="$RESOLVE_HOME" "$PYWIN" "$ROOT/bin/apply-grok-config.sh" --apply \
-    | grep -Fq '変更なし' || fail 'GUI PATH の apply が実行可能な絶対パスを名前へ戻した'
-else
-  printf '%s\n' '#!/bin/sh' 'exit 0' >"$STUB_BIN/caveat"
-  chmod +x "$STUB_BIN/caveat"
-  mkdir -p "$RESOLVE_HOME/.grok"
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
-  grep -Fq "command = \"$STUB_BIN/caveat\"" "$RESOLVE_HOME/.grok/config.toml" \
-    || fail '解決できた caveat を絶対パスで書かない'
-  grep -Fq "PATH = \"$STUB_BIN:/usr/bin:/bin:/usr/sbin:/sbin\"" "$RESOLVE_HOME/.grok/config.toml" \
-    || fail '解決できた command の親を env.PATH に置かない'
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply \
-    | grep -Fq '変更なし' || fail '絶対パス適用の2回目が冪等でない'
-  PATH="/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply \
-    | grep -Fq '変更なし' || fail 'GUI PATH の apply が実行可能な絶対パスを名前へ戻した'
-fi
-
-mkdir -p "$SUBTABLE_HOME/.grok"
-cat >"$SUBTABLE_HOME/.grok/config.toml" <<'EOF'
+# 製品所有の無効化・env・旧commandを工場が補正しない。
+cat >>"$ABSENT_HOME/.grok/config.toml" <<'EOF'
 [mcp_servers.caveat]
-command = "caveat"
-args = ["mcp-server"]
-enabled = true
-
+command = "keep-product-command"
+enabled = false
 [mcp_servers.caveat.env]
-PATH = "/usr/bin:/bin:/usr/sbin:/sbin"
-
-[mcp_servers.x-article]
-url = "https://example.invalid/mcp"
-enabled = true
+KEEP = "yes"
 EOF
-HOME="$SUBTABLE_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
-subtable_applied="$(cat "$SUBTABLE_HOME/.grok/config.toml")"
-if grep -Fq '[mcp_servers.caveat.env]' <<<"$subtable_applied"; then
-  fail '工場MCPの env 表を残して inline env と二重にする'
-fi
-grep -Fq '[mcp_servers.caveat]' <<<"$subtable_applied" || fail 'env 表の工場MCP本体を消した'
-grep -Fq 'url = "https://example.invalid/mcp"' <<<"$subtable_applied" || fail 'env 表の畳み込みで個人MCPを消した'
-if ! grep -Eq 'env = \{[^}]*PATH =' <<<"$subtable_applied"; then
-  fail 'env 表を畳んだあと inline env を書かない'
-fi
-
+product_before="$(cat "$ABSENT_HOME/.grok/config.toml")"
+HOME="$ABSENT_HOME" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply >/dev/null
+[ "$(cat "$ABSENT_HOME/.grok/config.toml")" = "$product_before" ] || fail '製品MCP設定を変更した'
 echo 'apply-grok-config: OK'

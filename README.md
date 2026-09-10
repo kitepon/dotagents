@@ -128,8 +128,8 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
 | repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、archive inventory、凍結digestを検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
-| bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場MCP 6を dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
-| bin | `apply-cursor-config` | Cursor の工場MCP 6を `~/.cursor/mcp.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
+| bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
+| bin | `apply-cursor-config` | Cursor の工場hookを `~/.cursor/hooks.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、post-update gateとreportを実行 |
 | bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各OS固有の配線と全製品smokeを行う。Windows入口はmain-serverへの恒久SSHも所有する |
@@ -201,7 +201,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 - **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。
-- **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場MCP適用（`apply-grok-config --apply`）はH。現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。旧4席の新規session受入履歴は2026-08-16に閉じたが、rabbitは別hostとして新たに受け入れる。
+- **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場設定適用（`apply-grok-config --apply`）は端末への展開承認に含める。現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。旧4席の新規session受入履歴は2026-08-16に閉じたが、rabbitは別hostとして新たに受け入れる。
 - **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`codex-sidecar-mcp`・`gpt-connector-mcp`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermとcodex-sidecarを登録する。登録・loginは端末configを変えるH操作。
 - **MCP（ユーザースコープ登録。上の CLI 導入後）**:
   ```bash
@@ -217,7 +217,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
   codex mcp add lattice -- lattice-mcp
   codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
   ```
-  Grok親の工場MCP 6はClaude/Codexへ手挿しせず、`~/.grok/config.toml`が所有する。適用は`apply-grok-config`（login済み`--apply`はH）。個人MCPはClaude jsonに残してよい。`compat.claude.mcps`は切らない。Cursor親の工場MCP 6と工場hookは`bin/apply-cursor-config.sh --apply`が`~/.cursor/mcp.json` / `hooks.json`を upsert する（Cursor CLI の `mcp add` は無い）。`cli-config.json`は触らない
+  製品MCPの登録は各製品の公開setupが所有する。Grokの`compat.claude.mcps`は切らない。`apply-grok-config`は互換設定と工場hook、`apply-cursor-config`は工場hookだけを適用する。Cursorの`cli-config.json`は触らない
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
 - **home-server ssh**: `kite@192.168.1.2`（固定IP）または`main-server`。Windows native入口はパスフレーズなしの専用鍵`~/.ssh/id_ed25519_main_server`、owner-only ACL、固定済みserver ED25519指紋、`IdentitiesOnly yes`を管理し、直IPとaliasの両方へ適用する。初回または認証喪失時は公開鍵だけをGitHub Actions secretへ置き、main-server上の`Enroll Windows main-server SSH` workflowで`authorized_keys`へ冪等登録する。server側鍵行はagent／port／X11 forwardingを禁止する
 - **main-server → rabbit ssh**: `kite@192.168.1.55`または`rabbit`。rabbit一撃入口がUbuntu公式OpenSSH Server、鍵認証限定のsshd設定、`kite`専用passwordless sudoersをroot phaseで管理する。main-serverには専用鍵`~/.ssh/id_ed25519_rabbit`と固定済みrabbit ED25519 host keyを配線し、rabbit側はagent／port／X11 forwardingを禁止した公開鍵行だけを受け入れる。alias／直IP接続と`sudo -n`の実火が成功しない限りfail closedにする
@@ -264,9 +264,11 @@ Linuxの前提packageは不足分だけを導入する。既存のDocker Engine�
 `lib/factory/deployment-contract.mjs`を消費し、Windows native固有配線やLinuxのserver/workstation役割を共有実装へ
 押し込まない。いずれも公式skill面、現役製品、MCP、Lattice／Spotter hook、定期更新、
 `verify-install`、[工場の現行状態](docs/factory-current-state.md)が示すwireのfresh reportとBugHub delivery receiptまでを一括検証する。
+初回は工場設定を配置してから`agents-update.sh --setup`へ渡し、公式package更新、各製品の公開setup、Spotterのproject導入、公開probe、工場台帳の確定、配送の順に進む。定期更新はproject導入とOSの初回設定を繰り返さない。診断済みreportのIDを配送確定へ渡し、全件probeを二度実行しない。製品setupの工程・経過秒・完了待ちと失敗理由は更新logへ表示する。
+LinuxでNodeが不足する場合は[nvmの公式installer](https://github.com/nvm-sh/nvm#install--update-script)と`nvm install 24`を使う。工場独自のbinary展開やSnap用symlinkは作らない。既存の稼働中Docker配布は保持する。
 Grok親の配布面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）は`install.sh`がsymlinkする。工場hookの`factory.json`は、続く`apply-grok-config`がsandbox対応の実ファイルへ置き換え、以後もrepoの正本から反映する。
-工場MCPと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
-Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場MCPと工場hookは`apply-cursor-config`が`~/.cursor/mcp.json` / `hooks.json`へ書く。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
+工場hookと`compat.claude.agents`/`hooks`切断はlogin済みなら`apply-grok-config`が書く。未loginではスキップし、一撃展開は止まらない。Windows nativeもGrok親の対象。`setup-windows-native-factory`はlogin済みならそれを呼ぶ。
+Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / `agents`）は`install.sh`がsymlinkする。工場hookは`apply-cursor-config`が`~/.cursor/hooks.json`へ書く。製品MCPは各製品setupへ委譲する。4入口はloginゲートせず呼ぶ。`cli-config.json`は触らない。
 
 既存hostは実行前にfactory reporter runbook §1〜4に従い、そのhost専用のconfigとcredentialを配置して
 [工場の現行状態](docs/factory-current-state.md)が示すreportingを有効にする。rabbit初回入口だけはmain-server SSHを確認後、`rabbit`／`linux` credential発行・安全な転送・config作成まで一撃内で行う。MCP login、GitHub認証、POSIX hostのDocker稼働など「0. 前提」のhost別外部状態は
@@ -298,7 +300,7 @@ Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`�
 ```
 
 既定は公式 user skill 面 `$HOME/.agents/skills`。`--dry-run` は一切書き込まず、routing の必須2キー、
-callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`codex-lattice-gantt-hook`のSessionStart / UserPromptSubmit entryを各1件だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場MCP 6の差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
+callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`codex-lattice-gantt-hook`のSessionStart / UserPromptSubmit entryを各1件だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場hookの差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
 
 ```bash
 ./bin/apply-codex-config.sh --apply
@@ -307,9 +309,7 @@ callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`
 ./bin/apply-cursor-config.sh --apply
 caveat init --sync --yes </dev/null
 throughline install
-lattice hooks install --host claude
-lattice hooks install --host codex
-lattice hooks install --host cursor
+lattice setup --host all --json
 spotter install -y
 ./bin/verify-install.sh --profile official
 ```
@@ -323,7 +323,7 @@ Grok親の所有面は次だけである。Claude面を吸うことを完成形�
 | 憲法 | `~/.grok/rules/AGENTS.md`（`grok/AGENTS.md`） | `compat.claude.agents=false` |
 | runbook | `~/.grok/runbooks` | 吸わない |
 | skill / agent | `~/.grok/skills` / `~/.grok/agents` | `compat.claude.skills`は切らない（Wave 2: `~/.grok/skills`が同名に勝つ） |
-| 工場MCP | `~/.grok/config.toml` | `compat.claude.mcps`は切らない。同名はtomlが勝つ |
+| 製品MCP | 製品の公開setupへ委譲 | 工場適用器はMCPを書かず、`compat.claude.mcps`は切らない |
 | 工場hook | `~/.grok/hooks/factory.json` | `compat.claude.hooks=false`。工場hookに製品hookは載せない |
 | Lattice工程表 | `grok-lattice-gantt-hook`（dotagents所有の案内） | `lattice hooks install --host` にGrokを足さない |
 
@@ -334,21 +334,21 @@ Cursor親の所有面は次だけである。Claude面を吸うことを完成�
 | 憲法 | `~/.cursor/rules/factory.mdc`（Desktop Agent へは `cursor-constitution-hook` が sessionStart・beforeSubmitPrompt・preToolUse で配達。10000 字以内なら同一本文、超過時は cap 内案内＋本文冒頭＋正本 Read。`~/.cursor/factory-constitution` は同一正本の overlay） | `~/.cursor/AGENTS.md`。User Rules UIへの手貼り。窓への自動 `--add` |
 | runbook | `~/.cursor/runbooks` | |
 | skill / agent | `~/.cursor/skills` / `~/.cursor/agents` | `skills-cursor/` |
-| 工場MCP | `~/.cursor/mcp.json` | `cli-config.json`。個人MCPの移管 |
+| 製品MCP | 製品の公開setupへ委譲 | 工場適用器は`mcp.json`を書かない |
 | 工場hook | `~/.cursor/hooks.json` | Claude envelopeへ変換。製品hookを工場hookへ載せない |
 
-`throughline install` は一撃展開が呼ぶ Throughline の製品管理入口である。生成物、host別hook、再適用条件は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) を正とし、dotagentsは製品hookを生成・再収録しない。
+Throughlineは共通更新入口が未導入時だけ公式npm導入と`throughline install`を呼び、導入済みなら`throughline self-update --json`へ渡す。生成物、host別hook、再適用条件は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) を正とし、dotagentsは製品hookを生成・再収録しない。
 
 `spotter install -y` は一撃展開が呼ぶSpotterのproject-scoped配布入口である。生成物、host別hook、連携オプション、再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とする。dotagentsはSpotterのmarkerやhookを複製・手書きせず、製品CLIへの接続だけを所有する。
 
-`lattice hooks install --host <host>` は一撃展開がhostごとに一度呼ぶLatticeの公開入口である。対応host、platform、生成物、statusの意味は[Lattice integration package「hooks導線」](https://github.com/kitepon/Lattice/blob/main/docs/01_integration-package.md#L116-L121)を正とし、dotagentsは製品内部のhook仕様を複製しない。
+Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する。機能別の未対応を公開結果のまま記録し、工場Gantt hookとは分けて扱う。対応範囲と結果の意味は[Latticeの正本](https://github.com/kitepon/Lattice#readme)に従う。
 
 - **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostの必須CLI、ServerManager readiness、Caveat / Spotterの公開diagnostics、Latticeの公開hook status、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSONをFAIL行で名指しする。これは全製品diagnosticsの代替ではなく、全製品の更新後確認と工場横断受入はhost別一撃setupが最後に実行するfresh factory reporterとdeliveryまでを含めて閉じる。製品ごとの診断項目と合否は各製品READMEを正とする。Grok login済み時だけWindows hookのinterpreter化と`compat.claude.agents` / `hooks` の切断を見る。未loginではThroughlineが空の`config.toml`を作ってもFAILにせず、配布symlinkの整合だけを見る。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
 - **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
 - 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす／極小タスクを implementer に委譲して契約どおりの報告が返る
 - 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす
-- 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／工場MCP 6のhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
-- 新しい Cursor セッションで（対話確認・H）: user hooks を load 済みの Desktop 窓で人が文を送ったチャットを数える（Cmd+Shift+L の新規、または `hooks.json` を live reload 済みの既存窓）。憲法は `cursor-constitution-hook` が beforeSubmitPrompt で cap 内案内を載せ、同一本文は `~/.cursor/rules/factory.mdc` の Read（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない）。証拠は hook ログに `cursor-constitution-hook` が `from user config` で出ることと `~/.cursor/factory-hook-state/constitution-delivered/` の stamp。goal continuation・Task/cloud・`cursor --chat` は Desktop hook を踏まないので数えない／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／工場MCP 6のhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない
+- 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／対応する製品MCPのhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
+- 新しい Cursor セッションで（対話確認・H）: user hooks を load 済みの Desktop 窓で人が文を送ったチャットを数える（Cmd+Shift+L の新規、または `hooks.json` を live reload 済みの既存窓）。憲法は `cursor-constitution-hook` が beforeSubmitPrompt で cap 内案内を載せ、同一本文は `~/.cursor/rules/factory.mdc` の Read（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない）。証拠は hook ログに `cursor-constitution-hook` が `from user config` で出ることと `~/.cursor/factory-hook-state/constitution-delivered/` の stamp。goal continuation・Task/cloud・`cursor --chat` は Desktop hook を踏まないので数えない／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／対応する製品MCPのhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない
 
 ### 4. その端末のメモリ整理
 

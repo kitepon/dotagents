@@ -77,7 +77,7 @@ role別の期待値や警告を生成しない。
 
 ## 3b. gpt-connector MCP（ChatGPT接続・工場コア全端末必須）
 
-ChatGPTの第二意見をCodex親へ接続する工場entryは、server ID `gpt_connector`、command `gpt-connector-mcp`である。MCP登録は限定applierの対象外なので、対象hostへ `codex mcp add gpt_connector -- gpt-connector-mcp` で登録する。工場境界は[接続pointer](06_gpt-connector.md)、製品の利用・診断・復旧は[gpt-connectorの正本](https://github.com/kitepon/gpt-connector#readme)に従う。
+ChatGPTの第二意見をCodex親へ接続する工場entryは、server ID `gpt_connector`、command `gpt-connector-mcp`である。MCP登録は限定applierの対象外で、対象hostの製品公開入口`gpt-connector setup`へ委譲する。工場境界は[接続pointer](06_gpt-connector.md)、製品の利用・診断・復旧は[gpt-connectorの正本](https://github.com/kitepon/gpt-connector#readme)に従う。
 
 ## 4. `project_doc_fallback_filenames = ["CLAUDE.md"]`（任意・副作用明記）
 

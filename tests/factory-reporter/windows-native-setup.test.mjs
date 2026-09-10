@@ -11,28 +11,20 @@ const SETUP = join(ROOT, 'bin', 'setup-windows-native-factory.ps1');
 
 test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・検証・2時schedulerを一入口に閉じる', async () => {
   const source = await readFile(SETUP, 'utf8');
-  const ordered = [
-    'Ensure-WindowsPrerequisites',
-    'install.sh',
-    'agents-update.sh',
-    'apply-codex-config.sh',
-    'apply-grok-config.sh',
-    "@('init', '--sync', '--yes')",
-    'throughline',
-    'markitdown',
-    'lattice hooks install --host claude',
-    'lattice hooks install --host codex',
-    'spotter install -y',
-    'verify-install.sh',
-    'factory-reporter-v8-schedule-runner.mjs',
-    'agents-update-scheduler.mjs',
-  ];
+  const main = source.slice(source.indexOf('try {\n  Normalize-WindowsReporterConfig'));
+  const ordered = ['if (-not $ScheduledRun)', 'Remove-LegacyCron', 'dotagents-links: install.sh',
+    'codex-config: apply-codex-config.sh', 'cursor-config: apply-cursor-config.sh',
+    'Ensure-MainServerSsh', 'daily-0200-task', 'Invoke-FactoryUpdate $update $productSmoke',
+    'Invoke-VerifyInstall $verify', 'Write-Receipt'];
   let cursor = -1;
   for (const token of ordered) {
-    const next = source.indexOf(token, cursor + 1);
+    const next = main.indexOf(token, cursor + 1);
     assert.ok(next > cursor, `${token} が正規順序にない`);
     cursor = next;
   }
+  assert.doesNotMatch(source, /Ensure-ClaudeMcp|Ensure-CodexMcp|Invoke-LatticeHookInstall|legacyUndefined|Set-ToolchainPostGateSuccess|--post-update|--finalize-update/u);
+  assert.match(source, /if \(-not \$ScheduledRun\) \{ \$updateArguments \+= '--setup' \}/u);
+  assert.match(source, /\$GitBash @updateArguments.*updateCode -ne 0/su);
   assert.match(source, /factory-reporter-scheduler\.mjs.*uninstall.*--apply/su);
   assert.doesNotMatch(source, /Start-Process.*-Verb RunAs/su);
   assert.doesNotMatch(source, /WindowsBuiltInRole\]::Administrator/u);
@@ -40,32 +32,22 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Normalize-WindowsReporterConfig.*UTF-8 without BOM.*factory-reporter-config.*\.bak.*UTF8Encoding.*\$false.*still has a UTF-8 BOM/su);
   assert.match(source, /function Restore-ScheduledReporterConfigFromCodexCache.*ScheduledRun.*OpenAI\.Codex_\*.*LocalCache\\Local\\dotagents\\factory-reporter\\config\.json.*credential path is not canonical.*Set-OwnerOnlyAcl \$destinationCredential.*Restore-ScheduledReporterConfigFromCodexCache.*Assert-ReporterConfig/su);
   assert.match(source, /function Restore-ScheduledGitHubCliConfigFromCodexCache.*gh.*auth.*status.*OpenAI\.Codex_\*.*LocalCache\\Roaming\\GitHub CLI\\hosts\.yml.*Set-OwnerOnlyAcl \$destination.*authentication was not restored.*Restore-ScheduledGitHubCliConfigFromCodexCache.*github-auth-switch/su);
-  assert.match(source, /function Invoke-BootstrapUpdate.*bootstrap-\$RunId\.log.*\$GitBash \$UpdateScript \*> \$bootstrapLog.*Set-OwnerOnlyAcl \$bootstrapLog.*Get-Content -LiteralPath \$bootstrapLog/su);
   assert.match(source, /python3.*apply-codex-config\.sh/su);
   assert.match(source, /\.grok\\auth\.json/u);
   assert.match(source, /XAI_API_KEY/u);
   assert.match(source, /Grok not logged in\. Skipping apply-grok-config/u);
   assert.match(source, /python.*apply-grok-config\.sh/su);
   assert.doesNotMatch(source, /lattice hooks install --host grok/u);
-  assert.match(source, /HOST_PLATFORM_UNSUPPORTED.*structurally unsupported/su);
   assert.match(source, /function Invoke-VerifyInstall.*if \(\$code -ne 0\) \{ throw "verify-install failed with exit \$code" \}.*return 'passed'/su);
   assert.doesNotMatch(source, /LatticeUnsupported|known Lattice native-Windows status\/install contract mismatch|failureMarkers|latticeFailures|latticeHosts/su);
   assert.match(source, /function Normalize-WindowsCodexHooks.*codex-callout-hook.*orchestrate-advisory-hook.*codex-lattice-gantt-hook/su);
-  assert.match(source, /CODEX_HOME.*native-product-wiring: caveat/su);
   assert.match(source, /\$null \| & \$File @Arguments/u);
-  assert.equal(source.match(/caveat' -Arguments @\('init', '--sync', '--yes'\) -ClosedStdin/gu)?.length, 1);
-  assert.match(source, /legacy undefined HOME/su);
   assert.match(source, /function Test-External.*Get-Command.*ErrorActionPreference = 'Continue'.*return \$code -eq 0/su);
   assert.match(source, /function Invoke-Checked.*& \$File @Arguments \| ForEach-Object \{ Write-Host \$_ \}.*\$LASTEXITCODE/su);
   assert.match(source, /FACTORY_REPORTER_RUNNER.*factory-reporter-v8-schedule-runner/su);
-  assert.match(source, /function Remove-WindowsGlobalNpmLink.*npm root --global.*LinkType.*npm unlink --global.*Global npm link remains.*Remove-WindowsGlobalNpmLink 'aiterm-mcp'.*Invoke-BootstrapUpdate/su);
-  assert.match(source, /function Update-WindowsNativeClaude.*\.local\\bin\\claude\.exe.*factory-products-bootstrap: Claude native update.*install\.sh.*Update-WindowsNativeClaude.*Invoke-BootstrapUpdate/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
   assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
-  assert.match(source, /--post-update.*--finalize-update/su);
-  assert.match(source, /Set-ToolchainPostGateSuccess.*--post-gate', 'success'/su);
-  assert.match(source, /@\(Compare-Object -ReferenceObject \(\$expected \| Sort-Object\) -DifferenceObject \$actual\)\.Count -ne 0/u);
   assert.match(source, /lib\\factory\\windows-native-product-smoke\.mjs/u);
   assert.match(source, /checked_products -ne 15/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
@@ -78,7 +60,6 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*ssh-keyscan.*pinned fingerprint/su);
   assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*ssh -G.*direct-IP/su);
   assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
-  assert.match(source, /github-auth-setup-git'.*Ensure-MainServerSsh.*native-product-wiring: caveat setup/su);
   assert.match(source, /ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
@@ -98,22 +79,9 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
   assert.equal(value.schema, 'dotagents.windows-native-factory-setup-plan.v1');
   assert.equal(value.platform, 'windows-native');
   assert.deepEqual(value.steps, [
-    'prerequisite-packages',
-    'factory-reporter-config',
-    'retire-legacy-schedulers',
-    'dotagents-links',
-    'factory-products-bootstrap',
-    'codex-config',
-    'main-server-ssh',
-    'native-product-wiring',
-    'lattice-hooks',
-    'spotter-project',
-    'mcp-registration',
-    'verify-install',
-    'fresh-bughub-delivery',
-    'toolchain-finalization',
-    'all-product-smoke',
-    'daily-0200-task',
+    'prerequisite-packages', 'factory-reporter-config', 'retire-legacy-schedulers',
+    'dotagents-links', 'factory-config', 'main-server-ssh', 'daily-0200-task',
+    'product-update-and-setup', 'fresh-bughub-delivery', 'all-product-smoke', 'verify-install',
   ]);
 });
 

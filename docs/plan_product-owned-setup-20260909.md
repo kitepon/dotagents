@@ -18,20 +18,20 @@
 
 | 対象 | 修理内容 | 完了条件 | 状態 |
 |---|---|---|---|
-| Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | 着手 |
+| Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | focused成功、main-serverでDocker稼働と公式Node隔離導入を確認。工場反映待ち |
 | runner | 既存runnerへの不要な再設定と403後の誤った継続を整理 | 変更が必要な場合だけ設定し、権限不足を元の原因として表示 | focused検証済み |
-| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 4 AI登録を実装、隔離設定で初回・再実行・MCP検索を確認、公開前検証中 |
+| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 製品公開記録を回収、工場切替済み。Windowsの既存hook拒否を保持 |
 | Throughline | 未導入時の更新順序を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | Linuxの初回・再実行・失敗のfocused試験済み |
-| unai | 工場の固定pathと詳細診断の重複を整理 | 公式installerの公開結果だけで判定 | 未着手 |
+| unai | 工場の固定pathと詳細診断の重複を整理 | 公式installerの公開結果だけで判定 | 実装・focused成功、実端末待ち |
 | Aiterm | 製品所有の準備・MCP登録入口 | 対応OSと各AIで単体導入を検証 | 公開・npm導入・4 AI実設定・公開MCP実行確認済み、修正後3 OS CI成功 |
-| gpt-connector | 製品所有の一括setup入口 | 非Macの読取り機能を保ち、live機能のOS制約を明示 | 未着手 |
-| codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 未着手 |
-| AIShell | 製品所有のMac導入・登録入口 | 対応hostだけ登録し、非対応hostへ工場が登録しない | 未着手 |
-| Lattice | 製品MCP登録入口とWindows hookの扱いを整理 | 製品未対応を可視化。工場Gantt hookとの別責務を維持 | 未着手 |
-| Peertable | skill導入入口、Aiterm内部namespace・multiplexer依存を公開APIへ整理 | 製品所有setup、OS別runtime focused test | 未着手 |
-| 工場共通 | 製品MCPの直接編集・OS別補完を除去 | 製品公開版の導入成功後に切替、4 AIの既存機能を確認 | 未着手 |
-| 更新と待機 | 初回・定期更新の順序、重複した全件診断、全setup再試行を整理。工程・経過時間・待機理由を表示 | 処理回数と所要時間を計測し、頻度を変えず受入 | 未着手 |
-| ServerManager/BugHub | 新着だけの通知、配送状態の永続化、退役hostと履歴版表示を修理 | 所有repoの既存計画、配備入口、公開後smokeで受入 | 中断作業を継続 |
+| gpt-connector | 製品所有の一括setup入口 | 非Macの読取り機能を保ち、live機能のOS制約を明示 | 製品公開記録を回収、工場切替・partial判定のfocused成功 |
+| codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 製品公開記録を回収、工場切替済み |
+| AIShell | 製品所有のMac導入・登録入口 | 対応hostだけ登録し、非対応hostへ工場が登録しない | 工場切替済み。作業中の停止を製品担当へ返し、修正版公開を回収中 |
+| Lattice | 製品MCP登録入口とWindows hookの扱いを整理 | 製品未対応を可視化。工場Gantt hookとの別責務を維持 | 製品公開記録を回収、工場切替・機能別未対応のfocused成功 |
+| Peertable | skill導入入口、Aiterm内部namespace・multiplexer依存を公開APIへ整理 | 製品所有setup、OS別runtime focused test | 製品公開記録を回収、工場切替済み |
+| 工場共通 | 製品MCPの直接編集・OS別補完を除去 | 製品公開版の導入成功後に切替、4 AIの既存機能を確認 | 実装・関連focused・別ベンダー反証成功。最終CI成功、実端末待ち |
+| 更新と待機 | 初回・定期更新の順序、重複した全件診断、全setup再試行を整理。工程・経過時間・待機理由を表示 | 処理回数と所要時間を計測し、頻度を変えず受入 | 重複scan除去・予約分離・製品入口の経過表示を実装、関連focused成功 |
+| ServerManager/BugHub | 新着だけの通知、配送状態の永続化、退役hostと履歴版表示を修理 | 所有repoの既存計画、配備入口、公開後smokeで受入 | 担当の本番反映記録を回収。工場4端末のfresh report待ち |
 
 Spotterは既存project単位の入口を保持する。製品側の不足が確認されていないため、無関係なglobal自動有効化は追加しない。
 
@@ -54,6 +54,16 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 - 秘密や認証操作をworkerへ渡さない。ログインや物理端末操作が必要になった場合だけ、必要条件をオーナーへ伝える。
 
 ## 現在地
+
+2026-09-10、オーナーの開始指示により工場統合を再開した。今回の担当はdotagentsと工場所有の配置・設定・更新予約・報告・公式入口の実行だけとする。製品repoの修理・公開は各製品担当へ返す。製品未公開・依存待ち・未実施を統合完了へ丸めない。
+
+再開時はcleanなmainをfetchし、`d3513e2`へfast-forwardした。`40863cc`と`955b6ca`の実差分を確認し、Throughlineの初回・更新・失敗のfocused試験とcron環境の関連試験が成功した。
+
+工場統合の順序は、製品の公開契約・実機受入記録の回収、公式入口への切替、関連focused試験、最終通し試験、現役端末への順次展開、fresh reportとBugHub受入とする。製品記録の読取りは親の工場調査と並列に行う。書込みは同一repoの導入・更新順序が結合するため直列とし、共有AI設定への本番反映も端末ごとに直列とする。既存の日次・週次の頻度とSpotterのproject選択を維持する。
+
+製品公開入口への切替、Caveat内部補完の削除、Windowsの予約更新分離、同一reportへの更新結果確定を実装し、関連focused試験と文書gateが成功した。[別ベンダー反証](evidence/20260910-product-owned-boundary-review.md)は採用指摘0件で完了し、最終通し試験も成功した。実端末への工場反映は未実施で、Aitermの既存MCP再接続とAIShell修正版公開を待っている。実測と未完条件は[途中記録](evidence/20260910-product-owned-integration-progress.md)を参照する。
+
+以下は中断時点の記録であり、最新の製品受入結果とは区別する。
 
 LinuxのDocker保持とrunner再設定条件はfocused testで検証済み。Docker修理は別ベンダーの反証で受入可。
 Aitermの一括入口とWindowsのGrok記録先を修正し、公開・npm導入・4 AIの実設定と公開MCP実行を確認した。

@@ -9,6 +9,13 @@
 
 set -uo pipefail
 
+setup_project=0
+case "${1:-}" in
+  '') [ "$#" -eq 0 ] || exit 2 ;;
+  --setup) [ "$#" -eq 1 ] || exit 2; setup_project=1 ;;
+  *) printf '使い方: agents-update.sh [--setup]\n' >&2; exit 2 ;;
+esac
+
 # launchd / cron は最小 PATH で起動する（npm が /opt/homebrew 等にあると見つからず静かに失敗する）。
 PATH="${AGENTS_UPDATE_PATH_PREFIX:-$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/snap/bin:/usr/local/bin}:$PATH"
 
@@ -297,7 +304,30 @@ fi
   fi
   record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" pending "$grok_reason" || update_failed=1
 
+  # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
+  for setup_product in aiterm caveat gpt-connector codex-sidecar lattice peertable; do
+    if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then
+      update_failed=1
+    fi
+  done
+  for pkg in "${PACKAGES[@]}"; do
+    if [[ "$pkg" = @quolu/aishell ]]; then
+      macos_major="$(sw_vers -productVersion 2>/dev/null)" || macos_major=''
+      macos_major="${macos_major%%.*}"
+      if [[ ! "$macos_major" =~ ^[0-9]+$ ]]; then
+        printf 'FAILED: AIShellの対応判定に必要なmacOS版を取得できない\n'
+        update_failed=1
+      elif [[ "$macos_major" -lt 15 ]]; then
+        printf 'SKIPPED: AIShellの登録はmacOS 15以上だけに対応\n'
+      elif ! node "$SCRIPT_DIR/factory-product-setup.mjs" aishell; then update_failed=1; fi
+    fi
+  done
+  if [[ "$setup_project" -eq 1 ]]; then
+    if ! spotter install -y; then update_failed=1; fi
+  fi
+
   printf -- '--- factory-reporter:post-update-contract ---\n'
+  post_report_id=''
   if [[ ! -x "$FACTORY_REPORTER_RUNNER" ]]; then
     printf 'FAILED: factory reporter runner が実行できない: %s\n' "$FACTORY_REPORTER_RUNNER"
     report_failed=1
@@ -308,6 +338,11 @@ fi
     post_gate="$(printf '%s\n' "$reporter_output" | node -e '
         const lines=require("fs").readFileSync(0,"utf8").trim().split(/\r?\n/).reverse();
         for(const line of lines){try{const value=JSON.parse(line);if(value&&["success","failed"].includes(value.post_gate_status)){process.stdout.write(value.post_gate_status);process.exit(0)}}catch{}}
+        process.exit(1);
+      ' || true)"
+    post_report_id="$(printf '%s\n' "$reporter_output" | node -e '
+        const lines=require("fs").readFileSync(0,"utf8").trim().split(/\r?\n/).reverse();
+        for(const line of lines){try{const value=JSON.parse(line);if(value&&["success","failed"].includes(value.post_gate_status)&&typeof value.report_id==="string"){process.stdout.write(value.report_id);process.exit(0)}}catch{}}
         process.exit(1);
       ' || true)"
     if [[ "$reporter_rc" -ne 0 || "$post_gate" != success ]]; then
@@ -327,8 +362,11 @@ fi
   if [[ "$final_record_failed" -ne 0 ]]; then
     printf 'FAILED: factory reporter の最終台帳を確定できないため送信しません\n'
     report_failed=1
+  elif [[ -z "$post_report_id" ]]; then
+    printf 'FAILED: 今回の診断reportが確定していないため送信しません\n'
+    report_failed=1
   elif [[ -x "$FACTORY_REPORTER_RUNNER" ]]; then
-    final_output="$($FACTORY_REPORTER_RUNNER --config "$FACTORY_REPORTER_CONFIG" --finalize-update 2>&1)"
+    final_output="$($FACTORY_REPORTER_RUNNER --config "$FACTORY_REPORTER_CONFIG" --finalize-update --report-id "$post_report_id" 2>&1)"
     final_rc=$?
     printf '%s\n' "$final_output"
     if [[ "$final_rc" -ne 0 ]]; then

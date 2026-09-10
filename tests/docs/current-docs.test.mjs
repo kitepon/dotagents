@@ -1416,11 +1416,12 @@ test('一般policyはLattice hookの対応hostと内部契約を再掲しない'
   const paths = ['README.md', 'docs/03_settings-fragments.md'];
   for (const path of paths) {
     const content = await readFile(join(ROOT, path), 'utf8');
-    assert.match(content, /github\.com\/kitepon\/Lattice\/blob\/main\/docs\/01_integration-package\.md#L116-L121/u);
+    assert.match(content, /github\.com\/kitepon\/Lattice(?:#readme|\/blob\/main\/docs\/01_integration-package\.md#L116-L121)/u);
     assert.doesNotMatch(content, /lattice hooks install --host claude\|codex|Lattice 0\.40\.0\+|Cursor hostも増やさない/u);
   }
   const readme = await readFile(join(ROOT, 'README.md'), 'utf8');
-  assert.match(readme, /^lattice hooks install --host cursor$/mu);
+  assert.match(readme, /`lattice setup --host all --json`へ委譲/u);
+  assert.doesNotMatch(readme, /^lattice hooks install --host cursor$/mu);
   assert.match(readme, /Caveat \/ Spotterの公開diagnostics、Latticeの公開hook status/u);
   assert.match(readme, /fresh factory reporterとdelivery/u);
   assert.doesNotMatch(readme, /各製品の公開diagnosticsが示す配線結果/u);

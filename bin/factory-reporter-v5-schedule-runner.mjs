@@ -10,6 +10,7 @@ import { readConfig } from '../lib/factory/contract.mjs';
 import { postUpdateFailures } from '../lib/factory/deployment-contract.mjs';
 import { extendedSchedulerPath } from '../lib/factory/scheduler-path.mjs';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
+import { finalizeToolchainReport } from '../lib/factory/v5.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -48,7 +49,15 @@ $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, [Security.Acces
   if (result.error) throw new Error('Windows owner-only ACL設定に失敗しました (acl_process_failed)');
   if (result.status !== 0) throw new Error('Windows owner-only ACL設定に失敗しました (acl_apply_failed)');
 }
-function parseArgs(argv) { const mode = argv[2] || null; if (![2, 3].includes(argv.length) || argv[0] !== '--config' || !argv[1] || /[\0\r\n]/u.test(argv[1]) || (mode !== null && !['--post-update', '--finalize-update'].includes(mode))) throw new Error(`使い方: factory-reporter-${WIRE_MAJOR}-schedule-runner --config <file> [--post-update|--finalize-update]`); return { configPath: argv[1], postUpdate: mode === '--post-update', finalizeUpdate: mode === '--finalize-update' }; }
+function parseArgs(argv) {
+  const mode = argv[2] || null;
+  const reuse = argv.length === 5 && mode === '--finalize-update' && argv[3] === '--report-id' && Boolean(argv[4]);
+  if ((!reuse && ![2, 3].includes(argv.length)) || argv[0] !== '--config' || !argv[1]
+    || /[\0\r\n]/u.test(argv[1]) || (mode !== null && !['--post-update', '--finalize-update'].includes(mode))) {
+    throw new Error(`使い方: factory-reporter-${WIRE_MAJOR}-schedule-runner --config <file> [--post-update|--finalize-update [--report-id <id>]]`);
+  }
+  return { configPath: argv[1], postUpdate: mode === '--post-update', finalizeUpdate: mode === '--finalize-update', expectedReportId: reuse ? argv[4] : null };
+}
 async function privateState(state) { try { const info = await lstat(state); if (info.isSymbolicLink() || !info.isDirectory()) throw new Error('state pathはsymlinkでないdirectoryでなければなりません'); } catch (error) { if (error?.code !== 'ENOENT') throw error; await mkdir(state, { recursive: true, mode: 0o700 }); } if (platform() !== 'win32') await chmod(state, 0o700); else ownerOnlyAcl(state); }
 function parseLockOwner(raw) {
   try {
@@ -137,11 +146,14 @@ async function writeDeliveryReceipt(state, reportId) {
   const batchToken = process.env.AGENTS_UPDATE_BATCH_TOKEN || null;
   if (batchToken !== null && !/^[0-9a-f-]{36}$/iu.test(batchToken)) throw new Error('delivery receiptのbatch tokenが不正です');
   const receipt = { schema: 'dotagents.factory-delivery-receipt.v1', report_id: reportId, batch_token: batchToken };
-  const target = join(state, 'delivery-receipt.json'); const temporary = join(state, `.delivery-receipt.${randomUUID()}.tmp`);
-  try { await writeFile(temporary, `${JSON.stringify(receipt)}\n`, { flag: 'wx', mode: 0o600 }); if (platform() !== 'win32') await chmod(temporary, 0o600); else ownerOnlyAcl(temporary); await rename(temporary, target); if (platform() !== 'win32') await chmod(target, 0o600); else ownerOnlyAcl(target); } finally { await rm(temporary, { force: true }); }
+  await writeStateJson(state, 'delivery-receipt.json', receipt);
+}
+async function writeStateJson(state, name, value) {
+  const target = join(state, name); const temporary = join(state, `.${name}.${randomUUID()}.tmp`);
+  try { await writeFile(temporary, `${JSON.stringify(value)}\n`, { flag: 'wx', mode: 0o600 }); if (platform() !== 'win32') await chmod(temporary, 0o600); else ownerOnlyAcl(temporary); await rename(temporary, target); if (platform() !== 'win32') await chmod(target, 0o600); else ownerOnlyAcl(target); } finally { await rm(temporary, { force: true }); }
 }
 try {
-  const { configPath, postUpdate, finalizeUpdate } = parseArgs(process.argv.slice(2));
+  const { configPath, postUpdate, finalizeUpdate, expectedReportId } = parseArgs(process.argv.slice(2));
   const config = await readConfig(configPath);
   if (config.source !== 'file') throw new Error('schedulerは設定ファイルなしでは実行しません');
   if (!platformMatches(config.host.profile)) throw new Error(`host.profile=${config.host.profile}は実行中platformと一致しません`);
@@ -156,8 +168,12 @@ try {
       let failures = [];
       let latestReport = null;
       if (config.collection.enabled || postUpdate || finalizeUpdate) {
-        await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT]);
-        const report = JSON.parse(await readFile(reportPath, 'utf8'));
+        if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT]);
+        let report = JSON.parse(await readFile(reportPath, 'utf8'));
+        if (expectedReportId) {
+          report = await finalizeToolchainReport(report, { expectedReportId });
+          await writeStateJson(state, 'latest-report.json', report);
+        }
         latestReport = report;
         if (finalizeUpdate && hasPendingToolchainLedger(report)) throw new Error('finalize ledgerにpost_gate_pendingが残っています');
         if (postUpdate) failures = gateFailures(report, config.host.profile, true);
@@ -167,9 +183,9 @@ try {
       if (finalizeUpdate && ['v7', 'v8'].includes(WIRE_MAJOR) && config.reporting.enabled && latestReport) await writeDeliveryReceipt(state, latestReport.report_id);
       if (finalizeUpdate) process.stdout.write(`${JSON.stringify({ ok: true, finalized: true })}\n`);
       else if (failures.length) {
-        process.stdout.write(`${JSON.stringify({ ok: false, post_gate_status: 'failed', failed_checks: failures.length })}\n`);
+        process.stdout.write(`${JSON.stringify({ ok: false, post_gate_status: 'failed', failed_checks: failures.length, report_id: latestReport?.report_id })}\n`);
         process.exitCode = 1;
-      } else process.stdout.write(`${JSON.stringify({ ok: true, post_gate_status: 'success' })}\n`);
+      } else process.stdout.write(`${JSON.stringify({ ok: true, post_gate_status: 'success', report_id: latestReport?.report_id })}\n`);
     });
   }
 } catch (error) {

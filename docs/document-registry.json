@@ -483,7 +483,7 @@
       "path_regex": "^docs/(?:06_gpt-connector|factory-grok-build-community-overlay)\\.md$",
       "expected_role": "product-pointer",
       "exact_sha256_by_path": {
-        "docs/06_gpt-connector.md": "d840f87aaa2cd64a570639a6bd6397931f1976d58d923e5c583ff63b45631cf4",
+        "docs/06_gpt-connector.md": "74e42d990e481ca1682bc67bbcdd38800a307ff90479811413cc7c1081d569c0",
         "docs/factory-grok-build-community-overlay.md": "0cf8e9be298ae6870269f662ebb03c9b6ca6f993df827bd6d68c3ad198fea605"
       },
       "required_regexes": [],
@@ -523,7 +523,7 @@
       "path_regex": "^docs/05_codex-fragments\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/05_codex-fragments.md": "29ea46cf53cfc0b4843256380134b07d4167a057bc3f5c55f1d2e6901a428f8a"
+        "docs/05_codex-fragments.md": "391c1a79f107ae7ea5415f6b823013ed6c88ce05754eeec9d5658164ffa04962"
       },
       "required_regexes": [],
       "forbidden_regexes": []

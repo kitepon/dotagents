@@ -139,10 +139,11 @@ verify_factory_core() {
       command -v "$candidate"
       return 0
     fi
-    if [ "$candidate" = unai ] && [ "$host_profile" = windows-native ] \
-      && [ -f "$HOME/.local/bin/unai.ps1" ] && [ ! -L "$HOME/.local/bin/unai.ps1" ]; then
-      printf '%s\n' "$HOME/.local/bin/unai.ps1"
-      return 0
+    if [ "$candidate" = unai ] && [ "$host_profile" = windows-native ]; then
+      # shellcheck disable=SC2016 # PowerShellへ変数参照をそのまま渡す。
+      pwsh.exe -NoProfile -NonInteractive -Command \
+        '$ErrorActionPreference = "Stop"; (Get-Command unai -CommandType ExternalScript,Application -ErrorAction Stop).Source'
+      return "$?"
     fi
     return 1
   }
@@ -640,34 +641,6 @@ PY
     fail=1
   fi
 fi
-cursor_mcp="$HOME/.cursor/mcp.json"
-if [ -f "$cursor_mcp" ] || [ -L "$cursor_mcp" ]; then
-  if [ -L "$cursor_mcp" ]; then
-    echo "FAIL: $cursor_mcp は symlink（実ファイルの工場MCP面が正）"
-    fail=1
-  elif ! python3 - "$cursor_mcp" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-try:
-    data = json.loads(path.read_text(encoding="utf-8"))
-except json.JSONDecodeError as exc:
-    print(f"FAIL: {path} の JSON パース失敗: {exc}")
-    raise SystemExit(1)
-if not isinstance(data, dict) or not isinstance(data.get("mcpServers"), dict):
-    print(f"FAIL: {path} の mcpServers が object でない")
-    raise SystemExit(1)
-missing = [name for name in ("aiterm", "caveat", "lattice", "codex-sidecar", "gpt_connector", "aishell") if name not in data["mcpServers"]]
-if missing:
-    print("FAIL: Cursor 工場MCP が欠落: " + "、".join(missing))
-    raise SystemExit(1)
-PY
-  then
-    fail=1
-  fi
-fi
 cursor_hooks="$HOME/.cursor/hooks.json"
 if [ -f "$cursor_hooks" ] || [ -L "$cursor_hooks" ]; then
   if [ -L "$cursor_hooks" ]; then
@@ -706,12 +679,6 @@ required = (
 missing = [name for name in required if not any(name in command for command in commands)]
 if missing:
     print("FAIL: Cursor 工場hook が欠落: " + "、".join(missing))
-    raise SystemExit(1)
-if not any("throughline" in command.lower() for command in commands):
-    print("FAIL: Cursor hooks.json に Throughline 製品hook が無い")
-    raise SystemExit(1)
-if not any("spotter" in command.lower() for command in commands):
-    print("FAIL: Cursor hooks.json に Spotter 製品hook が無い")
     raise SystemExit(1)
 PY
   then

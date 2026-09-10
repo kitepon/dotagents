@@ -143,7 +143,7 @@ printf '{"schema":"dotagents.factory-delivery-receipt.v1","report_id":"%s","batc
   printf 'agents-update batch-token: %s\n' "$AGENTS_UPDATE_BATCH_TOKEN"
   printf 'agents-update end: fixture\n'
 } >>"$log_dir/agents-update.log"
-printf 'agents-update %s\n' "$AGENTS_UPDATE_BATCH_TOKEN" >>"$DOTAGENTS_SETUP_TEST_CALLS"
+printf 'agents-update %s %s\n' "$AGENTS_UPDATE_BATCH_TOKEN" "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 EOF
 chmod +x "$FIXTURE_ROOT/install.sh" "$FIXTURE_ROOT/bin/"*.sh
 
@@ -267,9 +267,11 @@ printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"end
 # shellcheck disable=SC2016 # setup側へ literal `$HOME` が書かれていることを検査する＝展開させない。
 grep -Fq 'export PATH="$HOME/.local/bin:$PATH"' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'setupが ~/.local/bin をPATH先頭へ置かない'
-# shellcheck disable=SC2016 # setup側のliteral変数名を含む射影行を検査するため展開させない。
-grep -Fq 'ln -s "/snap/bin/$command_path" "$snap_node_bin/$command_path"' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'setupが公式SnapのNode系commandだけを専用dirへ射影しない'
+grep -Fq 'nvm install 24' "$ROOT/bin/setup-linux-common.sh" \
+  || fail 'Node導入をnvm公式入口へ渡さない'
+if grep -Eq 'node-v24|SHASUMS256|snap_node_bin' "$ROOT/bin/setup-linux-common.sh"; then
+  fail 'Nodeの独自配置やSnap補完が残っている'
+fi
 # shellcheck disable=SC2016 # 禁止するliteral PATH行を検査するため展開させない。
 if grep -Fq 'export PATH="$HOME/.local/bin:/snap/bin:$PATH"' "$ROOT/bin/setup-linux-common.sh"; then
   fail 'setupが/snap/bin全体をPATH先頭へ出す'
@@ -322,18 +324,10 @@ if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
   fail 'lattice hooks install --host grok を呼んだ'
 fi
 grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展開しない'
-grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
-grep -Fq 'caveat init' "$CALLS" || fail 'Caveat Claude initを導入しない'
-grep -Fq 'caveat init </dev/null' "$ROOT/bin/setup-linux-common.sh" || fail 'caveat init を非対話にしない'
-[ "$(grep -n '^caveat sync --init ' "$CALLS" | head -1 | cut -d: -f1)" -lt \
-  "$(grep -n '^caveat init$' "$CALLS" | head -1 | cut -d: -f1)" ] \
-  || fail 'Caveat初回syncがinitより先でない'
-find "$HOME_DIR/.local/state/dotagents/backups" -path '*/caveat-init-scaffold-*/.gitignore' -type f | grep -q . \
-  || fail '中断されたCaveat初期scaffoldをbackupしない'
+[ "$(grep -Fc -- '--setup' "$CALLS")" -eq 2 ] || fail '初回導入を共通更新入口へ渡さない'
+[ -f "$HOME_DIR/.caveat/own/.gitignore" ] || fail '工場がCaveat内部scaffoldを操作した'
 grep -Fq 'npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest' \
   "$ROOT/bin/setup-linux-common.sh" || fail 'Claude Code公式lifecycle scriptを限定許可しない'
-grep -Fq 'npm install -g --allow-scripts=claude-spotter' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'Spotter公式lifecycle scriptを限定許可しない'
 grep -Fq 'env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'factory batchへ対話中Codex thread identityを混入させる'
 grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-server'"'" "$ROOT/bin/setup-linux-common.sh" \
@@ -365,23 +359,10 @@ grep -Fq 'id_ed25519_rabbit' "$ROOT/bin/setup-linux-common.sh" \
 grep -Fq "ssh -o BatchMode=yes -o ConnectTimeout=5 rabbit 'sudo -n true'" \
   "$ROOT/bin/setup-linux-common.sh" \
   || fail 'main-serverからrabbitのpasswordless sudoを実火検証しない'
-grep -Fq 'gh auth switch --hostname github.com --user quolu' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'Caveat-Private同期前に工場ownerへ切り替えない'
-grep -Fq 'gh auth setup-git' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'Caveat-Private同期前にGitHub HTTPS credential helperを配線しない'
-grep -Fq 'caveat sync --init --repo https://github.com/quolu/Caveat-Private.git' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'Caveat-Privateの初回同期が公式HTTPS経路でない'
-grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
-grep -Fq 'caveat codex-hook install' "$CALLS" || fail 'Caveat Codex hookを導入しない'
-grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
-grep -Fq 'lattice hooks install --host codex' "$CALLS" || fail 'Codex Lattice hookを配線しない'
-grep -Fq 'lattice hooks install --host cursor' "$CALLS" || fail 'Cursor Lattice hookを配線しない'
-grep -Fq 'spotter install -y' "$CALLS" || fail 'Spotterを配線しない'
+if grep -Eq 'mcp-add|^caveat |^lattice |^throughline |^spotter |^install-unai' "$CALLS"; then
+  fail 'setupが製品配線を更新入口の前に重複実行した'
+fi
 grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを実行しない'
-[ "$(grep -Fc 'claude-mcp-add gpt_connector gpt-connector-mcp' "$CALLS")" -eq 1 ] \
-  || fail 'Claude gpt_connectorを一度だけ補完しない'
-[ "$(grep -Fc 'codex-mcp-add codex-sidecar codex-sidecar-mcp' "$CALLS")" -eq 1 ] \
-  || fail 'Codex sidecarを一度だけ補完しない'
 [ "$(grep -Fc 'agents-update ' "$CALLS")" -eq 2 ] || fail '各setup runでfresh updateを1回だけ実行しない'
 
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \

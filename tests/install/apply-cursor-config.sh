@@ -8,9 +8,7 @@ case "$(uname -s)" in MINGW*|MSYS*) export MSYS=winsymlinks:nativestrict ;; esac
 HOME_FIXTURE="$(mktemp -d)"
 ABSENT_HOME="$(mktemp -d)"
 SYMLINK_HOME="$(mktemp -d)"
-RESOLVE_HOME="$(mktemp -d)"
-STUB_BIN="$(mktemp -d)"
-trap 'rm -rf "$HOME_FIXTURE" "$ABSENT_HOME" "$SYMLINK_HOME" "$RESOLVE_HOME" "$STUB_BIN"' EXIT
+trap 'rm -rf "$HOME_FIXTURE" "$ABSENT_HOME" "$SYMLINK_HOME"' EXIT
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 
@@ -45,8 +43,7 @@ chmod 644 "$HOME_FIXTURE/.cursor/cli-config.json" "$HOME_FIXTURE/.cursor/mcp.jso
 cli_before="$(cat "$HOME_FIXTURE/.cursor/cli-config.json")"
 before="$(cat "$HOME_FIXTURE/.cursor/mcp.json")"
 dry="$(HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --dry-run)"
-grep -Fq '"aiterm"' <<<"$dry" || fail 'dry-run が工場MCP aiterm を出さない'
-grep -Fq '"caveat"' <<<"$dry" || fail 'dry-run が工場MCP caveat を出さない'
+if grep -Fq 'mcp.json' <<<"$dry"; then fail 'dry-run が製品MCPの変更を出した'; fi
 [ "$(cat "$HOME_FIXTURE/.cursor/mcp.json")" = "$before" ] || fail 'dry-run が mcp.json を書き換えた'
 [ "$(cat "$HOME_FIXTURE/.cursor/cli-config.json")" = "$cli_before" ] || fail 'dry-run が cli-config.json を書き換えた'
 [ ! -d "$HOME_FIXTURE/Archives" ] || fail 'dry-run が backup を作った'
@@ -56,25 +53,7 @@ applied="$(cat "$HOME_FIXTURE/.cursor/mcp.json")"
 [ "$(cat "$HOME_FIXTURE/.cursor/cli-config.json")" = "$cli_before" ] || fail 'apply が cli-config.json を書き換えた'
 grep -Fq '"keep-personal"' <<<"$applied" || fail '個人MCP gmail を消した'
 grep -Fq 'https://example.invalid/mcp' <<<"$applied" || fail '個人MCP url を消した'
-for name in aiterm caveat lattice codex-sidecar gpt_connector aishell; do
-  grep -Fq "\"$name\"" <<<"$applied" || fail "工場MCP $name を書かない"
-done
-python3 - "$HOME_FIXTURE/.cursor/mcp.json" <<'PY' || fail '工場MCP の JSON 契約が違う'
-import json
-import sys
-from pathlib import Path
-
-data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-servers = data["mcpServers"]
-caveat = servers["caveat"]
-if caveat.get("args") != ["mcp-server"]:
-    raise SystemExit("caveat args")
-aishell = servers["aishell"]
-if aishell.get("env", {}).get("AISHELL_CAPABILITY_SET") != "expanded-v1":
-    raise SystemExit("aishell env")
-if "command" not in caveat or "command" not in servers["aiterm"]:
-    raise SystemExit("command")
-PY
+[ "$applied" = "$before" ] || fail '製品MCP設定を変更した'
 [ -f "$HOME_FIXTURE/.cursor/hooks.json" ] || fail 'apply が hooks.json を書かない'
 python3 - "$HOME_FIXTURE/.cursor/hooks.json" <<'PY' || fail '工場hook の JSON 契約が違う'
 import json
@@ -110,70 +89,24 @@ HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply | gr
 [ "$(cat "$HOME_FIXTURE/.cursor/cli-config.json")" = "$cli_before" ] || fail '2回目 apply が cli-config.json を書き換えた'
 
 HOME="$ABSENT_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
-[ -f "$ABSENT_HOME/.cursor/mcp.json" ] || fail '不在の mcp.json を作らない'
-python3 - "$ABSENT_HOME/.cursor/mcp.json" <<'PY' || fail '新規 mcp.json に工場MCPを書かない'
-import json
-import sys
-from pathlib import Path
-
-servers = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))["mcpServers"]
-for name in ("aiterm", "caveat", "lattice", "codex-sidecar", "gpt_connector", "aishell"):
-    if name not in servers:
-        raise SystemExit(name)
-PY
+[ ! -e "$ABSENT_HOME/.cursor/mcp.json" ] || fail '製品所有のmcp.jsonを作った'
 [ ! -e "$ABSENT_HOME/.cursor/cli-config.json" ] || fail '不在HOMEに cli-config.json を作った'
 
 mkdir -p "$SYMLINK_HOME/.cursor" "$SYMLINK_HOME/target"
 printf '%s\n' '{"mcpServers":{}}' >"$SYMLINK_HOME/target/mcp.json"
 ln -s "$SYMLINK_HOME/target/mcp.json" "$SYMLINK_HOME/.cursor/mcp.json"
-if HOME="$SYMLINK_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null 2>&1; then
-  fail 'symlink mcp.json への apply を受理した'
-fi
+HOME="$SYMLINK_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
 grep -Fq '{"mcpServers":{}}' "$SYMLINK_HOME/target/mcp.json" || fail 'symlink 先を書き換えた'
 
-if [ "${OS:-}" = "Windows_NT" ]; then
-  printf '%s\n' '@echo off' >"$STUB_BIN/caveat.cmd"
-  mkdir -p "$RESOLVE_HOME/.cursor"
-  PATH="$STUB_BIN:$PATH" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
-  python3 - "$RESOLVE_HOME/.cursor/mcp.json" <<'PY'
-import json
-import sys
+# 他製品hookと利用者hookを保持したまま工場hookを更新する。
+python3 - "$HOME_FIXTURE/.cursor/hooks.json" <<'PY'
+import json, sys
 from pathlib import Path
-
-text = Path(sys.argv[1]).read_text(encoding="utf-8")
-data = json.loads(text)
-command = data["mcpServers"]["caveat"]["command"]
-if "caveat.cmd" not in command.lower():
-    raise SystemExit("FAIL: 解決できた caveat を絶対パスで書かない")
-env_path = data["mcpServers"]["caveat"]["env"]["PATH"]
-if ";" not in env_path:
-    raise SystemExit("FAIL: Windows の env.PATH が pathsep になっていない")
+p = Path(sys.argv[1])
+v = json.loads(p.read_text())
+v["hooks"].setdefault("beforeSubmitPrompt", []).append({"command": "product-owned-hook"})
+p.write_text(json.dumps(v))
 PY
-  PATH="$STUB_BIN:$PATH" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply \
-    | grep -Fq '変更なし' || fail '絶対パス適用の2回目が冪等でない'
-else
-  printf '%s\n' '#!/bin/sh' 'exit 0' >"$STUB_BIN/caveat"
-  chmod +x "$STUB_BIN/caveat"
-  mkdir -p "$RESOLVE_HOME/.cursor"
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
-  python3 - "$RESOLVE_HOME/.cursor/mcp.json" "$STUB_BIN" <<'PY' || fail '解決できた caveat を絶対パスで書かない'
-import json
-import sys
-from pathlib import Path
-
-stub = sys.argv[2]
-data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-command = data["mcpServers"]["caveat"]["command"]
-if command != f"{stub}/caveat":
-    raise SystemExit(command)
-env_path = data["mcpServers"]["caveat"]["env"]["PATH"]
-if not env_path.startswith(f"{stub}:") or "/usr/bin:/bin:/usr/sbin:/sbin" not in env_path:
-    raise SystemExit(env_path)
-PY
-  PATH="$STUB_BIN:/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply \
-    | grep -Fq '変更なし' || fail '絶対パス適用の2回目が冪等でない'
-  PATH="/usr/bin:/bin" HOME="$RESOLVE_HOME" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply \
-    | grep -Fq '変更なし' || fail 'GUI PATH の apply が実行可能な絶対パスを名前へ戻した'
-fi
-
+HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
+grep -Fq 'product-owned-hook' "$HOME_FIXTURE/.cursor/hooks.json" || fail '他製品hookを消した'
 echo 'apply-cursor-config: OK'

@@ -121,7 +121,7 @@ printf '{"schema":"dotagents.factory-delivery-receipt.v1","report_id":"%s","batc
   printf 'agents-update batch-token: %s\n' "$AGENTS_UPDATE_BATCH_TOKEN"
   printf 'agents-update end: fixture\n'
 } >>"$log_dir/agents-update.log"
-printf 'agents-update %s\n' "$AGENTS_UPDATE_BATCH_TOKEN" >>"$DOTAGENTS_SETUP_TEST_CALLS"
+printf 'agents-update %s %s\n' "$AGENTS_UPDATE_BATCH_TOKEN" "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 EOF
 chmod +x "$FIXTURE_ROOT/install.sh" "$FIXTURE_ROOT/bin/"*
 
@@ -313,24 +313,11 @@ if grep -Fq 'lattice hooks install --host grok' "$CALLS"; then
   fail 'lattice hooks install --host grok を呼んだ'
 fi
 grep -Fq 'install --profile official' "$CALLS" || fail 'official profileを展開しない'
-grep -Fq 'install-unai' "$CALLS" || fail 'unai公式installer入口を実行しない'
-[ "$(grep -Fc 'caveat init --sync --yes' "$CALLS")" -eq 2 ] \
-  || fail '2回のsetupがCaveat製品入口を各1回呼ばない'
-[ "$(grep -Fc 'caveat init --sync --yes </dev/null' "$ROOT/bin/setup-macos-factory.sh")" -eq 1 ] \
-  || fail 'Caveat製品setup入口を非対話で一度だけ定義しない'
-if grep -Eq 'ensure_caveat_sync|Caveat-Private|\.caveat/own/\.git|gh auth switch.*quolu|caveat sync' "$ROOT/bin/setup-macos-factory.sh"; then
-  fail '工場setupがCaveat内部state・remote・認証を制御する'
+[ "$(grep -Fc -- '--setup' "$CALLS")" -eq 2 ] || fail '初回導入を共通更新入口へ渡さない'
+if grep -Eq 'mcp-add|^caveat |^lattice |^throughline |^spotter |^install-unai' "$CALLS"; then
+  fail 'setupが製品配線を更新入口の前に重複実行した'
 fi
-grep -Fq 'throughline install' "$CALLS" || fail 'Throughline製品管理hookを導入しない'
-grep -Fq 'lattice hooks install --host claude' "$CALLS" || fail 'Claude Lattice hookを配線しない'
-grep -Fq 'lattice hooks install --host codex' "$CALLS" || fail 'Codex Lattice hookを配線しない'
-grep -Fq 'lattice hooks install --host cursor' "$CALLS" || fail 'Cursor Lattice hookを配線しない'
-grep -Fq 'spotter install -y' "$CALLS" || fail 'Spotterを配線しない'
 grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを実行しない'
-[ "$(grep -Fc 'claude-mcp-add aishell aishell-mcp' "$CALLS")" -eq 1 ] \
-  || fail 'Claude AIShell MCPを一度だけ補完しない'
-[ "$(grep -Fc 'codex-mcp-add aishell aishell-mcp' "$CALLS")" -eq 1 ] \
-  || fail 'Codex AIShell MCPを一度だけ補完しない'
 [ "$(grep -Fc 'agents-update ' "$CALLS")" -eq 2 ] || fail '各setup runでfresh updateを1回だけ実行しない'
 
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
