@@ -122,6 +122,11 @@ function Ensure-WindowsPrerequisites {
       }
     }
   }
+  if (-not (Test-External -File 'codex' -Arguments @('--version'))) {
+    Invoke-Checked -File 'npm.cmd' -Arguments @('install', '-g', '@openai/codex@latest') -Label '公式Codex CLIの導入'
+    Refresh-ProcessPath
+  }
+  Invoke-Checked -File 'codex' -Arguments @('--version') -Label '公式Codex CLIの起動確認'
 }
 
 function Convert-ToGitBashPath([string]$Path) {

@@ -63,6 +63,10 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 製品公開入口への切替、Caveat内部補完の削除、Windowsの予約更新分離、同一reportへの更新結果確定を実装し、関連focused試験と文書gateが成功した。[別ベンダー反証](evidence/20260910-product-owned-boundary-review.md)は採用指摘0件で完了し、最終通し試験も成功した。実端末への工場反映は未実施で、Aitermの既存MCP再接続とAIShell修正版公開を待っている。実測と未完条件は[途中記録](evidence/20260910-product-owned-integration-progress.md)を参照する。
 
+Windowsの公開Caveat診断はCodex hookの既存明示無効化を保持してnot_readyを返す。製品担当と工場契約を照合し、今回の切替では無効化を解除しない。[実測と契約](evidence/20260910-windows-caveat-preflight.md)に従い、実端末受入でもこの状態を隠さない。
+
+工場コードは`4df3346`でmainへ保存・pushした。公開CIはMac/Linux成功、Windowsは通常CLI未導入で試験前に停止した。[公式CLIの通常導入](evidence/20260910-ci-codex-dependency.md)を行い、初回セットアップも修正した。CI専用の固定版追加は撤回した。公開CIを再確認する。
+
 以下は中断時点の記録であり、最新の製品受入結果とは区別する。
 
 LinuxのDocker保持とrunner再設定条件はfocused testで検証済み。Docker修理は別ベンダーの反証で受入可。

@@ -11,6 +11,8 @@ const SETUP = join(ROOT, 'bin', 'setup-windows-native-factory.ps1');
 
 test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・検証・2時schedulerを一入口に閉じる', async () => {
   const source = await readFile(SETUP, 'utf8');
+  const prerequisites = source.slice(source.indexOf('function Ensure-WindowsPrerequisites'), source.indexOf('function Convert-ToGitBashPath'));
+  assert.match(prerequisites, /Test-External -File 'codex'.*npm\.cmd'.*'install', '-g', '@openai\/codex@latest'.*Refresh-ProcessPath.*-File 'codex'.*'--version'/su);
   const main = source.slice(source.indexOf('try {\n  Normalize-WindowsReporterConfig'));
   const ordered = ['if (-not $ScheduledRun)', 'Remove-LegacyCron', 'dotagents-links: install.sh',
     'codex-config: apply-codex-config.sh', 'cursor-config: apply-cursor-config.sh',
