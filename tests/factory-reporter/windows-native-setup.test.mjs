@@ -92,7 +92,8 @@ test('Windows native一撃setupはWindows PowerShell 5.1を明示拒否する', 
   const windowsPowerShell = join(process.env.WINDIR ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
   const result = spawnSync(windowsPowerShell, ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', SETUP, '-PlanOnly'], { encoding: 'utf8' });
   assert.notEqual(result.status, 0);
-  assert.match(result.stderr, /PowerShell 7.*official GitHub release.*MSI.*machine scope/u);
+  // PowerShell 5.1のエラー表示は端末幅で語中にも改行を挿入する。
+  assert.match(result.stderr.replace(/\s+/gu, ''), /PowerShell7.*officialGitHubrelease.*MSI.*machinescope/u);
 });
 
 function passingProduct(checkIds) {
