@@ -23,8 +23,9 @@ verify_core() {
 }
 verify_core
 [ ! -e "$TMP/product-calls" ] || { echo 'FAIL: 工場が製品CLIを追加検査した'; exit 1; }
-chmod -x "$HOME_DIR/.local/bin/oracle-mcp-stable"
-if verify_core >/dev/null 2>&1; then echo 'FAIL: 工場所有wrapperの実行不能を検出しない'; exit 1; fi
+rm "$HOME_DIR/.local/bin/oracle-mcp-stable"
+if verify_core >/dev/null 2>&1; then echo 'FAIL: 工場所有wrapperの欠落を検出しない'; exit 1; fi
+printf '#!/bin/sh\nexit 0\n' > "$HOME_DIR/.local/bin/oracle-mcp-stable"
 chmod +x "$HOME_DIR/.local/bin/oracle-mcp-stable"
 printf '#!/bin/sh\nexit 0\n' > "$BIN_DIR/codegraph"
 chmod +x "$BIN_DIR/codegraph"

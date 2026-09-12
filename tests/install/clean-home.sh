@@ -17,6 +17,7 @@ TRANSACTION_CODEX_HOME="$(mktemp -d)"
 VERIFY_FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE"' EXIT
 PYTHON_BIN=python3
+case "$TEST_HOST_OS" in MINGW*|MSYS*|CYGWIN*) PYTHON_BIN=python ;; esac
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_link() {

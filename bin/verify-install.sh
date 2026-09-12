@@ -209,6 +209,8 @@ done
 windows_native=0
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) windows_native=1 ;; esac
 [ -n "${WINDIR:-}" ] && windows_native=1
+PYTHON_BIN=python3
+[ "$windows_native" -eq 1 ] && PYTHON_BIN=python
 grok_logged_in=0
 if [ -n "${XAI_API_KEY:-}" ] || [ -s "$HOME/.grok/auth.json" ]; then
   grok_logged_in=1
@@ -231,7 +233,7 @@ done
 grok_factory_hooks="$HOME/.grok/hooks/factory.json"
 if { [ "$windows_native" -ne 1 ] || [ "$grok_logged_in" -eq 1 ]; } \
   && { [ -f "$grok_factory_hooks" ] || [ -L "$grok_factory_hooks" ]; }; then
-  if ! python3 - "$grok_factory_hooks" "$REPO/lib/hook-command.py" <<'PY'
+  if ! "$PYTHON_BIN" - "$grok_factory_hooks" "$REPO/lib/hook-command.py" <<'PY'
 import importlib.util
 import json
 import os
@@ -289,7 +291,7 @@ if [ -f "$cursor_hooks" ] || [ -L "$cursor_hooks" ]; then
   if [ -L "$cursor_hooks" ]; then
     echo "FAIL: $cursor_hooks は symlink（実ファイルの工場hook面が正）"
     fail=1
-  elif ! python3 - "$cursor_hooks" <<'PY'
+  elif ! "$PYTHON_BIN" - "$cursor_hooks" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -332,11 +334,11 @@ if [ -x "$HOME/.local/bin/cursor-constitution-hook" ] && [ -e "$HOME/.cursor/rul
   const_probe="$(mktemp -d)"
   mkdir -p "$const_probe/rules"
   cp "$HOME/.cursor/rules/factory.mdc" "$const_probe/rules/factory.mdc"
-  const_out="$(CURSOR_HOME="$const_probe" "$HOME/.local/bin/cursor-constitution-hook" <<'EOF'
+  const_out="$(CURSOR_HOME="$const_probe" "$PYTHON_BIN" "$HOME/.local/bin/cursor-constitution-hook" <<'EOF'
 {"hook_event_name":"beforeSubmitPrompt","session_id":"verify-install","prompt":"x","cursor_version":"1.0.0"}
 EOF
 )" || true
-  if ! python3 - "$const_out" "$const_probe/rules/factory.mdc" <<'PY'
+  if ! "$PYTHON_BIN" - "$const_out" "$const_probe/rules/factory.mdc" <<'PY'
 import json
 import sys
 from pathlib import Path
@@ -377,7 +379,7 @@ PY
 fi
 grok_config="$HOME/.grok/config.toml"
 if [ "$grok_logged_in" -eq 1 ] && [ -f "$grok_config" ]; then
-  if ! python3 - "$grok_config" <<'PY'
+  if ! "$PYTHON_BIN" - "$grok_config" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -448,10 +450,10 @@ fi
 # namespace も既定 collaboration のまま schema を拡張すると backend の reserved-schema
 # 検証で拒否される組み合わせがあるため、全端末で agents へ明示移動する。
 codex_config="$HOME/.codex/config.toml"
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "FAIL: python3 不在（${codex_config} の agent routing 設定を検証できない）"
+if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
+  echo "FAIL: $PYTHON_BIN 不在（${codex_config} の agent routing 設定を検証できない）"
   fail=1
-elif ! python3 - "$codex_config" <<'PY'
+elif ! "$PYTHON_BIN" - "$codex_config" <<'PY'
 import re
 import sys
 from pathlib import Path
@@ -484,7 +486,7 @@ fi
 claude_settings="$HOME/.claude/settings.json"
 if [ ! -f "$claude_settings" ]; then
   echo "WARN ${claude_settings} 不在（Claude Code 未セットアップ端末）" >&2
-elif ! python3 - "$claude_settings" "$REPO/lib/hook-command.py" <<'PY'
+elif ! "$PYTHON_BIN" - "$claude_settings" "$REPO/lib/hook-command.py" <<'PY'
 import importlib.util
 import json
 import os
@@ -611,7 +613,7 @@ fi
 codex_hooks="$HOME/.codex/hooks.json"
 if [ ! -f "$codex_hooks" ]; then
   echo "WARN ${codex_hooks} 不在（Codex 未セットアップ端末）" >&2
-elif ! python3 - "$codex_hooks" <<'PY'
+elif ! "$PYTHON_BIN" - "$codex_hooks" <<'PY'
 import json
 import os
 import shlex
@@ -677,7 +679,7 @@ then
 fi
 
 # Orchestrate advisory はSessionStartへ一件だけの追加INFOであり、既存calloutとは別entryで保持する。
-if [ -f "$codex_hooks" ] && ! python3 - "$codex_hooks" <<'PY'
+if [ -f "$codex_hooks" ] && ! "$PYTHON_BIN" - "$codex_hooks" <<'PY'
 import json
 import os
 import shlex
@@ -709,7 +711,7 @@ then
 fi
 
 # Lattice工程表案内もSessionStartへ独立したcanonical entryで保持する。
-if [ -f "$codex_hooks" ] && ! python3 - "$codex_hooks" <<'PY'
+if [ -f "$codex_hooks" ] && ! "$PYTHON_BIN" - "$codex_hooks" <<'PY'
 import json
 import os
 import shlex
