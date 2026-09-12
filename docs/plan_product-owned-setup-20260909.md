@@ -12,6 +12,8 @@
 
 2026-09-12、実端末試験では、操作中の端末をAitermの永続PTYから直接操作し、別端末への接続だけにSSHを使うと明示した。自分自身へのSSH接続や、そのためのリモートログイン有効化は行わない。
 
+同日、オーナーはUNAIとThroughlineの更新失敗を担当確認で止めず、修理まで進めるよう指示した。親が各製品repoの原因修理・公開・実機確認を引き受け、読取り専用の原因調査を分担する。工場から製品状態を手補正する方式は使わない。
+
 ## 受入条件
 
 - 製品は必要な設定、hook、MCP登録、移行、OS差を所有し、正規入口の一回の呼出しで結果を返す。
@@ -27,8 +29,8 @@
 | Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | focused成功、main-serverでDocker稼働と公式Node隔離導入を確認。工場反映待ち |
 | runner | 既存runnerへの不要な再設定と403後の誤った継続を整理 | 変更が必要な場合だけ設定し、権限不足を元の原因として表示 | focused検証済み |
 | Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 製品公開記録を回収、工場切替済み。Windowsの既存hook拒否を保持 |
-| Throughline | 未導入時の更新順序を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | Linuxの初回・再実行・失敗のfocused試験済み |
-| unai | 工場の固定pathと詳細診断の重複を整理 | 公式installerの公開結果だけで判定 | 実装・focused成功、実端末待ち |
+| Throughline | 未導入時の順序とnpm 12の自己更新を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | 修正版公開、Mac・Windows・main-serverの更新と公開診断成功 |
+| unai | 工場の詳細診断の重複とWindowsの公式更新を修理 | 公式installerの公開結果だけで判定 | 修正版公開、Mac・Windows・main-serverの公式更新と4 AI診断成功 |
 | Aiterm | 製品所有の準備・MCP登録入口 | 対応OSと各AIで単体導入を検証 | 公開・npm導入・4 AI実設定・公開MCP実行確認済み、修正後3 OS CI成功 |
 | gpt-connector | 製品所有の一括setup入口 | 非Macの読取り機能を保ち、live機能のOS制約を明示 | 製品公開記録を回収、工場切替・partial判定のfocused成功 |
 | codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 製品公開記録を回収、工場切替済み |
@@ -61,7 +63,9 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 ## 現在地
 
-WindowsとMacへの公式セットアップを実行した。工場設定と更新予約は適用されたが、全体結果は失敗であり、4端末の統合は未完了。
+UNAIとThroughlineの更新失敗は各製品repoで修理し、公開版のMac・Windows・main-serverへの更新と公開診断が成功した。工場コードのMac・Linux・Windowsの公開CIと、4端末の通常報告配送も成功した。実測は[製品更新失敗の修理](evidence/20260912-product-update-repair.md)に記録する。
+
+全体セットアップは未完了。Macはgpt-connectorのブラウザー接続、Windowsは同製品のCodex登録で停止し、既存担当が修理中。Linux 2台はGitHub認証で停止した。rabbitは認証を保存して公式入口を再開済み、main-serverは保存された別アカウントとの不一致を確認し、正しいアカウントの正式ログインを準備した。以下は以前の時点の記録として読む。
 
 2026-09-12のMac直接実行では報告の配送が成功し、npm 12のJSON配列とAIShellの正常な公開診断を旧工場decoderが拒否する問題を再現した。npmの単一結果配列に対応し、AIShell・Throughline・Spotterの内部世代の許容一覧を除き、更新中の新版公開による誤失敗も修正した。個別11試験、cron環境試験、実際のnpm・AIShell単独probeと最終CIが成功し、別ベンダー反証は採用指摘0件だった。公開後の受入を継続中。Throughlineの自己更新失敗は製品担当の対応が必要。main-serverは再開時の公開済み工場コードへ更新済みで、正規セットアップはまだ実行していない。詳細は[Macの公開形式受入](evidence/20260912-macos-public-schema-acceptance.md)を参照する。
 
@@ -71,7 +75,7 @@ WindowsとMacへの公式セットアップを実行した。工場設定と更�
 
 2026-09-12の再開後、AIShell担当から認証廃止後の公式導入と4 AI登録、公開診断の成功を回収した。以前のKeychain認証待ちは解消し、製品入口の受入は完了した。記録は[AIShellの公式導入受入](evidence/20260912-aishell-official-setup-acceptance.md)を参照する。
 
-Windowsのunai公式更新は製品checkoutの行末差分で停止している。Git設定とcheckoutの改行形式の食い違いを確認し、改行以外の差分は観測していない。認証では解消しないため、工場から製品状態を変更せず担当範囲の回答を待つ。このMacはAitermから直接、別端末はSSHで正規入口を順次実行し、全4端末のfresh reportを確認する。Macのリモートログイン有効化は不要であり、設定は変更していない。以下の再開時記録は時点を区別して読む。
+UNAIはWindows installer内のGit改行設定を統一し、Throughlineはnpm 12の公開JSON形式に対応した。製品の設定・履歴を工場から補正せず、公式更新で正常になったことを確認した。このMacはAitermから直接、別端末はSSHで操作する。Macのリモートログイン設定は変更していない。
 
 2026-09-10、オーナーの開始指示により工場統合を再開した。今回の担当はdotagentsと工場所有の配置・設定・更新予約・報告・公式入口の実行だけとする。製品repoの修理・公開は各製品担当へ返す。製品未公開・依存待ち・未実施を統合完了へ丸めない。
 
