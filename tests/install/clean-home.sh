@@ -91,7 +91,7 @@ for factory_cli in throughline markitdown gpt-connector aiterm-mcp codex-sidecar
 done
 cat >"$FACTORY_TEST_BIN/caveat" <<'EOF'
 #!/usr/bin/env bash
-if [ "$#" -eq 2 ] && [ "$1" = factory-diagnostics ] && [ "$2" = --json ]; then
+if [ "$#" -eq 4 ] && [ "$1" = factory-diagnostics ] && [ "$2" = --json ] && [ "$3" = --require-connector ] && [ "$4" = cursor ]; then
   printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"ready"}}'
   exit 0
 fi

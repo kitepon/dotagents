@@ -266,7 +266,7 @@ fetch(url).then(async (response) => {
     fail=1
     return
   fi
-  (cd "$project_root" && caveat factory-diagnostics --json) >"$caveat_diagnostics" 2>/dev/null \
+  (cd "$project_root" && caveat factory-diagnostics --json --require-connector cursor) >"$caveat_diagnostics" 2>/dev/null \
     || caveat_diagnostics_exit=$?
   if ! python3 - "$caveat_diagnostics" "$caveat_diagnostics_exit" <<'PY'
 import json

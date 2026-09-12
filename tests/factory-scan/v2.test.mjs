@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { delimiter, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { projectGptConnectorFactory, scanV2, scanV2WithAcknowledgements, V2_PRODUCT_IDS } from '../../lib/factory/v2.mjs';
 import { validateReportV2 } from '../../lib/factory/contract.mjs';
 import { run as runCommand } from '../../lib/factory/command.mjs';
 import { writeCommandFixture } from './command-fixture.mjs';
+import { resolveWindowsPowerShell7 } from '../../lib/factory/windows-powershell.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 
@@ -205,9 +206,9 @@ test('v2 scannerは公開CLIとnative diagnosticsだけで固定12製品をfull 
   assert.ok(drift.products['claude-code'].checks.some((item) => item.check_id === 'required_hooks' && item.status === 'fail')); assert.ok(drift.products['codex-cli'].checks.some((item) => item.check_id === 'native_routing' && item.status === 'fail'));
 });
 
-test('Caveat native diagnosticsのnested不整合をcompatibleへ偽装しない', { concurrency: false }, async (t) => {
+test('Caveat native diagnosticsの未知状態をcompatibleへ偽装しない', { concurrency: false }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-v2-caveat-')); const bin = join(root, 'bin'); await mkdir(bin); t.after(() => rm(root, { recursive: true, force: true }));
-  await writeCommandFixture(bin, 'caveat', `echo '${JSON.stringify(caveatDiagnostic('not_ready', 'ready'))}'`);
+  await writeCommandFixture(bin, 'caveat', `echo '${JSON.stringify(caveatDiagnostic('unknown', 'ready'))}'`);
   for (const name of ['throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'codegraph', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await writeCommandFixture(bin, name, 'exit 1');
   const previous = process.env.PATH; process.env.PATH = `${bin}${delimiter}${previous}`; t.after(() => { process.env.PATH = previous; });
   const report = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform });
@@ -238,8 +239,15 @@ test('Grokの旧snake_case JSONはstableでも契約違反として拒否する'
 
 test('optionalなGrok未導入は現行profileの非対象として報告する', { concurrency: false }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-v2-grok-optional-missing-')); const bin = join(root, 'bin'); await mkdir(bin); t.after(() => rm(root, { recursive: true, force: true }));
-  await writeCommandFixture(bin, 'git', 'echo 0123456789abcdef0123456789abcdef01234567');
-  const previous = process.env.PATH; process.env.PATH = bin; t.after(() => { process.env.PATH = previous; });
+  if (process.platform === 'win32') {
+    await writeFile(join(bin, 'git.cmd'), '@echo off\r\necho 0123456789abcdef0123456789abcdef01234567\r\n');
+  } else {
+    await writeCommandFixture(bin, 'git', 'echo 0123456789abcdef0123456789abcdef01234567');
+  }
+  const isolatedPath = process.platform === 'win32'
+    ? [bin, dirname(resolveWindowsPowerShell7()), join(process.env.SystemRoot, 'System32')].join(delimiter)
+    : bin;
+  const previous = process.env.PATH; process.env.PATH = isolatedPath; t.after(() => { process.env.PATH = previous; });
   const report = await scanV2({ host: { id: 'test-host', profile: 'server' }, cwd: root, arch: 'x64', platform: 'linux', toolchainLedgerPath: join(root, 'missing-toolchain-ledger.json') });
   const product = report.products['grok-build'];
   assert.doesNotThrow(() => validateReportV2(report));

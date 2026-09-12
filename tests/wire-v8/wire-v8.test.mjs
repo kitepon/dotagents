@@ -122,11 +122,10 @@ test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影す�
   ]);
 });
 
-test('Windowsのunai診断はPowerShell 7から公開commandを解決する', async () => {
+test('unai診断は公開commandだけを共通の起動処理へ渡す', async () => {
   const calls = [];
   const installed = await unaiProduct({
-    cwd: 'C:\\work', now: NOW, platform: 'win32',
-    resolvePowerShell: () => 'C:\\Tools\\pwsh.exe',
+    cwd: 'C:\\work', now: NOW,
     runCommand: async (script, args, options) => {
       calls.push({ script, args, options });
       return { ok: true, code: 0, reason: null, stdout: JSON.stringify(readyDiagnostic()), stderr: '' };
@@ -134,9 +133,8 @@ test('Windowsのunai診断はPowerShell 7から公開commandを解決する', as
   });
   assert.equal(installed.presence_status, 'installed');
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].script, 'C:\\Tools\\pwsh.exe');
-  assert.match(calls[0].args.at(-1), /& unai factory-diagnostics --json/u);
-  assert.doesNotMatch(calls[0].args.at(-1), /\.local|unai\.ps1/u);
+  assert.equal(calls[0].script, 'unai');
+  assert.deepEqual(calls[0].args, ['factory-diagnostics', '--json']);
   assert.equal(calls[0].options.cwd, 'C:\\work');
 });
 

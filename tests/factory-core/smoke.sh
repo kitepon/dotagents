@@ -30,12 +30,12 @@ EOF
 done
 cat > "$BIN_DIR/caveat" <<'EOF'
 #!/bin/sh
-if [ "$#" -ne 2 ] || [ "$1" != factory-diagnostics ] || [ "$2" != --json ]; then
+if [ "$#" -ne 4 ] || [ "$1" != factory-diagnostics ] || [ "$2" != --json ] || [ "$3" != --require-connector ] || [ "$4" != cursor ]; then
   exit 64
 fi
 if [ -n "${CAVEAT_DIAGNOSTICS_CALL_LOG:-}" ]; then
   [ ! -s "$CAVEAT_DIAGNOSTICS_CALL_LOG" ] || exit 65
-  printf 'factory-diagnostics --json\n' > "$CAVEAT_DIAGNOSTICS_CALL_LOG"
+  printf 'factory-diagnostics --json --require-connector cursor\n' > "$CAVEAT_DIAGNOSTICS_CALL_LOG"
 fi
 case "${CAVEAT_DIAGNOSTICS_MODE:-valid}" in
   valid)

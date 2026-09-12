@@ -4,12 +4,13 @@ import {
   chmod, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { delimiter, join, posix, resolve, win32 } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { test } from 'node:test';
-import { resolveWindowsCommand, run as runCommand } from '../../lib/factory/command.mjs';
+import { run as runCommand } from '../../lib/factory/command.mjs';
 import { validateReport } from '../../lib/factory/contract.mjs';
 import { writeCommandFixture } from './command-fixture.mjs';
+import { resolveWindowsPowerShell7 } from '../../lib/factory/windows-powershell.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const CLI = join(ROOT, 'bin', 'factory-scan.mjs');
@@ -17,7 +18,6 @@ const COMMANDS = [
   'caveat', 'throughline', 'spotter', 'aiterm-mcp',
   'codex-sidecar', 'codegraph', 'markitdown', 'oracle',
 ];
-const WINDOWS_FIXTURE_PATH = process.platform === 'win32' ? win32 : { ...posix, delimiter: ';' };
 
 function validConfig(overrides = {}) {
   return {
@@ -255,8 +255,8 @@ test('Caveat native diagnosticsのschema drift・追加field・path漏洩をrepo
     ['schema', (value) => { value.schema = 'caveat.native_factory_diagnostics.v2'; }],
     ['additional_field', (value) => { value.path = '/Users/kite/private'; }],
     ['nested_path', (value) => { value.connectors.claude.mcp.path = '/Users/kite/private'; }],
-    ['aggregate_mismatch', (value) => { value.connectors.codex.hooks.stop.status = 'not_ready'; }],
-    ['database_ready_mismatch', (value) => { value.database.schema_version = 2; }],
+    ['unknown_status', (value) => { value.connectors.codex.hooks.stop.status = 'unknown'; }],
+    ['database_schema_type', (value) => { value.database.schema_version = '3'; }],
   ]) {
     const box = await sandbox(t);
     await installHealthyCommands(box);
@@ -276,9 +276,16 @@ test('Caveat CLI不在は壊れた診断出力と区別してmissingへ写像す
   const box = await sandbox(t);
   await installHealthyCommands(box);
   await rm(join(box.bin, process.platform === 'win32' ? 'caveat.cmd' : 'caveat'));
-  await box.script('git', "echo '1234567'");
+  if (process.platform === 'win32') {
+    await writeFile(join(box.bin, 'git.cmd'), '@echo off\r\necho 1234567\r\n');
+  } else {
+    await box.script('git', "echo '1234567'");
+  }
   await writeFile(box.config, JSON.stringify(validConfig()));
-  const result = await runScanner(box, { PATH: box.bin });
+  const isolatedPath = process.platform === 'win32'
+    ? [box.bin, dirname(resolveWindowsPowerShell7()), join(process.env.SystemRoot, 'System32')].join(delimiter)
+    : box.bin;
+  const result = await runScanner(box, { PATH: isolatedPath });
   assert.equal(result.code, 0, result.stderr);
   const caveat = JSON.parse(await readFile(box.output, 'utf8')).products.caveat;
   assert.equal(caveat.presence_status, 'missing');
@@ -492,20 +499,19 @@ test('command出力上限とtimeoutは固定reasonで失敗し、生出力を返
   const childPidFile = join(box.root, 'child.pid');
   const env = { ...process.env, PATH: `${box.bin}${delimiter}${process.env.PATH}` };
   let lateCommand = 'late';
-  let lateEnv = env;
+  let lateArgs = [];
   if (process.platform === 'win32') {
-    const native = await windowsCommandFixture(t);
+    const entry = join(box.root, 'late-tree.mjs');
     const childCode = `require('node:fs').writeFileSync(${JSON.stringify(childPidFile)}, String(process.pid)); process.stdout.write('ready'); setInterval(() => {}, 1000);`;
-    await native.entry('late-tree.js', `import { spawn } from 'node:child_process';
+    await writeFile(entry, `import { spawn } from 'node:child_process';
 const child = spawn(process.execPath, ['-e', ${JSON.stringify(childCode)}], { stdio: ['ignore', 'pipe', 'ignore'] });
 child.stdout.once('data', () => {
   process.stdout.write('x'.repeat(4096));
   setInterval(() => {}, 1000);
 });
 `);
-    await native.cmd('late-tree', 'node_modules\\safe-package\\bin\\late-tree.js');
-    lateCommand = 'late-tree';
-    lateEnv = native.env;
+    lateCommand = process.execPath;
+    lateArgs = [entry];
   } else {
     await box.script('late', `sleep 60 & child=$!; echo "$child" > '${childPidFile}'; while :; do echo x; done`);
   }
@@ -518,7 +524,7 @@ child.stdout.once('data', () => {
   assert.deepEqual({ reason: slow.reason, stdout: slow.stdout, stderr: slow.stderr }, {
     reason: 'timeout', stdout: '', stderr: '',
   });
-  const late = await runCommand(lateCommand, [], { env: lateEnv, maxOutputBytes: 128, timeoutMs: 5000 });
+  const late = await runCommand(lateCommand, lateArgs, { env, maxOutputBytes: 128, timeoutMs: 5000 });
   assert.equal(late.reason, 'output_limit');
   const childPid = Number.parseInt(await readFile(childPidFile, 'utf8'), 10);
   assert.ok(Number.isSafeInteger(childPid) && childPid > 0);
@@ -530,187 +536,6 @@ child.stdout.once('data', () => {
   }
 });
 
-async function windowsCommandFixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'factory-windows-command-'));
-  const bin = join(root, 'bin with space');
-  await mkdir(bin, { recursive: true });
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const npmShim = (entry, { elsePathext = true, pathext = '%PATHEXT:;.JS;=;%', programIndent = ' ' } = {}) => `@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n\r\nIF EXIST "%dp0%\\node.exe" (\r\n${programIndent}SET "_prog=%dp0%\\node.exe"\r\n) ELSE (\r\n${programIndent}SET "_prog=node"\r\n${elsePathext ? `  SET PATHEXT=${pathext}\r\n` : ''})\r\n\r\nendLocal & goto #_undefined_# 2>NUL || title %COMSPEC% & ${elsePathext ? '' : 'set PATHEXT=%PATHEXT:;.JS;=;% & '}"%_prog%"  "%dp0%\\${entry}" %*\r\n`;
-  return {
-    root, bin,
-    env: { Path: bin, PathExt: '.CMD;.EXE' },
-    async entry(name, body) {
-      const file = join(bin, 'node_modules', 'safe-package', 'bin', name);
-      await mkdir(resolve(file, '..'), { recursive: true });
-      await writeFile(file, body);
-      return file;
-    },
-    async cmd(name, entry, options) {
-      const file = join(bin, `${name}.cmd`);
-      await writeFile(file, npmShim(entry, options));
-      return file;
-    },
-  };
-}
-
-test('Windows npm .cmd実物variantは空白を含むPathから検証済みNode entrypointへ解決する', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const entry = await box.entry('safe.js', 'process.exit(0);\n');
-  await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js', { programIndent: '  ' });
-  const resolved = await resolveWindowsCommand('safe-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
-});
-
-test('Windows npm .cmdはAppContainerのrealpath仮想化後もshim字面のentrypointで起動する', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const entry = await box.entry('safe.js', 'process.exit(0);\n');
-  await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
-  const canonicalBin = await realpath(box.bin);
-  const canonicalEntry = await realpath(entry);
-  const redirectedBin = join(box.root, 'app-container-cache');
-  const redirectedEntry = join(redirectedBin, 'node_modules', 'safe-package', 'bin', 'safe.js');
-  const virtualizingFs = {
-    lstat: (path) => import('node:fs/promises').then((fs) => fs.lstat(path)),
-    readFile: (path, encoding) => readFile(path, encoding),
-    async realpath(path) {
-      const canonical = await realpath(path);
-      if (canonical === canonicalBin) return redirectedBin;
-      if (canonical === canonicalEntry) return redirectedEntry;
-      return canonical;
-    },
-  };
-  const resolved = await resolveWindowsCommand('safe-cli', { env: box.env, fs: virtualizingFs, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
-});
-
-test('Windows npm AppContainer仮想化時は子CLIのPATHも同一の検証済みnpm cacheへ揃える', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'factory-windows-appcontainer-run-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const bin = join(root, 'AppData', 'Roaming', 'npm');
-  const entry = join(bin, 'node_modules', 'safe-package', 'bin', 'safe.js');
-  const virtualNpm = join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm');
-  await mkdir(resolve(entry, '..'), { recursive: true });
-  await writeFile(entry, 'process.stdout.write(process.env.PATH);\n');
-  const helper = join(root, 'success-helper.mjs');
-  await writeFile(helper, `process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ status: 'ok', command: ${JSON.stringify(process.execPath)}, prefixArgs: [${JSON.stringify(entry)}], pathPrefix: ${JSON.stringify(virtualNpm)} })));\n`);
-  const result = await runCommand('safe-cli', [], { env: { Path: bin, PathExt: '.CMD;.EXE' }, platform: 'win32', windowsPathModule: WINDOWS_FIXTURE_PATH, windowsHelperPath: helper });
-  assert.equal(result.ok, true, result.stderr);
-  assert.equal(result.stdout, `${virtualNpm};${bin}`);
-});
-
-test('Windows npm .cmdはentrypointだけがCodex AppContainerへ仮想化されても同一suffixを検証する', async (t) => {
-  const root = await mkdtemp(join(tmpdir(), 'factory-windows-appcontainer-'));
-  t.after(() => rm(root, { recursive: true, force: true }));
-  const bin = join(root, 'AppData', 'Roaming', 'npm');
-  const entry = join(bin, 'node_modules', 'safe-package', 'bin', 'safe.js');
-  await mkdir(resolve(entry, '..'), { recursive: true });
-  await writeFile(entry, 'process.exit(0);\n');
-  const fixture = await windowsCommandFixture(t);
-  const fixtureCmd = await fixture.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
-  await writeFile(join(bin, 'safe-cli.cmd'), await readFile(fixtureCmd, 'utf8'));
-  const canonicalEntry = await realpath(entry);
-  const redirectedEntry = join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm', 'node_modules', 'safe-package', 'bin', 'safe.js');
-  const virtualizingFs = {
-    lstat: (path) => import('node:fs/promises').then((fs) => fs.lstat(path)),
-    readFile: (path, encoding) => readFile(path, encoding),
-    async realpath(path) {
-      const canonical = await realpath(path);
-      return canonical === canonicalEntry ? redirectedEntry : canonical;
-    },
-  };
-  const resolved = await resolveWindowsCommand('safe-cli', { env: { Path: bin, PathExt: '.CMD;.EXE' }, fs: virtualizingFs, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry], pathPrefix: join(root, 'AppData', 'Local', 'Packages', 'OpenAI.Codex_test123', 'LocalCache', 'Roaming', 'npm') });
-});
-
-test('Windows .exeはPATHEXT順で直接起動し、npm .cmdへはcmd.exeを介在させない', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const executable = join(box.bin, 'native.exe');
-  await writeFile(executable, 'placeholder');
-  const resolved = await resolveWindowsCommand('native', { env: { ...box.env, PathExt: '.EXE;.CMD' }, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: executable, prefixArgs: [] });
-});
-
-test('Windows npm native .cmdはnode_modules内の固定exeだけをshell非介在で起動する', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const executable = await box.entry('native.exe', 'placeholder');
-  await writeFile(join(box.bin, 'native-cli.cmd'), '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n"%dp0%\\node_modules\\safe-package\\bin\\native.exe"   %*\r\n');
-  const resolved = await resolveWindowsCommand('native-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: executable, prefixArgs: [] });
-  await writeFile(join(box.bin, 'native-cli.cmd'), '@ECHO off\r\nGOTO start\r\n:find_dp0\r\nSET dp0=%~dp0\r\nEXIT /b\r\n:start\r\nSETLOCAL\r\nCALL :find_dp0\r\n"%dp0%\\..\\outside.exe" %*\r\n');
-  await assert.rejects(resolveWindowsCommand('native-cli', { env: box.env, pathModule: WINDOWS_FIXTURE_PATH }), { code: 'EINVAL' });
-});
-
-test('Windows command解決はPATHEXT先頭の許可外ps1を実行せず検証済みnpm cmdへ進む', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const entry = await box.entry('safe.js', 'process.exit(0);\n');
-  await writeFile(join(box.bin, 'safe-cli.ps1'), 'throw "must not run"\n');
-  await box.cmd('safe-cli', 'node_modules\\safe-package\\bin\\safe.js');
-  const resolved = await resolveWindowsCommand('safe-cli', { env: { ...box.env, PathExt: '.PS1;.CMD;.EXE' }, pathModule: WINDOWS_FIXTURE_PATH });
-  assert.deepEqual(resolved, { command: process.execPath, prefixArgs: [entry] });
-});
-
-test('Windows npm .cmdはstdin・cwd・envを保ってNodeで実行する', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const entry = await box.entry('runner.js', "let input = ''; process.stdin.on('data', (chunk) => { input += chunk; }); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ input, cwd: process.cwd(), marker: process.env.FACTORY_MARKER })));\n");
-  await box.cmd('runner', 'node_modules\\safe-package\\bin\\runner.js');
-  const helper = join(box.root, 'success-helper.mjs');
-  await writeFile(helper, `process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ status: 'ok', command: ${JSON.stringify(process.execPath)}, prefixArgs: [${JSON.stringify(entry)}] })));\n`);
-  const result = await runCommand('runner', [], { cwd: box.root, env: { ...box.env, FACTORY_MARKER: 'kept' }, input: 'stdin-kept', platform: 'win32', windowsPathModule: WINDOWS_FIXTURE_PATH, windowsHelperPath: helper });
-  assert.equal(result.ok, true, result.stderr);
-  const output = JSON.parse(result.stdout);
-  assert.deepEqual({ ...output, cwd: output.cwd.toLowerCase() }, { input: 'stdin-kept', cwd: (await realpath(box.root)).toLowerCase(), marker: 'kept' });
-});
-
-test('Windows command helperの解決もrun開始時からtimeoutへ含め、timeout後にlate spawnしない', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const marker = join(box.root, 'late-spawned');
-  const helper = join(box.root, 'hanging-helper.mjs');
-  await writeFile(helper, `import { writeFile } from 'node:fs/promises'; await new Promise((resolveDelay) => setTimeout(resolveDelay, 80)); await writeFile(${JSON.stringify(marker)}, 'late');\n`);
-  const result = await runCommand('late', [], {
-    env: box.env,
-    platform: 'win32',
-    timeoutMs: 10,
-    windowsHelperPath: helper,
-  });
-  assert.deepEqual({ reason: result.reason, stdout: result.stdout, stderr: result.stderr }, { reason: 'timeout', stdout: '', stderr: '' });
-  await new Promise((resolveDelay) => setTimeout(resolveDelay, 120));
-  await assert.rejects(readFile(marker), { code: 'ENOENT' });
-});
-
-test('Windows command helperの返却schemaとentrypointは親でも検証し、不正値を実行しない', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const marker = join(box.root, 'unexpected-spawn');
-  const helper = join(box.root, 'invalid-helper.mjs');
-  await writeFile(helper, `process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ command: ${JSON.stringify(process.execPath)}, prefixArgs: [${JSON.stringify(join(box.root, 'outside.js'))}] })));\n`);
-  const result = await runCommand('invalid', [], { env: box.env, platform: 'win32', windowsHelperPath: helper, windowsPathModule: { ...posix, delimiter: ';' } });
-  assert.equal(result.reason, 'spawn');
-  await assert.rejects(readFile(marker), { code: 'ENOENT' });
-});
-
-test('Windows command helperはCLI不在のENOENTだけを閉じたerror schemaで親へ返す', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const result = await runCommand('missing', [], { env: { Path: 'C:\\dotagents-command-missing', PathExt: '.CMD;.EXE' }, platform: 'win32' });
-  assert.equal(result.reason, 'spawn');
-  assert.equal(result.error?.code, 'ENOENT');
-  const invalid = join(box.root, 'unknown-error-helper.mjs');
-  await writeFile(invalid, "process.stdin.resume(); process.stdin.on('end', () => process.stdout.write(JSON.stringify({ status: 'error', code: 'ESECRET' })));\n");
-  const rejected = await runCommand('unknown', [], { env: box.env, platform: 'win32', windowsHelperPath: invalid, windowsPathModule: { ...posix, delimiter: ';' } });
-  assert.equal(rejected.reason, 'spawn');
-  assert.equal(rejected.error?.code, 'EINVAL');
-});
-
-test('Windows command解決は悪意あるshim・traversal・dynamic command pathをfail-loudする', async (t) => {
-  const box = await windowsCommandFixture(t);
-  const marker = join(box.root, 'executed');
-  await writeFile(join(box.bin, 'evil.cmd'), `@ECHO off\nGOTO start\n:find_dp0\nSET dp0=%~dp0\nEXIT /b\n:start\nSETLOCAL\nCALL :find_dp0\n\n"%dp0%\\node.exe"  "%dp0%\\node_modules\\safe-package\\bin\\safe.js" %* & echo owned > "${marker}"\n`);
-  await assert.rejects(resolveWindowsCommand('evil', { env: box.env, pathModule: { ...posix, delimiter: ';' } }), { code: 'EINVAL' });
-  await assert.rejects(readFile(marker), { code: 'ENOENT' });
-  await box.cmd('traversal', 'node_modules\\safe-package\\bin\\..\\..\\..\\escape.js');
-  await assert.rejects(resolveWindowsCommand('traversal', { env: box.env, pathModule: { ...posix, delimiter: ';' } }), { code: 'EINVAL' });
-  await assert.rejects(resolveWindowsCommand('..\\evil', { env: box.env, pathModule: { ...posix, delimiter: ';' } }), { code: 'EINVAL' });
-  await box.cmd('bad-pathext', 'node_modules\\safe-package\\bin\\safe.js', { pathext: '%PATH%' });
-  await assert.rejects(resolveWindowsCommand('bad-pathext', { env: box.env, pathModule: { ...posix, delimiter: ';' } }), { code: 'EINVAL' });
-});
 
 test('rename失敗時に一時reportを残さない', async (t) => {
   const box = await sandbox(t);
