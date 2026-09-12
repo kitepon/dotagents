@@ -41,6 +41,7 @@
 | Peertable | skill導入入口、Aiterm内部namespace・multiplexer依存を公開APIへ整理 | 製品所有setup、OS別runtime focused test | 公開・単体受入記録と4端末の公式入口実行を確認 |
 | 工場共通 | 製品MCPの直接編集・OS別補完を除去 | 製品公開版の導入成功後に切替、4 AIの既存機能を確認 | 追加の製品検査・再判定を撤去。4端末の配置・配送、Windows予約実行と公開CIを受入 |
 | 更新と待機 | 初回・定期更新の順序、重複した全件診断、全setup再試行を整理。工程・経過時間・待機理由を表示 | 処理回数と所要時間を計測し、頻度を変えず受入 | 重複scan除去・予約分離・製品入口の経過表示を実装。実機と予約実行を確認、頻度を維持 |
+| Windowsのnpmファイルロック | 公式更新で発生した`codex-sidecar.ps1`のEBUSYを調査 | 原因を実測で特定し、責務を持つ所有者で必要な修理と確認を行う | 未完了。公式更新と予約実行は復旧したが、ロック保持者は未特定 |
 | ServerManager/BugHub | 新着だけの通知、配送状態の永続化、退役hostと履歴版表示を修理 | 所有repoの既存計画、配備入口、公開後smokeで受入 | 本番反映記録と4端末のfresh reportを回収。公開WebUIを確認 |
 
 Spotterは既存project単位の入口を保持する。実測したMCP接続設定、Windows権限設定、評価DB同時初期化の不具合はSpotterで修理し公開済み。正常な公開結果を工場の固定形式・独自判定で拒否していた問題はdotagentsで修理し、4端末へ反映した。
@@ -65,9 +66,13 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 ## 現在地
 
-2026-09-13、受入完了。製品の不具合は各製品repoで修理・公開し、工場が公開結果を再判定する処理はdotagentsから撤去した。4端末の公式更新と報告配送、Windowsの登録済み更新タスク、3 OSの公開CIが成功した。
+2026-09-13、オーナーの指摘により「残作業なし」という完了報告を訂正した。Windowsのnpmファイルロックは復旧済みでも原因が未特定であり、原因調査と必要な修理が残るため、本依頼全体は未完了とする。
 
-[4端末の受入記録](evidence/20260913-product-owned-four-host-acceptance.md)に製品の修理先、公開版、各端末の配送receipt、実機で見つかったWindowsの工場不具合、公開WebUIとCIの結果をまとめた。npmの一度のファイルロックは公式更新と登録タスクの再実行で復旧し、保持者は未特定として記録した。製品コードや工場の例外処理で補正していない。
+製品の修理・公開と、工場が公開結果を再判定する処理の撤去は完了した。4端末の公式更新と報告配送、Windowsの登録済み更新タスク、3 OSの公開CIも成功した。これらの完了実績と、ファイルロックの原因調査の残件を区別する。
+
+[4端末の受入記録](evidence/20260913-product-owned-four-host-acceptance.md)には当時の製品の修理先、公開版、各端末の配送receipt、実機で見つかったWindowsの工場不具合、公開WebUIとCIの結果を保持する。同記録の全体完了判定は本節で訂正する。npmの一度のファイルロックは公式更新と登録タスクの再実行で復旧したが、保持者を特定した記録ではない。製品コードや工場の例外処理で補正していない。
+
+[ファイルロックの残件調査](evidence/20260913-windows-npm-lock-investigation.md)では、当時のWindows CIとの同時実行と、関連試験のコマンド探索が実環境のスクリプトを読むことを確認した。短い再現試験ではEBUSYは再現せず、元の保持者の特定と必要な修理は未完了のままである。
 
 途中の記録は[工場統合の途中記録](evidence/20260910-product-owned-integration-progress.md)、[Windows報告の受入](evidence/20260912-windows-public-report-acceptance.md)、[Mac公開形式の受入](evidence/20260912-macos-public-schema-acceptance.md)、[AIShell公式導入](evidence/20260912-aishell-official-setup-acceptance.md)、[UNAI・Throughlineの修理](evidence/20260912-product-update-repair.md)、[工場の再判定撤去](evidence/20260913-product-result-ownership.md)を参照する。
 
