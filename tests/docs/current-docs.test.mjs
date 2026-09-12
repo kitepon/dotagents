@@ -1422,8 +1422,8 @@ test('一般policyはLattice hookの対応hostと内部契約を再掲しない'
   const readme = await readFile(join(ROOT, 'README.md'), 'utf8');
   assert.match(readme, /`lattice setup --host all --json`へ委譲/u);
   assert.doesNotMatch(readme, /^lattice hooks install --host cursor$/mu);
-  assert.match(readme, /Caveat \/ Spotterの公開diagnostics、Latticeの公開hook status/u);
-  assert.match(readme, /fresh factory reporterとdelivery/u);
+  assert.match(readme, /製品の導入・MCP登録・製品hook・診断の合否は各製品の公式入口が所有する/u);
+  assert.match(readme, /工場自身の更新予約とfresh reportの配送/u);
   assert.doesNotMatch(readme, /各製品の公開diagnosticsが示す配線結果/u);
   assert.match(readme, /上記4つの工場設定applierの `--apply`/u);
 });

@@ -18,7 +18,7 @@ function diagnostic(withCursor = true) {
   };
 }
 
-test('Caveatの公開済み新旧v1を受理し、未知fieldは拒否する', () => {
+test('Caveatの公開結果だけを読み、未使用fieldを検査・転送しない', () => {
   for (const withCursor of [false, true]) {
     assert.deepEqual(parseCaveatDiagnostic(diagnostic(withCursor)), {
       overall: 'ready', version: '0.19.1', state: '3', migration: 'current',
@@ -26,7 +26,8 @@ test('Caveatの公開済み新旧v1を受理し、未知fieldは拒否する', (
   }
   const unknown = diagnostic();
   unknown.connectors.cursor.private_path = '/private';
-  assert.throws(() => parseCaveatDiagnostic(unknown), /native_diagnostics_schema/u);
+  assert.equal(parseCaveatDiagnostic(unknown).overall, 'ready');
+  assert.ok(!JSON.stringify(parseCaveatDiagnostic(unknown)).includes('/private'));
 });
 
 test('Caveatの既定・Cursor必須の合否を工場で再集約しない', () => {
@@ -42,8 +43,8 @@ test('Caveatの既定・Cursor必須の合否を工場で再集約しない', ()
 
 test('Caveatの未知状態と型違いを成功へ変換しない', () => {
   for (const mutate of [
-    (value) => { value.connectors.cursor.compatibility_status = 'unknown'; },
-    (value) => { value.connectors.cursor.hooks.stop.status = 'unknown'; },
+    (value) => { value.overall.status = 'unknown'; },
+    (value) => { value.database.migration_status = 'unknown'; },
     (value) => { value.database.schema_version = '3'; },
     (value) => { value.version = null; },
   ]) {

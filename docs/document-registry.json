@@ -471,8 +471,8 @@
       "expected_role": "integration",
       "exact_sha256_by_path": {
         "docs/factory-host-product-matrix.md": "02c2b08fcb9944fe0679cab3e071df0d62a79611ef7fad417c584e068a0232fb",
-        "docs/factory-product-contracts.md": "0a97e156a79e303432e2b0195761b53bd03b2387787b6ceb40d602131efb20cb",
-        "docs/factory-reporter-runbook.md": "52a1a9cfceecb810cff22abba893e0ec68eb7cf763d88555e3c8081db8b7c9c1",
+        "docs/factory-product-contracts.md": "ab6756e1b45f703226ffd4f2bd58e47a8b1c52700a0f86aa8e03e6a7a0afc6a0",
+        "docs/factory-reporter-runbook.md": "a9cdb09609baff912b3a45e00a96439d01de0c1062a2638275acdb25afa17754",
         "docs/wire-v8-design.md": "8ff770ea5d16a4aca1be15f4c3be725789e0f6af67d74a00c029d16d4cc15082",
         "shared/runbooks/factory-ci.md": "13f93ae646f73edba28f44ec385eab26249f83f6eb82b69d25f9a256a9af97ca"
       },

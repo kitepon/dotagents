@@ -80,7 +80,7 @@ process.stdout.write(`${report.report_id}\n`);
 NODE
 }
 
-validate_factory_products() {
+validate_factory_report() {
   local major="$1"
   node --input-type=module - \
     "$ROOT/lib/factory/deployment-contract.mjs" \
@@ -88,7 +88,7 @@ validate_factory_products() {
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const [contractPath, reportPath, majorText] = process.argv.slice(2);
-const { CURRENT_WIRE_PRODUCT_IDS, hostProjection, postUpdateFailures } =
+const { CURRENT_WIRE_PRODUCT_IDS } =
   await import(pathToFileURL(contractPath).href);
 const report = JSON.parse(readFileSync(reportPath, 'utf8'));
 const facts = {
@@ -105,32 +105,13 @@ const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
   throw new Error('factory reportが固定15製品をすべて含まない');
 }
-const projection = hostProjection(facts);
-const failures = postUpdateFailures(report, facts, { postUpdate: false });
-for (const [id, expectation] of Object.entries(projection.expected)) {
-  const product = report.products[id];
-  if (expectation === 'unsupported'
-    && (product.presence_status !== 'not_applicable' || product.compatibility_status !== 'unsupported')) {
-    failures.push(`${id}:unsupported_projection`);
-  }
-  if (expectation === 'not_applicable' && product.presence_status !== 'not_applicable') {
-    failures.push(`${id}:not_applicable_projection`);
-  }
-}
-const grok = report.products['grok-build'];
-if (!['installed', 'not_applicable'].includes(grok.presence_status)
-  || grok.compatibility_status === 'incompatible'
-  || grok.checks.some((item) => item.status === 'fail')) {
-  failures.push('grok-build:optional_health');
-}
-if (failures.length) throw new Error(`factory product verification failed: ${failures.join(',')}`);
 process.stdout.write(String(actualIds.length));
 NODE
 }
 
 run_factory_update() {
   validate_report_config
-  local prior_report_id batch_token report_id checked_products major
+  local prior_report_id batch_token report_id reported_products major
   prior_report_id="$(fresh_report_id)"
   batch_token="$(new_batch_token)"
   major="$(macos_major)"
@@ -143,10 +124,10 @@ run_factory_update() {
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
     || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
-  checked_products="$(validate_factory_products "$major")" \
-    || die 'factory全製品の正規診断が受入条件を満たさない'
-  printf '{"ok":true,"mode":"macos-setup","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_checked":%s}\n' \
-    "$batch_token" "$report_id" "$checked_products"
+  reported_products="$(validate_factory_report "$major")" \
+    || die 'factory reportの製品一覧を記録できない'
+  printf '{"ok":true,"mode":"macos-setup","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_reported":%s}\n' \
+    "$batch_token" "$report_id" "$reported_products"
 }
 
 backup_managed_config() {
@@ -160,7 +141,7 @@ backup_managed_config() {
   local backup_dir="$HOME/Archives"
   local backup_file
   mkdir -p "$backup_dir"
-  backup_file="$(mktemp "$backup_dir/dotagents-pre-macos-setup-$(date +%Y%m%d-%H%M%S)-XXXXXX.tar.gz")"
+  backup_file="$(mktemp "$backup_dir/dotagents-pre-macos-setup-$(date +%Y%m%d-%H%M%S).tar.gz.XXXXXX")"
   tar -czf "$backup_file" -C "$HOME" "${paths[@]}"
 }
 
@@ -239,7 +220,7 @@ PY
   fi
   if [ -f "$LAUNCH_AGENT_PLIST" ]; then
     mkdir -p "$HOME/Archives"
-    backup="$(mktemp "$HOME/Archives/$LAUNCH_AGENT_LABEL-pre-macos-setup-$(date +%Y%m%d-%H%M%S)-XXXXXX.plist")"
+    backup="$(mktemp "$HOME/Archives/$LAUNCH_AGENT_LABEL-pre-macos-setup-$(date +%Y%m%d-%H%M%S).plist.XXXXXX")"
     cp "$LAUNCH_AGENT_PLIST" "$backup"
   fi
   if [ "$was_loaded" -eq 1 ]; then

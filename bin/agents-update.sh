@@ -45,7 +45,7 @@ case "$runtime_os" in
 esac
 mkdir -p "$LOG_DIR"
 LOG="$LOG_DIR/agents-update.log"
-# post-update gateのrunnerは、hostの実configが指すwire majorへ追従させる（env明示が最優先）。
+# 更新報告のrunnerは、hostの実configが指すwire majorへ追従させる（env明示が最優先）。
 # 固定既定にするとhost別段階cutover中のhostでrunnerとendpointのmajorが食い違う
 # （2026-08-10実測: mac-kiteをv7へcutover後、v6固定既定のままだとflushがendpoint不一致で落ちる）。
 # configが無い・endpointが読めない場合は現役v8 runnerを選ぶ。runner側はconfig欠落を
@@ -329,7 +329,7 @@ fi
     if ! spotter install -y; then update_failed=1; fi
   fi
 
-  printf -- '--- factory-reporter:post-update-contract ---\n'
+  printf -- '--- factory-reporter:prepare-update-report ---\n'
   post_report_id=''
   if [[ ! -x "$FACTORY_REPORTER_RUNNER" ]]; then
     printf 'FAILED: factory reporter runner が実行できない: %s\n' "$FACTORY_REPORTER_RUNNER"
@@ -349,7 +349,7 @@ fi
         process.exit(1);
       ' || true)"
     if [[ "$reporter_rc" -ne 0 || "$post_gate" != success ]]; then
-      printf 'FAILED: factory reporter の更新後contract gate\n'
+      printf 'FAILED: factory reporter の更新報告準備\n'
       post_gate=failed
       report_failed=1
     fi
@@ -361,7 +361,7 @@ fi
   record_toolchain codex-cli "$codex_before" "$codex_latest" "$codex_operation" "$codex_after" "$post_gate" "$codex_reason" || { update_failed=1; final_record_failed=1; }
   record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" "$post_gate" "$grok_reason" || { update_failed=1; final_record_failed=1; }
 
-  # gate結果を台帳へ確定した後に、最終bytesを再投影して送る。pending状態はBugHubへ送らない。
+  # 更新結果を台帳へ確定した後に、最終bytesを再投影して送る。pending状態はBugHubへ送らない。
   if [[ "$final_record_failed" -ne 0 ]]; then
     printf 'FAILED: factory reporter の最終台帳を確定できないため送信しません\n'
     report_failed=1

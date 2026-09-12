@@ -208,7 +208,7 @@ test('v2 scannerは公開CLIとnative diagnosticsだけで固定12製品をfull 
 
 test('Caveat native diagnosticsの未知状態をcompatibleへ偽装しない', { concurrency: false }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-v2-caveat-')); const bin = join(root, 'bin'); await mkdir(bin); t.after(() => rm(root, { recursive: true, force: true }));
-  await writeCommandFixture(bin, 'caveat', `echo '${JSON.stringify(caveatDiagnostic('unknown', 'ready'))}'`);
+  await writeCommandFixture(bin, 'caveat', `echo '${JSON.stringify(caveatDiagnostic('ready', 'unknown'))}'`);
   for (const name of ['throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'codegraph', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await writeCommandFixture(bin, name, 'exit 1');
   const previous = process.env.PATH; process.env.PATH = `${bin}${delimiter}${previous}`; t.after(() => { process.env.PATH = previous; });
   const report = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform });

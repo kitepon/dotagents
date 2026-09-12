@@ -52,7 +52,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /lib\\factory\\windows-native-product-smoke\.mjs/u);
-  assert.match(source, /checked_products -ne 15/u);
+  assert.match(source, /reported_products -ne 15/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
   assert.match(source, /function Set-OwnerOnlyAcl.*existingOwnerSid.*DirectorySecurity.*FileSecurity.*existingOwnerSid -ne \$sid\.Value.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
@@ -84,7 +84,7 @@ test('Windows native一撃setupのPlanOnlyはPowerShell 7で端末を書き換�
   assert.deepEqual(value.steps, [
     'prerequisite-packages', 'factory-reporter-config', 'retire-legacy-schedulers',
     'dotagents-links', 'factory-config', 'main-server-ssh', 'daily-0200-task',
-    'product-update-and-setup', 'fresh-bughub-delivery', 'all-product-smoke', 'verify-install',
+    'product-update-and-setup', 'fresh-bughub-delivery', 'factory-report-inventory', 'verify-install',
   ]);
 });
 
@@ -100,7 +100,7 @@ function passingProduct(checkIds) {
   return { presence_status: 'installed', installed_version: '1.0.0', compatibility_status: 'compatible', checks: checkIds.map((check_id) => ({ check_id, status: 'pass' })) };
 }
 
-test('Windows native全製品smokeはwire v8の15 ID・製品別実動作・構造的非対応を全件検証する', () => {
+test('Windows nativeは工場報告のID集合を確認し、製品結果を再判定しない', () => {
   const report = {
     schema_version: '8.0', host_profile: 'windows-native', platform: { os: 'windows', arch: process.arch },
     products: Object.fromEntries(CURRENT_WIRE_PRODUCT_IDS.map((id) => [id, passingProduct(['native_diagnostics'])])),
@@ -122,13 +122,14 @@ test('Windows native全製品smokeはwire v8の15 ID・製品別実動作・構�
   report.products.servermanager = { presence_status: 'not_applicable', checks: [] };
 
   const receipt = assertWindowsNativeProductSmoke(report, process.arch);
-  assert.equal(receipt.checked_products, 15);
+  assert.equal(receipt.reported_products, 15);
   const leftover = structuredClone(report);
   leftover.products.observer = { presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [] };
   assert.throws(() => assertWindowsNativeProductSmoke(leftover, process.arch), /observer/u);
   assert.equal(receipt.status, 'passed');
   const broken = structuredClone(report); broken.products.markitdown.checks[0].status = 'fail';
-  assert.throws(() => assertWindowsNativeProductSmoke(broken, process.arch), /markitdown/u);
+  assert.equal(assertWindowsNativeProductSmoke(broken, process.arch).status, 'passed');
+  assert.equal(broken.products.markitdown.checks[0].status, 'fail');
   const freshThroughline = structuredClone(report);
   for (const checkId of ['database_schema', 'restore']) {
     const item = freshThroughline.products.throughline.checks.find((check) => check.check_id === checkId);
@@ -136,7 +137,7 @@ test('Windows native全製品smokeはwire v8の15 ID・製品別実動作・構�
   }
   assert.equal(assertWindowsNativeProductSmoke(freshThroughline, process.arch).status, 'passed');
   freshThroughline.products.throughline.checks.find((check) => check.check_id === 'restore').reason_code = 'diagnostic_unverified';
-  assert.throws(() => assertWindowsNativeProductSmoke(freshThroughline, process.arch), /throughline:restore/u);
+  assert.equal(assertWindowsNativeProductSmoke(freshThroughline, process.arch).status, 'passed');
   const incomplete = structuredClone(report); delete incomplete.products.peertable;
   assert.throws(() => assertWindowsNativeProductSmoke(incomplete, process.arch), /product set/u);
 });

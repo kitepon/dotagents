@@ -47,14 +47,10 @@ test('overall failed＋非0 exitは固定fingerprintのfail/incompatibleへ落�
   assert.equal(product.checks[0].fingerprint, createHash('sha256').update('lattice:native_not_ready').digest('hex'));
 });
 
-test('overallとexit・check集計の不整合、schema逸脱はunverifiedへ落とす（fail closed）', async () => {
+test('記録するoverallと終了コードの不整合はunverifiedへ落とす', async () => {
   for (const [value, ok] of [
     [diagnostics(), false],
     [diagnostics({ overall: 'failed' }), true],
-    [diagnostics({ extra: true }), true],
-    [diagnostics({ product: 'codegraph' }), true],
-    [diagnostics({ checks: OK_CHECKS.slice(0, 4) }), true],
-    [diagnostics({ checks: [...OK_CHECKS.slice(1), OK_CHECKS[0]] }), true],
   ]) {
     const product = await latticeProduct({ runner: runnerFor(value, ok) });
     assert.equal(product.presence_status, 'unverified');
@@ -62,7 +58,7 @@ test('overallとexit・check集計の不整合、schema逸脱はunverifiedへ落
   }
 });
 
-test('privacy negative: 絶対path・token様文字列を含むdetailは転記せず拒否する', async () => {
+test('未使用detailは検査も転記もせず、製品のoverallを使う', async () => {
   for (const leak of [
     '/Users/kite/Developer/Lattice/ is broken',
     'auth failed with Bearer abc123',
@@ -76,9 +72,16 @@ test('privacy negative: 絶対path・token様文字列を含むdetailは転記�
     const value = diagnostics();
     value.checks[3] = { id: 'mcp_entry', status: 'ok', detail: leak };
     const product = await latticeProduct({ runner: runnerFor(value) });
-    assert.equal(product.presence_status, 'unverified');
-    assert.equal(product.installed_version, undefined);
+    assert.equal(product.presence_status, 'installed');
+    assert.equal(product.compatibility_status, 'compatible');
     assert.ok(!JSON.stringify(product).includes('kite'), 'leak文字列がprojectionへ混入した');
+  }
+});
+
+test('checkの追加・順序・個別結果で製品overallを再集約しない', async () => {
+  for (const checks of [[], [...OK_CHECKS].reverse(), [{ id: 'future_check', status: 'failed' }]]) {
+    const product = await latticeProduct({ runner: runnerFor(diagnostics({ checks, extra: true })) });
+    assert.equal(product.compatibility_status, 'compatible');
   }
 });
 

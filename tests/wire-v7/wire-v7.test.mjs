@@ -134,11 +134,20 @@ test('projectPeertableFactoryはoverallとexit codeの不一致をfail closedで
   assert.throws(() => projectPeertableFactory(readyFixture(), false, '2026-08-10T00:00:00.000Z'), /peertable_exit_mismatch/);
 });
 
-test('projectPeertableFactoryは未知fieldとunknown check statusを拒否する', () => {
-  assert.throws(() => projectPeertableFactory({ ...readyFixture(), extra: 1 }, true), /peertable_diagnostics_schema/);
+test('projectPeertableFactoryは追加fieldを許し、記録するcheckの未知状態は拒否する', () => {
+  assert.equal(projectPeertableFactory({ ...readyFixture(), extra: 1 }, true).compatibility_status, 'compatible');
   const badStatus = readyFixture();
   badStatus.checks.version_consistency = 'ok';
   assert.throws(() => projectPeertableFactory(badStatus, true), /peertable_diagnostics_schema/);
+});
+
+test('Peertableのcheck集合を固定せず総合判定も再集約しない', () => {
+  const value = readyFixture();
+  value.checks.future_check = 'fail';
+  delete value.checks.bin_integrity;
+  const projected = projectPeertableFactory(value, true, '2026-08-10T00:00:00.000Z');
+  assert.equal(projected.compatibility_status, 'compatible');
+  assert.equal(projected.checks.find((item) => item.check_id === 'future_check').status, 'fail');
 });
 
 async function sandbox(t) {

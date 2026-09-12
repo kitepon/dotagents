@@ -131,8 +131,8 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | bin | `apply-cursor-config` | Cursor の工場hookを `~/.cursor/hooks.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `codex/agents/{implementer,refuter,sorter}.toml` | ネイティブ委譲のrole定義（役割→model×effortの正は docs/02_models.md） |
-| bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、post-update gateとreportを実行 |
-| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各OS固有の配線と全製品smokeを行う。Windows入口はmain-serverへの恒久SSHも所有する |
+| bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、公開結果の記録とreportの配送を実行 |
+| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各製品の公式入口の実行と工場の配置・報告配送を行う。Windows入口はmain-serverへの恒久SSHも所有する |
 | GitHub Actions | `ci.yml` / `factory-full-ci.yml` | [工場の現行状態](docs/factory-current-state.md)で`full CI`としたrunnerだけに、論理CPU数をjob数とする同じ`make ci`を実行する。main-server runnerは運用workflow専用。運用契約は[Factory CI runbook](shared/runbooks/factory-ci.md) |
 | GitHub Actions | `enroll-windows-main-server-ssh.yml` | Windows専用公開鍵をmain-server runner自身が`authorized_keys`へ冪等登録する。秘密鍵はWindowsから出さない |
 | bin | `bughub-external-probe.mjs` | server profileからloopback `/readyz`とdeploy revision manifestを照合し、安全な固定checkへ投影 |
@@ -197,7 +197,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
   ```
 - **host境界**: main-serverとrabbitは同じnative Linux基盤でも役割が異なる独立hostである。main-serverは`server` profileでServerManager／BugHubとpeertable serverを所有し、rabbitは`linux` profileのworkstation／peertable clientである。credential、config、scheduler、receiptを共有しない。FOXのWSL2席は2026-08-30に退役し、`wsl`は旧wire/outboxの読取互換だけに残す。
 - **共通ランタイム**: node>=24＋corepack・python3（`node --version`がv24+、`python3 -c "print(1)"`が成功すること。Windows nativeは正規入口がNode 24、Python、uvなどの不足をwingetから導入する。Windowsのストア偽エイリアスは存在チェックを通り、黙ってexit 0を返すため実行判定する〔罠DB `windows-python3-store-exit-0`〕）。
-- **Docker（POSIX hostのみ）**: 現行のmacOS／native Linux一撃入口は`docker info`までを前提にする。Windows native一撃展開と全製品smokeにはDockerを含めず、Docker DesktopやWSL backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
+- **Docker（POSIX hostのみ）**: 現行のmacOS／native Linux一撃入口は`docker info`までを前提にする。Windows native一撃展開にはDockerを含めず、Docker DesktopやWSL backendを導入・起動・検証しない。Dockerが必要な個別deployはその製品・serverのランブックだけが要求する。
 - **CLI（必須）**: 管理製品の列挙と区分は[工場の現行状態](docs/factory-current-state.md)、host別requiredは[host matrix](docs/factory-host-product-matrix.md)を使う。macOS 15+ Apple SiliconではAIShell、main-serverではServerManagerの公開readiness/revisionだけを検証する。他hostのServerManagerは`not_applicable`、AIShellは非macOSで`unsupported`である。基盤toolchainのClaude Code・Codex CLIは別管理。MarkItDownの正規更新面は`uv tool`、unaiは公式installerで更新する。
 - Observerは工場コアから撤去済み。
 - 独立CodegraphはPATHに存在してはならない。
@@ -343,7 +343,7 @@ Throughlineは共通更新入口が未導入時だけ公式npm導入と`throughl
 
 Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する。機能別の未対応を公開結果のまま記録し、工場Gantt hookとは分けて扱う。対応範囲と結果の意味は[Latticeの正本](https://github.com/kitepon/Lattice#readme)に従う。
 
-- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——stale実ファイル・反対skill面の同名重複・共有orchestrate契約の欠落・routing / hook契約不足に加え、対応hostの必須CLI、ServerManager readiness、Caveat / Spotterの公開diagnostics、Latticeの公開hook status、Grok面（`~/.grok/rules` / `runbooks` / `skills` / `agents` / `hooks`）と工場hook JSONをFAIL行で名指しする。これは全製品diagnosticsの代替ではなく、全製品の更新後確認と工場横断受入はhost別一撃setupが最後に実行するfresh factory reporterとdeliveryまでを含めて閉じる。製品ごとの診断項目と合否は各製品READMEを正とする。Grok login済み時だけWindows hookのinterpreter化と`compat.claude.agents` / `hooks` の切断を見る。未loginではThroughlineが空の`config.toml`を作ってもFAILにせず、配布symlinkの整合だけを見る。Oracle wrapperは旧wire互換・明示rollback用の検査として残す。`~/.local/bin`をPATHに通していれば以後は`verify-install --profile official`でも可
+- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——dotagentsが配置するsymlink、共有orchestrate契約、routing、各AI向け工場hook、退役配線と互換wrapperを確認する。製品の導入・MCP登録・製品hook・診断の合否は各製品の公式入口が所有する。host別setupは公開結果を記録し、工場自身の更新予約とfresh reportの配送を確認する。Grok未login時は配布symlinkの整合を確認する。`~/.local/bin`をPATHに通していれば`verify-install --profile official`でも実行できる。
 - **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
 - 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす／極小タスクを implementer に委譲して契約どおりの報告が返る
 - 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／通常のnative audit・refuter・sorterは事前smokeなしで実行できる／Control配下の書込みWorkerだけは`agent_type=<role>`と`fork_turns="none"`でrouting smokeを起動し、`verify-codex-agent-routing <role> <agent-path>`がgreenになってからfollow-upする／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす
@@ -356,7 +356,7 @@ Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する
 
 ## 自動アップデート（常設・全端末必須）
 
-`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。失敗は製品名付きで記録し、更新後のfactory contract scan/reportも継続する。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateとpost-update-gate) を参照。
+`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。公式入口が返した失敗は製品名付きで記録し、公開結果のreportも継続する。製品の導入結果を追加診断で再判定しない。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateと更新報告) を参照。
 
 常設schedulerの生成・旧schedulerの整理・読み戻しは、上記host別一撃展開スクリプトだけが所有する。
 手書きのplist／crontab／Task XMLを第二の正本にしない。

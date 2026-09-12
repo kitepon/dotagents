@@ -92,7 +92,7 @@ test-update: ## cron 最小 PATH で NVM 配下の npm を解決できること�
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
 	bash tests/oracle/wrappers.sh
 
-test-factory-core: ## Caveat / Throughline / Spotter の外部コア受入契約を検証
+test-factory-core: ## 工場所有の互換入口と退役製品の配置を検証
 	bash tests/factory-core/smoke.sh
 
 test-factory-reporter: ## BugHub factory reporter のprivacy/outbox/retry/scheduler契約を検証

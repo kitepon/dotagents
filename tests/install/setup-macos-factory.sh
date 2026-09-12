@@ -141,6 +141,15 @@ cat >"$STUB_BIN/sw_vers" <<'EOF'
 #!/usr/bin/env bash
 [ "${1:-}" = -productVersion ] && printf '15.6.1\n'
 EOF
+cat >"$STUB_BIN/date" <<'EOF'
+#!/usr/bin/env bash
+# 同じ秒の再実行でも実物のmktempが別のバックアップ名を作る。
+if [ "${1:-}" = '+%Y%m%d-%H%M%S' ]; then
+  printf '20260913-000000\n'
+else
+  /bin/date "$@"
+fi
+EOF
 cat >"$STUB_BIN/plutil" <<'EOF'
 #!/usr/bin/env bash
 [ "${1:-}" = -lint ] && [ -f "${2:-}" ]
@@ -324,10 +333,12 @@ latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFile
   "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
 [ "$latest_report" = fixture-report-2 ] || fail '2回目のfresh reportが作られていない'
 
-if DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=peertable \
-  "$FIXTURE_ROOT/bin/setup-macos-factory.sh" >/dev/null 2>&1; then
-  fail 'Mac required製品欠落を成功扱いした'
-fi
+DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=peertable \
+  "$FIXTURE_ROOT/bin/setup-macos-factory.sh" >/dev/null \
+  || fail '製品の診断結果をMac setup自身の失敗へ変換した'
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.products.peertable.presence_status!=="missing")process.exit(1)' \
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json" \
+  || fail '製品の診断結果を記録から隠した'
 
 if "$FIXTURE_ROOT/bin/setup-macos-factory.sh" --unknown >/dev/null 2>&1; then
   fail '未知引数を受理した'

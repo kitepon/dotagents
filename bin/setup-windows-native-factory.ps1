@@ -17,7 +17,7 @@ $Plan = @(
   'daily-0200-task',
   'product-update-and-setup',
   'fresh-bughub-delivery',
-  'all-product-smoke',
+  'factory-report-inventory',
   'verify-install'
 )
 
@@ -553,10 +553,10 @@ function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   $smokeOutput = & node $ProductSmoke '--report' $reportPath 2>&1
   $smokeCode = $LASTEXITCODE
   $smokeOutput | ForEach-Object { Write-Host $_ }
-  if ($smokeCode -ne 0) { throw "All-product smoke failed with exit $smokeCode" }
+  if ($smokeCode -ne 0) { throw "Factory report inventory failed with exit $smokeCode" }
   $smoke = ($smokeOutput | Select-Object -Last 1) | ConvertFrom-Json
-  if ($smoke.schema -ne 'dotagents.windows-native-product-smoke.v1' -or $smoke.status -ne 'passed' -or $smoke.checked_products -ne 15) {
-    throw 'All-product smoke receipt is invalid'
+  if ($smoke.schema -ne 'dotagents.windows-native-report-inventory.v1' -or $smoke.status -ne 'passed' -or $smoke.reported_products -ne 15) {
+    throw 'Factory report inventory receipt is invalid'
   }
   return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v8'; product_smoke = $smoke }
 }
@@ -818,7 +818,7 @@ if (-not $ScheduledRun) {
     initial_run_id = $receipt.run_id
     scheduled_run_id = $scheduledReceipt.run_id
     delivery_acknowledged = $true
-    products_checked = $scheduledReceipt.product_smoke.checked_products
+    products_reported = $scheduledReceipt.product_smoke.reported_products
     daily_task = $TaskName
     daily_time = '02:00'
   }

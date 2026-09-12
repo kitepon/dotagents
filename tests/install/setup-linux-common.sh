@@ -382,16 +382,18 @@ minimal_output="$(env -i \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update)"
 grep -Fq '"delivery_acknowledged":true' <<<"$minimal_output" \
   || fail 'cron最小環境でdelivery receiptを確認しない'
-grep -Fq '"factory_products_checked":15' <<<"$minimal_output" \
+grep -Fq '"factory_products_reported":15' <<<"$minimal_output" \
   || fail 'cron最小環境で全15製品を確認しない'
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
   "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
 [ "$latest_report" = fixture-report-3 ] || fail 'cron最小環境でfresh reportが作られていない'
 
-if DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=caveat \
-  "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update >/dev/null 2>&1; then
-  fail 'required製品欠落を成功扱いした'
-fi
+DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=caveat \
+  "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update >/dev/null \
+  || fail '製品の診断結果を工場setup自身の失敗へ変換した'
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.products.caveat.presence_status!=="missing")process.exit(1)' \
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json" \
+  || fail '製品の診断結果を記録から隠した'
 
 if "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --unknown >/dev/null 2>&1; then
   fail '未知引数を受理した'

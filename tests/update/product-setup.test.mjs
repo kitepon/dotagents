@@ -9,22 +9,25 @@ const lattice = (platform) => ({ schema: 'lattice.setup_result.v1', platform, st
       : platform === 'win32' ? { state: 'unsupported', code: 'HOST_PLATFORM_UNSUPPORTED' }
         : { state: 'verified' } })) });
 
-test('Latticeの公開された未対応機能を保持し、失敗や無効化を受入にしない', () => {
+test('Lattice自身の公開結果を記録し、内部のhost別状態を工場で再集約しない', () => {
   for (const platform of ['darwin', 'linux', 'win32']) {
     const value = lattice(platform);
     assert.equal(setupOutcome('lattice', result(value, 1), platform), 'partial');
     value.hosts[0].mcp.state = 'failed';
-    assert.equal(setupOutcome('lattice', result(value, 1), platform), 'failed');
+    assert.equal(setupOutcome('lattice', result(value, 1), platform), 'partial');
     value.hosts[0].mcp.state = 'disabled';
+    assert.equal(setupOutcome('lattice', result(value, 1), platform), 'partial');
+    value.state = 'failed';
     assert.equal(setupOutcome('lattice', result(value, 1), platform), 'failed');
   }
 });
 
-test('gpt-connectorの非Mac読取り対応を維持し、Mac失敗や未知の終了を許容しない', () => {
+test('gpt-connector自身の公開結果を記録し、対応OSを工場で再判定しない', () => {
   const value = { schema: 'gpt-connector.setup.v1', overall: 'partial', live: { supported: false } };
   assert.equal(setupOutcome('gpt-connector', result(value, 2), 'linux'), 'partial');
   assert.equal(setupOutcome('gpt-connector', result(value, 2), 'win32'), 'partial');
-  assert.equal(setupOutcome('gpt-connector', result(value, 2), 'darwin'), 'failed');
+  assert.equal(setupOutcome('gpt-connector', result(value, 2), 'darwin'), 'partial');
+  assert.equal(setupOutcome('gpt-connector', result({ overall: 'failed' }, 2), 'linux'), 'failed');
   assert.equal(setupOutcome('gpt-connector', result(value, 1), 'linux'), 'failed');
   assert.equal(setupOutcome('gpt-connector', { ok: false, reason: 'timeout', stdout: JSON.stringify(value) }, 'linux'), 'failed');
 });

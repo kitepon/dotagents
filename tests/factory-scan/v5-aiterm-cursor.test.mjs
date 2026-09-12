@@ -25,7 +25,7 @@ function aitermBase() {
   };
 }
 
-test('v5 aiterm scannerは cursor vendor_dependencies を受理し、未知vendorは拒否する', { concurrency: false }, async (t) => {
+test('v5 aiterm scannerは製品のvendor一覧を検査せず公開結果を使う', { concurrency: false }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-v5-aiterm-cursor-'));
   const bin = join(root, 'bin');
   await mkdir(bin);
@@ -64,6 +64,6 @@ test('v5 aiterm scannerは cursor vendor_dependencies を受理し、未知vendo
   unknown.vendor_dependencies.unknown = { status: 'not_applicable', optional: true, required_for: [] };
   await setAiterm(unknown);
   report = await scan();
-  assert.equal(report.products['aiterm-mcp'].presence_status, 'unverified');
-  assert.equal(report.products['aiterm-mcp'].checks[0].reason_code, 'native_diagnostics_schema');
+  assert.equal(report.products['aiterm-mcp'].presence_status, 'installed');
+  assert.equal(report.products['aiterm-mcp'].compatibility_status, 'compatible');
 });

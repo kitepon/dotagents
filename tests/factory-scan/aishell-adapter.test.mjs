@@ -65,19 +65,18 @@ test('not readyは固定fingerprintのfailureへ射影する', async () => {
   assert.match(product.checks[0].fingerprint, /^[0-9a-f]{64}$/);
 });
 
-test('未知の公開schema・privacy緩和・path混入を受理しない', async () => {
-  const cases = [
+test('未使用のschema・privacy・issuesを検査せず転送もしない', async () => {
+  for (const diagnostic of [
     valid({ schemaVersion: 'aishell.native_factory_diagnostics.v2' }),
     valid({ privacy: { ...valid().privacy, exposesAllowedRootPaths: true } }),
     valid({ issues: ['/Users/kite/secret'], ready: false }),
-    valid({ product: { identifier: 'aishell', version: 'dev' } }),
-  ];
-  for (const diagnostic of cases) {
+  ]) {
     const product = await aishellProduct({ runner: runnerFor(diagnostic) });
-    assert.deepEqual(product.checks, [{
-      check_id: 'native_diagnostics', status: 'unverified', reason_code: 'native_schema_invalid',
-    }]);
+    assert.equal(product.compatibility_status, diagnostic.ready ? 'compatible' : 'incompatible');
+    assert.ok(!JSON.stringify(product).includes('/Users/kite/secret'));
   }
+  const invalid = await aishellProduct({ runner: runnerFor(valid({ product: { version: 'dev' } })) });
+  assert.equal(invalid.checks[0].reason_code, 'native_schema_invalid');
 });
 
 test('CLI不在はmissing、transport失敗はunverifiedを維持する', async () => {

@@ -219,7 +219,7 @@ test('--oracle-retiredの重複はreport生成前に拒否する', async (t) => 
   await assert.rejects(readFile(box.output), { code: 'ENOENT' });
 });
 
-test('Caveat native diagnosticsはexitとの組合せ、DB射影、exact schemaを厳密に検証する', async (t) => {
+test('Caveat native diagnosticsは公開結果と終了コード、DB射影を検証する', async (t) => {
   const cases = [
     ['not_ready', `echo '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"1.2.3","overall":{"status":"not_ready"},"database":{"status":"not_ready","reason_code":"migration_failed","schema_version":2,"supported_schema_version":3,"migration_status":"failed"},"sync":{"status":"not_ready","reason_code":"sync_failed"},"connectors":{"claude":{"status":"not_ready","mcp":{"status":"not_ready","reason_code":"missing"},"hooks":{"user_prompt_submit":{"status":"not_ready","reason_code":"missing"},"post_tool_use":{"status":"not_ready","reason_code":"missing"},"post_tool_use_failure":{"status":"not_ready","reason_code":"missing"},"stop":{"status":"not_ready","reason_code":"missing"}}},"codex":{"status":"not_ready","hooks":{"user_prompt_submit":{"status":"not_ready","reason_code":"missing"},"post_tool_use":{"status":"not_ready","reason_code":"missing"},"stop":{"status":"not_ready","reason_code":"missing"}}}}}' ; exit 1`, 'fail'],
     ['unverified', `echo '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"1.2.3","overall":{"status":"unverified"},"database":{"status":"unverified","reason_code":"database_unavailable","schema_version":null,"supported_schema_version":3,"migration_status":"unverified"},"sync":{"status":"unverified","reason_code":"sync_unavailable"},"connectors":{"claude":{"status":"unverified","mcp":{"status":"unverified","reason_code":"unavailable"},"hooks":{"user_prompt_submit":{"status":"unverified","reason_code":"unavailable"},"post_tool_use":{"status":"unverified","reason_code":"unavailable"},"post_tool_use_failure":{"status":"unverified","reason_code":"unavailable"},"stop":{"status":"unverified","reason_code":"unavailable"}}},"codex":{"status":"unverified","hooks":{"user_prompt_submit":{"status":"unverified","reason_code":"unavailable"},"post_tool_use":{"status":"unverified","reason_code":"unavailable"},"stop":{"status":"unverified","reason_code":"unavailable"}}}}}' ; exit 1`, 'unverified'],
@@ -250,7 +250,7 @@ test('scanはwall clockが後退してもcreated_atをobserved_atより前へ置
   assert.match(source, /created_at: createdCandidate < observedAt \? observedAt : createdCandidate/u);
 });
 
-test('Caveat native diagnosticsのschema drift・追加field・path漏洩をreportへ通さない', async (t) => {
+test('Caveatの未使用情報は検査も転送もせず、記録する型違いを報告する', async (t) => {
   for (const [name, mutate] of [
     ['schema', (value) => { value.schema = 'caveat.native_factory_diagnostics.v2'; }],
     ['additional_field', (value) => { value.path = '/Users/kite/private'; }],
@@ -267,7 +267,9 @@ test('Caveat native diagnosticsのschema drift・追加field・path漏洩をrepo
     const result = await runScanner(box);
     assert.equal(result.code, 0, `${name}: ${result.stderr}`);
     const report = JSON.parse(await readFile(box.output, 'utf8'));
-    assert.deepEqual(report.products.caveat.checks, [{ check_id: 'native_diagnostics', status: 'unverified', reason_code: 'native_schema_invalid' }]);
+    assert.deepEqual(report.products.caveat.checks, name === 'database_schema_type'
+      ? [{ check_id: 'native_diagnostics', status: 'unverified', reason_code: 'native_schema_invalid' }]
+      : [{ check_id: 'native_diagnostics', status: 'pass' }]);
     assert.doesNotMatch(JSON.stringify(report), /Users|private|path/);
   }
 });

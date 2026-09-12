@@ -495,14 +495,14 @@ process.stdout.write(`${report.report_id}\n`);
 NODE
 }
 
-validate_factory_products() {
+validate_factory_report() {
   node --input-type=module - \
     "$ROOT/lib/factory/deployment-contract.mjs" \
     "$REPORT_STATE/latest-report.json" "$HOST_PROFILE" <<'NODE'
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const [contractPath, reportPath, expectedProfile] = process.argv.slice(2);
-const { CURRENT_WIRE_PRODUCT_IDS, hostProjection, postUpdateFailures } =
+const { CURRENT_WIRE_PRODUCT_IDS } =
   await import(pathToFileURL(contractPath).href);
 const report = JSON.parse(readFileSync(reportPath, 'utf8'));
 const facts = { profile: report.host_profile, os: report.platform?.os, arch: report.platform?.arch };
@@ -514,30 +514,6 @@ const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
   throw new Error('factory reportが固定15製品をすべて含まない');
 }
-const projection = hostProjection(facts);
-let failures = postUpdateFailures(report, facts, { postUpdate: false });
-if (expectedProfile === 'server') {
-  // self-ingest鮮度はdelivery後のverify-installがloopback readinessで受け入れる。
-  failures = failures.filter((failure) => failure !== 'servermanager:compatibility'
-    && failure !== 'servermanager:readiness_factory_ingest');
-}
-for (const [id, expectation] of Object.entries(projection.expected)) {
-  const product = report.products[id];
-  if (expectation === 'unsupported'
-    && (product.presence_status !== 'not_applicable' || product.compatibility_status !== 'unsupported')) {
-    failures.push(`${id}:unsupported_projection`);
-  }
-  if (expectation === 'not_applicable' && product.presence_status !== 'not_applicable') {
-    failures.push(`${id}:not_applicable_projection`);
-  }
-}
-const grok = report.products['grok-build'];
-if (!['installed', 'not_applicable'].includes(grok.presence_status)
-  || grok.compatibility_status === 'incompatible'
-  || grok.checks.some((item) => item.status === 'fail')) {
-  failures.push('grok-build:optional_health');
-}
-if (failures.length) throw new Error(`factory product verification failed: ${failures.join(',')}`);
 process.stdout.write(String(actualIds.length));
 NODE
 }
@@ -546,7 +522,7 @@ run_scheduled_update() {
   need node
   need python3
   validate_report_config
-  local prior_report_id batch_token report_id checked_products
+  local prior_report_id batch_token report_id reported_products
   prior_report_id="$(fresh_report_id)"
   batch_token="$(new_batch_token)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
@@ -558,10 +534,10 @@ run_scheduled_update() {
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
     || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
-  checked_products="$(validate_factory_products)" \
-    || die 'factory全製品の正規診断が受入条件を満たさない'
-  printf '{"ok":true,"mode":"scheduled-update","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_checked":%s}\n' \
-    "$batch_token" "$report_id" "$checked_products"
+  reported_products="$(validate_factory_report)" \
+    || die 'factory reportの製品一覧を記録できない'
+  printf '{"ok":true,"mode":"scheduled-update","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_reported":%s}\n' \
+    "$batch_token" "$report_id" "$reported_products"
 }
 
 backup_managed_config() {

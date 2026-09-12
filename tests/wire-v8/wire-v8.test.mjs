@@ -102,6 +102,17 @@ test('projectUnaiFactoryは4配布面のdriftをfailへ投影する', () => {
   assert.equal(projected.checks.find((item) => item.check_id === 'skill_projection_claude').status, 'pass');
 });
 
+test('UNAIのcheck集合を固定せず総合判定も再集約しない', () => {
+  const value = readyDiagnostic();
+  value.checks.future_check = 'fail';
+  value.checks.skill_projections.future_host = 'missing';
+  delete value.checks.node_runtime;
+  const projected = projectUnaiFactory(value, true, NOW);
+  assert.equal(projected.compatibility_status, 'compatible');
+  assert.equal(projected.checks.find((item) => item.check_id === 'future_check').status, 'fail');
+  assert.equal(projected.checks.find((item) => item.check_id === 'skill_projection_future_host').status, 'fail');
+});
+
 test('unaiProductは公式CLI診断を読み、CLI不在をmissingへ投影する', async () => {
   const calls = []; let available = false;
   const runCommand = async (command, args, options) => {

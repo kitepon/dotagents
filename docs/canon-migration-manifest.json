@@ -116,7 +116,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- オーナーは、dotagentsの統括AIが**自作コア製品**の正規repoへ必要な修正を行い、version更新、release準備、publish、公開後smokeまで管理することを明示許可している。コア製品の修理・機能追加はcommit/pushで止めず、version bump→publish→対象端末へのglobal install→公開後smoke→公開証跡記録までを同一waveで完遂する。これは責務範囲の恒久裁定であり、第三者製品のfork/patch許可や、本番deploy・credential・意図的障害・registry publish等のH操作に対する目的/影響/rollback説明と実行時承認を省略するものではない。各製品repoの正典・release gate・独立履歴を守る。**コア製品のrelease gateは、共通憲法の「publish対象は既定ブランチの祖先だけ」を機械gateとして実装したものだけを合格とする**（reference実装はAIShell `scripts/verify-release-commit.mjs`＋`prepublishOnly`）。gate未実装の製品は、次にそのrepoでrelease作業を行うwaveで同時に導入する。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、製品側gate通過後の公開probeとhost/wire横断受入だけを担当する。dotagentsが製品publishを実行する場合は、対象を既定ブランチの祖先に限る。これは工場側の共通git安全条件であり、製品release gateの定義ではない。"
+      "receiver_text": "- 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、公開コマンドの呼出しとhost/wireを通した結果の記録・配送を担当する。dotagentsが製品publishを実行する場合は、対象を既定ブランチの祖先に限る。これは工場側の共通git安全条件であり、製品release gateの定義ではない。"
     },
     {
       "receiver_path": "docs/factory-product-contracts.md",

@@ -7,7 +7,6 @@ import { basename, dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { readConfig } from '../lib/factory/contract.mjs';
-import { postUpdateFailures } from '../lib/factory/deployment-contract.mjs';
 import { extendedSchedulerPath } from '../lib/factory/scheduler-path.mjs';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 import { finalizeToolchainReport } from '../lib/factory/v5.mjs';
@@ -19,7 +18,6 @@ const WIRE_MAJOR = INVOKED.includes('factory-reporter-v8') ? 'v8' : INVOKED.incl
 process.env.PATH = extendedSchedulerPath({ platform: platform(), path: process.env.PATH, execPath: process.execPath, home: homedir() });
 function statePath() { return platform() === 'win32' ? join(process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`) : join(process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state'), 'dotagents', `factory-reporter-${WIRE_MAJOR}`); }
 function platformMatches(profile) { return (platform() === 'darwin' && profile === 'mac') || (platform() === 'linux' && ['server', 'linux', 'wsl'].includes(profile)) || (platform() === 'win32' && profile === 'windows-native'); }
-function macosMajor() { if (platform() !== 'darwin') return null; const result = spawnSync('sw_vers', ['-productVersion'], { encoding: 'utf8' }); const major = Number(result.stdout?.trim().split('.')[0]); if (result.status !== 0 || !Number.isInteger(major) || major < 1) throw new Error('macOS majorを取得できません'); return major; }
 function run(script, args) { return new Promise((resolveRun, rejectRun) => { const child = spawn(process.execPath, [join(HERE, script), ...args], { stdio: 'inherit' }); child.on('error', rejectRun); child.on('close', (code) => code === 0 ? resolveRun() : rejectRun(new Error(`${script} がexit ${code}で失敗`))); }); }
 function ownerOnlyAcl(path) {
   if (platform() !== 'win32') return;
@@ -140,7 +138,6 @@ async function withLock(state, task) {
     await releaseContender(contender.published, contender.owner.nonce);
   }
 }
-function gateFailures(report, profile, postUpdate) { return postUpdateFailures(report, { profile, os: platform(), arch: process.arch, macosMajor: macosMajor() }, { postUpdate }); }
 function hasPendingToolchainLedger(report) { return ['claude-code', 'codex-cli', 'grok-build'].some((id) => (report?.products?.[id]?.checks || []).some((item) => item.check_id === 'last_update' && item.status === 'unverified' && item.reason_code === 'post_gate_pending')); }
 async function writeDeliveryReceipt(state, reportId) {
   const batchToken = process.env.AGENTS_UPDATE_BATCH_TOKEN || null;
@@ -165,7 +162,6 @@ try {
     await withLock(state, async () => {
       const reportPath = join(state, 'latest-report.json');
       const acks = join(state, 'latest-acks.json');
-      let failures = [];
       let latestReport = null;
       if (config.collection.enabled || postUpdate || finalizeUpdate) {
         if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT]);
@@ -176,16 +172,12 @@ try {
         }
         latestReport = report;
         if (finalizeUpdate && hasPendingToolchainLedger(report)) throw new Error('finalize ledgerにpost_gate_pendingが残っています');
-        if (postUpdate) failures = gateFailures(report, config.host.profile, true);
         if (!postUpdate && (config.collection.enabled || (finalizeUpdate && config.reporting.enabled))) await run(`factory-reporter-${WIRE_MAJOR}.mjs`, ['enqueue', '--config', configPath, '--report', reportPath, '--ack-metadata', acks]);
       }
       if (config.reporting.enabled) await run(`factory-reporter-${WIRE_MAJOR}.mjs`, ['flush', '--config', configPath]);
       if (finalizeUpdate && ['v7', 'v8'].includes(WIRE_MAJOR) && config.reporting.enabled && latestReport) await writeDeliveryReceipt(state, latestReport.report_id);
       if (finalizeUpdate) process.stdout.write(`${JSON.stringify({ ok: true, finalized: true })}\n`);
-      else if (failures.length) {
-        process.stdout.write(`${JSON.stringify({ ok: false, post_gate_status: 'failed', failed_checks: failures.length, report_id: latestReport?.report_id })}\n`);
-        process.exitCode = 1;
-      } else process.stdout.write(`${JSON.stringify({ ok: true, post_gate_status: 'success', report_id: latestReport?.report_id })}\n`);
+      else process.stdout.write(`${JSON.stringify({ ok: true, post_gate_status: 'success', report_id: latestReport?.report_id })}\n`);
     });
   }
 } catch (error) {

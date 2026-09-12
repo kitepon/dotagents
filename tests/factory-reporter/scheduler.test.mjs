@@ -146,6 +146,19 @@ elif [ "$1" = runtime-errors ]; then echo '{"schema":"lattice.runtime_errors.v1"
 else exit 1; fi
 `); await fixtureCommand(bin, 'git', 'echo 1234567'); const normal = await run(RUNNER, ['--config', box.config], box, { PATH: bin }); assert.equal(normal.code, 0, normal.stderr); const result = await run(RUNNER, ['--config', box.config, '--post-update'], box, { PATH: bin }); assert.equal(result.code, 1); assert.deepEqual(result.json, { ok: false, post_gate_status: 'failed', failed_checks: CURRENT_PROFILE === 'windows-native' ? 7 : 9 }); });
 test('finalize-updateは最終ledgerを再投影し、製品failure自体を配送失敗へ偽装しない', async () => { const box = await sandbox(CURRENT_PROFILE, false, false); const bin = join(box.root, 'bin'); await mkdir(bin); for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await fixtureCommand(bin, name, 'exit 1'); await fixtureCommand(bin, 'git', 'echo 1234567'); const result = await run(RUNNER, ['--config', box.config, '--finalize-update'], box, { PATH: bin }); assert.equal(result.code, 0, result.stderr); assert.deepEqual(result.json, { ok: true, finalized: true }); await stat(join(box.state, 'latest-report.json')); });
+test('現行v8の更新報告は製品の失敗を保持し、工場独自の導入gateへ変換しない', async () => {
+  const box = await sandbox(CURRENT_PROFILE, false, false);
+  const bin = join(box.root, 'bin');
+  await mkdir(bin);
+  for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown', 'aiterm-mcp', 'aishell-mcp', 'unai', 'peertable', 'claude', 'codex', 'npm', 'grok']) await fixtureCommand(bin, name, 'exit 1');
+  await fixtureCommand(bin, 'git', 'echo 1234567');
+  const result = await run(V8_RUNNER, ['--config', box.config, '--post-update'], box, { PATH: bin });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.json.post_gate_status, 'success');
+  const report = JSON.parse(await readFile(join(box.stateRoot, 'factory-reporter-v8', 'latest-report.json'), 'utf8'));
+  assert.equal(report.products.caveat.presence_status, 'unverified');
+  assert.equal(report.products.caveat.checks[0].status, 'unverified');
+});
 test('v8 finalize-updateはBugHub acceptedかつ今回report_id一致時だけdelivery receiptを原子的に作る', async () => {
   const token = '11111111-1111-4111-8111-111111111111';
   const cases = [

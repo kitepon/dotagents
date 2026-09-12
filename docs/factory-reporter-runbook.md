@@ -57,11 +57,11 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 新majorは、ServerManagerが旧endpointを保ったまま新validatorとendpointを先に配備し、readinessと旧major受理を確認してから有効化する。その後dotagents clientを1 hostずつ切り替える。全host移行、旧outbox drain、rollback drillが終わるまで旧majorをretireしない。
 
-## agents-updateとpost-update gate
+## agents-updateと更新報告
 
 `agents-update`は更新結果とreporter結果を別々に記録し、どちらかが失敗すれば非0で終わる。post-update runnerはhost configのendpointからwire majorを解決し、同じmajorのschedule runnerを使う。configまたはrunnerを解決できない時は明示失敗し、別majorへfallbackしない。
 
-各製品の公開diagnosticsが返す`fail`はblocking、`unverified`はadapter testで明示した既知の非blocking tupleだけを許す。未知check、未知reason、別製品の`unverified`はblockingである。通常scanは状態を改変せず、component healthを`pass`へ丸めない。
+導入の結果は各製品の公式入口が返す。現行runnerの`--post-update`は最終台帳を反映する前のreport準備であり、製品の診断を追加の導入gateにしない。公開された失敗・未対応・未検証は報告へ保持し、工場自身のreport生成・台帳確定・配送の成否と区別する。互換上残る`post_gate_status`はこの工場処理の状態を表す。
 
 ## 停止・失敗
 

@@ -15,32 +15,8 @@ SYMLINK_CODEX_HOME="$(mktemp -d)"
 SYMLINK_TARGETS="$(mktemp -d)"
 TRANSACTION_CODEX_HOME="$(mktemp -d)"
 VERIFY_FIXTURE="$(mktemp -d)"
-LATTICE_TEST_BIN="$(mktemp -d)"
-trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN"' EXIT
+trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE"' EXIT
 PYTHON_BIN=python3
-
-cat >"$LATTICE_TEST_BIN/lattice" <<'EOF'
-#!/usr/bin/env bash
-set -u
-mode="${LATTICE_HOOKS_TEST_MODE:-wired}"
-if [ "${1:-}" = hooks ] && [ "${2:-}" = --help ]; then
-  [ "$mode" != unsupported ] || exit 2
-  echo 'Usage: lattice hooks <install|status|uninstall|emit> --host <claude|codex|cursor>'
-  exit 0
-fi
-if [ "${1:-}" = hooks ] && [ "${2:-}" = status ] && [ "${3:-}" = --host ]; then
-  if [ "$mode" = platform_unsupported ]; then
-    printf '{"schema":"lattice.cli_error.v2","code":"HOST_PLATFORM_UNSUPPORTED"}\n' >&2
-    exit 1
-  fi
-  state=wired
-  [ "$mode" != drift ] || state=drift
-  printf '{"schema":"lattice.hooks_status_result.v1","host":"%s","state":"%s"}\n' "$4" "$state"
-  exit 0
-fi
-exit 64
-EOF
-chmod +x "$LATTICE_TEST_BIN/lattice"
 
 fail() { echo "FAIL: $*" >&2; exit 1; }
 assert_link() {
@@ -79,104 +55,7 @@ count_archives() {
     printf '0\n'
   fi
 }
-FACTORY_TEST_BIN="$(mktemp -d)"
-UNKNOWN_OS_BIN="$(mktemp -d)"
-SUPPORTED_MAC_HOST_BIN="$(mktemp -d)"
-SUPPORTED_WINDOWS_HOST_BIN="$(mktemp -d)"
-WINDOWS_UNAI_HOME="$(mktemp -d)"
-trap 'rm -rf "$OFFICIAL_HOME" "$LEGACY_HOME" "$EXTERNAL_CODEX_HOME" "$BAD_CODEX_HOME" "$SYMLINK_CODEX_HOME" "$SYMLINK_TARGETS" "$TRANSACTION_CODEX_HOME" "$VERIFY_FIXTURE" "$LATTICE_TEST_BIN" "$FACTORY_TEST_BIN" "$UNKNOWN_OS_BIN" "$SUPPORTED_MAC_HOST_BIN" "$SUPPORTED_WINDOWS_HOST_BIN" "$WINDOWS_UNAI_HOME"' EXIT
-for factory_cli in throughline markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client unai aishell-mcp; do
-  printf '#!/usr/bin/env bash\nexit 0\n' >"$FACTORY_TEST_BIN/$factory_cli"
-  chmod +x "$FACTORY_TEST_BIN/$factory_cli"
-done
-cat >"$FACTORY_TEST_BIN/caveat" <<'EOF'
-#!/usr/bin/env bash
-if [ "$#" -eq 4 ] && [ "$1" = factory-diagnostics ] && [ "$2" = --json ] && [ "$3" = --require-connector ] && [ "$4" = cursor ]; then
-  printf '%s\n' '{"schema":"caveat.native_factory_diagnostics.v1","product":"caveat","version":"0.18.1","overall":{"status":"ready"}}'
-  exit 0
-fi
-exit 64
-EOF
-chmod +x "$FACTORY_TEST_BIN/caveat"
-cat >"$FACTORY_TEST_BIN/spotter" <<'EOF'
-#!/usr/bin/env bash
-if [ "$#" -eq 2 ] && [ "$1" = diagnostics ] && [ "$2" = factory ]; then
-  printf '%s\n' '{"schema_version":"1.0","product":"spotter","version":"1.6.3","overall_status":"unverified","marker_schema_version":"2","throughline_context":"disabled","catalogs":{"claude":"available","codex":"available"},"codex_hook_readiness":"configured-unverified","runtime_error_store":{"schema":"spotter.runtime_error_status.v1","collection":"disabled","store":"not_accessed","records":0,"open":0,"resolved":0,"unacknowledged":0,"latest_sequence":0,"acknowledged_through":0},"checks":[{"check_id":"project_activation","status":"pass"},{"check_id":"marker_schema","status":"pass"},{"check_id":"throughline_context","status":"skipped","reason_code":"evaluation_evidence_disabled"},{"check_id":"claude_catalog","status":"pass"},{"check_id":"codex_catalog","status":"pass"},{"check_id":"audit_catalog_readiness","status":"pass"},{"check_id":"codex_hooks","status":"unverified","reason_code":"trust_not_machine_verifiable"}]}'
-  exit 0
-fi
-exit 64
-EOF
-chmod +x "$FACTORY_TEST_BIN/spotter"
-FACTORY_PROJECT="$VERIFY_FIXTURE/factory-project"
-mkdir -p "$FACTORY_PROJECT"
-# shellcheck disable=SC2016 # 生成するfixtureの実行時に$1/$2を展開する。
-printf '#!/usr/bin/env bash\n[ "$1 $2" = "tool list" ] && printf "markitdown 0.1.0\\n"\n' >"$FACTORY_TEST_BIN/uv"
-chmod +x "$FACTORY_TEST_BIN/uv"
-# profileは実OSから決める。Linux runnerはserverへ射影されるため、外部通信しない
-# readiness fixtureを明示してverify-installのserver契約を保つ。
-SERVERMANAGER_TEST_READY_URL='data:application/json,{"checks":[{"id":"database","status":"pass"},{"id":"schema","status":"pass"},{"id":"source_revision","status":"pass"}],"source_revision":"fixture-revision"}'
-verify() { PATH="$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$1" SERVERMANAGER_READY_URL="$SERVERMANAGER_TEST_READY_URL" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE="${LATTICE_HOOKS_TEST_MODE:-wired}" "$ROOT/bin/verify-install.sh" --profile "$2"; }
-cat >"$UNKNOWN_OS_BIN/uname" <<'EOF'
-#!/usr/bin/env bash
-case "$1" in -s) printf 'UnknownOS\n' ;; -m) printf 'x86_64\n' ;; esac
-EOF
-chmod +x "$UNKNOWN_OS_BIN/uname"
-if PATH="$UNKNOWN_OS_BIN:$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$OFFICIAL_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$OFFICIAL_HOME/unknown-os.out" 2>&1; then
-  fail '未知OSをLinux/WSLとしてverify-installが通した'
-fi
-grep -q '未対応OSをhost profileへ射影できない' "$OFFICIAL_HOME/unknown-os.out" || fail '未知OSのfail-closed理由を出さない'
-cat >"$SUPPORTED_MAC_HOST_BIN/uname" <<'EOF'
-#!/usr/bin/env bash
-case "$1" in -s) printf 'Darwin\n' ;; -m) printf 'arm64\n' ;; *) exit 64 ;; esac
-EOF
-cat >"$SUPPORTED_MAC_HOST_BIN/sw_vers" <<'EOF'
-#!/usr/bin/env bash
-[ "${1:-}" = -productVersion ] || exit 64
-printf '15.1.0\n'
-EOF
-chmod +x "$SUPPORTED_MAC_HOST_BIN/uname" "$SUPPORTED_MAC_HOST_BIN/sw_vers"
-for missing_cli in peertable-client unai; do
-  if PATH="$SUPPORTED_MAC_HOST_BIN:$FACTORY_TEST_BIN:$LATTICE_TEST_BIN:$PATH" HOME="$OFFICIAL_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" DOTAGENTS_FACTORY_MISSING_CLI="$missing_cli" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$OFFICIAL_HOME/$missing_cli.out" 2>&1; then
-    fail "$missing_cli 欠落をverify-installが通した"
-  fi
-  grep -q "'$missing_cli' 不在" "$OFFICIAL_HOME/$missing_cli.out" || fail "$missing_cli 欠落理由を出さない"
-done
-cat >"$SUPPORTED_WINDOWS_HOST_BIN/uname" <<'EOF'
-#!/usr/bin/env bash
-case "$1" in -s) printf 'MINGW64_NT-10.0\n' ;; -m) printf 'x86_64\n' ;; *) exit 64 ;; esac
-EOF
-for factory_cli in caveat throughline spotter markitdown gpt-connector aiterm-mcp codex-sidecar-mcp peertable-client uv; do
-  ln -s "$FACTORY_TEST_BIN/$factory_cli" "$SUPPORTED_WINDOWS_HOST_BIN/$factory_cli"
-done
-ln -s "$(command -v node)" "$SUPPORTED_WINDOWS_HOST_BIN/node"
-# Git for Windowsで作るsymlinkはrunner設定により実体copyになり、python3.exeだけを
-# DLL群から切り離して起動不能にする。Pythonは公式install directoryをPATHへ残す。
-WINDOWS_VERIFY_PATH="$SUPPORTED_WINDOWS_HOST_BIN:$LATTICE_TEST_BIN:/usr/bin:/bin"
-case "$TEST_HOST_OS" in
-  MINGW*|MSYS*)
-    WINDOWS_PYTHON_BIN_DIR=$(dirname "$(command -v python3)")
-    WINDOWS_VERIFY_PATH="$SUPPORTED_WINDOWS_HOST_BIN:$WINDOWS_PYTHON_BIN_DIR:$LATTICE_TEST_BIN:/usr/bin:/bin"
-    ;;
-  *) ln -s "$(command -v python3)" "$SUPPORTED_WINDOWS_HOST_BIN/python3" ;;
-esac
-chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/uname"
-mkdir -p "$WINDOWS_UNAI_HOME/.local/bin"
-cat >"$SUPPORTED_WINDOWS_HOST_BIN/pwsh.exe" <<'EOF'
-#!/usr/bin/env bash
-case "$*" in
-  *'Get-Command unai'*) printf 'C:\\PublicTools\\unai.ps1\n' ;;
-  *) exit 64 ;;
-esac
-EOF
-chmod +x "$SUPPORTED_WINDOWS_HOST_BIN/pwsh.exe"
-printf '#!/usr/bin/env bash\nexit 0\n' >"$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
-chmod +x "$WINDOWS_UNAI_HOME/.local/bin/oracle-mcp-stable"
-if ! PATH="$WINDOWS_VERIFY_PATH" HOME="$WINDOWS_UNAI_HOME" DOTAGENTS_FACTORY_CORE_TEST=1 DOTAGENTS_FACTORY_CORE_ONLY=1 DOTAGENTS_FACTORY_PROJECT_ROOT="$FACTORY_PROJECT" LATTICE_HOOKS_TEST_MODE=wired "$ROOT/bin/verify-install.sh" --profile official >"$WINDOWS_UNAI_HOME/windows-unai-ps1.out" 2>&1; then
-  sed -n '1,120p' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" >&2
-  fail 'Windows公式installer fixtureのverify-installが不合格'
-fi
-grep -Fq 'factory core CLI: unai → C:\PublicTools\unai.ps1' "$WINDOWS_UNAI_HOME/windows-unai-ps1.out" \
-  || fail 'Windowsの公開command解決結果を表示しない'
+verify() { HOME="$1" "$ROOT/bin/verify-install.sh" --profile "$2"; }
 assert_stop_count() {
   "$PYTHON_BIN" - "$1" <<'PY'
 import json
@@ -329,20 +208,6 @@ dry_run="$(apply_config "$OFFICIAL_HOME" --dry-run)"
   || fail 'dry-run が backup を作った'
 apply_config "$OFFICIAL_HOME" --apply
 verify "$OFFICIAL_HOME" official
-if lattice_drift_output="$(LATTICE_HOOKS_TEST_MODE=drift verify "$OFFICIAL_HOME" official 2>&1)"; then
-  fail 'Lattice hooks drift を verify が見逃した'
-fi
-grep -Fq 'lattice hooks install --host claude' <<<"$lattice_drift_output" \
-  || fail 'Lattice hooks drift のFAILがinstall commandを名指ししない'
-grep -Fq 'lattice hooks install --host cursor' <<<"$lattice_drift_output" \
-  || fail 'Cursor Lattice hooks drift のFAILがinstall commandを名指ししない'
-LATTICE_HOOKS_TEST_MODE=unsupported verify "$OFFICIAL_HOME" official >/dev/null
-if lattice_platform_unsupported_output="$(LATTICE_HOOKS_TEST_MODE=platform_unsupported verify "$OFFICIAL_HOME" official 2>&1)"; then
-  grep -Fq 'OK  Lattice hooks: skip（platform非対応）' <<<"$lattice_platform_unsupported_output" \
-    || fail 'Lattice hooks platform非対応のskipをverifyが出さない'
-else
-  fail 'Lattice hooks platform非対応をverifyがFAILにする'
-fi
 mkdir -p "$VERIFY_FIXTURE/bin" "$VERIFY_FIXTURE/claude/skills/orchestrate"
 cp "$ROOT/bin/verify-install.sh" "$VERIFY_FIXTURE/bin/verify-install.sh"
 chmod +x "$VERIFY_FIXTURE/bin/verify-install.sh"
