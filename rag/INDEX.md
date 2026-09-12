@@ -2,6 +2,8 @@
 
 調査・研究の再利用棚。1 エントリ 1 行（トピック/ファイル — 要旨。出典・取得日・確度は各ファイル冒頭）。
 
+- [npm/npm-view-json-20260912.md](npm/npm-view-json-20260912.md) — npm 12の単一版JSON配列と旧文字列形式の違い。公式文書・Mac実測を確認し、工場の共通decoderへ反映（2026-09-12・確度高）。
+
 - [second-brain/karpathy-obsidian-llm-knowledge-base.md](second-brain/karpathy-obsidian-llm-knowledge-base.md) — Karpathy 流 LLM 知識ベース×Obsidian の一次発言集約と、うちの rag/ 設計への含意（2026-07-04・確度高）
 - （raw なし・出典のみ）Karpathy の Anthropic 入り報道 — TechCrunch「OpenAI co-founder Andrej Karpathy joins Anthropic's pre-training team」2026-05-19。**報道記事の全文ミラーは公開リポに置かない**ため削除済み（2026-07-26）。要旨は上記コンパイル記事が保持する
 - [second-brain/raw/obsidian-pricing-20260704.md](second-brain/raw/obsidian-pricing-20260704.md) — Obsidian 公式 pricing verbatim（2026-07-04）

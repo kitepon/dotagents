@@ -61,7 +61,9 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 ## 現在地
 
-Windowsへの公式セットアップを実行した。工場設定と更新予約は適用されたが、全体結果は失敗であり、4端末の統合は未完了。
+WindowsとMacへの公式セットアップを実行した。工場設定と更新予約は適用されたが、全体結果は失敗であり、4端末の統合は未完了。
+
+2026-09-12のMac直接実行では報告の配送が成功し、npm 12のJSON配列とAIShellの正常な公開診断を旧工場decoderが拒否する問題を再現した。npmの単一結果配列に対応し、AIShell・Throughline・Spotterの内部世代の許容一覧を除き、更新中の新版公開による誤失敗も修正した。個別11試験、cron環境試験、実際のnpm・AIShell単独probeと最終CIが成功し、別ベンダー反証は採用指摘0件だった。公開後の受入を継続中。Throughlineの自己更新失敗は製品担当の対応が必要。main-serverは再開時の公開済み工場コードへ更新済みで、正規セットアップはまだ実行していない。詳細は[Macの公開形式受入](evidence/20260912-macos-public-schema-acceptance.md)を参照する。
 
 2026-09-12、Windows呼出しとCaveat schemaの工場不備を修正し、現行v8の個別検証、Windows関連32試験、ローカルの最終CIが成功した。`959005b`をmainへpushし、Windowsへ更新後、正式な報告入口から生成・配送が成功した。公開WebUIでもCaveatとunaiの正常な診断表示を確認し、以前の更新後検査失敗は保持されている。詳細は[公開後の報告受入](evidence/20260912-windows-public-report-acceptance.md)を参照する。
 

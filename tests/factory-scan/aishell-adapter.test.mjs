@@ -65,9 +65,9 @@ test('not readyは固定fingerprintのfailureへ射影する', async () => {
   assert.match(product.checks[0].fingerprint, /^[0-9a-f]{64}$/);
 });
 
-test('schema drift・privacy緩和・path混入を受理しない', async () => {
+test('未知の公開schema・privacy緩和・path混入を受理しない', async () => {
   const cases = [
-    { ...valid(), extra: true },
+    valid({ schemaVersion: 'aishell.native_factory_diagnostics.v2' }),
     valid({ privacy: { ...valid().privacy, exposesAllowedRootPaths: true } }),
     valid({ issues: ['/Users/kite/secret'], ready: false }),
     valid({ product: { identifier: 'aishell', version: 'dev' } }),
@@ -88,4 +88,40 @@ test('CLI不在はmissing、transport失敗はunverifiedを維持する', async 
   const failed = await aishellProduct({ runner: runnerFor(valid(), false) });
   assert.equal(failed.presence_status, 'unverified');
   assert.equal(failed.checks[0].reason_code, 'native_schema_invalid');
+});
+
+test('AIShellの内部世代を限定せず、総合readyの失敗を保持する', async () => {
+  const diagnostic = valid({
+    product: { identifier: 'aishell', version: '0.7.3' },
+    runtime: {
+      schemaVersion: 'aishell.runtime_configuration.v3', configurationState: 'not_required',
+      migrationStatus: 'not_required', operationReadiness: 'ready', isPaused: false,
+      configuredRootCount: 0, automaticGitWorktreeCount: 0, effectiveRootCount: 0,
+    },
+    manager: { applicationBundleState: 'not_required', ready: true },
+  });
+  const product = await aishellProduct({ runner: runnerFor(diagnostic) });
+  assert.equal(product.presence_status, 'installed');
+  assert.equal(product.installed_version, '0.7.3');
+  assert.equal(product.state_schema_version, 'aishell.runtime_configuration.v3');
+  assert.equal(product.migration_status, 'not_applicable');
+  assert.equal(product.compatibility_status, 'compatible');
+  assert.deepEqual(product.checks, [{ check_id: 'native_diagnostics', status: 'pass' }]);
+
+  for (const failed of [
+    { ...diagnostic, ready: false, mcp: { ...diagnostic.mcp, ready: false } },
+    { ...diagnostic, ready: false, platform: { ...diagnostic.platform, supported: false }, issues: ['platform.unsupported'] },
+  ]) {
+    const result = await aishellProduct({ runner: runnerFor(failed) });
+    assert.equal(result.compatibility_status, 'incompatible');
+    assert.equal(result.checks[0].status, 'fail');
+  }
+  for (const schemaVersion of ['aishell.runtime_configuration.v2', 'aishell.runtime_configuration.v4', 'aishell.runtime_configuration.v99']) {
+    const result = await aishellProduct({ runner: runnerFor({
+      ...diagnostic, runtime: { ...diagnostic.runtime, schemaVersion, configurationState: 'future_state' },
+      manager: { applicationBundleState: 'future_manager' },
+    }) });
+    assert.equal(result.compatibility_status, 'compatible');
+    assert.equal(result.state_schema_version, schemaVersion);
+  }
 });

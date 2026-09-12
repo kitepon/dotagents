@@ -211,8 +211,11 @@ fi
           after="$($cli --version 2>/dev/null | extract_semver || true)"; after="${after:-none}"
         fi
         if [[ "$operation" = success && "$after" = none ]]; then operation=failed; reason=post_version_unavailable; update_failed=1
-        elif [[ "$operation" = success && "$after" != "$latest" ]]; then operation=failed; reason=version_mismatch; update_failed=1
-        elif [[ "$operation" = success && "$before" = "$after" ]]; then operation=skipped; reason=already_current
+        elif [[ "$operation" = success ]]; then
+          relation="$(node "$TOOLCHAIN_CONTRACT_HELPER" compare "$after" "$latest" 2>/dev/null)" || relation=invalid
+          if [[ "$relation" != 0 && "$relation" != 1 ]]; then operation=failed; reason=version_mismatch; update_failed=1
+          elif [[ "$before" = "$after" ]]; then operation=skipped; reason=already_current
+          fi
         fi
         record_toolchain "$product" "$before" "$latest" "$operation" "$after" pending "$reason" || update_failed=1
         if [[ "$product" = claude-code ]]; then claude_before="$before"; claude_latest="$latest"; claude_operation="$operation"; claude_after="$after"; claude_reason="$reason"

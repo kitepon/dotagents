@@ -32,13 +32,15 @@ function run(operation, input = '', args = []) {
   });
 }
 
-test('npm latestはJSON stringのstrict semverだけを受理する', async () => {
+test('npm latestは単一のstrict semverを旧JSON stringとnpm 12配列から受理する', async () => {
   assert.equal(parseNpmLatestJson('"2.1.207"\n'), '2.1.207');
-  for (const input of ['{"version":"2.1.207"}', 'latest=2.1.207', '["2.1.207"]', '"01.2.3"', '"unknown"', '"2.1.0-01"']) {
+  for (const input of ['{"version":"2.1.207"}', 'latest=2.1.207', '[]', '["2.1.207","2.1.208"]', '[["2.1.207"]]', '[{"version":"2.1.207"}]', '"01.2.3"', '"unknown"', '"2.1.0-01"']) {
     assert.throws(() => parseNpmLatestJson(input));
     assert.equal((await run('npm-latest', input)).code, 1);
   }
   assert.deepEqual(await run('npm-latest', '"2.1.207"'), { code: 0, stdout: '2.1.207\n', stderr: '' });
+  assert.equal(parseNpmLatestJson('["2.1.269"]\n'), '2.1.269');
+  assert.deepEqual(await run('npm-latest', '["0.154.0"]'), { code: 0, stdout: '0.154.0\n', stderr: '' });
 });
 
 test('SemVer大小はprereleaseを含めてdowngrade判定できる', async () => {

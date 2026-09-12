@@ -89,6 +89,7 @@ count_file="$HOME/${RUN_ID:-default}-claude-version-count"
 count=0; [ ! -f "$count_file" ] || IFS= read -r count < "$count_file"
 count=$((count + 1)); printf '%s' "$count" > "$count_file"
 if [ "${CLAUDE_DISAPPEAR_AFTER_FIRST:-0}" -eq 1 ] && [ "$count" -gt 1 ]; then exit 127; fi
+if [ "$count" -gt 1 ] && [ -n "${CLAUDE_POST_VERSION:-}" ]; then echo "$CLAUDE_POST_VERSION"; exit 0; fi
 echo "${CLAUDE_VERSION:-2.1.207}"
 EOF
 cat > "$TEST_HOME/npm-global/bin/codex" <<'EOF'
@@ -312,6 +313,27 @@ if grep -q '^npm-downgrade:install -g --allow-scripts=@anthropic-ai/claude-code 
 fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="downgrade_refused"||r.before_version!=="2.2.0"||r.after_version!=="2.2.0")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'npm downgrade拒否を台帳へ保存しない'
+
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  CLAUDE_POST_VERSION=2.1.208 RUN_ID=registry-advanced \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/registry-advanced.out" 2>&1; then
+  cat "$TEST_HOME/registry-advanced.out" >&2
+  fail 'latest取得後に公開された新しい版の正常導入を拒否した'
+fi
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.latest_version!=="2.1.207"||r.after_version!=="2.1.208"||r.operation_status!=="success")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '取得時latestと導入後の新版を区別して記録しない'
+
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  CLAUDE_POST_VERSION=2.1.206 RUN_ID=post-version-older \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/post-version-older.out" 2>&1; then
+  fail '取得したlatestより古い版の導入を成功扱いした'
+fi
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="version_mismatch"||r.operation_status!=="failed")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '古い版の導入を失敗として記録しない'
 
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
