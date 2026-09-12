@@ -36,9 +36,10 @@ test('Windows標準起動は絶対exeと公開ps1で引数・stdin・cwd・env�
   const box = await fixture(t);
   const args = ['a b', "single'quote", 'double"quote', '$env:PATH', '$(throw 1)', '; exit 99', '日本語', ''];
   for (const [command, prefix] of [[process.execPath, [box.executable]], ['factory-ps', []]]) {
-    const result = await run(command, [...prefix, ...args], { cwd: box.root, env: box.env, input: 'stdin-kept', timeoutMs: 10000 });
+    const result = await run(command, [...prefix, ...args], { cwd: box.root.toUpperCase(), env: box.env, input: 'stdin-kept', timeoutMs: 10000 });
     assert.equal(result.ok, true, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout), {
+    const actual = JSON.parse(result.stdout);
+    assert.deepEqual({ ...actual, cwd: await realpath(actual.cwd) }, {
       args, input: 'stdin-kept', cwd: await realpath(box.root), marker: 'kept',
     });
   }
