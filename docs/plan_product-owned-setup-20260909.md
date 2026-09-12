@@ -28,22 +28,22 @@
 
 | 対象 | 修理内容 | 完了条件 | 状態 |
 |---|---|---|---|
-| Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | focused成功、main-serverでDocker稼働と公式Node隔離導入を確認。工場反映待ち |
-| runner | 既存runnerへの不要な再設定と403後の誤った継続を整理 | 変更が必要な場合だけ設定し、権限不足を元の原因として表示 | focused検証済み |
-| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 製品公開記録を回収、工場切替済み。Windowsの既存hook拒否を保持 |
+| Linux前提導入 | Docker配布の強制置換を除去。不足packageだけ導入。Node公式導入経路の成立条件を実測 | 既存Dockerを保持するfocused test、対象host確認 | focused成功、main-serverでDocker稼働と公式Node隔離導入を確認。実機setup完了 |
+| runner | 既存runnerへの不要な再設定と403後の誤った継続を整理 | 変更が必要な場合だけ設定し、権限不足を元の原因として表示 | focused検証とLinux実機setup完了 |
+| Caveat | 製品の一括入口へ統一し、工場の内部scaffold復旧を削除 | 公開packageで既存復旧機能を照合し、初期化・再実行を検証 | 修正版公開、4端末の公式更新と公開診断の正常表示を確認 |
 | Throughline | 未導入時の順序とnpm 12の自己更新を修理 | 初回導入と既存更新がそれぞれ製品入口で完了 | 修正版公開、4端末で公式更新成功 |
 | unai | 工場の詳細診断の重複とWindowsの公式更新を修理 | 公式installerの公開結果だけで判定 | 修正版公開、4端末で公式更新成功 |
 | Aiterm | 製品所有の準備・MCP登録入口 | 対応OSと各AIで単体導入を検証 | 公開・npm導入・4 AI実設定・公開MCP実行確認済み、修正後3 OS CI成功 |
 | gpt-connector | 製品所有の一括setup入口とWindows tar呼出しを修理 | 非Macの読取り機能を保ち、live機能のOS制約を明示 | 修正版公開、4端末で公式更新成功。製品のpartialを保持 |
-| codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 製品公開記録を回収、工場切替済み |
+| codex-sidecar | 製品所有の登録入口と機能別OS境界を整理 | 既存3 package更新契約を維持し、単体登録を検証 | 公開・単体受入記録と4端末の公式入口実行を確認 |
 | AIShell | 製品所有のMac導入・登録入口 | 対応hostだけ登録し、非対応hostへ工場が登録しない | 工場切替済み。認証廃止後の公式導入・4 AI登録・公開診断を受入済み |
-| Lattice | 製品MCP登録入口とWindows hookの扱いを整理 | 製品未対応を可視化。工場Gantt hookとの別責務を維持 | 製品公開記録を回収、工場切替・機能別未対応のfocused成功 |
-| Peertable | skill導入入口、Aiterm内部namespace・multiplexer依存を公開APIへ整理 | 製品所有setup、OS別runtime focused test | 製品公開記録を回収、工場切替済み |
-| 工場共通 | 製品MCPの直接編集・OS別補完を除去 | 製品公開版の導入成功後に切替、4 AIの既存機能を確認 | 実装・関連focused・別ベンダー反証成功。最終CI成功、実端末待ち |
-| 更新と待機 | 初回・定期更新の順序、重複した全件診断、全setup再試行を整理。工程・経過時間・待機理由を表示 | 処理回数と所要時間を計測し、頻度を変えず受入 | 重複scan除去・予約分離・製品入口の経過表示を実装、関連focused成功 |
-| ServerManager/BugHub | 新着だけの通知、配送状態の永続化、退役hostと履歴版表示を修理 | 所有repoの既存計画、配備入口、公開後smokeで受入 | 担当の本番反映記録を回収。工場4端末のfresh report待ち |
+| Lattice | 製品MCP登録入口とWindows hookの扱いを整理 | 製品未対応を可視化。工場Gantt hookとの別責務を維持 | 公開・単体受入と4端末の公式入口実行を確認。機能別未対応を保持 |
+| Peertable | skill導入入口、Aiterm内部namespace・multiplexer依存を公開APIへ整理 | 製品所有setup、OS別runtime focused test | 公開・単体受入記録と4端末の公式入口実行を確認 |
+| 工場共通 | 製品MCPの直接編集・OS別補完を除去 | 製品公開版の導入成功後に切替、4 AIの既存機能を確認 | 追加の製品検査・再判定を撤去。4端末の配置・配送、Windows予約実行と公開CIを受入 |
+| 更新と待機 | 初回・定期更新の順序、重複した全件診断、全setup再試行を整理。工程・経過時間・待機理由を表示 | 処理回数と所要時間を計測し、頻度を変えず受入 | 重複scan除去・予約分離・製品入口の経過表示を実装。実機と予約実行を確認、頻度を維持 |
+| ServerManager/BugHub | 新着だけの通知、配送状態の永続化、退役hostと履歴版表示を修理 | 所有repoの既存計画、配備入口、公開後smokeで受入 | 本番反映記録と4端末のfresh reportを回収。公開WebUIを確認 |
 
-Spotterは既存project単位の入口を保持する。実測したMCP接続設定、Windows権限設定、評価DB同時初期化の不具合はSpotterで修理し公開済み。正常な公開結果を工場の固定形式・独自判定で拒否していた問題はdotagentsで修理する。
+Spotterは既存project単位の入口を保持する。実測したMCP接続設定、Windows権限設定、評価DB同時初期化の不具合はSpotterで修理し公開済み。正常な公開結果を工場の固定形式・独自判定で拒否していた問題はdotagentsで修理し、4端末へ反映した。
 
 ## 順序と責務
 
@@ -65,38 +65,13 @@ dotagentsのAIは最後に製品の正規入口を使う工場改修と横断受
 
 ## 現在地
 
-UNAI、Throughline、gpt-connector、Caveat、Spotterの不具合は各製品repoで修理・公開し、Mac・Windows・main-server・rabbitの公式更新が成功した。UNAIとThroughlineの先行実測は[製品更新失敗の修理](evidence/20260912-product-update-repair.md)に記録する。
+2026-09-13、受入完了。製品の不具合は各製品repoで修理・公開し、工場が公開結果を再判定する処理はdotagentsから撤去した。4端末の公式更新と報告配送、Windowsの登録済み更新タスク、3 OSの公開CIが成功した。
 
-全体セットアップは未完了。認証と製品更新は完了し、残っているのはdotagentsが導入後に重複して行っていた製品検査の撤去と、工場自身の配置・予約・報告配送の確認である。製品が公表した失敗や未対応は報告へ保持する。以下は以前の時点の記録として読む。
+[4端末の受入記録](evidence/20260913-product-owned-four-host-acceptance.md)に製品の修理先、公開版、各端末の配送receipt、実機で見つかったWindowsの工場不具合、公開WebUIとCIの結果をまとめた。npmの一度のファイルロックは公式更新と登録タスクの再実行で復旧し、保持者は未特定として記録した。製品コードや工場の例外処理で補正していない。
 
-2026-09-12のMac直接実行では報告の配送が成功し、npm 12のJSON配列とAIShellの正常な公開診断を旧工場decoderが拒否する問題を再現した。npmの単一結果配列に対応し、AIShell・Throughline・Spotterの内部世代の許容一覧を除き、更新中の新版公開による誤失敗も修正した。個別11試験、cron環境試験、実際のnpm・AIShell単独probeと最終CIが成功し、別ベンダー反証は採用指摘0件だった。公開後の受入を継続中。Throughlineの自己更新失敗は製品担当の対応が必要。main-serverは再開時の公開済み工場コードへ更新済みで、正規セットアップはまだ実行していない。詳細は[Macの公開形式受入](evidence/20260912-macos-public-schema-acceptance.md)を参照する。
+途中の記録は[工場統合の途中記録](evidence/20260910-product-owned-integration-progress.md)、[Windows報告の受入](evidence/20260912-windows-public-report-acceptance.md)、[Mac公開形式の受入](evidence/20260912-macos-public-schema-acceptance.md)、[AIShell公式導入](evidence/20260912-aishell-official-setup-acceptance.md)、[UNAI・Throughlineの修理](evidence/20260912-product-update-repair.md)、[工場の再判定撤去](evidence/20260913-product-result-ownership.md)を参照する。
 
-2026-09-12、Windows呼出しとCaveat schemaの工場不備を修正し、現行v8の個別検証、Windows関連32試験、ローカルの最終CIが成功した。`959005b`をmainへpushし、Windowsへ更新後、正式な報告入口から生成・配送が成功した。公開WebUIでもCaveatとunaiの正常な診断表示を確認し、以前の更新後検査失敗は保持されている。詳細は[公開後の報告受入](evidence/20260912-windows-public-report-acceptance.md)を参照する。
-
-初回の公開CIはWindowsのパス表記を比較する試験で失敗した。試験を`4c80de9`で修正し、Windows個別3試験が成功した後、[公開CI](https://github.com/kitepon/dotagents/actions/runs/34686177456)もMac・Linux・Windowsと最終gateがすべて成功した。今回の工場呼出し・公開診断の修正は受入完了とする。
-
-2026-09-12の再開後、AIShell担当から認証廃止後の公式導入と4 AI登録、公開診断の成功を回収した。以前のKeychain認証待ちは解消し、製品入口の受入は完了した。記録は[AIShellの公式導入受入](evidence/20260912-aishell-official-setup-acceptance.md)を参照する。
-
-UNAIはWindows installer内のGit改行設定を統一し、Throughlineはnpm 12の公開JSON形式に対応した。製品の設定・履歴を工場から補正せず、公式更新で正常になったことを確認した。このMacはAitermから直接、別端末はSSHで操作する。Macのリモートログイン設定は変更していない。
-
-2026-09-10、オーナーの開始指示により工場統合を再開した。今回の担当はdotagentsと工場所有の配置・設定・更新予約・報告・公式入口の実行だけとする。製品repoの修理・公開は各製品担当へ返す。製品未公開・依存待ち・未実施を統合完了へ丸めない。
-
-再開時はcleanなmainをfetchし、`d3513e2`へfast-forwardした。`40863cc`と`955b6ca`の実差分を確認し、Throughlineの初回・更新・失敗のfocused試験とcron環境の関連試験が成功した。
-
-工場統合の順序は、製品の公開契約・実機受入記録の回収、公式入口への切替、関連focused試験、最終通し試験、現役端末への順次展開、fresh reportとBugHub受入とする。製品記録の読取りは親の工場調査と並列に行う。書込みは同一repoの導入・更新順序が結合するため直列とし、共有AI設定への本番反映も端末ごとに直列とする。既存の日次・週次の頻度とSpotterのproject選択を維持する。
-
-製品公開入口への切替、Caveat内部補完の削除、Windowsの予約更新分離、同一reportへの更新結果確定を実装し、関連focused試験と文書gateが成功した。[別ベンダー反証](evidence/20260910-product-owned-boundary-review.md)は採用指摘0件で完了し、最終通し試験も成功した。実端末への工場反映は未実施で、AitermのMCP再接続とSSH先PowerShellの完了検知は確認済みで、AIShell修正版公開を待っている。実測と未完条件は[途中記録](evidence/20260910-product-owned-integration-progress.md)を参照する。
-
-Windowsの公開Caveat診断はCodex hookの既存明示無効化を保持してnot_readyを返す。製品担当と工場契約を照合し、今回の切替では無効化を解除しない。[実測と契約](evidence/20260910-windows-caveat-preflight.md)に従い、実端末受入でもこの状態を隠さない。
-
-工場コードは`4df3346`でmainへ保存・pushした。公開CIはMac/Linux成功、Windowsは通常CLI未導入で試験前に停止した。[公式CLIの通常導入](evidence/20260910-ci-codex-dependency.md)を行い、初回セットアップも`6bb6efe`で修正した。CI専用の固定版追加は撤回した。[修正後の公開CI](https://github.com/kitepon/dotagents/actions/runs/34426961717)はWindows/Linuxの全検査と最終gateが成功した。Macは今回のWindows固有変更では非選択であり、先行した工場変更の全検査は成功済み。
-
-以下は中断時点の記録であり、最新の製品受入結果とは区別する。
-
-LinuxのDocker保持とrunner再設定条件はfocused testで検証済み。Docker修理は別ベンダーの反証で受入可。
-Aitermの一括入口とWindowsのGrok記録先を修正し、公開・npm導入・4 AIの実設定と公開MCP実行を確認した。
-Windows CIで見つかったパス期待値のテスト不備も修正し、3 OS CIは成功した。
-Caveatは工場が代行していたMCP登録を製品へ移し、4 AIの隔離設定で初回・再実行・MCP検索を確認した。
+以下は当時の中断記録であり、現在の承認待ちや未完了条件ではない。
 
 ## 中断と再開
 
