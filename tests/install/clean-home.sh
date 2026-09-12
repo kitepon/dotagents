@@ -428,7 +428,7 @@ def command_parts(command):
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 home = native_path(sys.argv[2])
 python_prefix = [str(Path(sys.executable).resolve())] if os.name == "nt" else ["/usr/bin/env", "python3"]
-shell_prefix = [str(Path(shutil.which("sh") or shutil.which("bash")).resolve())] if os.name == "nt" else ["/bin/sh"]
+shell_prefix = [str((Path(os.environ["ProgramFiles"]) / "Git/bin/bash.exe").resolve())] if os.name == "nt" else ["/bin/sh"]
 
 def assert_hook(event, script, prefix, arguments, timeout):
     hooks = [h for entry in data["hooks"][event] for h in entry.get("hooks", []) if isinstance(h, dict) and script in h.get("command", "")]

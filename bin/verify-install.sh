@@ -692,7 +692,7 @@ try:
 except (OSError, UnicodeDecodeError, json.JSONDecodeError):
     raise SystemExit(1)
 path = str(Path(os.environ["HOME"]).expanduser().resolve() / ".local/bin/orchestrate-advisory-hook")
-shell_prefix = str(Path(shutil.which("sh") or shutil.which("bash") or "sh").resolve()) if os.name == "nt" else "/bin/sh"
+shell_prefix = str((Path(os.environ["ProgramFiles"]) / "Git/bin/bash.exe").resolve()) if os.name == "nt" else "/bin/sh"
 parts = [shell_prefix, path]
 command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
 expected = {"type": "command", "command": command, "timeout": 5, "async": False, "statusMessage": None}

@@ -45,7 +45,7 @@ PYTHON_HOOK_PREFIX = (
     else ("/usr/bin/env", "python3")
 )
 SHELL_HOOK_PREFIX = (
-    (str(Path(shutil.which("sh") or shutil.which("bash") or "sh").resolve()),)
+    (str((Path(os.environ["ProgramFiles"]) / "Git/bin/bash.exe").resolve()),)
     if os.name == "nt"
     else ("/bin/sh",)
 )
