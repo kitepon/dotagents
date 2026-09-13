@@ -47,8 +47,8 @@ function parseArgs(argv) {
   }
   const target = options['--platform'] || hostPlatform();
   if (!['darwin', 'linux', 'win32'].includes(target)) throw new Error('--platformはdarwin、linux、win32のいずれかです');
-  const wireMajor = options['--wire-major'] || 'v4';
-  if (!['v1', 'v2', 'v4', 'v5', 'v6', 'v7', 'v8'].includes(wireMajor)) throw new Error('--wire-majorはv1、v2、v4、v5、v6、v7、v8のいずれかです');
+  const wireMajor = options['--wire-major'] || null;
+  if (wireMajor && !['v1', 'v2', 'v4', 'v5', 'v6', 'v7', 'v8'].includes(wireMajor)) throw new Error('--wire-majorはv1、v2、v4、v5、v6、v7、v8のいずれかです');
   if (options.mode === 'apply' && target !== hostPlatform()) throw new Error('--applyは実行中OSと異なる--platformを指定できません');
   return { command, target, config: options['--config'] && safePath(options['--config'], '--config'), wireMajor, dryRun: options.mode !== 'apply' };
 }
@@ -124,8 +124,22 @@ export async function removeLegacyArtifacts(target, location) {
 }
 
 async function main() {
-  const request = parseArgs(process.argv.slice(2)); const location = locations(request.target, request.wireMajor); const configPath = request.config || location.config;
-  if (request.command === 'install') { const config = await readConfig(configPath); if (config.source !== 'file') throw new Error('設定ファイルなしではschedulerを登録しません'); if (!platformMatches(config.host.profile, request.target)) throw new Error(`host.profile=${config.host.profile}は${request.target} schedulerに登録できません`); assertReportingEndpoint(config, request.wireMajor); }
+  const request = parseArgs(process.argv.slice(2));
+  const configPath = request.config || locations(request.target, request.wireMajor || 'v4').config;
+  if (request.command === 'install') {
+    const config = await readConfig(configPath);
+    if (config.source !== 'file') throw new Error('設定ファイルなしではschedulerを登録しません');
+    if (!platformMatches(config.host.profile, request.target)) throw new Error(`host.profile=${config.host.profile}は${request.target} schedulerに登録できません`);
+    if (!request.wireMajor && config.reporting.enabled) {
+      const pathname = new URL(config.reporting.endpoint).pathname;
+      request.wireMajor = /^\/api\/factory\/(v[1245678])\/reports$/.exec(pathname)?.[1];
+      if (!request.wireMajor) throw new Error('reporting endpointのwire majorを解決できません');
+    }
+    request.wireMajor ||= 'v4';
+    assertReportingEndpoint(config, request.wireMajor);
+  }
+  request.wireMajor ||= 'v4';
+  const location = locations(request.target, request.wireMajor);
   const spec = artifact(request.target, configPath, location, request.wireMajor);
   // --applyは、schedulerが指すrunnerが実際に起動可能であることを登録前に検証する。
   // 配布symlink（install.sh）が未実行だと、登録は成功するのに実行時にCannot find moduleで落ちる

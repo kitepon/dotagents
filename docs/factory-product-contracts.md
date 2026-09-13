@@ -11,6 +11,7 @@
 - factory連携を外しても製品本体の導入・利用・診断・復旧・更新・release判断が失われないことを製品側の受入条件とする。
 - 製品CIのworkflowと合否は各製品repoが所有する。dotagentsは共通runnerとhost横断接続を提供し、製品からdotagentsのworkflowを参照させない。
 - reportへsecret、credential、prompt、session/file本文、生log、絶対pathを出さない。
+- runtime記録の発生版は、製品が公開するrecordの`product_version`だけを投影する。snapshot上位の版や導入版から推測しない。欠落・`unknown`はwire上で省略し、旧形式で初回版しか持たない複数回の集約も版不明とする。件数・最終発生時刻・解消記録は製品の公開値を維持する。
 - 製品の問題は製品repoの正規入口を修理してreleaseする。dotagentsの例外処理や内部状態の手補正で補わない。工場の報告処理は製品が公表した結果を保持し、工場自身の配置・予約・配送だけを検証する。
 - 自作コア製品の修理・機能追加は、製品repoが所有するrelease gateと手順でpublish・利用面への導入・公開後smokeまで閉じる。dotagentsはその手順を複製せず、公開コマンドの呼出しとhost/wireを通した結果の記録・配送を担当する。dotagentsが製品publishを実行する場合は、対象を既定ブランチの祖先に限る。これは工場側の共通git安全条件であり、製品release gateの定義ではない。
 - 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。

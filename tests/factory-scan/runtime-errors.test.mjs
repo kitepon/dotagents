@@ -62,6 +62,7 @@ function sequencedRecord(product, overrides = {}) {
 test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadataへ固定投影する', async () => {
   const throughlineTemplate = 'Throughline persistence operation failed';
   const throughlineRecord = {
+    product_version: '0.9.0',
     error_code: 'THROUGHLINE.PERSISTENCE_FAILED',
     component: 'persistence',
     status: 'open',
@@ -110,7 +111,7 @@ test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadata�
       command: 'aiterm-runtime-errors', args: ['snapshot'], ack: ['ack', '--cursor', '3'],
       value: {
         ok: true, command: 'snapshot', snapshot: {
-          collection: 'enabled', schema_version: 'aiterm-mcp.runtime-errors.v1', cursor: 3,
+          collection: 'enabled', schema_version: 'aiterm-mcp.runtime-errors.v2', cursor: 3,
           acknowledged_cursor: 0, records: [sequencedRecord('aiterm-mcp')],
         },
       },
@@ -121,7 +122,7 @@ test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadata�
       ack: ['factory-errors', '--action', 'ack', '--cursor', '3'],
       value: {
         status: 'ok', factoryRuntimeErrors: {
-          schema_version: '2', cursor: 3, acknowledged_through: 0,
+          schema_version: '3', cursor: 3, acknowledged_through: 0,
           records: [sequencedRecord('codex-sidecar')],
         },
       },
@@ -135,6 +136,8 @@ test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadata�
     assert.equal(result.cursor, 3);
     assert.equal(result.runtime_errors.length, 1);
     assert.equal(result.runtime_errors[0].status, 'open');
+    assert.equal(result.runtime_errors[0].product_version,
+      ['caveat', 'throughline'].includes(fixture.product) ? '0.9.0' : '1.2.3');
     assert.equal('sequence' in result.runtime_errors[0], false);
     assert.deepEqual(result.resolutions, []);
     assert.deepEqual(result.acknowledgement, {
@@ -144,6 +147,29 @@ test('5製品の公開CLIだけをbounded runnerで呼び、openとack metadata�
     assert.deepEqual(calls[0].args, fixture.args);
     assert.equal(calls[0].options.timeoutMs, 10_000);
     assert.equal(calls[0].options.maxOutputBytes, 256 * 1024);
+    if (['aiterm-mcp', 'codex-sidecar'].includes(fixture.product)) {
+      const legacy = structuredClone(fixture.value);
+      const snapshot = legacy.snapshot ?? legacy.factoryRuntimeErrors;
+      snapshot.schema_version = fixture.product === 'aiterm-mcp' ? 'aiterm-mcp.runtime-errors.v1' : '2';
+      const old = await fixture.collect({ runner: runnerFor(legacy, []) });
+      assert.equal(old.status, 'ready');
+      assert.equal('product_version' in old.runtime_errors[0], false);
+      snapshot.records[0].occurrence_count = 1;
+      const single = await fixture.collect({ runner: runnerFor(legacy, []) });
+      assert.equal(single.runtime_errors[0].product_version, '1.2.3');
+      const unknown = structuredClone(fixture.value);
+      (unknown.snapshot ?? unknown.factoryRuntimeErrors).records[0].product_version = 'unknown';
+      const unknownResult = await fixture.collect({ runner: runnerFor(unknown, []) });
+      assert.equal(unknownResult.status, 'ready');
+      assert.equal('product_version' in unknownResult.runtime_errors[0], false);
+    }
+    if (fixture.value.runtime_errors) {
+      const legacy = structuredClone(fixture.value);
+      delete legacy.runtime_errors[0].product_version;
+      const old = await fixture.collect({ runner: runnerFor(legacy, []) });
+      assert.equal(old.status, 'ready');
+      assert.equal('product_version' in old.runtime_errors[0], false);
+    }
   }
 });
 

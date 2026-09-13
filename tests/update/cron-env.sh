@@ -18,10 +18,21 @@ mkdir -p "$TEST_HOME/system-bin"
 if command -v sw_vers >/dev/null 2>&1; then
   ln -s "$(command -v sw_vers)" "$TEST_HOME/base-bin/sw_vers"
 fi
-for command_path in /bin/date /bin/mkdir /usr/bin/tee "$(command -v readlink)" "$(command -v node)" "$(command -v uname)"; do
+for command_path in /bin/date /bin/mkdir /usr/bin/tee "$(command -v readlink)" "$(command -v uname)"; do
   [ -x "$command_path" ] || fail "test prerequisite がない: $command_path"
   ln -s "$command_path" "$TEST_HOME/base-bin/${command_path##*/}"
 done
+# schedulerのOS登録は別試験で検証し、ここでは更新後の呼出しと失敗伝播を測る。
+cat > "$TEST_HOME/base-bin/node" <<EOF
+#!/bin/sh
+case "\$1" in
+  */factory-reporter-scheduler.mjs)
+    printf '%s:scheduler:%s\\n' "\${RUN_ID:-default}" "\$*" >> "\$HOME/update-events.log"
+    exit "\${SCHEDULER_FAIL:-0}" ;;
+esac
+exec "$(command -v node)" "\$@"
+EOF
+chmod +x "$TEST_HOME/base-bin/node"
 cat > "$TEST_HOME/.local/bin/curl" <<'EOF'
 #!/bin/sh
 output=''
@@ -185,6 +196,9 @@ if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   fail '正常fixtureのagents-updateが失敗した'
 fi
 
+grep -Fq "normal:scheduler:$ROOT/bin/factory-reporter-scheduler.mjs install --apply --config $REPORTER_CONFIG" \
+  "$TEST_HOME/update-events.log" || fail '更新後にreporterの定期実行を現行設定で登録していない'
+
 expected_npm_packages=13
 if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
   expected_npm_packages=14
@@ -243,6 +257,16 @@ node -e '
   for(const id of ["claude-code","codex-cli","grok-build"]){const r=v.products[id];if(!r||r.post_gate_status!=="success"||!["success","skipped"].includes(r.operation_status))process.exit(1)}
 ' "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" \
   || fail '3基盤CLIの更新前後・post-gate台帳を保存していない'
+
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=scheduler-fail SCHEDULER_FAIL=17 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/scheduler-fail.out" 2>&1; then
+  fail 'schedulerの登録失敗を成功扱いした'
+fi
+grep -q '^FAILED: factory reporterの定期実行を登録できません$' "$TEST_HOME/scheduler-fail.out" \
+  || fail 'schedulerの登録失敗を記録していない'
 
 if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/system-bin" \

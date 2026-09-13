@@ -519,6 +519,12 @@ NODE
 }
 
 run_scheduled_update() {
+  export PATH="$HOME/.local/bin:$PATH"
+  if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
+    export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
+    # shellcheck disable=SC1090,SC1091
+    . "$NVM_DIR/nvm.sh"
+  fi
   need node
   need python3
   validate_report_config

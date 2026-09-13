@@ -369,6 +369,8 @@ latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFile
   "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
 [ "$latest_report" = fixture-report-2 ] || fail '2回目のfresh reportが作られていない'
 
+# rabbitと同じく、Nodeは ~/.local/bin にだけありcronのPATHには含まれない。
+mv "$STUB_BIN/node" "$HOME_DIR/.local/bin/node"
 minimal_output="$(env -i \
   HOME="$HOME_DIR" \
   PATH="$STUB_BIN:/usr/bin:/bin" \
@@ -380,6 +382,7 @@ minimal_output="$(env -i \
   DOTAGENTS_SETUP_TEST_HOST_PROFILE="$HOST_PROFILE" \
   DOTAGENTS_SETUP_TEST_CALLS="$CALLS" \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update)"
+mv "$HOME_DIR/.local/bin/node" "$STUB_BIN/node"
 grep -Fq '"delivery_acknowledged":true' <<<"$minimal_output" \
   || fail 'cron最小環境でdelivery receiptを確認しない'
 grep -Fq '"factory_products_reported":15' <<<"$minimal_output" \

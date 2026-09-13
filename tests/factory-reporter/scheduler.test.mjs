@@ -41,6 +41,17 @@ async function v7FixtureBin(box) {
 }
 after(async () => { for (const root of roots) await rm(root, { recursive: true, force: true }); });
 
+test('wire指定を省略した定期報告は実configの送信先へ追従する', async () => {
+  const box = await sandbox('mac', true, true);
+  const config = JSON.parse(await readFile(box.config, 'utf8'));
+  config.reporting.endpoint = 'http://127.0.0.1:1/api/factory/v8/reports';
+  await writeFile(box.config, JSON.stringify(config));
+  const result = await run(SCHEDULER, ['install', '--platform', 'darwin', '--config', box.config], box);
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(result.json.wire_major, 'v8');
+  assert.match(result.json.artifact_content, /factory-reporter-v8-schedule-runner/);
+});
+
 test('macOS Homebrew Nodeはversioned Cellar pathでなくstable入口をschedulerへ保存する', () => {
   assert.equal(stableNodePath('darwin', '/opt/homebrew/Cellar/node/26.5.0/bin/node', (path) => path === '/opt/homebrew/bin/node'), '/opt/homebrew/bin/node');
   assert.equal(stableNodePath('darwin', '/usr/local/Cellar/node/24.1.0/bin/node', (path) => path === '/usr/local/bin/node'), '/usr/local/bin/node');

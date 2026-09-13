@@ -330,6 +330,11 @@ fi
   fi
 
   printf -- '--- factory-reporter:prepare-update-report ---\n'
+  # 更新周期とは別に、最新の障害観測を毎時届ける。送信形式はconfigから解決する。
+  if ! node "$SCRIPT_DIR/factory-reporter-scheduler.mjs" install --apply --config "$FACTORY_REPORTER_CONFIG"; then
+    printf 'FAILED: factory reporterの定期実行を登録できません\n'
+    report_failed=1
+  fi
   post_report_id=''
   if [[ ! -x "$FACTORY_REPORTER_RUNNER" ]]; then
     printf 'FAILED: factory reporter runner が実行できない: %s\n' "$FACTORY_REPORTER_RUNNER"

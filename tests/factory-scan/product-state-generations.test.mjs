@@ -24,6 +24,21 @@ test('gpt-connectorの診断項目追加を許し、製品が返した失敗を�
   assert.equal(projected.checks[0].status, 'fail');
   assert.ok(!JSON.stringify(projected).includes('/private/path'));
 });
+test('旧wireのgpt投影も実発生版を保持し、unknownは版欠落として扱う', () => {
+  const diagnostic = { package_version: '3.0.0', overall: 'ready', state: { schema: '1.0', migration: 'current' }, checks: [] };
+  for (const version of ['1.2.3', 'unknown']) {
+    const runtime = { schema: 'gpt-connector.runtime-errors.v1', product: 'gpt-connector', version: '3.0.0', state_schema_version: '1.0',
+      cursor: { high_watermark: 1, acknowledged_through: 0, next: 1 },
+      runtime_errors: [{ error_code: 'CHAT_FAILED', component: 'chat', status: 'open', severity: 'high', fingerprint: 'a'.repeat(64),
+        message_template: 'chat failed', occurrence_count: 1, first_seen: '2026-09-01T00:00:00.000Z', last_seen: '2026-09-01T00:00:00.000Z',
+        state_schema_version: '1.0', product_version: version }],
+      resolutions: [], diagnostics: { collection: 'enabled', status: 'ready', total_count: 1, pending_count: 1, truncated: false } };
+    const result = projectGptConnectorFactory(diagnostic, runtime, true, '2026-09-13T00:00:00.000Z');
+    assert.equal(result.runtime_errors[0].product_version, version === 'unknown' ? undefined : version);
+    assert.equal(runtime.runtime_errors[0].product_version, version);
+  }
+});
+
 const throughline = () => ({
   schema: 'throughline.native_factory_diagnostics.v1', version: '1.2.3', overall: { status: 'ready' },
   databaseSchema: { schema: 'throughline.database.v10', status: 'ready', databaseSchemaVersion: 10, supportedDatabaseSchemaVersion: 10, reason: 'ready' },
