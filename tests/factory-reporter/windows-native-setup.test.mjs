@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
 import { CURRENT_WIRE_PRODUCT_IDS } from '../../lib/factory/deployment-contract.mjs';
@@ -59,9 +60,10 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
   assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
-  assert.match(source, /function Ensure-WindowsPrerequisites.*ssh.*ssh-keygen.*ssh-keyscan.*Git\.Git/su);
+  assert.match(source, /function Ensure-WindowsPrerequisites.*ssh.*ssh-keygen.*Git\.Git/su);
   assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*ssh-keygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
-  assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*ssh-keyscan.*pinned fingerprint/su);
+  assert.doesNotMatch(source, /ssh-keyscan/u);
+  assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*pinned host key readback/su);
   assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*ssh -G.*direct-IP/su);
   assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
   assert.match(source, /ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
@@ -95,6 +97,31 @@ test('Windows native一撃setupはWindows PowerShell 5.1を明示拒否する', 
   assert.notEqual(result.status, 0);
   // PowerShell 5.1のエラー表示は端末幅で語中にも改行を挿入する。
   assert.match(result.stderr.replace(/\s+/gu, ''), /PowerShell7.*officialGitHubrelease.*MSI.*machinescope/u);
+});
+
+test('固定ホスト鍵の反復配置は未認証接続を作らず同じ内容を保つ', { skip: process.platform !== 'win32' }, async (t) => {
+  const source = await readFile(SETUP, 'utf8');
+  const root = await mkdtemp(join(tmpdir(), 'dotagents-host-key-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const body = source.slice(source.indexOf('function Ensure-MainServerKnownHost'), source.indexOf('function Ensure-MainServerSshConfig'));
+  const constants = source.split('\n').filter(line => /^\$MainServerHost(?:Key|KeyFingerprint)? =/u.test(line)).join('\n');
+  const script = `$ErrorActionPreference = 'Stop'
+${constants}
+function ssh-keyscan { throw '未認証スキャンを実行した' }
+function ssh { throw '鍵配置で通信を実行した' }
+function Write-Utf8NoBom($Path, $Content) { [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false)) }
+${body}
+$directory = $env:DOTAGENTS_HOST_KEY_FIXTURE
+Ensure-MainServerKnownHost $directory
+$before = [IO.File]::ReadAllText((Join-Path $directory 'known_hosts'))
+1..3 | ForEach-Object { Ensure-MainServerKnownHost $directory }
+$after = [IO.File]::ReadAllText((Join-Path $directory 'known_hosts'))
+if ($before -cne $after -or $after.Trim() -cne $MainServerHostKey) { throw '固定鍵が一致しない' }
+`;
+  const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+    encoding: 'utf8', env: { ...process.env, DOTAGENTS_HOST_KEY_FIXTURE: root }, timeout: 30000,
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
 function passingProduct(checkIds) {

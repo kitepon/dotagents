@@ -114,7 +114,7 @@ function Ensure-WindowsPrerequisites {
   Ensure-WingetCommand -Command 'make' -PackageId 'ezwinports.make'
   Ensure-WingetCommand -Command 'shellcheck' -PackageId 'koalaman.shellcheck'
   Ensure-WingetCommand -Command 'rg' -PackageId 'BurntSushi.ripgrep.MSVC'
-  foreach ($sshCommand in @('ssh', 'ssh-keygen', 'ssh-keyscan')) {
+  foreach ($sshCommand in @('ssh', 'ssh-keygen')) {
     if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
       Invoke-WingetPackage -Id 'Git.Git' -Upgrade
       if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
@@ -230,10 +230,8 @@ function Test-MainServerSsh {
 
 function Ensure-MainServerKnownHost([string]$SshDirectory) {
   $knownHosts = Join-Path $SshDirectory 'known_hosts'
-  $scan = (& ssh-keyscan -T 5 -t ed25519 $MainServerHost 2>$null | Where-Object { $_ -notmatch '^#' }) -join "`n"
-  if ($LASTEXITCODE -ne 0 -or $scan.Trim() -ne $MainServerHostKey) {
-    throw "main-server host key does not match pinned fingerprint $MainServerHostKeyFingerprint"
-  }
+  # 固定済みの鍵を配置し、実際の接続時にStrictHostKeyCheckingで照合する。
+  # 未認証で切断する鍵スキャンはFail2Banの検知を蓄積するため実行しない。
   $existing = if (Test-Path -LiteralPath $knownHosts -PathType Leaf) { Get-Content -LiteralPath $knownHosts } else { @() }
   if ($existing -notcontains $MainServerHostKey) {
     $updated = @($existing | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) + $MainServerHostKey
