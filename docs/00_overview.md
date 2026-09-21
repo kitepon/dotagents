@@ -27,6 +27,7 @@ archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文di
 | [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
 | [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |
 | `plan_*.md` | 現役計画だけ。完遂時は`archive/`へ移し、固定path consumerが実在する場合だけroot stubを残す |
+| [plan_harness-model-effort-recommender.md](plan_harness-model-effort-recommender.md) | Cursor・Grokの残量取得から始める、Jevによるハーネス×モデル×エフォート推薦の実装計画 |
 | [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式） |
 | [adr/](adr/) / [evidence/](evidence/) | 固定された判断・証拠。個別の現行文書から必要な時だけ辿り、通常の読む順には入れない |
 

@@ -413,6 +413,7 @@
         "docs/plan_codex-jev-integration.md",
         "docs/plan_jev-third-party-rollout.md",
         "docs/plan_factory-records-20260913.md",
+        "docs/plan_harness-model-effort-recommender.md",
         "grok/AGENTS.delta.md",
         "grok/agents/implementer.md",
         "grok/agents/refuter.md",
@@ -551,7 +552,7 @@
       "path_regex": "^docs/00_overview\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/00_overview.md": "28d7c968f781714dee84fd844f936d2a2ba12cbcba15e0c2fbc6e2bebd3ae9f5"
+        "docs/00_overview.md": "9f9432a29b44d85fa8b949b95e89ab2a7c2d676024e586724d5cf8ca2a73d136"
       },
       "required_regexes": [],
       "forbidden_regexes": []
