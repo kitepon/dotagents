@@ -1,0 +1,321 @@
+{
+  "schema": "lattice.todo_extraction.v4",
+  "project_id": "dotagents",
+  "plan_key": "harness-model-effort-recommender",
+  "plan_version": "v1",
+  "actor": {
+    "host": "mac",
+    "session": "harness-model-effort",
+    "agent": "bell"
+  },
+  "recorded_at": "2026-09-21T13:57:26.903Z",
+  "tasks": [
+    {
+      "task_id": "hmer-001",
+      "title": "Cursorの残量と利用可能なモデル・エフォートを実測する",
+      "lane": "A",
+      "design_memo": "Cursorの公式仕様と現在の契約を照合し、公開CLI/API/利用状況画面から取得できる使用量、残量、単位、reset、共有枠と更新周期を実測する。Claude既存statusline経路も確認する。生成で枠を使い切らない。調査対象製品はread-only、所有成果はrag配下のCursor観測と証拠。取得不能は項目ごとに明記。GUIの同時操作はroomで占有を宣言する。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 72,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程1 — Cursor・Grokの残量を実際に取得する"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-002",
+      "title": "Grokの残量と利用可能なモデル・エフォートを実測する",
+      "lane": "A",
+      "design_memo": "Grok直接契約とCursor上のGrokを区別し、公式仕様と実環境の公開入口から使用量、残量、単位、reset、制限窓と更新周期を実測する。Codex既存観測経路も確認する。調査対象製品はread-only、所有成果はrag配下のGrok観測と証拠。ブラウザ占有は他席と調整する。取得不能を架空値で埋めず必要な外部条件を報告する。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 72,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程1 — Cursor・Grokの残量を実際に取得する"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-003",
+      "title": "02とハーネス・モデル・エフォート推薦契約を確定する",
+      "lane": "F",
+      "design_memo": "両調査の実測を入力として02の適性・effort判断を整理し、02内の機械可読な正本から候補表とデータを生成する設計を確定する。Cursor優先、共有pool、harnessの固有機能、effort指定不可とnone、入力出力型、CLI名、公開比較結果の掲載先を決める。別提供元の反証を通し、実装範囲を対象pathと公開契約で示す。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 82,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程2 — 02と推薦契約を確定する"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-004",
+      "title": "推薦時に実残量を取得する接続を実装する",
+      "lane": "A",
+      "design_memo": "確定した取得方法と所有境界に従い、quota部品を再利用してCursor/Grokと既存Claude/Codexを共通観測へ接続する。pool共有、観測日時、有効期間、複数制限窓、認証失敗・未対応を保持する。公開入口の一回の呼出しから収集できることをfocused testと最小の実接続で検証する。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 92,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程3 — 残量取得を推薦入口へ接続する"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-005",
+      "title": "Jevによる3点の推薦CLIを実装する",
+      "lane": "A",
+      "design_memo": "typesafe-ai skillの公式APIで任務と適合候補を一括判断し、実在するharness/model/effort候補IDを返す。コードが観測・基準IDから短い理由を組み立てる。02全文を親やJevへ毎回転送しない。失敗は型付きで可視化し、子の自動起動や親設定変更は行わない。必要なfocused testとJev実呼出しを実施する。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 101,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程4 — Jevによる3点の推薦を実装する"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-006",
+      "title": "実務比較・表示・正式配布を完了する",
+      "lane": "F",
+      "design_memo": "計画工程5の代表ケースを検証し、親が02を読む方式と推薦方式の品質・親/Jev/実行先の総token・時間・契約消費を比較する。欠測は明記。既存閲覧面に非秘密の集計を掲載し、所有repoの必須CI、正式commit/push/release/installと配布後の実呼出しまで届ける。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 110,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程5 — 実務比較・配布・利用開始"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    },
+    {
+      "task_id": "hmer-007",
+      "title": "推薦ツールの最終受入を監査する",
+      "lane": "F",
+      "design_memo": "計画全体の受入条件と実diff、実残量・Jev呼出し・公開比較表示・配布後smokeを独立監査する。未取得や未接続を完了扱いせず、残件があれば担当へ返す。全task完了後にterminal-auditへ最終証拠を記録してcampaignを閉じる。\n\n合意済みの計画 docs/plan_harness-model-effort-recommender.md を実読する。成果は専用worktreeで作成し、他席の変更を戻さない。認証情報・cookie・tokenを出力やJev入力へ渡さない。公開入口の不足は所有製品へ報告し、根拠のないfallbackや残量推測をしない。監査担当が証拠・focused test・scopeを確認してクローズする。",
+      "narrative_ref": "docs/plan_harness-model-effort-recommender.md",
+      "compile_binding": null,
+      "disposition": "register_pending",
+      "start": null,
+      "completion": null,
+      "source": {
+        "origin_plan_ref": "docs/plan_harness-model-effort-recommender.md",
+        "origin_line": 110,
+        "source_commit": "bc9674f484f4a0566c5fa1f2b17de0d6fdef658e",
+        "heading_path": [
+          "ハーネス・モデル・エフォート推薦ツールの実装計画",
+          "工程5 — 実務比較・配布・利用開始"
+        ],
+        "markdown_depth": 3,
+        "parent_task_id": null,
+        "checkbox_state": "absent"
+      },
+      "migration_context": {
+        "external_canonical_ref": null,
+        "carry_over_ref": null,
+        "h_required": false,
+        "condition": null,
+        "evidence_refs": [],
+        "notes": [
+          "2026-09-21 オーナーがLatticeと円卓での実行を承認。2本の調査は別成果物として並行可能。共通schemaの設計と実装は依存順に進める。"
+        ]
+      }
+    }
+  ],
+  "hard_dependencies": [
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-001"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-003"
+      }
+    },
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-002"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-003"
+      }
+    },
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-003"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-004"
+      }
+    },
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-004"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-005"
+      }
+    },
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-005"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-006"
+      }
+    },
+    {
+      "from": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-006"
+      },
+      "to": {
+        "project_id": "dotagents",
+        "plan_key": "harness-model-effort-recommender",
+        "task_id": "hmer-007"
+      }
+    }
+  ],
+  "joins": [],
+  "extraction_digest": "e6f1b904c483922d76f3099a4be63ecad3c43963730682b7a041c1aec3c9d334"
+}

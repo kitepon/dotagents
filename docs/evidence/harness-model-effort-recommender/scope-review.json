@@ -1,0 +1,71 @@
+{
+  "schema": "lattice.plan_scope_review.v1",
+  "authoring_digest": "e6f1b904c483922d76f3099a4be63ecad3c43963730682b7a041c1aec3c9d334",
+  "work_specs": [
+    {
+      "work_spec_id": "harness-model-effort",
+      "requirement": "合意した計画をLatticeと円卓で実行し、残量を加味してハーネス・モデル・エフォートを推薦する。",
+      "acceptance": "Cursor・Grokの実残量、02の判断正本、Cursor優先、Jevによる理由付き推薦、品質と総コスト比較、正式配布後の実利用を確認する。"
+    }
+  ],
+  "task_assessments": [
+    {
+      "task_id": "hmer-001",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程1を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-002",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程1を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-003",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程2を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-004",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程3を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-005",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程4を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-006",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程5を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    },
+    {
+      "task_id": "hmer-007",
+      "work_spec_ids": [
+        "harness-model-effort"
+      ],
+      "judgment": "required",
+      "reason": "合意済み計画の工程5を実行可能な担当単位へ分割したもの。新しい製品目的は追加しない。"
+    }
+  ],
+  "verdict": "scope_preserved",
+  "review_digest": "21d0395f16e8a27eb8787e9c7cd47ab4af14526a39983b8f18608bde5815aac9"
+}
