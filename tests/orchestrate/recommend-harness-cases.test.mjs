@@ -8,6 +8,7 @@ import {
   buildComparison,
   independentReview,
   loadBugHubEndpoint,
+  publishComparison,
   recommendByRemaining,
 } from "../../lib/orchestrate/recommendation-comparison.mjs";
 
@@ -176,6 +177,32 @@ test("比較文書は現行endpointを読み、測っていない品質は欠測
   const source = readFileSync(new URL("../../lib/orchestrate/recommendation-comparison.mjs", import.meta.url), "utf8");
   assert.equal(source.includes("fetch("), false);
   assert.equal(source.includes("child_process"), false);
+});
+
+test("比較の送信はv9 reportとは別の追加入口へ行く", async () => {
+  const endpoint = loadBugHubEndpoint();
+  const current = readFileSync(new URL("../../docs/factory-current-state.md", import.meta.url), "utf8");
+  const document = buildComparison({
+    case_id: "cursor-room",
+    endpoint,
+    records: [{ candidate_id: "cursor-agent/claude-fable-5/high", pool_id: "cursor-other-models-monthly", observed_at: AT }],
+  });
+  let posted;
+  const result = await publishComparison(document, {
+    currentState: current,
+    reporterEndpoint: `http://127.0.0.1:9${endpoint}`,
+    token: "not-a-real-token",
+    request: async (url, init) => {
+      posted = { href: url.href, init };
+      return { ok: true, status: 200 };
+    },
+  });
+  assert.equal(result.accepted, true);
+  assert.equal(result.target, "/api/factory/comparisons");
+  assert.equal(new URL(posted.href).pathname, "/api/factory/comparisons");
+  assert.equal(posted.init.body.includes("/api/factory/v9/reports"), true);
+  assert.equal(posted.init.headers.Authorization, "Bearer not-a-real-token");
+  assert.equal(JSON.stringify(result).includes("not-a-real-token"), false);
 });
 
 test("配布先のCLIが三点を返す", () => {
