@@ -16,10 +16,12 @@
 
 ## Codex子の入口とaitermの境界
 
-- **Codex親がCodex子を呼ぶ時はnative sub-agentを既定にする。** 同じ子へのfollow-upで対話と
-  task相関を保ち、repoに密結合した実装・調査・反証をaitermの`codex_agent`へ流さない。
+- **親が子の完了を待ってターンを終える委譲は、Aitermの`agent_launch`と自動完了配送を使う。**
+  子の完了で親の後続作業を再開し、オーナーによる手動の呼び起こしを前提にしない。
+- それ以外のCodex親からCodex子への委譲はnative sub-agentを既定にし、同じ子へのfollow-upで
+  対話とtask相関を保つ。
 - aitermを永続shellとして使うことと、aitermからCodex子を起動することを混同しない。前者はshell操作の
-  既定のまま、後者はnativeで満たせない隔離・durable external session・独立capacityの具体的利益が
+  既定のまま、後者は上記の自動完了配送が必要な場合、またはnativeで満たせない隔離・durable external session・独立capacityの具体的利益が
   準備・回収コストを上回る時だけ例外的に選ぶ。単にaitermがCodexを起動できることや、慣性で
   external laneへ流れることは選定理由にしない。
 - Grok／Composer等の別harnessをaitermで使う判断と、Codex→Codexの入口判断は別契約である。
