@@ -106,7 +106,6 @@ test-factory-wire: ## 工場wire major別の固定製品集合・client互換契
 
 test-orchestrate: ## orchestration control record の契約を検証
 	env -u TEMP -u TMP TMPDIR=/tmp node --test tests/orchestrate/*.test.mjs
-	env -u TEMP -u TMP TMPDIR=/tmp bash tests/orchestrate/agent-routing-verifier.sh
 
 test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽出契約を検証
 	node --test tests/lattice-cutover/*.test.mjs

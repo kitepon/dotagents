@@ -95,7 +95,7 @@ for f in "$HERE/claude/agents"/*.md; do
 done
 
 # Codex（skill 面は profile ごとに一方だけへ配布）
-mkdir -p "$HOME/.codex/rules" "$HOME/.codex/agents"
+mkdir -p "$HOME/.codex/rules"
 if [ "$profile" = official ]; then
   codex_skills_dir="$HOME/.agents/skills"
 else
@@ -116,10 +116,13 @@ for f in "$HERE/codex/rules"/*; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.codex/rules/$(basename "$f")"
 done
-for f in "$HERE/codex/agents"/*.toml; do
-  [ -e "$f" ] || continue
-  link_one "$f" "$HOME/.codex/agents/$(basename "$f")"
+# 廃止した固定roleの配布リンクだけを回収する。
+for role in implementer refuter sorter; do
+  remove_retired_link "$HOME/.codex/agents/$role.toml" \
+    "$HERE/codex/agents/$role.toml" "$HOME/Developer/dotagent/codex/agents/$role.toml"
 done
+remove_retired_link "$HOME/.local/bin/verify-codex-agent-routing" \
+  "$HERE/bin/verify-codex-agent-routing.sh" "$HOME/Developer/dotagent/bin/verify-codex-agent-routing.sh"
 
 # Grok（憲法・runbook・skill・agent・hook）
 mkdir -p "$HOME/.grok/rules" "$HOME/.grok/skills" "$HOME/.grok/agents" "$HOME/.grok/hooks"

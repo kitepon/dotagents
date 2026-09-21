@@ -529,7 +529,7 @@
       "path_regex": "^docs/05_codex-fragments\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/05_codex-fragments.md": "391c1a79f107ae7ea5415f6b823013ed6c88ce05754eeec9d5658164ffa04962"
+        "docs/05_codex-fragments.md": "86bc2c381c656aa73f2215be554cc815551f85655f3bac998ce3bfac29ceaa81"
       },
       "required_regexes": [],
       "forbidden_regexes": []
@@ -539,7 +539,7 @@
       "path_regex": "^(?:codex|grok|cursor)/skills/orchestrate/SKILL\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "codex/skills/orchestrate/SKILL.md": "87a17b219bf705742a702fce7eb83c90886511f274fd58e83e48c952428fc76e",
+        "codex/skills/orchestrate/SKILL.md": "80dcfe2fc03b93a042867ef000bc72266dd4bff66ff9df40d3d44b8ee7a87e93",
         "cursor/skills/orchestrate/SKILL.md": "3242dcf283dd171d742b6ef6fac60eeb09019bb86f910d15da2c2be322777685",
         "grok/skills/orchestrate/SKILL.md": "21937efac24aa25e36fea6bc385d3699e7bbe9976f63d9364669c42df3e69f06"
       },

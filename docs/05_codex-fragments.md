@@ -25,11 +25,12 @@ TUI/アプリの `/model` 選択（モデルピッカー）は `config.toml` へ
   2. 該当2行（`model = "..."` / `model_reasoning_effort = "..."`）を編集
   3. 妥当性確認: `codex exec 'echo ok'` が正常終了すること
 
-## 3. ネイティブ custom agent の必須設定と実効値ゲート
+## 3. ネイティブサブエージェントのモデル指定
 
 [公式 Subagents 文書](https://learn.chatgpt.com/docs/agent-configuration/subagents#custom-agents)どおり、
-`~/.codex/agents/*.toml` は personal custom agent として自動探索される。このリポの
-`implementer` / `refuter` / `sorter` に `[agents.<name>]` の個別登録は不要。
+`~/.codex/agents/*.toml` は personal custom agent として自動探索される。
+dotagentsは固定roleを配布しない。モデルとeffortは[順位表](02_models.md)から任務に応じて選び、
+`spawn_agent`の`model`と`reasoning_effort`へ直接指定する。役割・作業範囲は依頼文に書く。
 
 ただし GPT-5.6 Sol/Terra が選ぶ MultiAgent V2 には、role 定義の探索とは別の入口バグがある。
 Codex 0.144.1 の実装では `hide_spawn_agent_metadata` の既定値が `true` で、単なる表示抑制ではなく
@@ -49,19 +50,10 @@ tool_namespace = "agents"
 
 - 既存セッションの tool schema は変わらない。適用後は**必ず新規セッション**で確認する。
 - `features list` が `multi_agent_v2 = false` を表示しても、Sol/Terra のモデルカタログ指定が V2 を選ぶため、上記断片は必要。
-- `fork_turns` の V2 既定は `all`。これは full-history fork となり、`agent_type / model / reasoning_effort` を指定すると起動前に拒否される。custom role の spawn は必ず `fork_turns = "none"` を明示する。
-- `task_name` を role selector として使わない。`agent_type = "implementer"` のように明示する。
-- Control配下の書込み Workerだけは最初の message を routing smoke に限定する。起動後に
-  `verify-codex-agent-routing <role> <agent-path>` で `agent_role / model / effort /
-  developer_instructions` を照合し、green の時だけ follow-up task を渡す。通常のnative audit・
-  refuter・sorterはspawn時の任務をそのまま実行し、この事前gateを要求しない。
-- 現行 spawn 応答は実効 role/model/effort/sandbox を返さないため、上記スクリプトが rollout JSONL を読む。
-
-**実効権限の現行契約（2026-08-14 実測）**: custom agent の実効sandboxは親 turn の live
-permission profileを継承する。macOSでは`danger-full-access`、WSL2 Codex CLI 0.147.0では
-`workspace-write`を同じrefuterが継承した。role TOMLに強制不能な`sandbox_mode`を置かず、
-refuter / sorter の書込み禁止は行動契約として明示する。verifierは実効sandboxを観測表示するが、
-role別の期待値や警告を生成しない。
+- `fork_turns` の V2 既定は `all`。model／reasoning_effortを指定する時は`fork_turns="none"`を明示する。
+- `task_name`はタスク名であり、モデルや役割の選択には使わない。
+- 任務はspawn時に直接渡す。固定roleとの一致検査や事前routing smokeは要求しない。
+- 実効sandboxは親のpermission profileを継承する。読み取り専用などの作業範囲は依頼文で明示する。
 
 グローバル `[agents]` の `max_threads` / `max_depth` は公開設定で、公式既定はそれぞれ `6` / `1`。
 通常は既定で足りるため明示しないが、必要なら user config または信頼済みproject configで設定できる。

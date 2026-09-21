@@ -100,7 +100,16 @@ fi
 if HOME="$OFFICIAL_HOME" "$ROOT/bin/verify-install.sh" --unknown >/dev/null 2>&1; then
   fail 'verify が未知引数を受理した'
 fi
+mkdir -p "$OFFICIAL_HOME/.codex/agents"
+for role in implementer refuter sorter; do
+  ln -s "$ROOT/codex/agents/$role.toml" "$OFFICIAL_HOME/.codex/agents/$role.toml"
+done
+ln -s "$ROOT/bin/verify-codex-agent-routing.sh" "$OFFICIAL_HOME/.local/bin/verify-codex-agent-routing"
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official
+for role in implementer refuter sorter; do
+  [ ! -e "$OFFICIAL_HOME/.codex/agents/$role.toml" ] && [ ! -L "$OFFICIAL_HOME/.codex/agents/$role.toml" ] || fail '廃止した固定roleが残った'
+done
+[ ! -L "$OFFICIAL_HOME/.local/bin/verify-codex-agent-routing" ] || fail '廃止したrouting検査が残った'
 [ -L "$OFFICIAL_HOME/.claude/runbooks" ] || fail 'Claude runbooks symlinkを生成しない'
 assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
 assert_link "$OFFICIAL_HOME/.codex/runbooks" "$ROOT/shared/runbooks"

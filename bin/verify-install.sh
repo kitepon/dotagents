@@ -419,7 +419,6 @@ for d in "$REPO/codex/skills"/*/; do
   fi
 done
 for f in "$REPO/codex/rules"/*;      do [ -e "$f" ] && check "$HOME/.codex/rules/$(basename "$f")" "$f"; done
-for f in "$REPO/codex/agents"/*.toml; do [ -e "$f" ] && check "$HOME/.codex/agents/$(basename "$f")" "$f"; done
 for f in "$REPO/bin"/*.sh; do
   if [ -e "$f" ]; then
     installed="$HOME/.local/bin/$(basename "$f" .sh)"

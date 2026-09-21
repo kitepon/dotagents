@@ -123,17 +123,10 @@ assert_order "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" 
   "phase('Critic')" \
   "model:VERIFY_MODEL, effort:'high'"
 [ ! -e "$ROOT/claude/skills/orchestrate/references/delegation-contract.md" ] || fail 'Claude 固有の旧 delegation-contract.md が残っている'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'agent_type=<role>'
 contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'fork_turns="none"'
-assert_order "$ROOT/codex/skills/orchestrate/SKILL.md" \
-  'Control配下の書込み Workerだけは最初のspawnをrouting smoke のみにする' \
-  'verify-codex-agent-routing' \
-  'follow-up で実作業を渡す'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '通常のnative audit・refuter・sorterはspawn時の任務をそのまま実行し、事前smokeを要求しない'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '実効sandboxは親から継承し、role TOMLで別権限を保証しない'
-contains "$ROOT/README.md" '通常のnative audit・refuter・sorterは事前smokeなしで実行できる'
-contains "$ROOT/README.md" 'Control配下の書込みWorkerだけは'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '呼び出し側が手指定しない'
+contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'モデル順位表'
+contains "$ROOT/codex/skills/orchestrate/SKILL.md" '固定roleのTOMLは配布しない'
+contains "$ROOT/codex/skills/orchestrate/SKILL.md" '実効sandboxは親から継承する'
 contains "$ROOT/codex/skills/orchestrate/SKILL.md" '入れ子のCodexを起動してよい'
 contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'execution-verified'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" '同一taskを重複起動しない'

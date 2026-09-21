@@ -75,20 +75,17 @@ test("synthetic adapter descriptorもexact catalog validationとlookupを通る"
   assert.deepEqual(adapters.lookupOperation({ adapter_id: "synthetic", contract_version: "v1", interface_id: "ticket-work", operation_id: "inspect" }, catalog).operation, { operation_id: "inspect", transport: "host-tool", tool_name: "synthetic_inspect", effect: "observe" });
 });
 
-test("codex-native requestはhost toolを実行せず、routing smokeとgreen照合後のfollowupだけを投影する", () => {
-  const spawn = adapters.codexNativeSpawnRequest({ agent_type: "implementer", task_name: "routing_smoke" });
-  assert.deepEqual(spawn, {
-    schema_version: "dotagents.codex-native.request.v1", operation_id: "spawn", tool_name: "spawn_agent",
-    arguments: { agent_type: "implementer", fork_turns: "none", message: "Routing smoke only. Do not perform work. Report your agent path, role recognition, and readiness to wait.", task_name: "routing_smoke" },
-  });
-  assert.equal(spawn.arguments.message.includes("implement the task"), false);
-  const routing = routingReceipt();
-  assert.deepEqual(adapters.codexNativeFollowupRequest({ agent_path: "/root/routing_smoke", task: "Implement the bounded adapter packet.", routing_receipt: routing }).arguments, { target: "/root/routing_smoke", message: "Implement the bounded adapter packet." });
-  assert.deepEqual(adapters.codexNativeInterruptRequest({ agent_path: "/root/routing_smoke" }).arguments, { target: "/root/routing_smoke" });
-  assert.throws(() => adapters.codexNativeFollowupRequest({ agent_path: "/root/routing_smoke", task: "must not dispatch", routing_receipt: routingReceipt({ status: "pending" }) }), code("ROUTING_VERIFICATION_REQUIRED"));
-  assert.throws(() => adapters.codexNativeFollowupRequest({ agent_path: "/root/routing_smoke", task: "must not dispatch", routing_receipt: { ...routing, effort: "high" } }), code("ROUTING_VERIFICATION_MISMATCH"));
-  assert.throws(() => adapters.codexNativeFollowupRequest({ agent_path: "/root/other", task: "must not dispatch", routing_receipt: routing }), code("ROUTING_VERIFICATION_MISMATCH"));
-  assert.throws(() => adapters.codexNativeSpawnRequest({ agent_type: "implementer", task_name: "routing_smoke", message: "task" }), code("INVALID_SCHEMA"));
+test("codex-native requestは任務ごとのモデル指定と実作業をそのまま渡す", () => {
+  for (const [model, reasoning_effort] of [["gpt-5.6-terra", "high"], ["gpt-6-astra", "medium"]]) {
+    const spawn = adapters.codexNativeSpawnRequest({ model, reasoning_effort, task_name: "implementation", task: "指定箇所を修正する" });
+    assert.deepEqual(spawn, {
+      schema_version: "dotagents.codex-native.request.v1", operation_id: "spawn", tool_name: "spawn_agent",
+      arguments: { model, reasoning_effort, fork_turns: "none", message: "指定箇所を修正する", task_name: "implementation" },
+    });
+  }
+  assert.deepEqual(adapters.codexNativeFollowupRequest({ agent_path: "/root/implementation", task: "続きの修正" }).arguments, { target: "/root/implementation", message: "続きの修正" });
+  assert.deepEqual(adapters.codexNativeInterruptRequest({ agent_path: "/root/implementation" }).arguments, { target: "/root/implementation" });
+  assert.throws(() => adapters.codexNativeSpawnRequest({ agent_type: "implementer", task_name: "implementation" }), code("INVALID_SCHEMA"));
 });
 
 test("codex-native observationはboundedなagent状態とrouting/report/evidence参照だけを投影する", () => {

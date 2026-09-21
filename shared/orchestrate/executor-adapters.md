@@ -86,18 +86,13 @@ quarantine publicationだけを残す。
 host toolへ渡す invocation packet を返す純粋関数である。Node CLIは`spawn_agent`、`followup_task`、
 `interrupt_agent`を呼ばない。`gpt-connector`やaitermなど別laneへ変換することもない。
 
-spawn packetは`agent_type`を必須にし、`fork_turns="none"`と固定のhandshake-only messageを使う。
-このmessageは本作業を含めず、agent path・role認識・待機可否の報告だけを求める。followup packetは
-既存の`agent_path`とtaskだけを渡すが、その生成前に`verify-codex-agent-routing`が発行したgreen receiptを
-要求する。receiptは`agent_path / agent_role / model / effort / developer_instructions=applied / verified_at /
-verification_ref`を持ち、そのcanonical payloadを`verification_digest`が拘束する。follow-up対象はreceiptの
-`agent_path`と一致しなければならない。host tool引数は
-実schemaどおり`target`へ同じpathを渡す。interrupt packetも既存の`agent_path`を`target`にする。
-このhandshakeとreceiptはControl配下の書込みWorkerだけの契約であり、通常のnative audit・refuter・
-sorterへ事前gateとして適用しない。
+spawn packetは任務に応じて選んだ`model`、`reasoning_effort`、`task_name`、`task`を受け取り、
+`fork_turns="none"`と実作業のmessageを渡す。モデル選定の正本は[順位表](../../docs/02_models.md)。
+固定roleや事前routing smokeは要求しない。followup packetは既存の`agent_path`とtaskを受け取り、
+`target`と`message`へ変換する。interrupt packetも同じ`agent_path`を`target`にする。
 
 `projectCodexNativeObservation`はagent path、状態（`created`、`running`、`completed`、`failed`、`unknown`、
-`interrupted`）、green routing receipt、report参照、evidence参照だけをboundedに投影する。Controlへ渡す
+`interrupted`）、旧記録を読むための任意のgreen routing receipt（新規は`null`）、report参照、evidence参照だけをboundedに投影する。Controlへ渡す
 handleは`{agent_path}`であり、Controlの`codex-native.agent-path.v1`と同じshapeである。raw prompt、
 raw log、shell commandやhost tool実行結果の任意payloadはschema外として拒否する。`completed`は空でない
 strict Worker Report参照を要求し、`buildWorkerControlObservation`はcaller提供resultによる直接成功化を
