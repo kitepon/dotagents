@@ -10,7 +10,7 @@
 
 成功条件は、両方の標準入口でJevを呼び実操作を完了し、次のCodexタスクから利用方法を辿れること。速度は起動準備と実行時間を混同せず、取れた値だけを掲載する。
 
-現在、両者の標準導入、上流Skillの導入、自作Skillの標準uninstallは完了。ブラウザはJevで公開ページのリンク操作が成功。デスクトップはmacOSのTouch ID、ブラウザ文字入力は別モデルのAPIキーの回答待ち。[導入結果](evidence/jev-upstream-adoption-20260921.md)と[利用先](../shared/runbooks/jev-computer-use.md)を参照する。
+現在、両者の標準導入、上流Skillの導入、自作Skillの標準uninstallは完了。ブラウザは1リンク遷移を通常操作と各5回比較し、両方5/5成功、中央値は通常9.444秒・Jev1.261秒。2リンクの連続操作もJevで5/5成功した。デスクトップはTouch ID認証済みで、アクセシビリティ一覧へのバイナリ選択の手元操作待ち。ブラウザ文字入力は別モデルのAPIキーの回答待ち。[導入結果](evidence/jev-upstream-adoption-20260921.md)、[反復評価](evidence/jev-upstream-evaluation-20260921.md)、[利用先](../shared/runbooks/jev-computer-use.md)を参照する。
 
 ## 撤回した旧計画
 
