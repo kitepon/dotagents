@@ -13,28 +13,44 @@ import {
   readAndValidateReportV6,
   readAndValidateReportV7,
   readAndValidateReportV8,
+  readAndValidateReportV9,
   readConfig,
   validateReportV5,
   validateReportV6,
   validateReportV7,
   validateReportV8,
+  validateReportV9,
 } from '../lib/factory/contract.mjs';
 import {
   acknowledgeRuntimeErrorsV5,
   acknowledgeRuntimeErrorsV6,
   acknowledgeRuntimeErrorsV7,
   acknowledgeRuntimeErrorsV8,
+  acknowledgeRuntimeErrorsV9,
   validateAcknowledgementBundleV5,
   validateAcknowledgementBundleV6,
   validateAcknowledgementBundleV7,
   validateAcknowledgementBundleV8,
+  validateAcknowledgementBundleV9,
 } from '../lib/factory/runtime-errors.mjs';
 
 const INVOKED = basename(process.argv[1] || '');
 const IS_V6 = INVOKED.includes('factory-reporter-v6');
 const IS_V7 = INVOKED.includes('factory-reporter-v7');
 const IS_V8 = INVOKED.includes('factory-reporter-v8');
-const WIRE = IS_V8
+const IS_V9 = INVOKED.includes('factory-reporter-v9');
+const WIRE = IS_V9
+  ? {
+      major: 'v9',
+      endpoint: '/api/factory/v9/reports',
+      state: 'factory-reporter-v9',
+      outboxSchema: 'dotagents.factory-outbox.v9',
+      readReport: readAndValidateReportV9,
+      validateReport: validateReportV9,
+      validateAcknowledgements: validateAcknowledgementBundleV9,
+      acknowledgeRuntimeErrors: acknowledgeRuntimeErrorsV9,
+    }
+  : IS_V8
   ? {
       major: 'v8',
       endpoint: '/api/factory/v8/reports',

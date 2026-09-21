@@ -104,7 +104,7 @@ EOF
 cat >"$FIXTURE_ROOT/bin/agents-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-state="$HOME/.local/state/dotagents/factory-reporter-v8"
+state="$HOME/.local/state/dotagents/factory-reporter-v9"
 log_dir="$HOME/.local/state/agents-update"
 mkdir -p "$state" "$log_dir"
 sequence_file="$state/fixture-sequence"
@@ -118,7 +118,7 @@ const fs = require('fs');
 const [output, reportId] = process.argv.slice(2);
 const required = [
   'caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector',
-  'aiterm-mcp', 'codex-sidecar', 'peertable', 'unai', 'claude-code', 'codex-cli', 'grok-build',
+  'aiterm-mcp', 'codex-sidecar', 'peertable', 'unai', 'claude-code', 'codex-cli', 'grok-build', 'jev-ultrafast',
 ];
 const products = Object.fromEntries(required.map((id) => [id, {
   presence_status: 'installed', compatibility_status: 'compatible', checks: [],
@@ -129,11 +129,12 @@ products.servermanager = process.env.DOTAGENTS_SETUP_TEST_HOST_PROFILE === 'serv
 products.aishell = {
   presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [],
 };
+products['agent-desktop'] = { presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [] };
 if (process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT) {
   products[process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT].presence_status = 'missing';
 }
 fs.writeFileSync(output, `${JSON.stringify({
-  schema_version: '8.0', report_id: reportId, host_profile: process.env.DOTAGENTS_SETUP_TEST_HOST_PROFILE,
+  schema_version: '9.0', report_id: reportId, host_profile: process.env.DOTAGENTS_SETUP_TEST_HOST_PROFILE,
   platform: { os: 'linux', arch: 'x64' }, products,
 })}\n`);
 NODE
@@ -256,7 +257,7 @@ chmod +x "$STUB_BIN/"*
 
 mkdir -p "$HOME_DIR/.config/dotagents"
 printf '%s\n' '.fixture-user-ignore' >"$HOME_DIR/.gitignore_global"
-printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v8/reports"}}\n' "$HOST_PROFILE" \
+printf '{"host":{"id":"fixture","profile":"%s"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v9/reports"}}\n' "$HOST_PROFILE" \
   >"$HOME_DIR/.config/dotagents/factory-reporter.json"
 {
   printf '%s\n' "17 * * * * /usr/bin/node /fixture/factory-reporter # dotagents-factory-reporter"
@@ -366,7 +367,7 @@ grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを�
 [ "$(grep -Fc 'agents-update ' "$CALLS")" -eq 2 ] || fail '各setup runでfresh updateを1回だけ実行しない'
 
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v9/latest-report.json")"
 [ "$latest_report" = fixture-report-2 ] || fail '2回目のfresh reportが作られていない'
 
 # rabbitと同じく、Nodeは ~/.local/bin にだけありcronのPATHには含まれない。
@@ -385,17 +386,17 @@ minimal_output="$(env -i \
 mv "$HOME_DIR/.local/bin/node" "$STUB_BIN/node"
 grep -Fq '"delivery_acknowledged":true' <<<"$minimal_output" \
   || fail 'cron最小環境でdelivery receiptを確認しない'
-grep -Fq '"factory_products_reported":15' <<<"$minimal_output" \
-  || fail 'cron最小環境で全15製品を確認しない'
+grep -Fq '"factory_products_reported":17' <<<"$minimal_output" \
+  || fail 'cron最小環境で全17製品を確認しない'
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v9/latest-report.json")"
 [ "$latest_report" = fixture-report-3 ] || fail 'cron最小環境でfresh reportが作られていない'
 
 DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=caveat \
   "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --scheduled-update >/dev/null \
   || fail '製品の診断結果を工場setup自身の失敗へ変換した'
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.products.caveat.presence_status!=="missing")process.exit(1)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json" \
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v9/latest-report.json" \
   || fail '製品の診断結果を記録から隠した'
 
 if "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh" --unknown >/dev/null 2>&1; then

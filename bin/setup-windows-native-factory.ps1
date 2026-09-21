@@ -374,7 +374,7 @@ function Assert-ReporterConfig {
   if ($config.host.profile -ne 'windows-native') { throw 'factory reporter host.profile must be windows-native' }
   if ($config.collection.enabled -ne $true -or $config.reporting.enabled -ne $true) { throw 'factory collection and reporting must be enabled' }
   $endpoint = [uri]$config.reporting.endpoint
-  if ($endpoint.AbsolutePath -ne '/api/factory/v8/reports') { throw 'factory reporter endpoint must use wire v8' }
+  if ($endpoint.AbsolutePath -ne '/api/factory/v9/reports') { throw 'factory reporter endpoint must use wire v9' }
   $credential = [string]$config.reporting.credential_file
   if ([string]::IsNullOrWhiteSpace($credential) -or -not (Test-Path -LiteralPath $credential -PathType Leaf)) {
     throw 'Windows-native BugHub credential is missing'
@@ -503,7 +503,7 @@ function Update-WindowsNativeClaude {
 
 function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   Write-Step '製品更新・公開入口の実行・fresh BugHub配送'
-  $state = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter-v8'
+  $state = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter-v9'
   $reportPath = Join-Path $state 'latest-report.json'
   $deliveryPath = Join-Path $state 'delivery-receipt.json'
   $priorReportId = $null
@@ -521,7 +521,7 @@ function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   $ErrorActionPreference = 'Continue'
   $env:HOME = $env:USERPROFILE
   $env:CODEX_HOME = Join-Path $env:USERPROFILE '.codex'
-  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v8-schedule-runner')
+  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\bin\factory-reporter-v9-schedule-runner')
   $env:AGENTS_UPDATE_BATCH_TOKEN = $batchToken
   $env:THROUGHLINE_CODEX_THREAD_ID = $null
   $env:CODEX_THREAD_ID = $null
@@ -545,10 +545,10 @@ function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   }
   $report = Get-Content -Raw -LiteralPath $reportPath | ConvertFrom-Json
   $receipt = Get-Content -Raw -LiteralPath $deliveryPath | ConvertFrom-Json
-  if ($report.schema_version -ne '8.0' -or [string]$report.report_id -eq $priorReportId -or
+  if ($report.schema_version -ne '9.0' -or [string]$report.report_id -eq $priorReportId -or
       $receipt.schema -ne 'dotagents.factory-delivery-receipt.v1' -or
       $receipt.report_id -ne $report.report_id -or $receipt.batch_token -ne $batchToken) {
-    throw 'Fresh BugHub delivery receipt does not match this v8 batch'
+    throw 'Fresh BugHub delivery receipt does not match this v9 batch'
   }
   $smokeOutput = & node $ProductSmoke '--report' $reportPath 2>&1
   $smokeCode = $LASTEXITCODE
@@ -558,7 +558,7 @@ function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   if ($smoke.schema -ne 'dotagents.windows-native-report-inventory.v1' -or $smoke.status -ne 'passed' -or $smoke.reported_products -ne 15) {
     throw 'Factory report inventory receipt is invalid'
   }
-  return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v8'; product_smoke = $smoke }
+  return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v9'; product_smoke = $smoke }
 }
 
 function Remove-LegacyCron {

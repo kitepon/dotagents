@@ -26,6 +26,9 @@ done
 cat > "$TEST_HOME/base-bin/node" <<EOF
 #!/bin/sh
 case "\$1" in
+  */factory-jev-setup.mjs)
+    printf '%s:jev-setup\\n' "\${RUN_ID:-default}" >> "\$HOME/update-events.log"
+    exit "\${JEV_SETUP_FAIL:-0}" ;;
   */factory-typesafe-setup.mjs)
     printf '%s:typesafe-setup\\n' "\${RUN_ID:-default}" >> "\$HOME/update-events.log"
     exit "\${TYPESAFE_SETUP_FAIL:-0}" ;;
@@ -210,6 +213,15 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   RUN_ID=typesafe-fail TYPESAFE_SETUP_FAIL=1 \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/typesafe-fail.out" 2>&1; then
   fail 'TypeSafeの導入・認証失敗が更新失敗にならない'
+fi
+
+[ "$(grep -Fc 'normal:jev-setup' "$TEST_HOME/update-events.log")" -eq 1 ] || fail 'Jev公式導入が一回呼ばれていない'
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=jev-fail JEV_SETUP_FAIL=1 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/jev-fail.out" 2>&1; then
+  fail 'Jev導入の失敗が更新失敗にならない'
 fi
 
 expected_npm_packages=13

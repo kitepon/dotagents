@@ -22,11 +22,12 @@ test('v6正典はObserverをwire必須キーから外し、MarkItDownを第三�
   assert.doesNotMatch(contracts, /Observerは予約枠のまま未編入/u);
 });
 
-test('agents-updateのpost-update gateはconfigのwire majorへ追従し、生成された現役v8で明示失敗させる', async () => {
+test('agents-updateのpost-update gateはconfigのwire majorへ追従し、現役wireで明示失敗させる', async () => {
   const source = await readFile(resolve(import.meta.dirname, '../../bin/agents-update.sh'), 'utf8');
   // hostの実configのendpointからmajorを解決する（host別段階cutover中のendpoint/runner食い違い対策）
   assert.match(source, /api\\\/factory\\\/\(v\[0-9\]\+\)\\\/reports/u);
-  assert.match(source, /reporter_wire_major=v8/u);
+  const { CURRENT_WIRE_MAJOR } = await import('../../lib/factory/deployment-contract.mjs');
+  assert.match(source, new RegExp(`reporter_wire_major=v${CURRENT_WIRE_MAJOR}`, 'u'));
   assert.match(source, /factory-reporter-\$\{reporter_wire_major\}-schedule-runner/u);
   assert.doesNotMatch(source, /FACTORY_REPORTER_RUNNER=.*factory-reporter-v4-schedule-runner/u);
 
@@ -38,10 +39,10 @@ test('agents-updateのpost-update gateはconfigのwire majorへ追従し、生�
     resolve(import.meta.dirname, '../../docs/factory-current-state.md'),
     'utf8',
   );
-  // 全hostのv8 cutover後も、実configのendpoint確認とv7/v6 rollback手順を維持する。
+  // 現役wireの更新後も、実configのendpoint確認と旧wireのrollback手順を維持する。
   // updaterのmajor解決は固定majorでなくconfigに追従するため、この両面を検証する。
-  assert.match(currentState, /\| 現役wire \| v8（schema `8\.0`、15製品） \|/u);
-  assert.match(currentState, /\| 本番BugHub endpoint \| `\/api\/factory\/v8\/reports` \|/u);
+  assert.match(currentState, /\| 現役wire \| v9（schema `9\.0`、17製品） \|/u);
+  assert.match(currentState, /\| 本番BugHub endpoint \| `\/api\/factory\/v9\/reports` \|/u);
   assert.match(runbook, /本番BugHubの入口は\[工場の現行状態\]/u);
   assert.match(runbook, /`reporting\.endpoint`を同ページと照合する/u);
   assert.match(runbook, /--wire-major v6/u);

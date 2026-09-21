@@ -8,20 +8,20 @@
 
 | 項目 | 現在値 |
 |---|---|
-| 現役管理対象 | 12製品 |
+| 現役管理対象 | 14製品 |
 | 自作コア | 11製品 |
-| 第三者管理 | 1製品 |
-| 現役wire | v8（schema `8.0`、15製品） |
-| 本番BugHub endpoint | `/api/factory/v8/reports` |
-| host別rollback先 | wire v7 |
+| 第三者管理 | 3製品 |
+| 現役wire | v9（schema `9.0`、17製品） |
+| 本番BugHub endpoint | `/api/factory/v9/reports` |
+| host別rollback先 | wire v8 |
 | self-hosted runner | 4席 |
 | full CI環境 | 3環境 |
 
 ## 製品集合
 
 - 自作コア: `caveat`、`throughline`、`spotter`、`lattice`、`gpt-connector`、`aiterm-mcp`、`codex-sidecar`、`aishell`、`servermanager`、`peertable`、`unai`
-- 第三者管理: `markitdown`
-- 現役wire: `caveat`、`throughline`、`spotter`、`lattice`、`markitdown`、`gpt-connector`、`aiterm-mcp`、`codex-sidecar`、`servermanager`、`claude-code`、`codex-cli`、`grok-build`、`aishell`、`peertable`、`unai`
+- 第三者管理: `markitdown`、`jev-ultrafast`、`agent-desktop`
+- 現役wire: `caveat`、`throughline`、`spotter`、`lattice`、`markitdown`、`gpt-connector`、`aiterm-mcp`、`codex-sidecar`、`servermanager`、`claude-code`、`codex-cli`、`grok-build`、`aishell`、`peertable`、`unai`、`jev-ultrafast`、`agent-desktop`
 
 ## CI runner
 

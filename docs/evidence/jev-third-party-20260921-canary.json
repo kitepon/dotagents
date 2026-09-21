@@ -1,0 +1,80 @@
+{
+  "observed_at": "2026-09-21T08:15:12.044093+00:00",
+  "report_id": "a75a5421-bc51-4fb5-a09a-53a360980be0",
+  "schema_version": "9.0",
+  "server_commit": "2aad085928675981148404594976a17db8f644e0",
+  "readyz_http_status": 200,
+  "matrix_endpoint": "http://192.168.1.2:39310/api/factory/v2/matrix",
+  "products": {
+    "agent-desktop": {
+      "host_id": "mac-kite",
+      "product_id": "agent-desktop",
+      "repair_repository": null,
+      "observed_at": "2026-09-21T08:14:14.745Z",
+      "received_at": "2026-09-21T08:14:17.208Z",
+      "installed_version": "0.9.2",
+      "latest_version": null,
+      "contract_version": "9.0",
+      "state_schema_version": null,
+      "update_status": null,
+      "compatibility_status": "unverified",
+      "presence_status": "installed"
+    },
+    "jev-ultrafast": {
+      "host_id": "mac-kite",
+      "product_id": "jev-ultrafast",
+      "repair_repository": null,
+      "observed_at": "2026-09-21T08:14:14.745Z",
+      "received_at": "2026-09-21T08:14:17.208Z",
+      "installed_version": "0.1.0",
+      "latest_version": null,
+      "contract_version": "9.0",
+      "state_schema_version": null,
+      "update_status": null,
+      "compatibility_status": "unverified",
+      "presence_status": "installed"
+    }
+  },
+  "public_probes": {
+    "jev-ultrafast": {
+      "presence_status": "installed",
+      "compatibility_status": "unverified",
+      "contract_version": "9.0",
+      "checks": [
+        {
+          "check_id": "installation",
+          "status": "pass"
+        },
+        {
+          "check_id": "gui_runtime",
+          "status": "skipped",
+          "reason_code": "on_demand_only"
+        }
+      ],
+      "runtime_errors": [],
+      "resolutions": [],
+      "installed_version": "0.1.0",
+      "source_revision": "1231850a0bf1a0c0341fe408ef1668dbbfdfac46"
+    },
+    "agent-desktop": {
+      "presence_status": "installed",
+      "compatibility_status": "unverified",
+      "contract_version": "9.0",
+      "checks": [
+        {
+          "check_id": "installation",
+          "status": "pass"
+        },
+        {
+          "check_id": "gui_runtime",
+          "status": "skipped",
+          "reason_code": "on_demand_only"
+        }
+      ],
+      "runtime_errors": [],
+      "resolutions": [],
+      "installed_version": "0.9.2"
+    }
+  },
+  "gui_execution": "今回の導入・報告確認では起動していない"
+}

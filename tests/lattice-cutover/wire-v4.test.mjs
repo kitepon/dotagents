@@ -63,8 +63,8 @@ test('生成された現行状態とhost matrixはLatticeを自作コアへ置�
   assert.doesNotMatch(readme, /curated CLI[^\n]*Codegraph/u);
   assert.match(currentState, /^- 自作コア: [^\n]*`lattice`/mu);
   assert.doesNotMatch(currentState, /^- 自作コア: [^\n]*`markitdown`/mu);
-  assert.match(currentState, /^- 第三者管理: `markitdown`$/mu);
-  assert.match(readme, /\| 第三者管理製品 \| MarkItDown \| 自作コアではなく/u);
+  assert.match(currentState, /^- 第三者管理: `markitdown`、`jev-ultrafast`、`agent-desktop`$/mu);
+  assert.match(readme, /\| 第三者管理製品 \| \[工場の現行状態\]\(docs\/factory-current-state\.md\)に列挙 \|/u);
   assert.doesNotMatch(matrix, /^\| Codegraph \|/mu);
   assert.match(matrix, /^\| Lattice \| required \| required \| required \| required \| high \|$/mu);
 });

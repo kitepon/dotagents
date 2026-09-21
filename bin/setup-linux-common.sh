@@ -34,7 +34,7 @@ REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dota
 FACTORY_CREDENTIAL_FILE="${FACTORY_CREDENTIAL_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/credentials/factory.token}"
 MAIN_SERVER_SSH_TARGET="${MAIN_SERVER_SSH_TARGET:-kite@192.168.1.2}"
 RABBIT_SSH_HOST="${RABBIT_SSH_HOST:-192.168.1.55}"
-REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v8"
+REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v9"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 
 die() { echo "FAIL: $*" >&2; exit 1; }
@@ -386,7 +386,7 @@ try {
     && value?.host?.id === 'rabbit' && value?.host?.profile === profile
     && value?.collection?.enabled === true && value?.reporting?.enabled === true
     && endpoint.origin === 'http://192.168.1.2:39310'
-    && endpoint.pathname === '/api/factory/v8/reports'
+    && endpoint.pathname === '/api/factory/v9/reports'
     && value?.reporting?.credential_file === credential ? 0 : 1);
 } catch { process.exit(1); }
 NODE
@@ -422,7 +422,7 @@ const value = JSON.parse(fs.readFileSync(source, 'utf8'));
 value.collection.enabled = true;
 value.reporting = {
   enabled: true,
-  endpoint: 'http://192.168.1.2:39310/api/factory/v8/reports',
+  endpoint: 'http://192.168.1.2:39310/api/factory/v9/reports',
   credential_file: credential,
 };
 fs.writeFileSync(output, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
@@ -453,8 +453,8 @@ let endpoint;
 try { endpoint = new URL(value?.reporting?.endpoint); }
 catch { process.stderr.write('FAIL: factory reporter endpointが不正\n'); process.exit(1); }
 if (value?.host?.profile !== process.argv[3]
-  || value?.reporting?.enabled !== true || endpoint.pathname !== '/api/factory/v8/reports') {
-  process.stderr.write(`FAIL: factory reporterは${process.argv[3]} profileのenabledなwire v8でなければならない\n`);
+  || value?.reporting?.enabled !== true || endpoint.pathname !== '/api/factory/v9/reports') {
+  process.stderr.write(`FAIL: factory reporterは${process.argv[3]} profileのenabledなwire v9でなければならない\n`);
   process.exit(1);
 }
 NODE
@@ -506,13 +506,13 @@ const { CURRENT_WIRE_PRODUCT_IDS } =
   await import(pathToFileURL(contractPath).href);
 const report = JSON.parse(readFileSync(reportPath, 'utf8'));
 const facts = { profile: report.host_profile, os: report.platform?.os, arch: report.platform?.arch };
-if (report.schema_version !== '8.0' || facts.profile !== expectedProfile || facts.os !== 'linux') {
-  throw new Error(`${expectedProfile} wire v8 reportでない`);
+if (report.schema_version !== '9.0' || facts.profile !== expectedProfile || facts.os !== 'linux') {
+  throw new Error(`${expectedProfile} wire v9 reportでない`);
 }
 const actualIds = Object.keys(report.products ?? {}).sort();
 const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
-  throw new Error('factory reportが固定15製品をすべて含まない');
+  throw new Error('factory reportの製品集合が配備契約と一致しない');
 }
 process.stdout.write(String(actualIds.length));
 NODE
@@ -532,14 +532,14 @@ run_scheduled_update() {
   prior_report_id="$(fresh_report_id)"
   batch_token="$(new_batch_token)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
-    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
+    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v9-schedule-runner" \
     env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID "$ROOT/bin/agents-update.sh" "$@"
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
-    || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
+    || die 'fresh v9 reportとBugHub delivery receiptが一致しない'
   reported_products="$(validate_factory_report)" \
     || die 'factory reportの製品一覧を記録できない'
   printf '{"ok":true,"mode":"scheduled-update","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_reported":%s}\n' \

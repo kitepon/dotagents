@@ -142,7 +142,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `apply-codex-config.sh` / `apply-claude-config.sh` | Codex routing / hook と、Claudeの正本化・callout・advisory・Lattice Gantt・Git破壊操作・責務境界hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後） |
 | 工場接続 | Caveat（dotagents 外） | 工場は `caveat mcp-server` と `caveat factory-diagnostics --json` の公開面だけを呼ぶ。導入・罠DB・同期・公開は [Caveat README](https://github.com/kitepon/Caveat#readme) が正 |
 | 自作コア製品 | [工場の現行状態](docs/factory-current-state.md)に列挙（いずれもdotagents 外） | 罠知識、セッション継続、未使用ツール監査、工程graphとコード構造理解、ChatGPT接続、PTYと外部モデル枠、隔離Codex実行、macOS native開発面、中央運用管理、対等マルチエージェント円卓、日本語文章の校正規範を担う。AIShellはmacOS arm64専用。Observerは2026-08-16に工場コアから撤去。各製品の編入版は[製品契約台帳](docs/factory-product-contracts.md)が持つ |
-| 第三者管理製品 | MarkItDown | 自作コアではなく、公開CLIだけをblack-box管理する資料変換器。fork・内部patchは行わない |
+| 第三者管理製品 | [工場の現行状態](docs/factory-current-state.md)に列挙 | 上流の公式導入・更新と公開CLIの呼出し、公開結果の記録・報告だけを管理する。製品本体・操作・OS対応は上流が所有する |
 | 基盤toolchain | Claude Code CLI／Codex CLI／Grok Build | コア製品とは別区分。Oracleはv1互換・rollback専用。Mac自前 Desktop と main-server 自前 AFK は overlay で、正典は [docs/factory-grok-build-community-overlay.md](docs/factory-grok-build-community-overlay.md) |
 | 中央管理コア | ServerManager（dotagents 外） | 自作コア一覧に含まれる中央運用管理製品。内部のBugHubをversion・bug・compatibility結果の統括に使い、BugHubを独立製品へ分離しない |
 | コード構造・工程graph | Lattice（dotagents外） | 自作コア一覧に含まれる。Codegraphを完全吸収した正式後継で、`lattice-mcp`と同梱sensorを所有する。独立Codegraphはretired／not_applicable履歴だけを保持。[導入完了記録](docs/archive/plan_lattice-factory-integration.md) |
@@ -357,7 +357,7 @@ Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する
 
 ## 自動アップデート（常設・全端末必須）
 
-`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。公式入口が返した失敗は製品名付きで記録し、公開結果のreportも継続する。製品の導入結果を追加診断で再判定しない。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateと更新報告) を参照。
+`~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。Jev製品も[公式導入経路](shared/runbooks/jev-computer-use.md#一撃展開と更新)で最新版へ更新し、GUI操作は起動しない。公式入口が返した失敗は製品名付きで記録し、公開結果のreportも継続する。製品の導入結果を追加診断で再判定しない。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateと更新報告) を参照。
 
 常設schedulerの生成・旧schedulerの整理・読み戻しは、上記host別一撃展開スクリプトだけが所有する。
 手書きのplist／crontab／Task XMLを第二の正本にしない。

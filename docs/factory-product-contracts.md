@@ -38,6 +38,14 @@
 
 第三者のblack-box adapterで、`markitdown --version`と一時local fixtureだけを使う。対応範囲はstable `>=0.1.0 <0.2.0`。第三者本体をpatchせず、URL/JS renderingやrc=0だけでpassにしない。
 
+### `jev-ultrafast` と `agent-desktop`
+
+上流本体・依存・操作ループ・OS対応・製品設定と修理は上流が所有する。dotagentsは公式配布の導入・更新呼出し、工場キーの配布、公開versionとsource revisionの報告を所有する。導入時は上流最新版を選び、Browser Harnessの依存版は上流lockに従う。
+
+jev-ultrafastはPythonの公開package metadataとcheckout revision、agent-desktopは`agent-desktop --version`を読む。npmバイナリとJevスクリプトのcheckoutを同じrevisionとは扱わない。画面・入力本文・製品設定を読まず、GUIやdaemonを起動しない。導入済みとGUI利用可能を分け、操作未確認は`unverified`、非対応OSは`unsupported`として保持する。両製品のsafe_contextは空集合。
+
+正規入口は[jev-ultrafast README](https://github.com/browser-use/jev-ultrafast)と[agent-desktop README](https://github.com/lahfir/agent-desktop)、操作は[上流jev-desktop Skill](https://github.com/lahfir/agent-desktop/blob/main/skills/jev-desktop/SKILL.md)を参照する。工場との接続は[Jev runbook](../shared/runbooks/jev-computer-use.md)にまとめる。
+
 ### 基盤toolchain
 
 - `claude-code`、`codex-cli`、`grok-build`は基盤toolchainでありコア製品ではない。公式installer／package manager／self-updateだけを使い、内部状態や認証を変更しない。

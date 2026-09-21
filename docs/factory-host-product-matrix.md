@@ -31,6 +31,8 @@
 | ServerManager | not_applicable | required | not_applicable | not_applicable | high（main-serverのみ） |
 | peertable | required（client） | required（server） | required（client） | required（client） | high |
 | unai | required | required | required | required | high |
+| jev-ultrafast | required | required | required | required | high（導入のみ。GUI操作は利用時確認） |
+| agent-desktop | required | unsupported | unsupported | unsupported | high（Macのみ） |
 | Claude Code CLI | required | required | required | unsupported | high |
 | Codex CLI | required | required | required | required | high |
 | Grok Build | optional | optional | optional | optional | info |

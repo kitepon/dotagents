@@ -10,7 +10,7 @@ while [ -L "$script_source" ]; do
 done
 ROOT="$(cd "$(dirname "$script_source")/.." && pwd)"
 REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
-REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v8"
+REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v9"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 LAUNCH_AGENT_LABEL='com.kite.agents-update'
 LAUNCH_AGENT_PLIST="$HOME/Library/LaunchAgents/$LAUNCH_AGENT_LABEL.plist"
@@ -42,8 +42,8 @@ let endpoint;
 try { endpoint = new URL(value?.reporting?.endpoint); }
 catch { process.stderr.write('FAIL: factory reporter endpointが不正\n'); process.exit(1); }
 if (value?.host?.profile !== 'mac' || value?.reporting?.enabled !== true
-  || endpoint.pathname !== '/api/factory/v8/reports') {
-  process.stderr.write('FAIL: factory reporterはmac profileのenabledなwire v8でなければならない\n');
+  || endpoint.pathname !== '/api/factory/v9/reports') {
+  process.stderr.write('FAIL: factory reporterはmac profileのenabledなwire v9でなければならない\n');
   process.exit(1);
 }
 NODE
@@ -97,13 +97,13 @@ const facts = {
   arch: report.platform?.arch,
   macosMajor: Number(majorText),
 };
-if (report.schema_version !== '8.0' || facts.profile !== 'mac' || facts.os !== 'darwin') {
-  throw new Error('macOS wire v8 reportでない');
+if (report.schema_version !== '9.0' || facts.profile !== 'mac' || facts.os !== 'darwin') {
+  throw new Error('macOS wire v9 reportでない');
 }
 const actualIds = Object.keys(report.products ?? {}).sort();
 const expectedIds = [...CURRENT_WIRE_PRODUCT_IDS].sort();
 if (actualIds.length !== expectedIds.length || actualIds.some((id, index) => id !== expectedIds[index])) {
-  throw new Error('factory reportが固定15製品をすべて含まない');
+  throw new Error('factory reportの製品集合が配備契約と一致しない');
 }
 process.stdout.write(String(actualIds.length));
 NODE
@@ -116,14 +116,14 @@ run_factory_update() {
   batch_token="$(new_batch_token)"
   major="$(macos_major)"
   AGENTS_UPDATE_BATCH_TOKEN="$batch_token" \
-    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v8-schedule-runner" \
+    FACTORY_REPORTER_RUNNER="$HOME/.local/bin/factory-reporter-v9-schedule-runner" \
     "$ROOT/bin/agents-update.sh" --setup
   [ -f "$UPDATE_LOG" ] || die "agents-update logがない: $UPDATE_LOG"
   grep -Fq "agents-update batch-token: $batch_token" "$UPDATE_LOG" \
     || die '今回のbatch tokenがagents-update logにない'
   grep -Fq 'agents-update end:' "$UPDATE_LOG" || die 'agents-update完了行がlogにない'
   report_id="$(validate_delivery_receipt "$prior_report_id" "$batch_token")" \
-    || die 'fresh v8 reportとBugHub delivery receiptが一致しない'
+    || die 'fresh v9 reportとBugHub delivery receiptが一致しない'
   reported_products="$(validate_factory_report "$major")" \
     || die 'factory reportの製品一覧を記録できない'
   printf '{"ok":true,"mode":"macos-setup","batch_token":"%s","report_id":"%s","delivery_acknowledged":true,"factory_products_reported":%s}\n' \

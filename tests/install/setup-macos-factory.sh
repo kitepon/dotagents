@@ -37,7 +37,7 @@ printf 'install %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 mkdir -p "$HOME/.local/bin"
 ln -sfn "$DOTAGENTS_SETUP_TEST_ROOT/bin/setup-macos-factory.sh" "$HOME/.local/bin/setup-macos-factory"
 ln -sfn "$DOTAGENTS_SETUP_TEST_ROOT/bin/agents-update.sh" "$HOME/.local/bin/agents-update"
-ln -sfn "$DOTAGENTS_SETUP_TEST_ROOT/bin/factory-reporter-v8-schedule-runner" "$HOME/.local/bin/factory-reporter-v8-schedule-runner"
+ln -sfn "$DOTAGENTS_SETUP_TEST_ROOT/bin/factory-reporter-v9-schedule-runner" "$HOME/.local/bin/factory-reporter-v9-schedule-runner"
 # uv tool 面だけ ~/.local/bin に置く。親 PATH に無い状態を再現する。
 cat >"$HOME/.local/bin/markitdown" <<'MARKITDOWN'
 #!/usr/bin/env bash
@@ -68,7 +68,7 @@ cat >"$FIXTURE_ROOT/bin/verify-install.sh" <<'EOF'
 printf 'verify-install %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 printf 'verify-install: OK\n'
 EOF
-cat >"$FIXTURE_ROOT/bin/factory-reporter-v8-schedule-runner" <<'EOF'
+cat >"$FIXTURE_ROOT/bin/factory-reporter-v9-schedule-runner" <<'EOF'
 #!/usr/bin/env bash
 exit 0
 EOF
@@ -85,7 +85,7 @@ EOF
 cat >"$FIXTURE_ROOT/bin/agents-update.sh" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-state="$HOME/.local/state/dotagents/factory-reporter-v8"
+state="$HOME/.local/state/dotagents/factory-reporter-v9"
 log_dir="$HOME/.local/state/agents-update"
 mkdir -p "$state" "$log_dir"
 sequence_file="$state/fixture-sequence"
@@ -100,7 +100,7 @@ const [output, reportId] = process.argv.slice(2);
 const required = [
   'caveat', 'throughline', 'spotter', 'lattice', 'markitdown', 'gpt-connector',
   'aiterm-mcp', 'codex-sidecar', 'aishell', 'peertable', 'unai',
-  'claude-code', 'codex-cli',
+  'claude-code', 'codex-cli', 'jev-ultrafast', 'agent-desktop',
 ];
 const products = Object.fromEntries(required.map((id) => [id, {
   presence_status: 'installed', compatibility_status: 'compatible', checks: [],
@@ -111,7 +111,7 @@ if (process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT) {
   products[process.env.DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT].presence_status = 'missing';
 }
 fs.writeFileSync(output, `${JSON.stringify({
-  schema_version: '8.0', report_id: reportId, host_profile: 'mac',
+  schema_version: '9.0', report_id: reportId, host_profile: 'mac',
   platform: { os: 'darwin', arch: 'arm64' }, products,
 })}\n`);
 NODE
@@ -266,7 +266,7 @@ chmod +x "$STUB_BIN/"*
 
 mkdir -p "$HOME_DIR/.config/dotagents" "$HOME_DIR/Library/LaunchAgents"
 printf '%s\n' '.fixture-user-ignore' >"$HOME_DIR/.gitignore_global"
-printf '%s\n' '{"host":{"profile":"mac"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v8/reports"}}' \
+printf '%s\n' '{"host":{"profile":"mac"},"reporting":{"enabled":true,"endpoint":"https://example.invalid/api/factory/v9/reports"}}' \
   >"$HOME_DIR/.config/dotagents/factory-reporter.json"
 printf 'legacy launch agent\n' >"$HOME_DIR/Library/LaunchAgents/com.kite.agents-update.plist"
 printf 'loaded\n' >"$LAUNCH_STATE"
@@ -330,14 +330,14 @@ grep -Fq 'verify-install --profile official' "$CALLS" || fail '最終verifyを�
 [ "$(grep -Fc 'agents-update ' "$CALLS")" -eq 2 ] || fail '各setup runでfresh updateを1回だけ実行しない'
 
 latest_report="$(node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).report_id)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json")"
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v9/latest-report.json")"
 [ "$latest_report" = fixture-report-2 ] || fail '2回目のfresh reportが作られていない'
 
 DOTAGENTS_SETUP_TEST_BROKEN_PRODUCT=peertable \
   "$FIXTURE_ROOT/bin/setup-macos-factory.sh" >/dev/null \
   || fail '製品の診断結果をMac setup自身の失敗へ変換した'
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(r.products.peertable.presence_status!=="missing")process.exit(1)' \
-  "$HOME_DIR/.local/state/dotagents/factory-reporter-v8/latest-report.json" \
+  "$HOME_DIR/.local/state/dotagents/factory-reporter-v9/latest-report.json" \
   || fail '製品の診断結果を記録から隠した'
 
 if "$FIXTURE_ROOT/bin/setup-macos-factory.sh" --unknown >/dev/null 2>&1; then

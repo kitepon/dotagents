@@ -411,6 +411,7 @@
         "docs/08_cursor-fragments.md",
         "docs/plan_product-owned-setup-20260909.md",
         "docs/plan_codex-jev-integration.md",
+        "docs/plan_jev-third-party-rollout.md",
         "docs/plan_factory-records-20260913.md",
         "grok/AGENTS.delta.md",
         "grok/agents/implementer.md",
@@ -473,11 +474,12 @@
       "path_regex": "^(?:docs/(?:factory-host-product-matrix|factory-product-contracts|factory-reporter-runbook|wire-v[0-9]+-design)\\.md|shared/runbooks/factory-ci\\.md)$",
       "expected_role": "integration",
       "exact_sha256_by_path": {
-        "docs/factory-host-product-matrix.md": "02c2b08fcb9944fe0679cab3e071df0d62a79611ef7fad417c584e068a0232fb",
-        "docs/factory-product-contracts.md": "101e83b97d0e19ca61e364f5bbc48e586bef42524fbce2c0b8d8b38194ed5cd6",
+        "docs/factory-host-product-matrix.md": "8c390f905b5b8f63bccac4303ec22165b2c08e2881f344f8c0ed51dcfbf193b0",
+        "docs/factory-product-contracts.md": "36138af236857150674d41fe74699e8ef97ae483d5e041176635f7e52a863bff",
         "docs/factory-reporter-runbook.md": "a9cdb09609baff912b3a45e00a96439d01de0c1062a2638275acdb25afa17754",
         "docs/wire-v8-design.md": "8ff770ea5d16a4aca1be15f4c3be725789e0f6af67d74a00c029d16d4cc15082",
-        "shared/runbooks/factory-ci.md": "13f93ae646f73edba28f44ec385eab26249f83f6eb82b69d25f9a256a9af97ca"
+        "shared/runbooks/factory-ci.md": "13f93ae646f73edba28f44ec385eab26249f83f6eb82b69d25f9a256a9af97ca",
+        "docs/wire-v9-design.md": "e415a4504848ea7729ebb5012af0d228b39f9b53d714594a17ec61b13aedc919"
       },
       "required_regexes": [],
       "forbidden_regexes": []

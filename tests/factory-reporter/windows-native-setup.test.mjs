@@ -47,7 +47,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /\$null \| & \$File @Arguments/u);
   assert.match(source, /function Test-External.*Get-Command.*ErrorActionPreference = 'Continue'.*return \$code -eq 0/su);
   assert.match(source, /function Invoke-Checked.*& \$File @Arguments \| ForEach-Object \{ Write-Host \$_ \}.*\$LASTEXITCODE/su);
-  assert.match(source, /FACTORY_REPORTER_RUNNER.*factory-reporter-v8-schedule-runner/su);
+  assert.match(source, /FACTORY_REPORTER_RUNNER.*factory-reporter-v9-schedule-runner/su);
   assert.match(source, /function Remove-LegacyCron.*crontab -l.*agents-update.*factory-reporter.*crontab -/su);
   assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
@@ -102,7 +102,7 @@ function passingProduct(checkIds) {
 
 test('Windows nativeは工場報告のID集合を確認し、製品結果を再判定しない', () => {
   const report = {
-    schema_version: '8.0', host_profile: 'windows-native', platform: { os: 'windows', arch: process.arch },
+    schema_version: '9.0', host_profile: 'windows-native', platform: { os: 'windows', arch: process.arch },
     products: Object.fromEntries(CURRENT_WIRE_PRODUCT_IDS.map((id) => [id, passingProduct(['native_diagnostics'])])),
   };
   report.products.caveat = passingProduct(['native_diagnostics']);
@@ -122,7 +122,7 @@ test('Windows nativeは工場報告のID集合を確認し、製品結果を再�
   report.products.servermanager = { presence_status: 'not_applicable', checks: [] };
 
   const receipt = assertWindowsNativeProductSmoke(report, process.arch);
-  assert.equal(receipt.reported_products, 15);
+  assert.equal(receipt.reported_products, 17);
   const leftover = structuredClone(report);
   leftover.products.observer = { presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [] };
   assert.throws(() => assertWindowsNativeProductSmoke(leftover, process.arch), /observer/u);
