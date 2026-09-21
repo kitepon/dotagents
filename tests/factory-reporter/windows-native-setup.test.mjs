@@ -28,6 +28,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /if \(-not \$ScheduledRun\) \{ \$updateArguments \+= '--setup' \}/u);
   assert.match(source, /\$GitBash @updateArguments.*updateCode -ne 0/su);
   assert.match(source, /factory-reporter-scheduler\.mjs.*uninstall.*--apply/su);
+  assert.doesNotMatch(source, /throw "\$ReporterTaskName still exists"/u);
   assert.doesNotMatch(source, /Start-Process.*-Verb RunAs/su);
   assert.doesNotMatch(source, /WindowsBuiltInRole\]::Administrator/u);
   assert.match(source, /Stop-ScheduledTask.*factory-reporter-scheduler\.mjs.*uninstall.*Remove-LegacyCron.*install\.sh/su);

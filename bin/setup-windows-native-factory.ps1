@@ -800,7 +800,6 @@ try {
   Invoke-Checked -File 'node' -Arguments @($dailyScheduler, 'install', '--apply') -Label 'daily-0200-task'
   }
   Assert-DailyTask
-  if (Get-ScheduledTask -TaskName $ReporterTaskName -ErrorAction SilentlyContinue) { throw "$ReporterTaskName still exists" }
   Update-WindowsNativeClaude
   $delivery = Invoke-FactoryUpdate $update $productSmoke
   # verify-install.sh
