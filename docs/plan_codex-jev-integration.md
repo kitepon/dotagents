@@ -4,15 +4,21 @@
 
 ## 現在地
 
-製品のMac検証版は単独導入・標準更新・診断・復旧・配布後smokeまで確認済み。証拠は[製品の受入結果](https://github.com/quolu/codex-jev/blob/main/docs/acceptance.md)、配布は[製品Releases](https://github.com/quolu/codex-jev/releases)を参照する。工場コア登録は未着手。Windowsは実機観測がなく、対応済みと扱わない。
+2026-09-21、オーナーが自作codex-jevの不採用と、jev-ultrafast / agent-desktopの上流実装をそのまま利用することを指示。下記の自作製品の工場登録計画は撤回し、Macの利用経路を上流へ置き換える。旧repoと証拠は履歴として保持する。
 
-## 工場が受け入れるもの
+実行順序は、標準導入、既存キーの非表示設定、公式の診断と可逆操作、旧Skillの標準uninstall、利用案内の更新。両者は同じデスクトップ・ブラウザを使うため操作試験は親が直列で行う。上流製品のコード・判断ループ・チェックを改変せず、独自wrapperを作らない。旧ローカルfile URL試験の拒否を別経路で回避せず、上流の公開ページ用例と可逆なアプリ操作で確認する。OS権限など人の操作が必要なら実際の不足だけを報告する。Windowsへの展開は今回に含めない。
+
+成功条件は、両方の標準入口でJevを呼び実操作を完了し、次のCodexタスクから利用方法を辿れること。速度は起動準備と実行時間を混同せず、取れた値だけを掲載する。
+
+現在、両者の標準導入、上流Skillの導入、自作Skillの標準uninstallは完了。ブラウザはJevで公開ページのリンク操作が成功。デスクトップはmacOSのTouch ID、ブラウザ文字入力は別モデルのAPIキーの回答待ち。[導入結果](evidence/jev-upstream-adoption-20260921.md)と[利用先](../shared/runbooks/jev-computer-use.md)を参照する。
+
+## 撤回した旧計画
 
 1. 製品が公開する標準導入・更新・診断・復旧・releaseと、Macの実API・実操作の証拠を確認する。
 2. README「工場コア製品の変更管理」に従い、製品契約台帳、host matrix、公開診断adapter、BugHubの固定集合・期待matrix・privacy fixture、rollout/verifyへ追加する。
 3. 製品内部の設定・キー保存・OS差・GUI制御をdotagentsへ複製しない。工場は公開結果と製品正本への参照だけを扱う。
 4. Windowsはその端末の実機受入が揃ってから対応状態を更新する。全repoを独立commit・pushし、公開probeで横断受入する。
 
-## 再開
+## 旧計画の再開位置（履歴）
 
 製品docs/verification.mdの現在地から再開する。次の工程は製品が所有するWindows実機観測と、工場が所有するコア変更管理。現役wireの固定product集合へ追加する際はserver-firstの互換展開を先に設計・実行し、表やPRODUCT_IDSだけを先行変更しない。製品内部の手順と待機位置は製品計画を参照する。

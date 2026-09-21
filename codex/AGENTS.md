@@ -125,6 +125,10 @@ Claude と Codex と Grok と Cursor が全端末・全プロジェクトで従�
 - この委譲はComputer Useの有無にかかわらず適用する。関連する判断はまとめて渡し、報告ではJevを実際に使った工程を明記する。skill・認証が未設定の場合とAPI失敗時は、その状態を明示する。
 - 工場配布キーは`~/.config/dotagents/credentials/typesafe/api.env`にある。公式skillからAPIを使う時はNodeの`--env-file`等で読み込み、キー値は出力しない。
 
+### JevによるComputer Use
+
+- JevによるGUI操作は、ブラウザに上流`jev-ultrafast`、デスクトップに上流`agent-desktop`の`jev-desktop`を使う。導入と呼出しはjev-computer-use runbookと上流の標準入口に従う。通常の操作ループへCodexの逐次判断や独自の工程管理・追加ゲートを重ねない。自作`codex-jev`／`jev-use`は使わない。
+
 ### shell入口
 
 - **shell操作は、全hostで既定として aiterm-mcp の永続PTY（`mcp__aiterm__pty_*`）を使う**（全host共通）。永続PTYは cwd・環境変数・ssh セッション等の状態を保てる（長時間・対話的・連続操作に強い）。明らかに軽い単発の読み取りに限りhost標準の単発shellツール可。新しいセッションで無意識に標準入口へ流れない。PTY既定はhostの承認・sandboxの迂回ではない＝承認を要する操作の目的・影響・戻し方説明は入口によらず省略しない。
