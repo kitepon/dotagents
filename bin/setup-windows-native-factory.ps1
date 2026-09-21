@@ -555,7 +555,7 @@ function Invoke-FactoryUpdate([string]$UpdateScript, [string]$ProductSmoke) {
   $smokeOutput | ForEach-Object { Write-Host $_ }
   if ($smokeCode -ne 0) { throw "Factory report inventory failed with exit $smokeCode" }
   $smoke = ($smokeOutput | Select-Object -Last 1) | ConvertFrom-Json
-  if ($smoke.schema -ne 'dotagents.windows-native-report-inventory.v1' -or $smoke.status -ne 'passed' -or $smoke.reported_products -ne 15) {
+  if ($smoke.schema -ne 'dotagents.windows-native-report-inventory.v1' -or $smoke.status -ne 'passed' -or $smoke.reported_products -ne @($report.products.PSObject.Properties).Count) {
     throw 'Factory report inventory receipt is invalid'
   }
   return [pscustomobject]@{ delivery_acknowledged = $true; report = 'v9'; product_smoke = $smoke }

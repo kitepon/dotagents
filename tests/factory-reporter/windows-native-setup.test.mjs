@@ -52,7 +52,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.doesNotMatch(source, /Caveat-Private|\.caveat\\own\\\.git|caveat-sync(?:-init)?|@\('codex-hook', 'install'\)/u);
   assert.match(source, /delivery_acknowledged/u);
   assert.match(source, /lib\\factory\\windows-native-product-smoke\.mjs/u);
-  assert.match(source, /reported_products -ne 15/u);
+  assert.match(source, /reported_products -ne @\(\$report\.products\.PSObject\.Properties\)\.Count/u);
   assert.match(source, /run-\$RunId\.log.*Start-Transcript.*Set-OwnerOnlyAcl \$TranscriptPath.*Stop-Transcript/su);
   assert.match(source, /function Set-OwnerOnlyAcl.*existingOwnerSid.*DirectorySecurity.*FileSecurity.*existingOwnerSid -ne \$sid\.Value.*SetOwner\(\$sid\).*SetAccessRuleProtection/su);
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
