@@ -4,7 +4,7 @@
   "display_name": "dotagents",
   "external_pane": {
     "title": "円卓",
-    "url": "https://peertable.kitepon.dev/factory-master-fm-0694",
-    "probe_url": "https://peertable.kitepon.dev/api/factory-master-fm-0694/members"
+    "url": "https://peertable.kitepon.dev/dotagents-harness-model-effort",
+    "probe_url": "https://peertable.kitepon.dev/api/dotagents-harness-model-effort/members"
   }
 }

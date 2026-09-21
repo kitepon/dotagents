@@ -282,6 +282,13 @@
   ],
   "rules": [
     {
+      "id": "peertable-runtime-projections",
+      "kind": "generated",
+      "owner_scope": "dotagents",
+      "role": "generated",
+      "path_regex": "^\\.team/(?:CLAUDE\\.md|roles/(?:member|parent)\\.md)$"
+    },
+    {
       "id": "factory-current-state",
       "kind": "generated",
       "owner_scope": "dotagents",
