@@ -86,6 +86,12 @@ test("順位表のmodel×effortは候補で表現でき、生成物の外に順�
   assert.equal(coverRankTable(markdown, catalog), true);
   assert.throws(() => coverRankTable(markdown.replace("Grok 4.6×high（実測14/14）", "Grok 4.6×ultra（実測14/14）"), catalog), code("RANK_UNCOVERED"));
   assert.throws(() => coverRankTable(markdown.replace("| 反証 |", "| 反証 | Mystery×high |"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "BogusModelで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "Sol/BogusModelで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "Sol/bogusmodelで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "Sol/Grokで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "Sol/AIで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
+  assert.throws(() => coverRankTable(markdown.replace("Sol/Terraで独立確認", "Sol/Webで独立確認"), catalog), code("RANK_LABEL_UNKNOWN"));
   const moduleSource = readFileSync(new URL("../../lib/orchestrate/recommendation-contract.mjs", import.meta.url), "utf8");
   assert.doesNotMatch(moduleSource, /from\s+["'][^"']*rate-selector/u);
   assert.equal(moduleSource.includes("DEFAULT_SELECTOR_POLICY"), false);
