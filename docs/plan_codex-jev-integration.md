@@ -4,7 +4,7 @@
 
 ## 現在地
 
-製品のMac単独受入を先行中。工場コア登録は未着手。Windowsを対応済みと扱わない。
+製品のMac検証版は単独導入・標準更新・診断・復旧・配布後smokeまで確認済み。証拠は[製品の受入結果](https://github.com/quolu/codex-jev/blob/main/docs/acceptance.md)、配布は[製品Releases](https://github.com/quolu/codex-jev/releases)を参照する。工場コア登録は未着手。Windowsは実機観測がなく、対応済みと扱わない。
 
 ## 工場が受け入れるもの
 
@@ -15,4 +15,4 @@
 
 ## 再開
 
-製品docs/verification.mdの現在地から再開し、単独製品の受入条件が揃うまでPRODUCT_IDSや現行host集合を変更しない。TypeSafeキー設定とWindows実機観測の待機位置は製品計画へ記録する。
+製品docs/verification.mdの現在地から再開する。次の工程は製品が所有するWindows実機観測と、工場が所有するコア変更管理。現役wireの固定product集合へ追加する際はserver-firstの互換展開を先に設計・実行し、表やPRODUCT_IDSだけを先行変更しない。製品内部の手順と待機位置は製品計画を参照する。
