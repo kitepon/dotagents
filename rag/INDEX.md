@@ -16,6 +16,8 @@
 - [models/claude-5-family.md](models/claude-5-family.md) — Claude Fable 5 / Opus 5 / Sonnet 5 / Haiku 4.5: 現行価格・effort。Sonnet 5の$2/$10恒久化、Opus 5のscope creep外部観測とtask別effort benchmarkを分離（2026-08-14・確度はclaim別）
 - [models/benchmark-snapshot-20260811.md](models/benchmark-snapshot-20260811.md) — Artificial Analysis v4.1.1 と SWE-bench Pro の現行 snapshot。task 型・effort・harness・tokenを併記し、総合点を「幅広い思考力」へ一般化しない（2026-08-11）
 - [models/xai-grok46.md](models/xai-grok46.md) — Grok 4.6: 公式価格・effort、vendor/独立benchmark、Xの統括・監査・実装の成功/失敗報告、Spotter修理後のclean再評価、Composer catalog不在（2026-08-14・確度はclaim別）
+- [models/cursor-quota-and-catalog-20260921.md](models/cursor-quota-and-catalog-20260921.md) — Cursor個人契約の2 pool、catalog、effortの実測（2026-09-21・hmer-001）
+- [models/grok-quota-and-catalog-20260921.md](models/grok-quota-and-catalog-20260921.md) — Grok直接契約の週次poolとBuild catalogの実測（2026-09-21・hmer-002）
 - [models/role-placement-experiment-20260819.md](models/role-placement-experiment-20260819.md) — 役割配置実験: 948行・変異10件でのfinder 3席、claims14件の反証3席、Luna medium/max比較。各セルn=1で一般化禁止（2026-08-19）
 - [hooks/callout-hooks-firing-behavior.md](hooks/callout-hooks-firing-behavior.md) — 呼びかけ hook 群の発火挙動実測（Claude C1-C4／Codex X1-X5）と現行INFO契約: セッション初回＋compact再武装、Stop pending配送、PreToolUse additionalContext、hot-reload、Codex async/trust、状態ファイル形式（2026-07-12・確度 reproduced・実火観測）
 - [codex/codex-full-support-foundations.md](codex/codex-full-support-foundations.md) — dotagents Codex 全対応の公式仕様基盤: 9監査面、公式 skill 面 `$HOME/.agents/skills`、legacy `~/.codex/skills` 実測、import は同期でなく検出器、plugin は二重管理防止を実証後に裁定。Wave 2 のclean HOME受入れとCI parser固定も記録（2026-07-12・確度高）

@@ -89,6 +89,8 @@ Jevは自由文の説明生成器として使わない。選択結果と、必�
 
 **完了条件:** 同じモデルをCursorと直接ハーネスで使う場合を別候補として表現でき、両者のeffort対応と消費プールを説明できる。親のmodel×effortを変更せずに子の推薦ができる。02と候補データの差異を生成検証で検出できる。
 
+契約の所在は [ADR](adr/20260922-harness-model-effort-recommendation-contract.md) と、02の推薦契約の機械可読正本である。公開CLI名は `recommend-harness`。比較結果は ServerManager の BugHub WebUI へ載せ、ingest の現行pathは [工場の現行状態](factory-current-state.md) が示す本番BugHub endpoint を使う。
+
 ### 工程3 — 残量取得を推薦入口へ接続する
 
 1. 工程1で確定した取得方法を、責務を持つ場所へ実装する。既存quota部品は意味が一致する部分を再利用し、provider名だけで契約を決める箇所を改める。

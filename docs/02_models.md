@@ -75,6 +75,738 @@ Codex nativeのモデルとeffortは、役割と任務に応じてこの順位�
 
 Anthropic（Claude Code本体・Agent/Workflow）／OpenAI Codex（Codex CLI・codex-sidecar・aiterm codex_agent）／OpenAI ChatGPT（gpt-connector・API fallback禁止）／xAI（Grok Build・aiterm grok_agent）の4枠は別勘定。同役割の次順位が別枠なら、quota逼迫時のfallbackはコスト増でなく枠の移動になる。
 
+## 推薦契約の機械可読正本
+
+役割順位の文言は上の順位表だけが持つ。このJSONはハーネス、effortの指定可否、消費pool、実行面の正本であり、順位の文を複製しない。候補表と `lib/orchestrate/model-candidates.json` は `node bin/render-model-candidates.mjs --write` で同時に更新する。`none` は有効な指定値があるfamilyだけに置き、指定不可とは分けて書く。ハーネスを選んでも Aiterm 起動にはならない。親の model×effort は変えない。
+
+<!-- recommendation-source: start -->
+```json
+{
+  "cli": {
+    "command": "recommend-harness",
+    "entry": "bin/recommend-harness.mjs"
+  },
+  "comparison": {
+    "artifact_schema": "dotagents.recommendation-comparison.v1",
+    "endpoint_source": "docs/factory-current-state.md",
+    "fields": [
+      "case_id",
+      "candidate_id",
+      "success",
+      "rework",
+      "audit_effort",
+      "total_tokens",
+      "duration_seconds",
+      "pool_id",
+      "observed_at",
+      "missing"
+    ],
+    "omits": [
+      "secret",
+      "task_body",
+      "cookie",
+      "token"
+    ],
+    "surface": "servermanager-bughub-webui"
+  },
+  "cursor_first_families": [
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "grok-4.6"
+  ],
+  "default_harness_order": [
+    "codex-native",
+    "codex-external",
+    "claude-code",
+    "grok-build",
+    "cursor-agent",
+    "gpt-connector"
+  ],
+  "families": [
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "alias",
+            "agent",
+            "workflow"
+          ],
+          "id": "claude-code",
+          "model_id": "fable",
+          "pool_id": "anthropic-claude",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "claude-fable-5",
+      "label": "Fable 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "alias",
+            "agent",
+            "workflow"
+          ],
+          "id": "claude-code",
+          "model_id": "opus",
+          "pool_id": "anthropic-claude",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "claude-opus-5",
+      "label": "Opus 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "alias",
+            "agent",
+            "workflow"
+          ],
+          "id": "claude-code",
+          "model_id": "sonnet",
+          "pool_id": "anthropic-claude",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "claude-sonnet-5",
+      "label": "Sonnet 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "unsupported",
+          "efforts": [],
+          "execution": "direct-harness",
+          "features": [
+            "alias",
+            "agent",
+            "workflow"
+          ],
+          "id": "claude-code",
+          "model_id": "haiku",
+          "pool_id": "anthropic-claude",
+          "selectable": true
+        }
+      ],
+      "id": "claude-haiku-4.5",
+      "label": "Haiku",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [],
+          "execution": "native-subagent",
+          "features": [
+            "live-catalog"
+          ],
+          "id": "codex-native",
+          "model_id": "gpt-6-astra",
+          "pool_id": "openai-codex",
+          "selectable": false
+        }
+      ],
+      "id": "gpt-6-astra",
+      "label": "GPT-6 Astra",
+      "none_is_valid_effort": false,
+      "provider": "openai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra"
+          ],
+          "execution": "native-subagent",
+          "features": [
+            "repo-subagent"
+          ],
+          "id": "codex-native",
+          "model_id": "gpt-5.6-sol",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "execution": "sidecar",
+          "features": [
+            "sidecar-low-to-xhigh"
+          ],
+          "id": "codex-external",
+          "model_id": "gpt-5.6-sol",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "gpt-5.6-sol",
+      "label": "Sol",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max",
+            "ultra"
+          ],
+          "execution": "native-subagent",
+          "features": [
+            "repo-subagent"
+          ],
+          "id": "codex-native",
+          "model_id": "gpt-5.6-terra",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "execution": "sidecar",
+          "features": [
+            "sidecar-low-to-xhigh"
+          ],
+          "id": "codex-external",
+          "model_id": "gpt-5.6-terra",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "gpt-5.6-terra",
+      "label": "Terra",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "native-subagent",
+          "features": [
+            "repo-subagent"
+          ],
+          "id": "codex-native",
+          "model_id": "gpt-5.6-luna",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "execution": "sidecar",
+          "features": [
+            "sidecar-low-to-xhigh"
+          ],
+          "id": "codex-external",
+          "model_id": "gpt-5.6-luna",
+          "pool_id": "openai-codex",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "none",
+            "low",
+            "medium",
+            "high",
+            "xhigh",
+            "max"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-other-models-monthly",
+          "selectable": true
+        }
+      ],
+      "id": "gpt-5.6-luna",
+      "label": "Luna",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "workspace",
+            "mcp",
+            "shell",
+            "web",
+            "browser"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-models-monthly",
+          "selectable": true
+        },
+        {
+          "aiterm_required": false,
+          "effort_binding": "parameter",
+          "efforts": [
+            "low",
+            "medium",
+            "high",
+            "xhigh"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "reasoning-parameter"
+          ],
+          "id": "grok-build",
+          "model_id": "grok-4.6",
+          "pool_id": "xai-grok-weekly",
+          "selectable": true
+        }
+      ],
+      "id": "grok-4.6",
+      "label": "Grok 4.6",
+      "none_is_valid_effort": false,
+      "provider": "xai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "model-id",
+          "efforts": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "execution": "direct-harness",
+          "features": [
+            "live-catalog"
+          ],
+          "id": "cursor-agent",
+          "model_id": null,
+          "pool_id": "cursor-models-monthly",
+          "selectable": false
+        }
+      ],
+      "id": "grok-4.5",
+      "label": "Grok 4.5",
+      "none_is_valid_effort": false,
+      "provider": "xai"
+    },
+    {
+      "harnesses": [
+        {
+          "aiterm_required": false,
+          "effort_binding": "unsupported",
+          "efforts": [],
+          "execution": "consultation",
+          "features": [
+            "consultation"
+          ],
+          "id": "gpt-connector",
+          "model_id": null,
+          "pool_id": "openai-chatgpt",
+          "selectable": true
+        }
+      ],
+      "id": "chatgpt",
+      "label": "ChatGPT",
+      "none_is_valid_effort": false,
+      "provider": "openai"
+    }
+  ],
+  "parent_mutable": false,
+  "pools": [
+    {
+      "absolute_cap": "unavailable",
+      "id": "cursor-models-monthly",
+      "members": [
+        {
+          "family": "grok-4.6",
+          "state": "ranked"
+        },
+        {
+          "family": "grok-4.5",
+          "state": "catalog-unranked"
+        },
+        {
+          "family": "composer-2.5",
+          "state": "unsupported"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "monthly"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "cursor-other-models-monthly",
+      "members": [
+        {
+          "family": "claude-fable-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-opus-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-sonnet-5",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-sol",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-terra",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-luna",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "monthly"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "anthropic-claude",
+      "members": [
+        {
+          "family": "claude-fable-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-opus-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-sonnet-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-haiku-4.5",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "claude-statusline-rate-limits",
+      "unit": "percent-used",
+      "window_ids": [
+        "five_hour",
+        "seven_day"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "openai-codex",
+      "members": [
+        {
+          "family": "gpt-5.6-sol",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-terra",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-luna",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-6-astra",
+          "state": "catalog-unranked"
+        }
+      ],
+      "programmatic": "codex-token-count-event",
+      "unit": "percent-used",
+      "window_ids": [
+        "seven_day"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "openai-chatgpt",
+      "members": [
+        {
+          "family": "chatgpt",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "unobserved",
+      "window_ids": [
+        "subscription"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "xai-grok-weekly",
+      "members": [
+        {
+          "family": "grok-4.6",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "weekly"
+      ]
+    }
+  ],
+  "quota_comparison": "same-pool-only",
+  "schema": "dotagents.recommendation-source.v1",
+  "selector_thresholds": "not-inherited"
+}
+```
+<!-- recommendation-source: end -->
+
+<!-- recommendation-table: start -->
+| family | harness | effort対応 | pool | 実行面 | 選択 |
+|---|---|---|---|---|---|
+| Fable 5 | claude-code | parameter: low, medium, high, xhigh, max | anthropic-claude | direct-harness | 可 |
+| Haiku | claude-code | unsupported: 指定不可 | anthropic-claude | direct-harness | 可 |
+| Opus 5 | claude-code | parameter: low, medium, high, xhigh, max | anthropic-claude | direct-harness | 可 |
+| Sonnet 5 | claude-code | parameter: low, medium, high, xhigh, max | anthropic-claude | direct-harness | 可 |
+| Luna | codex-external | parameter: low, medium, high, xhigh | openai-codex | sidecar | 可 |
+| Sol | codex-external | parameter: low, medium, high, xhigh | openai-codex | sidecar | 可 |
+| Terra | codex-external | parameter: low, medium, high, xhigh | openai-codex | sidecar | 可 |
+| Luna | codex-native | parameter: none, low, medium, high, xhigh, max | openai-codex | native-subagent | 可 |
+| Sol | codex-native | parameter: none, low, medium, high, xhigh, max, ultra | openai-codex | native-subagent | 可 |
+| Terra | codex-native | parameter: none, low, medium, high, xhigh, max, ultra | openai-codex | native-subagent | 可 |
+| Fable 5 | cursor-agent | model-id: low, medium, high, xhigh, max | cursor-other-models-monthly | direct-harness | 可 |
+| Opus 5 | cursor-agent | model-id: low, medium, high | cursor-other-models-monthly | direct-harness | 可 |
+| Sonnet 5 | cursor-agent | model-id: low, medium, high, xhigh, max | cursor-other-models-monthly | direct-harness | 可 |
+| Luna | cursor-agent | model-id: none, low, medium, high, xhigh, max | cursor-other-models-monthly | direct-harness | 可 |
+| Sol | cursor-agent | model-id: none, low, medium, high, xhigh, max | cursor-other-models-monthly | direct-harness | 可 |
+| Terra | cursor-agent | model-id: none, low, medium, high, xhigh, max | cursor-other-models-monthly | direct-harness | 可 |
+| Grok 4.5 | cursor-agent | model-id: low, medium, high | cursor-models-monthly | direct-harness | 不可 |
+| Grok 4.6 | cursor-agent | model-id: low, medium, high, xhigh | cursor-models-monthly | direct-harness | 可 |
+| ChatGPT | gpt-connector | unsupported: 指定不可 | openai-chatgpt | consultation | 可 |
+| Grok 4.6 | grok-build | parameter: low, medium, high, xhigh | xai-grok-weekly | direct-harness | 可 |
+<!-- recommendation-table: end -->
+
 ## 入口と使い分け
 
 - **Codex親の三入口を分ける**: ① native subagent＝repo密結合、② external execution＝codex-sidecar/aiterm、③ consultation＝gpt-connector。Grok/ComposerはAitermの別harness入口であり、Codex→Codexの入口判断とは別契約。

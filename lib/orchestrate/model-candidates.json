@@ -1,0 +1,2134 @@
+{
+  "candidates": [
+    {
+      "candidate_id": "claude-code/claude-fable-5/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": "fable",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-fable-5/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": "fable",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-fable-5/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": "fable",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-fable-5/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": "fable",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-fable-5/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": "fable",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-haiku-4.5/unsupported",
+      "cursor_priority": false,
+      "effort": null,
+      "effort_binding": "unsupported",
+      "execution": "direct-harness",
+      "family": "claude-haiku-4.5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Haiku",
+      "model_id": "haiku",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-opus-5/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": "opus",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-opus-5/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": "opus",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-opus-5/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": "opus",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-opus-5/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": "opus",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-opus-5/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": "opus",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-sonnet-5/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": "sonnet",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-sonnet-5/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": "sonnet",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-sonnet-5/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": "sonnet",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-sonnet-5/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": "sonnet",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "claude-code/claude-sonnet-5/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "alias",
+        "agent",
+        "workflow"
+      ],
+      "harness": "claude-code",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": "sonnet",
+      "none_is_valid_effort": false,
+      "pool_id": "anthropic-claude",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-luna/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-luna/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-luna/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-luna/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-sol/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-sol/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-sol/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-sol/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-terra/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-terra/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-terra/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-external/gpt-5.6-terra/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "sidecar",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "sidecar-low-to-xhigh"
+      ],
+      "harness": "codex-external",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-luna/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": "gpt-5.6-luna",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/ultra",
+      "cursor_priority": false,
+      "effort": "ultra",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-sol/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": "gpt-5.6-sol",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/ultra",
+      "cursor_priority": false,
+      "effort": "ultra",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "codex-native/gpt-5.6-terra/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "native-subagent",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "repo-subagent"
+      ],
+      "harness": "codex-native",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": "gpt-5.6-terra",
+      "none_is_valid_effort": true,
+      "pool_id": "openai-codex",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-fable-5/high",
+      "cursor_priority": true,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-fable-5/low",
+      "cursor_priority": true,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-fable-5/max",
+      "cursor_priority": true,
+      "effort": "max",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-fable-5/medium",
+      "cursor_priority": true,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-fable-5/xhigh",
+      "cursor_priority": true,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-fable-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Fable 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-opus-5/high",
+      "cursor_priority": true,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-opus-5/low",
+      "cursor_priority": true,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-opus-5/medium",
+      "cursor_priority": true,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-opus-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Opus 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-sonnet-5/high",
+      "cursor_priority": true,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-sonnet-5/low",
+      "cursor_priority": true,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-sonnet-5/max",
+      "cursor_priority": true,
+      "effort": "max",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-sonnet-5/medium",
+      "cursor_priority": true,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/claude-sonnet-5/xhigh",
+      "cursor_priority": true,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "claude-sonnet-5",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sonnet 5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "anthropic",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-luna/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-luna",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Luna",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-sol/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-sol",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Sol",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/max",
+      "cursor_priority": false,
+      "effort": "max",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/none",
+      "cursor_priority": false,
+      "effort": "none",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/gpt-5.6-terra/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "gpt-5.6-terra",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Terra",
+      "model_id": null,
+      "none_is_valid_effort": true,
+      "pool_id": "cursor-other-models-monthly",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.5/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.5",
+      "features": [
+        "live-catalog"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": false
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.5/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.5",
+      "features": [
+        "live-catalog"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": false
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.5/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.5",
+      "features": [
+        "live-catalog"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.5",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": false
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.6/high",
+      "cursor_priority": true,
+      "effort": "high",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.6/low",
+      "cursor_priority": true,
+      "effort": "low",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.6/medium",
+      "cursor_priority": true,
+      "effort": "medium",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "cursor-agent/grok-4.6/xhigh",
+      "cursor_priority": true,
+      "effort": "xhigh",
+      "effort_binding": "model-id",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "workspace",
+        "mcp",
+        "shell",
+        "web",
+        "browser"
+      ],
+      "harness": "cursor-agent",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "cursor-models-monthly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "gpt-connector/chatgpt/unsupported",
+      "cursor_priority": false,
+      "effort": null,
+      "effort_binding": "unsupported",
+      "execution": "consultation",
+      "family": "chatgpt",
+      "features": [
+        "consultation"
+      ],
+      "harness": "gpt-connector",
+      "implies_aiterm": false,
+      "label": "ChatGPT",
+      "model_id": null,
+      "none_is_valid_effort": false,
+      "pool_id": "openai-chatgpt",
+      "provider": "openai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "grok-build/grok-4.6/high",
+      "cursor_priority": false,
+      "effort": "high",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "reasoning-parameter"
+      ],
+      "harness": "grok-build",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": "grok-4.6",
+      "none_is_valid_effort": false,
+      "pool_id": "xai-grok-weekly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "grok-build/grok-4.6/low",
+      "cursor_priority": false,
+      "effort": "low",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "reasoning-parameter"
+      ],
+      "harness": "grok-build",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": "grok-4.6",
+      "none_is_valid_effort": false,
+      "pool_id": "xai-grok-weekly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "grok-build/grok-4.6/medium",
+      "cursor_priority": false,
+      "effort": "medium",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "reasoning-parameter"
+      ],
+      "harness": "grok-build",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": "grok-4.6",
+      "none_is_valid_effort": false,
+      "pool_id": "xai-grok-weekly",
+      "provider": "xai",
+      "selectable": true
+    },
+    {
+      "candidate_id": "grok-build/grok-4.6/xhigh",
+      "cursor_priority": false,
+      "effort": "xhigh",
+      "effort_binding": "parameter",
+      "execution": "direct-harness",
+      "family": "grok-4.6",
+      "features": [
+        "reasoning-parameter"
+      ],
+      "harness": "grok-build",
+      "implies_aiterm": false,
+      "label": "Grok 4.6",
+      "model_id": "grok-4.6",
+      "none_is_valid_effort": false,
+      "pool_id": "xai-grok-weekly",
+      "provider": "xai",
+      "selectable": true
+    }
+  ],
+  "cursor_first_families": [
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "grok-4.6"
+  ],
+  "default_harness_order": [
+    "codex-native",
+    "codex-external",
+    "claude-code",
+    "grok-build",
+    "cursor-agent",
+    "gpt-connector"
+  ],
+  "families": [
+    {
+      "id": "claude-fable-5",
+      "label": "Fable 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "id": "claude-opus-5",
+      "label": "Opus 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "id": "claude-sonnet-5",
+      "label": "Sonnet 5",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "id": "claude-haiku-4.5",
+      "label": "Haiku",
+      "none_is_valid_effort": false,
+      "provider": "anthropic"
+    },
+    {
+      "id": "gpt-6-astra",
+      "label": "GPT-6 Astra",
+      "none_is_valid_effort": false,
+      "provider": "openai"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "label": "Sol",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "label": "Terra",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "label": "Luna",
+      "none_is_valid_effort": true,
+      "provider": "openai"
+    },
+    {
+      "id": "grok-4.6",
+      "label": "Grok 4.6",
+      "none_is_valid_effort": false,
+      "provider": "xai"
+    },
+    {
+      "id": "grok-4.5",
+      "label": "Grok 4.5",
+      "none_is_valid_effort": false,
+      "provider": "xai"
+    },
+    {
+      "id": "chatgpt",
+      "label": "ChatGPT",
+      "none_is_valid_effort": false,
+      "provider": "openai"
+    }
+  ],
+  "pools": [
+    {
+      "absolute_cap": "unavailable",
+      "id": "cursor-models-monthly",
+      "members": [
+        {
+          "family": "grok-4.6",
+          "state": "ranked"
+        },
+        {
+          "family": "grok-4.5",
+          "state": "catalog-unranked"
+        },
+        {
+          "family": "composer-2.5",
+          "state": "unsupported"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "monthly"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "cursor-other-models-monthly",
+      "members": [
+        {
+          "family": "claude-fable-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-opus-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-sonnet-5",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-sol",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-terra",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-luna",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "monthly"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "anthropic-claude",
+      "members": [
+        {
+          "family": "claude-fable-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-opus-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-sonnet-5",
+          "state": "ranked"
+        },
+        {
+          "family": "claude-haiku-4.5",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "claude-statusline-rate-limits",
+      "unit": "percent-used",
+      "window_ids": [
+        "five_hour",
+        "seven_day"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "openai-codex",
+      "members": [
+        {
+          "family": "gpt-5.6-sol",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-terra",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-5.6-luna",
+          "state": "ranked"
+        },
+        {
+          "family": "gpt-6-astra",
+          "state": "catalog-unranked"
+        }
+      ],
+      "programmatic": "codex-token-count-event",
+      "unit": "percent-used",
+      "window_ids": [
+        "seven_day"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "openai-chatgpt",
+      "members": [
+        {
+          "family": "chatgpt",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "unobserved",
+      "window_ids": [
+        "subscription"
+      ]
+    },
+    {
+      "absolute_cap": "unavailable",
+      "id": "xai-grok-weekly",
+      "members": [
+        {
+          "family": "grok-4.6",
+          "state": "ranked"
+        }
+      ],
+      "programmatic": "observation_unavailable",
+      "unit": "percent-used",
+      "window_ids": [
+        "weekly"
+      ]
+    }
+  ],
+  "schema": "dotagents.model-candidates.v1",
+  "source_digest": "57b3e1cf66a812c2ce9904ab298e06423436c42d607539fd63b68d067be792ca"
+}
