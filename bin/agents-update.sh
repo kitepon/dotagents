@@ -307,6 +307,9 @@ fi
   fi
   record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" pending "$grok_reason" || update_failed=1
 
+  # 公式skillの導入と工場キーの配布、実API確認を全hostで共通実行する。
+  if ! node "$SCRIPT_DIR/factory-typesafe-setup.mjs"; then update_failed=1; fi
+
   # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
   for setup_product in aiterm caveat gpt-connector codex-sidecar lattice peertable; do
     if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then

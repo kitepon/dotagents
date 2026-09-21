@@ -4,6 +4,7 @@
 
 - 自然文の分類・選別・振り分けなど、短い文脈と明確な候補で答えられる判断は、公式`typesafe-ai` skillでJevへ優先的に委譲する。複雑な推論・設計・最終判断はCodexが担い、規則で決まる処理はコードで行う。
 - この委譲はComputer Useの有無にかかわらず適用する。関連する判断はまとめて渡し、報告ではJevを実際に使った工程を明記する。skill・認証が未設定の場合とAPI失敗時は、その状態を明示する。
+- 工場配布キーは`~/.config/dotagents/credentials/typesafe/api.env`にある。公式skillからAPIを使う時はNodeの`--env-file`等で読み込み、キー値は出力しない。
 
 ## shell入口
 

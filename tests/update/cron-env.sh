@@ -26,6 +26,9 @@ done
 cat > "$TEST_HOME/base-bin/node" <<EOF
 #!/bin/sh
 case "\$1" in
+  */factory-typesafe-setup.mjs)
+    printf '%s:typesafe-setup\\n' "\${RUN_ID:-default}" >> "\$HOME/update-events.log"
+    exit "\${TYPESAFE_SETUP_FAIL:-0}" ;;
   */factory-reporter-scheduler.mjs)
     printf '%s:scheduler:%s\\n' "\${RUN_ID:-default}" "\$*" >> "\$HOME/update-events.log"
     exit "\${SCHEDULER_FAIL:-0}" ;;
@@ -198,6 +201,16 @@ fi
 
 grep -Fq "normal:scheduler:$ROOT/bin/factory-reporter-scheduler.mjs install --apply --config $REPORTER_CONFIG" \
   "$TEST_HOME/update-events.log" || fail '更新後にreporterの定期実行を現行設定で登録していない'
+[ "$(grep -Fc 'normal:typesafe-setup' "$TEST_HOME/update-events.log")" -eq 1 ] \
+  || fail '共通更新入口がTypeSafeの導入・認証確認を一回呼んでいない'
+
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=typesafe-fail TYPESAFE_SETUP_FAIL=1 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/typesafe-fail.out" 2>&1; then
+  fail 'TypeSafeの導入・認証失敗が更新失敗にならない'
+fi
 
 expected_npm_packages=13
 if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
