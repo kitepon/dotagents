@@ -179,7 +179,7 @@ test("比較文書は現行endpointを読み、測っていない品質は欠測
   assert.equal(source.includes("child_process"), false);
 });
 
-test("比較の送信はv9 reportとは別の追加入口へ行く", async () => {
+test("比較の送信は現行のBugHub endpointへ行く", async () => {
   const endpoint = loadBugHubEndpoint();
   const current = readFileSync(new URL("../../docs/factory-current-state.md", import.meta.url), "utf8");
   const document = buildComparison({
@@ -198,9 +198,11 @@ test("比較の送信はv9 reportとは別の追加入口へ行く", async () =>
     },
   });
   assert.equal(result.accepted, true);
-  assert.equal(result.target, "/api/factory/comparisons");
-  assert.equal(new URL(posted.href).pathname, "/api/factory/comparisons");
-  assert.equal(posted.init.body.includes("/api/factory/v9/reports"), true);
+  assert.equal(result.target, endpoint);
+  assert.equal(posted.href, `http://127.0.0.1:9${endpoint}`);
+  assert.equal(posted.init.body.includes(endpoint), true);
+  const publisher = readFileSync(new URL("../../lib/orchestrate/recommendation-comparison.mjs", import.meta.url), "utf8");
+  assert.equal(publisher.includes("/api/factory/comparisons"), false);
   assert.equal(posted.init.headers.Authorization, "Bearer not-a-real-token");
   assert.equal(JSON.stringify(result).includes("not-a-real-token"), false);
 });
