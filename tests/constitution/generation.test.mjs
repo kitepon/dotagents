@@ -147,7 +147,8 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   assert.match(claudeDelta, /全hostで既定として aiterm-mcp の永続PTY/);
   assert.match(codexDelta, /^# Codex固有差分$/m);
   assert.match(codexDelta, /全hostで既定として aiterm-mcp の永続PTY/);
-  assert.match(codexDelta, /Codex親がCodex子を呼ぶ時はnative sub-agentを既定/);
+  assert.match(codexDelta, /親が子の完了を待ってターンを終える委譲は、Aitermの`agent_launch`と自動完了配送を使う/);
+  assert.match(codexDelta, /それ以外のCodex親からCodex子への委譲はnative sub-agentを既定/);
   assert.match(codexDelta, /aitermを永続shellとして使うことと、aitermからCodex子を起動することを混同しない/);
   assert.match(grokDelta, /^# Grok固有差分$/m);
   assert.match(grokDelta, /run_terminal_command/);
@@ -160,7 +161,7 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   assert.match(claude, /全hostで既定として aiterm-mcp の永続PTY/);
   assert.match(codex, /全hostで既定として aiterm-mcp の永続PTY/);
   assert.match(codex, /^## Codex固有差分$/m);
-  assert.match(codex, /Codex親がCodex子を呼ぶ時はnative sub-agentを既定/);
+  assert.match(codex, /親が子の完了を待ってターンを終える委譲は、Aitermの`agent_launch`と自動完了配送を使う/);
   assert.match(grok, /shared\/constitution\.md \+ grok\/AGENTS\.delta\.md/);
   assert.match(grok, /run_terminal_command/);
   assert.doesNotMatch(grok, /Claude Code固有差分/);
