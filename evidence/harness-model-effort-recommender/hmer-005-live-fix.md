@@ -32,9 +32,33 @@
 
 effort は難度に追従した。全 pool 未観測のため `quota_comparison` は `not_established`。
 
+## 第二の欠陥 — 判断基準を渡していなかった
+
+修正後の 4 件はすべて Sonnet 5 で、02 の順位表と照らすと一致は 4 件中 1 件だった（軽作業の 1 位は Luna、設計は Opus、相談は ChatGPT）。Jev に渡していたのがモデル名と effort だけで、オーナーが実測で決めた順位表を渡していなかったため、Jev は一般知識で無難なモデルへ寄った。「順位表は Jev へ送らない」は hmer-005 の証跡にだけ書かれ、計画にも ADR にも根拠が無い。
+
+### 修正（commit 後述）
+
+- `parseRankTable` が `docs/02_models.md` の順位表を実行時に読む（役割 → 順位付き family×efforts。統括は親の役割なので除く。`low〜medium` は範囲、Haiku と ChatGPT は effort 無し）。順位表の複製は持たない。
+- Jev には任務と役割一覧を渡し、「どの役割の仕事か」と「難度（light / ordinary / hard）」だけを選ばせる。モデルは選ばせない。
+- コードがその役割の順位を 1 位から辿り、effort 範囲は難度で決め（hard なら上端、他は下端）、Cursor 優先の harness 順と pool の除外を適用する。全 harness が尽きた順位は次の順位へ回す。
+
+### 修正後の実測（2026-09-22 02:26Z、Jev 実呼出し）
+
+| 任務 | 結果 | 02 の順位 |
+|---|---|---|
+| repoのdocsの誤字を1箇所直す小さな修正 | codex-native / luna / low | 軽作業 1 位 |
+| 複数repoにまたがる認証設計、独立反証も要る | cursor-agent / opus-5 / high | 設計 1 位 |
+| 落ちているテストの原因調査と修正 | codex-native / luna / medium | 局所コーディング 1 位 |
+| ChatGPTに設計のsecond opinionを聞く | gpt-connector / chatgpt | 相談 1 位 |
+| 監査指摘が正しいか反対仮説を立てて潰す | cursor-agent / grok-4.6 / high | 反証 1 位 |
+| 受入条件が数値で書けている機能の実装 | codex-native / terra / high | 実装 1 位 |
+| 外部ライブラリの最新仕様をWebで調べる | cursor-agent / grok-4.6 / low | 調査 1 位（low〜medium の下端） |
+
+7 件すべて 02 の 1 位と一致した。
+
 ## 試験
 
-`node --test tests/orchestrate/recommend-harness.test.mjs tests/orchestrate/recommend-harness-cases.test.mjs` — 10 件 pass、0 fail。新規に、尽きた pool を候補から外して次の harness へ回す試験と、明示指定の pool 枯渇で `quota_exhausted` を返す試験を追加した。
+`node --test tests/orchestrate/recommend-harness.test.mjs tests/orchestrate/recommend-harness-cases.test.mjs tests/orchestrate/recommendation-contract.test.mjs` — 19 件 pass、0 fail。順位表の読取り、役割と難度からの選択、effort 範囲、pool 枯渇時の harness 送りと順位送り、明示指定の枯渇を試験に加えた。
 
 ## 残る未達（本追記では直していない）
 
