@@ -7,7 +7,7 @@ import { setupTypeSafe } from '../../lib/factory/typesafe-setup.mjs';
 import { loadTypeSafeKey, typeSafeKeyPath } from '../../lib/factory/typesafe-credentials.mjs';
 
 const secret = '試験専用の秘密';
-const installed = [{ name: 'typesafe-ai', scope: 'global', source: 'typesafe-ai/skills', agents: ['Codex'] }];
+const installed = [{ name: 'typesafe-ai', scope: 'global', source: 'typesafe-ai/skills', agents: ['Claude Code', 'Codex', 'Cursor', 'Grok Build'] }];
 const success = { ok: true, stdout: JSON.stringify(installed) };
 const apiSuccess = () => ({ ok: true, json: async () => ({ answers: { intent: { type: 'choice', choice: 'purchase_advice' } } }) });
 const quiet = { write() {} };
@@ -27,8 +27,8 @@ test('公式導入・一覧確認・実APIの順に完了し、秘密を報告�
     },
     output: { write: (text) => { output += text; } },
   });
-  assert.deepEqual(calls[0], ['npx', ['--yes', 'skills', 'add', 'typesafe-ai/skills', '--skill', 'typesafe-ai', '--global', '--agent', 'codex', '--yes']]);
-  assert.deepEqual(calls[1], ['npx', ['--yes', 'skills', 'list', '--global', '--agent', 'codex', '--json']]);
+  assert.deepEqual(calls[0], ['npx', ['--yes', 'skills', 'add', 'typesafe-ai/skills', '--skill', 'typesafe-ai', '--global', '--agent', 'codex', 'claude-code', 'cursor', 'grok', '--yes']]);
+  assert.deepEqual(calls[1], ['npx', ['--yes', 'skills', 'list', '--global', '--json']]);
   assert.equal(receipt.state, 'ready');
   assert.equal((output + JSON.stringify(receipt)).includes(secret), false);
 });

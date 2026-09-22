@@ -31,7 +31,7 @@ Claude appendixは、Claude固有入口から得たstatusをControlへ投影す�
 | L4 外部CLI | 完全固定仕様の機械的一括・第三者視点レビュー | 非対話＝codex-sidecar の `codex_review`/`codex_work`/`codex_generate` 等／対話＝aiterm の `codex_agent`・`grok_agent`・`composer_agent` |
 
 役割に対するmodel×effortの解決と順位は[docs/02_models.md](references/shared-orchestrate/02_models.md)だけを正とする。このskillはClaude固有の実行入口だけを定め、配置値を複製しない。
-**並列dispatchの既定はLattice**: 独立に見えるTODOが2つ以上あれば並列化を一度検討し（無意識の直列流れ禁止）、**同一repoへ書込みするworkerを2つ以上同時に走らせるなら**`lattice plan compile`→`run start`経由を既定にする（別repo並列・read-only並列は対象外）。交差判定を親の自前判断でやらない。直列化規則の正本は[合成契約](references/shared-orchestrate/composition.md)「同一repo writerの直列化」、委譲側の帰結は[委譲契約](references/shared-orchestrate/delegation-contract.md)「並列化の検討とLattice既定」。
+**同一repoへの並列writerはLattice選択時だけ**: 独立に見えるTODOが2つ以上あれば並列化を一度検討する。同一repoへ書込むworkerを2つ以上同時に走らせるのは、Latticeの工程管理が選択されている時（オーナー指示時・承認済み工程の継続時）だけとし、`lattice plan compile`→`run start`経由にする。それ以外は直列に実行する（別repo並列・read-only並列は対象外）。直列化規則の正本は[合成契約](references/shared-orchestrate/composition.md)「同一repo writerの直列化」。
 **継承の罠（最上位張り付き防止）**: Agent/Workflow の model 省略は親モデル継承＝親が最上位だと全子が最上位に張り付く。全役割で `model` と `effort` を順位表どおり毎回明示する——親と同値の指定は可、省略は不可（正本は[委譲契約](references/shared-orchestrate/delegation-contract.md)最低安全契約）。
 
 ## 協業ループ（Claude⇄外部AI・aiterm PTY で回す）

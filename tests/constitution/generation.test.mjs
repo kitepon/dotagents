@@ -113,7 +113,6 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   const grok = await readFile(join(ROOT, "grok/AGENTS.md"), "utf8");
   const cursor = await readFile(join(ROOT, "cursor/AGENTS.md"), "utf8");
   const cursorMdc = await readFile(join(ROOT, "cursor/rules/factory.mdc"), "utf8");
-  const commonLines = common.split(/\r?\n/u);
   const unaiRule = "- unaiは、オーナーへのチャット応答と第三者向けの公開文章に適用する。";
 
   for (const heading of [
@@ -121,81 +120,44 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
     "応対規範 — まず会話し、黙って進めない",
     "姿勢の原則（迷ったらここに戻る）",
     "調査と知識の置き場",
-    "計画文書の作法",
-    "作業レーンと統制",
+    "委譲とオーケストレーション",
     "ツールと権限",
-    "git・shell・ファイルの作法（実被弾からの鉄則）",
+    "git・ファイルの作法",
     "報告",
-    "出力衛生",
   ]) assert.match(common, new RegExp(`^## ${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"));
-  assert.match(common, /repo内の変更はpush（push既定の判定はgit鉄則に従う）/);
-  assert.equal(commonLines.filter((line) => line === unaiRule).length, 1);
-  assert.match(common, /通常のpushを完遂に含めるのは、project正典または恒久裁定がpush既定を定めるrepoだけ/);
-  assert.match(common, /^- push既定を認定できるのは、\(a\)適用中のrepo直下のAGENTS\.md／CLAUDE\.mdとそのhost展開import（直接・再帰の`@import`だけ。Markdownリンクは含まない）が通常pushを既定と明記している場合、\(b\)dotagents憲章が恒久裁定として既定を与える工場管理repo（dotagentsと製品契約台帳で自作コアに分類された製品の正規repo。第三者製品・基盤toolchainは含まない）である場合、\(c\)現在のrequest／campaignで未撤回の、対象repoと通常pushを既定とする旨を明記したユーザー指示がある場合、だけとする。一回限りのpush指示は既定でなく明示指示として扱い、認定できない・矛盾する時はpushしない。$/m);
-  assert.match(common, /^- 本節の還流・正典反映の書込みは、書込みを含む依頼・進行中campaign・明示の知識還流Phaseだけで行い、read-only指定の依頼では提案として返す。$/m);
-  assert.ok(commonLines.includes("本書の「<name> runbook」は `~/.claude/runbooks/<name>.md`（Codexは `~/.codex/runbooks/<name>.md`、Grokは `~/.grok/runbooks/<name>.md`、Cursorは `~/.cursor/runbooks/<name>.md`・実体はdotagents `shared/runbooks/`）を指す。"));
-  assert.ok(commonLines.includes("- **調査と出力を還流させる**: 調べた外部仕様・文献は`rag/`へ、価値ある出力（回答・監査ダイジェスト・図解）は内容に応じて`rag/`または`docs/`へ還流して複利で育てる。保存手順（MarkItDown化・raw/コンパイル分離・出典/取得日/確度・INDEX追記）と月次衛生は knowledge-return runbook に従う。"));
-  assert.ok(commonLines.includes("- **変動する現行値を散文へ複製しない**: 製品集合・現役version・endpointなど変更で動く値は、所有repoの構造化正本か、そこから作る生成物だけに置く。現行案内は生成物を参照し、履歴・証拠を現在の案内として使わない。文書分類・生成・drift検証を持つrepoでは、文書変更と同じcommitでそのgateを通す。"));
-  assert.match(common, /判定後の運用（uninitializedの導入・Markdown正本の条件・散文の所有・cutover・archive）は lattice-workflow runbook に従う。/);
-  assert.doesNotMatch(common, /還流の書込みを行うのは/);
-  assert.match(common, /\*\*方針級の発見はその場で正典へ\*\*:/);
-  assert.doesNotMatch(common, /全hostで既定として aiterm-mcp の永続PTY/);
-  assert.match(common, /host native／aitermを使い/);
 
-  // shell入口はhost delta。Claude/Codexは移設前と同じaiterm既定文、Grokはnative既定。
-  assert.match(claudeDelta, /^# Claude Code固有差分$/m);
-  assert.match(claudeDelta, /全hostで既定として aiterm-mcp の永続PTY/);
-  assert.match(codexDelta, /^# Codex固有差分$/m);
-  assert.match(codexDelta, /全hostで既定として aiterm-mcp の永続PTY/);
+  // 全hostで同じ判断は共通正本にだけ置く
+  assert.match(common, /project側を優先する/);
+  assert.match(common, /\*\*通常のpushを完了に含めるのは次のrepoだけ\*\*/);
+  assert.match(common, /\*\*shellはhost標準のシェルを既定にする。\*\*/);
+  assert.match(common, /orchestrate skill同梱の`02_models\.md`/);
+  assert.match(common, /公式`typesafe-ai` skill/);
+  assert.match(common, /\*\*各製品は自身のソース・状態・schema・migration・正規診断を所有する。\*\*/);
+  assert.match(common, /\*\*dotagentsの製品連携責務は/);
+  // 規範は判断だけを持ち、出典・経緯・dotagents内相対パスを持たない
+  assert.doesNotMatch(common, /オーナー裁定 20|実被弾|ADR \d|物理ゲート/);
+  assert.doesNotMatch(common, /`docs\/02_models\.md`|`shared\/orchestrate\//);
+  assert.doesNotMatch(common, /spawn_agent|agent_type|fork_turns/);
+
+  // host deltaはhost固有の差分だけを持ち、共通契約を重複保持しない
+  for (const [delta, heading] of [
+    [claudeDelta, "Claude Code固有差分"],
+    [codexDelta, "Codex固有差分"],
+    [grokDelta, "Grok固有差分"],
+    [cursorDelta, "Cursor固有差分"],
+  ]) {
+    assert.match(delta, new RegExp(`^# ${heading}$`, "m"));
+    assert.doesNotMatch(delta, /unaiは|project側を優先|shellはhost標準|承認を要する操作の目的・影響・戻し方|typesafe\/api\.env/);
+  }
   assert.match(codexDelta, /親が子の完了を待ってターンを終える委譲は、Aitermの`agent_launch`と自動完了配送を使う/);
   assert.match(codexDelta, /それ以外のCodex親からCodex子への委譲はnative sub-agentを既定/);
-  assert.match(codexDelta, /aitermを永続shellとして使うことと、aitermからCodex子を起動することを混同しない/);
-  assert.match(grokDelta, /^# Grok固有差分$/m);
-  assert.match(grokDelta, /run_terminal_command/);
-  assert.doesNotMatch(grokDelta, /全hostで既定として/);
-  assert.doesNotMatch(grokDelta, /mcp__aiterm__pty_/);
-  assert.match(cursorDelta, /^# Cursor固有差分$/m);
-  assert.match(cursorDelta, /Cursor nativeの単発・背景コマンド/);
-  assert.doesNotMatch(cursorDelta, /全hostで既定として/);
-  assert.doesNotMatch(cursorDelta, /mcp__aiterm__pty_/);
-  assert.match(claude, /全hostで既定として aiterm-mcp の永続PTY/);
-  assert.match(codex, /全hostで既定として aiterm-mcp の永続PTY/);
   assert.match(codex, /^## Codex固有差分$/m);
-  assert.match(codex, /親が子の完了を待ってターンを終える委譲は、Aitermの`agent_launch`と自動完了配送を使う/);
   assert.match(grok, /shared\/constitution\.md \+ grok\/AGENTS\.delta\.md/);
-  assert.match(grok, /run_terminal_command/);
-  assert.doesNotMatch(grok, /Claude Code固有差分/);
   assert.match(cursor, /shared\/constitution\.md \+ cursor\/AGENTS\.delta\.md/);
-  assert.match(cursor, /Cursor nativeの単発・背景コマンド/);
-  assert.doesNotMatch(cursor, /Claude Code固有差分/);
   assert.match(cursorMdc, /^---\n[\s\S]*alwaysApply: true\n---\n/);
   assert.doesNotMatch(cursorMdc, /^globs:/m);
-  assert.match(cursorMdc, /Cursor nativeの単発・背景コマンド/);
-  assert.doesNotMatch(common, /Codex親がCodex子を呼ぶ時はnative sub-agentを既定/);
-
-  // 共通契約は共通正本にだけ存在し、hostへ依存する記述を含まない
-  assert.match(common, /project側を優先する/);
-  assert.match(common, /確信できない指摘は棄却する/);
-  assert.doesNotMatch(common, /spawn_agent|agent_type|fork_turns|effortはlow|Bash ツール/);
-  // Elastic統括正典（shared/orchestrate・docs/02）所有の契約を憲法へ複製しない
-  assert.doesNotMatch(common, /execution-verified|installed（CLI存在）|gpt-connector-mcp|maintenance wave|characterization/);
-
-  // host deltaは共通契約を重複保持しない
-  for (const delta of [claudeDelta, codexDelta, grokDelta, cursorDelta]) {
-    assert.doesNotMatch(delta, /unaiは、オーナーへのチャット応答と第三者向けの公開文章に適用する/);
-    assert.doesNotMatch(delta, /project側を優先/);
-    assert.doesNotMatch(delta, /委譲レーンは三つ|① native＝|external executionを積極利用/);
-    assert.doesNotMatch(delta, /role定義（implementer／refuter／sorter等）をそのまま使う/);
-    assert.doesNotMatch(delta, /利用可能性は4段階|installed（CLI存在）/);
-    assert.doesNotMatch(delta, /外部実行の受入契約|外部セッションの回収契約|状態不明として扱い/);
-    assert.doesNotMatch(delta, /gpt-connector-mcp|docs\/06_gpt-connector\.md|手動rollback/);
-    assert.doesNotMatch(delta, /docs\/02_models\.md/);
-    assert.doesNotMatch(delta, /実モデルの格下げ/);
-    assert.doesNotMatch(delta, /確信が持てない指摘|棄却側に倒す/);
-    assert.doesNotMatch(delta, /直接編集しない/);
-  }
-
   for (const output of [claude, codex, grok, cursor, cursorMdc]) {
     assert.equal(output.split(/\r?\n/u).filter((line) => line === unaiRule).length, 1);
+    assert.doesNotMatch(output, /Claude Code固有差分|Grok固有差分|Cursor固有差分/);
   }
 });

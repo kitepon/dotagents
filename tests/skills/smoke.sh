@@ -106,12 +106,12 @@ contains "$ROOT/PLAN.md" '（書込みscopeは憲法「調査と知識の置き�
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '**配置は統括レーンの4関節で宣言**'
 contains "$ROOT/shared/orchestrate/contract.md" '統括レーンへ入った後、4関節で扱う役割をF/A/Hに分ける。'
 # shellcheck disable=SC2016 # backticks are literal Markdown from the contract.
-contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。'
+contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本は lattice-workflow runbook のtyped discoveryで決める。'
 contains "$ROOT/shared/orchestrate/control-record.md" 'docs計画正本（実行TODOの正本はtyped discoveryで解決）'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '役割に対するmodel×effortの解決と順位は[docs/02_models.md]'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
-contains "$ROOT/docs/02_models.md" '| 反証 | GPT-6 Sol×high | Grok 4.7×high | Opus 5.5×high |'
-contains "$ROOT/docs/02_models.md" '| 実装 | GPT-6 Sol×high | Opus 5.5×medium | Grok 4.7×medium |'
+contains "$ROOT/docs/02_models.md" '| 反証 | GPT-6 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |'
+contains "$ROOT/docs/02_models.md" '| 実装 | GPT-6 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |'
 contains "$ROOT/shared/orchestrate/contract.md" '反証は、成果物を作ったモデルと別ベンダーのモデルで行う。'
 absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'medium'"

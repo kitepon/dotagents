@@ -11,7 +11,7 @@
 
 ## 使う時・使わない時
 
-**本正典を適用するのは統括レーンだけ**（ADR 0061）: 適用条件（4条件のOR）の正本は共通憲法「作業レーンと統制」であり、判定材料は着手時点で確定している作業の構造だけ。重装備（Packet/Report・Control記録）が要るのはwriter委譲・受入裁定・Phase gate・H操作の4関節だけで、campaign単位のdocs計画正本は統括レーン共通の前提であり、F/A/H宣言・Control Record・ADR・独立監査・receipt/evidence文書もこの4関節だけのもの。それ以外（直接処理・read-only呼び出し・queueで束ねた小粒消化）は通常レーンと同じ軽さで進め、証跡はgate evidenceとdocsに残す。技法（fan-out・重複統合・反証・網羅性Critic）はどのレーンでも使え、統括レーン専用はControl儀式（Elastic Control lifecycle、Packet/Report、受入・回収契約）だけ。対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。
+**本正典を適用するのは統括レーンだけ**（ADR 0061）: 適用するかは、AIが任務を見て判断する（共通憲法「委譲とオーケストレーション」）。重装備（Packet/Report・Control記録）が要るのはwriter委譲・受入裁定・Phase gate・H操作の4関節だけで、campaign単位のdocs計画正本は統括レーン共通の前提であり、F/A/H宣言・Control Record・ADR・独立監査・receipt/evidence文書もこの4関節だけのもの。それ以外（直接処理・read-only呼び出し・queueで束ねた小粒消化）は通常レーンと同じ軽さで進め、証跡はgate evidenceとdocsに残す。技法（fan-out・重複統合・反証・網羅性Critic）はどのレーンでも使え、統括レーン専用はControl儀式（Elastic Control lifecycle、Packet/Report、受入・回収契約）だけ。対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本は lattice-workflow runbook のtyped discoveryで決める。
 
 通常レーンはControl Recordを使わない。短い成功条件、focused test、対象限定commitで閉じる。通常レーンでもWorkerへのコーディング委譲は可能で、Packetなしの明確な指示と親のdiff・test確認で受け入れる。途中で統括条件が揃ったら原子的作業を止めて昇格し、既存active Controlに属する作業を通常レーンへ降格しない。高リスク操作の説明義務はレーンに関係なく適用する。承認待ちにしない。
 
