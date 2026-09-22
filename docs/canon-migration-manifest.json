@@ -128,13 +128,13 @@
       "receiver_text": "- 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。"
     },
     {
-      "receiver_path": "docs/02_models.md",
-      "receiver_phrase": "入口と使い分け",
+      "receiver_path": "shared/orchestrate/delegation-contract.md",
+      "receiver_phrase": "入口とモデル指定",
       "l0_path": "AGENTS.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "- **Codex外部エージェント限界突破**: native Codexの同時枠上限（親を含む）を工場全体の上限にしない。Codex親は`codex-sidecar`とaitermのCodex/Grok/Composerを外部実行レーンとして積極利用し、入れ子Codexを起動してよい。`gpt_connector`は相談レーンであり実装workerではない。委譲の安全・回収・受入契約は[委譲契約](shared/orchestrate/delegation-contract.md)、レーンとexecution-verified資格は[docs/02_models.md](docs/02_models.md)、Codex配線は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)を正とする。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- **委譲の安全・回収・受入契約は[委譲契約](../shared/orchestrate/delegation-contract.md)が正本**。Aitermの運用型は[aiterm-dispatch](../shared/orchestrate/aiterm-dispatch.md)を正とする。external writerはinstalled→registered→verified→execution-verifiedの最終段だけに置く。"
+      "receiver_text": "- Aitermの`codex_agent`/`grok_agent`/`claude_agent`はmodelとeffortを毎回明示する。live catalog不在・effort非対応は明示エラーにし、別modelへfallbackしない。external writerはinstalled→registered→verified→execution-verifiedの最終段だけに置く。"
     },
     {
       "receiver_path": "README.md",
@@ -227,40 +227,40 @@
       "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は製品ID、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host/wire互換、製品文書へのpointerだけを所有する。"
     },
     {
-      "receiver_path": "docs/02_models.md",
-      "receiver_phrase": "世代交代時の更新手順",
+      "receiver_path": "shared/orchestrate/delegation-contract.md",
+      "receiver_phrase": "世代交代時は",
       "l0_path": "PLAN.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "6. **自作資産の終活**: 自作 skill / command / rule / 契約は、作成時期を問わず現行 Claude のネイティブ能力と突合してから残す。突合で負ける資産は延命せず廃止を提案する（廃止承認は常に H）。**見直しのトリガーはオーナー**——モデル世代交代の時期はオーナーだけが観測・宣言できる。資産見直しのカレンダー駆動はしない（判断の定期化は形骸化する。判断を要しない機械的衛生作業＝メモリ棚卸し・rag Lint は月次で回してよい）。見直しを安くするため、各資産の冒頭に**前提行**を1行仕込む（例: `前提: Fable級統括／Sonnet級実装者（2026-07 時点）`）——宣言が出た瞬間、次のモデルが grep で再検討対象を機械列挙できる。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "## 指定と世代交代時の更新手順\n\n- Claude Code内はfloating alias（`fable`/`opus`/`sonnet`/`haiku`）だけを使う。Agent/Workflowのmodelとeffortは対応する場合に毎回明示し、Haikuへeffortを付けない。"
+      "receiver_text": "- 世代交代時は、オーナーの宣言を受けて02と公認projectionを同じcommitで更新し、`grep -rn \"前提:\"`で旧世代前提の資産を洗い出してCIで一致を確認してからpushする。"
     },
     {
-      "receiver_path": "docs/02_models.md",
-      "receiver_phrase": "成果を作ったモデルと別ベンダーから選ぶ",
+      "receiver_path": "shared/orchestrate/contract.md",
+      "receiver_phrase": "成果物を作ったモデルと別ベンダー",
       "l0_path": "PLAN.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "8. **重い検証構造（多視点Find→Dedup→指摘ごとの反証→Critic）は統括レーンの契約クリティカルだけ**（頻度と範囲は`shared/orchestrate/contract.md`「監査の頻度」が正）。Phase完了時の検証は原則クロスprovider（Claude親→Codex、Codex親→Claude）。もっともらしい指摘・提案ほど反証にかけ、確信できないものは棄却する。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "1. **反証の1位は、成果を作ったモデルと別ベンダーから選ぶ。**"
+      "receiver_text": "- **反証は、成果物を作ったモデルと別ベンダーのモデルで行う。** 順位表の反証候補が作り手と同じベンダーなら、その候補を飛ばして次の順位を使う。"
     },
     {
-      "receiver_path": "docs/02_models.md",
-      "receiver_phrase": "具体名への判断はこの表だけが担う",
+      "receiver_path": "shared/orchestrate/delegation-contract.md",
+      "receiver_phrase": "具体名への判断は",
       "l0_path": "PLAN.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "9. **モデルはバージョン固定禁止**: latest 型で指定する。役割→現行最強の対応表 **docs/02_models.md** を唯一の参照点にし、各所にモデル名を書き散らさない。役割の骨格: 統括=現行最強推論／実装=安価高速枠／反証=強推論枠／外部併走=レート非依存の他社枠。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "方針: skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への判断はこの表だけが担う。本書は役割を先に定義し、役割ごとに適したモデル×effortを1位〜3位で与える。ベンダー別レーンの表構造は撤廃した（オーナー裁定 2026-08-19）。runtimeが具体値を要求する`.codex-sidecar.yml`、`claude/agents/*.md`のfrontmatter、Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない。世代交代時は**この一枚と公認projectionを同じcommitで更新し、CIで一致を確認してpushする**。更新トリガーはオーナーの宣言（PLAN 原則6）。"
+      "receiver_text": "- skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への判断は[docs/02_models.md](../../docs/02_models.md)の順位表だけが担う。runtimeが具体値を要求する`.codex-sidecar.yml`、`claude/agents/*.md`のfrontmatter、Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない。"
     },
     {
-      "receiver_path": "docs/02_models.md",
-      "receiver_phrase": "世代交代時の更新手順",
+      "receiver_path": "shared/orchestrate/delegation-contract.md",
+      "receiver_phrase": "世代交代時は",
       "l0_path": "PLAN.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "- **世代交代時**: オーナーが宣言 → 02_models.md の解決例列を更新して push → `grep -rn \"前提:\"` で旧世代前提の資産を原則6で再検討（手順の正は 02_models.md）。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "## 指定と世代交代時の更新手順\n\n- Claude Code内はfloating alias（`fable`/`opus`/`sonnet`/`haiku`）だけを使う。Agent/Workflowのmodelとeffortは対応する場合に毎回明示し、Haikuへeffortを付けない。"
+      "receiver_text": "- 世代交代時は、オーナーの宣言を受けて02と公認projectionを同じcommitで更新し、`grep -rn \"前提:\"`で旧世代前提の資産を洗い出してCIで一致を確認してからpushする。"
     },
     {
       "receiver_path": "shared/runbooks/knowledge-return.md",
@@ -389,13 +389,13 @@
       "receiver_text": "  固定順で結合し、archive直前にも全Task／Control finalization文書を再hashする。過去の\n  `type=decision`だけは、現内容が変わっていても同一repoの最大256 commitにある同一path・regular blob・\n  完全一致SHA-256を合計64 MiB以内で確認できれば保持済みとする。`type=file`、別path、近似一致、unsafeな\n  現path、bare repoへこの履歴保持を拡張しない。"
     },
     {
-      "receiver_path": "docs/02_models.md",
+      "receiver_path": "shared/orchestrate/contract.md",
       "receiver_phrase": "役割と配置関係の機械可読な対応",
       "l0_path": "shared/orchestrate/contract.md",
       "l0_pointer_phrase": "docs/02_models.md",
       "source_text": "役割と配置関係の機械可読な対応は`lib/orchestrate/placement-policy.mjs`\n（`dotagents.placement-policy.v1`）が固定し、fixtureがadapter catalogのconsultation laneおよび\nControl schema v26のconnector enumとの整合を検証する。",
       "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **役割と配置関係の機械可読な対応**は`lib/orchestrate/placement-policy.mjs` v1が固定する。自動ConsultationはAnthropic/OpenAIだけだが、これは現行配線のclosed enumであり、xAIの能力評価ではない。"
+      "receiver_text": "役割と配置関係の機械可読な対応は`lib/orchestrate/placement-policy.mjs` v1が固定する。自動ConsultationはAnthropic/OpenAIだけだが、これは現行配線のclosed enumであり、xAIの能力評価ではない。"
     },
     {
       "receiver_path": "shared/orchestrate/composition.md",

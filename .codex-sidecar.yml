@@ -1,4 +1,4 @@
-# 前提: GPT-5.6の役割別配置を維持（2026-09-08整合）。defaults・presetsの正はdocs/02_models.md
+# 前提: GPT-6の役割別配置（2026-09-22整合）。defaults・presetsの正はdocs/02_models.md
 #
 # スキーマは codex-sidecar-core/dist/{config.js,presets.js,types.js,profiles.js} を実読して確認
 # （2026-07-11・/opt/homebrew/lib/node_modules/codex-sidecar-core）。USAGE.md 等の文書は端末に
@@ -11,7 +11,7 @@ project: dotagents
 # 継承される事故を遮断する構造的バックストップ。model_reasoning_effort は
 # codex-sidecar-core が受理する low/medium/high/xhigh のみ（ultra/max はスキーマ外）。
 defaults:
-  model: gpt-5.6-terra
+  model: gpt-6-sol
   model_reasoning_effort: medium
 
 # safety_profile: SAFETY_PROFILE_DENY_PATTERNS（profiles.js）に無い専用プロファイルは
@@ -33,8 +33,8 @@ presets:
     workflow: explore
     readonly: true
     # 配置表の軽作業に合わせる。preset単位のmodel・effort指定は製品schemaで受理される。
-    model: gpt-5.6-luna
-    model_reasoning_effort: medium
+    model: gpt-6-luna
+    model_reasoning_effort: high
     prompt: "Caveat hookの助言を、具体的な次の操作とともに簡潔な日本語で返す。"
   auditor:
     workflow: auditor

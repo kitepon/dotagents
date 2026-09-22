@@ -109,11 +109,10 @@ contains "$ROOT/shared/orchestrate/contract.md" '統括レーンへ入った後�
 contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。'
 contains "$ROOT/shared/orchestrate/control-record.md" 'docs計画正本（実行TODOの正本はtyped discoveryで解決）'
 contains "$ROOT/claude/skills/orchestrate/SKILL.md" '役割に対するmodel×effortの解決と順位は[docs/02_models.md]'
-contains "$ROOT/docs/02_models.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
-# 補足文の追加を許し、役割ごとの候補と順位を検査する。
-rg -q '^\| 監査・発見 \| Grok 4\.6×medium[^|]*\| Sonnet 5×medium' "$ROOT/docs/02_models.md" || fail '監査・発見の候補順位が不一致'
-contains "$ROOT/docs/02_models.md" '| 反証 | Grok 4.6×high（実測14/14） | Sol×high（実測14/14。同着はGrok優先＝オーナー裁定 2026-08-19） | Opus 5×high'
-rg -q '^\| 実装 \| Terra×high[^|]*\| Sonnet 5×medium〜high' "$ROOT/docs/02_models.md" || fail '実装の候補順位が不一致'
+contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
+contains "$ROOT/docs/02_models.md" '| 反証 | GPT-6 Sol×high | Grok 4.7×high | Opus 5.5×high |'
+contains "$ROOT/docs/02_models.md" '| 実装 | GPT-6 Sol×high | Opus 5.5×medium | Grok 4.7×medium |'
+contains "$ROOT/shared/orchestrate/contract.md" '反証は、成果物を作ったモデルと別ベンダーのモデルで行う。'
 absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'medium'"
 contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "const VERIFY_MODEL = 'opus'; // Claude内反証projection。順位の判断正本はdocs/02_models.md"
@@ -136,13 +135,13 @@ contains "$ROOT/codex/skills/orchestrate/SKILL.md" '通常レーンは委譲を�
 contains "$ROOT/shared/orchestrate/executor-adapters.md" 'まず新規admissionを止める'
 # shellcheck disable=SC2016 # backticks are literal Markdown from the contract.
 contains "$ROOT/shared/orchestrate/executor-adapters.md" '`unknown`を別terminal stateへ暗黙変換しない'
-# 2026-07-16裁定: 委譲3レーン・4段階はdocs/02、worker安全契約はdelegation-contractが正典（生成憲法は共通部のみ）
-contains "$ROOT/docs/02_models.md" '① native subagent＝'
-contains "$ROOT/docs/02_models.md" '② external execution＝'
-contains "$ROOT/docs/02_models.md" '③ consultation＝'
+# 2026-09-22裁定: 委譲3レーン・4段階はdelegation-contract、worker安全契約はdelegation-contractが正典（生成憲法は共通部のみ）
+contains "$ROOT/shared/orchestrate/delegation-contract.md" '① native subagent＝'
+contains "$ROOT/shared/orchestrate/delegation-contract.md" '② external execution＝'
+contains "$ROOT/shared/orchestrate/delegation-contract.md" '③ consultation＝'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" 'branch切替、commit、push、merge、rebase、reset、stash'
 contains "$ROOT/shared/orchestrate/delegation-contract.md" '秘密・token・cookie・OAuth・private key'
-contains "$ROOT/docs/02_models.md" 'installed→registered→verified→execution-verified'
+contains "$ROOT/shared/orchestrate/delegation-contract.md" 'installed→registered→verified→execution-verified'
 contains "$ROOT/docs/05_codex-fragments.md" 'codex mcp add codex-sidecar -- codex-sidecar-mcp'
 if rg -qi 'Workflow' "$ROOT/codex/skills/orchestrate/SKILL.md"; then
   fail 'Codex orchestrate が Claude 専用 Workflow を実行入口としている'

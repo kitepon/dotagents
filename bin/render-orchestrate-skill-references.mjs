@@ -53,7 +53,7 @@ function normalizeText(value) {
 
 function renderMarkdown(value, source) {
   let rendered = normalizeText(value);
-  if (source === "shared/orchestrate/aiterm-dispatch.md") {
+  if (source === "shared/orchestrate/aiterm-dispatch.md" || source === "shared/orchestrate/delegation-contract.md") {
     rendered = rendered.replaceAll("../../docs/02_models.md", "02_models.md");
   } else if (source === "shared/orchestrate/composition.md") {
     rendered = rendered.replaceAll("../../lib/orchestrate/lane-admission.mjs", "lane-admission.mjs");

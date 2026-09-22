@@ -43,10 +43,11 @@ Delegation PacketとWorker Reportの必須項目・統括側の受入手順は[�
 - **相談役（Consultation）は親と異なるprovider familyを第一候補**にし、provider固有の盲点を補う。
   これは第一候補の原則であって強制拒否ではない——同familyのconnector（例: Codex親からのChatGPT相談）も
   引き続き使える。相談役はWorkerやObserverへ混ぜない。
+- **反証は、成果物を作ったモデルと別ベンダーのモデルで行う。** 順位表の反証候補が作り手と同じベンダーなら、その候補を飛ばして次の順位を使う。
 - **一般Workerは適格候補（role・能力・独立性・F/A/H適合）内での適応配置**とする。残quotaに基づく
   rate-aware selectorが提供されるまで、quota架空値・暗黙fallbackで配置を成功扱いしない。
 
-役割と配置関係の機械可読な対応・fixture検証の詳細は`docs/02_models.md`に従う。
+役割と配置関係の機械可読な対応は`lib/orchestrate/placement-policy.mjs` v1が固定する。自動ConsultationはAnthropic/OpenAIだけだが、これは現行配線のclosed enumであり、xAIの能力評価ではない。
 
 ## 実装と受入
 
