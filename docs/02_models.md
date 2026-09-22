@@ -11,6 +11,7 @@
 7. **局所コーディング** — focused test付きの狭い修正
 8. **軽作業** — 分類・抽出・字面回収
 9. **調査** — 外部事実の回収〜統合
+10. **難問・研究** — 既知の解法では前進できない問題の突破、研究レベルの探索
 
 ## 順位
 
@@ -25,6 +26,7 @@
 | 局所コーディング | GPT-6 Luna×high | Sonnet 5×high | Composer 2.5 |
 | 軽作業 | GPT-6 Luna×high | Sonnet 5×high | Grok 4.7×high |
 | 調査 | Grok 4.7×medium | GPT-6 Sol×medium | Opus 5.5×medium |
+| 難問・研究 | Fable 5.1×high | Opus 5.5×high | GPT-6 Astra×high |
 
 ## 諸元
 

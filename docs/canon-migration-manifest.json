@@ -206,7 +206,7 @@
       "l0_pointer_phrase": "docs/00_overview.md",
       "source_text": "- **文書は3種に分類して管理する**: ①**趣旨**（本憲章・各リポの正典＝なぜ・何のため） ②**プラン**（統括レーンの目的・判断理由・非目標・受入条件とLattice工程への導線） ③**役目を終えたもの**（実現済みプラン・完了台帳）。",
       "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "| [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式） |"
+      "receiver_text": "| [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式、完遂した推薦入口の計画） |"
     },
     {
       "receiver_path": "docs/00_overview.md",
