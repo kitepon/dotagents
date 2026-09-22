@@ -427,8 +427,8 @@ expiry判定に使うため、同じsnapshotと入力から同じ結果を返す
       "lineage": {
         "parent_worker_run_id": null,
         "root_assignment_id": "assignment-001",
-        "provider": "openai",
-        "model": "<docs/02_models.md 順位表「実装」1位の現行値>",
+        "provider": "<選択したモデルのベンダー>",
+        "model": "<docs/02_models.md「実装」の第1候補群からハーネス選択後の値>",
         "prompt_family": "implementation-v1",
         "independence_group": "implementation-primary",
         "context_policy": {
@@ -875,8 +875,8 @@ wall timeとcost上限は非負整数または`null=unknown`である。costは�
   {
     "parent_worker_run_id": null,
     "root_assignment_id": "assignment-001",
-    "provider": "openai",
-    "model": "<docs/02_models.md 順位表「実装」1位の現行値>",
+    "provider": "<選択したモデルのベンダー>",
+    "model": "<docs/02_models.md「実装」の第1候補群からハーネス選択後の値>",
     "prompt_family": "implementation-v1",
     "independence_group": "implementation-primary",
     "context_policy": {

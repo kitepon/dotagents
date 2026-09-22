@@ -18,22 +18,22 @@
 
 ## 順位
 
-| 役割 | 1位 | 2位 | 3位 |
+| 役割 | 第1候補群 | 第2候補群 | 第3候補群 |
 |---|---|---|---|
 | 統括 | オーナー指定 | — | — |
-| 反証 | GPT-6 Sol×high | Grok 4.7×high | Opus 5.5×high |
-| 監査・発見 | Grok 4.7×medium | Sonnet 5×medium | GPT-6 Sol×medium |
-| 設計 | Opus 5.5×high | GPT-6 Sol×high | Grok 4.7×high |
+| 反証 | GPT-6 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |
+| 監査・発見 | Grok 4.7×medium、Sonnet 5×medium（同格） | GPT-6 Sol×medium | — |
+| 設計 | Opus 5.5×high、GPT-6 Sol×high（同格） | Grok 4.7×high | — |
 | 相談 | GPT-6 Astra×high | Fable 5.1×high | Grok 4.7×medium |
-| 実装 | GPT-6 Sol×high | Opus 5.5×medium | Grok 4.7×medium |
-| 局所コーディング | GPT-6 Luna×high | Sonnet 5×high | Composer 2.5 |
-| 軽作業 | GPT-6 Luna×high | Sonnet 5×high | Grok 4.7×high |
-| 調査 | Grok 4.7×medium | GPT-6 Sol×medium | Opus 5.5×medium |
+| 実装 | GPT-6 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |
+| 局所コーディング | GPT-6 Luna×high、Sonnet 5×high（同格） | Composer 2.5 | — |
+| 軽作業 | GPT-6 Luna×high、Sonnet 5×high（同格） | Grok 4.7×high | — |
+| 調査 | Grok 4.7×medium、GPT-6 Sol×medium（同格） | Opus 5.5×medium | — |
 | 難問・研究 | Fable 5.1×high | Opus 5.5×high | GPT-6 Astra×high |
 
-## ベンチマークで同格の場合のハーネス選択
+## 同格候補のハーネス選択
 
-Codexを基本の親とし、同格モデルの入口は次の順に選ぶ。
+Codexを基本の親とする。候補群は左から選び、同じ群に複数モデルがある場合は次の順に入口を選ぶ。
 
 1. Claudeの5時間枠を積極的に使う。
 2. Codexの週次使用率が、週次枠をリセット時にちょうど使い切る均等ペースの1.2倍以上なら、Grokを積極的に使う。均等ペースの使用率は`100 × (現在時刻 − (リセット時刻 − 週次期間)) ÷ 週次期間`で求める。
