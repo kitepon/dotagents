@@ -75,6 +75,16 @@ Codex nativeのモデルとeffortは、役割と任務に応じてこの順位�
 
 Anthropic（Claude Code本体・Agent/Workflow）／OpenAI Codex（Codex CLI・codex-sidecar・aiterm codex_agent）／OpenAI ChatGPT（gpt-connector・API fallback禁止）／xAI（Grok Build・aiterm grok_agent）の4枠は別勘定。同役割の次順位が別枠なら、quota逼迫時のfallbackはコスト増でなく枠の移動になる。
 
+## 推薦入口（子の harness × model × effort を一回で得る）
+
+親が子を出す時は、この文書を読み下す代わりに任務を一文で渡す。順位表は入口が実行時に読むので、ここを書き換えれば推薦も変わる。
+
+```sh
+printf '{"task":"落ちているテストの原因を調べて直す"}' | node bin/recommend-harness.mjs
+```
+
+返るのは `recommendation`（`harness` / `family` / `model_id` / `effort` / `pool_id`）と `reason`（どの役割の何位か、pool の観測状態）。Jev が決めるのは役割と難度だけで、モデルは上の順位表から取る。harness・family・effort を決めている時は `"explicit": {"harness":"cursor-agent","family":"claude-opus-5","effort":"high"}` を足すと、その候補をそのまま返す（catalog に無ければ `explicit_unsupported`）。pool の残量は測って空だと分かった時だけ除外し、未観測なら候補に残して `quota_comparison: not_established` と返す。子の起動も親の設定変更もしない。
+
 ## 推薦契約の機械可読正本
 
 役割順位の文言は上の順位表だけが持つ。このJSONはハーネス、effortの指定可否、消費pool、実行面の正本であり、順位の文を複製しない。候補表と `lib/orchestrate/model-candidates.json` は `node bin/render-model-candidates.mjs --write` で同時に更新する。`none` は有効な指定値があるfamilyだけに置き、指定不可とは分けて書く。ハーネスを選んでも Aiterm 起動にはならない。親の model×effort は変えない。
