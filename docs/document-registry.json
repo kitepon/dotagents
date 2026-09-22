@@ -263,6 +263,13 @@
       "preserve_old_path": false,
       "old_path_mode": "removed",
       "archive_sha256": "beff975353cad38752430ebb13d98376cac9d6988ee68dee27c591f436c468c1"
+    },
+    {
+      "old_path": "docs/plan_harness-model-effort-recommender.md",
+      "new_path": "docs/archive/2026-09_plan_harness-model-effort-recommender.md",
+      "preserve_old_path": false,
+      "old_path_mode": "removed",
+      "archive_sha256": "bdd29d6ec8e6f8603e47a8b0f5fc859fef3a530ca7f60cb48d9dbf42d93eb2ef"
     }
   ],
   "compatibility_stub_paths": [
@@ -420,7 +427,6 @@
         "docs/plan_codex-jev-integration.md",
         "docs/plan_jev-third-party-rollout.md",
         "docs/plan_factory-records-20260913.md",
-        "docs/plan_harness-model-effort-recommender.md",
         "grok/AGENTS.delta.md",
         "grok/agents/implementer.md",
         "grok/agents/refuter.md",
@@ -473,10 +479,10 @@
     "roots": [
       "docs/archive"
     ],
-    "all_path_count": 101,
-    "all_paths_sha256": "026a2411f759ddaba74bfd3fa651af74269267033c06bd44e6c6d6d0695b0f77",
-    "legacy_path_count": 76,
-    "legacy_paths_sha256": "3873d8ed514b17ff7bd08e7950835830b0fb84755583640fc5ffcc473511b3d7"
+    "all_path_count": 103,
+    "all_paths_sha256": "aca282d60ee11cc6bc44cf75cc0ce0eb216368c8106868fdf87db600bff1fed1",
+    "legacy_path_count": 77,
+    "legacy_paths_sha256": "f68c7fcc9bb4631332bba2d27b48982b275318c90210bc98045f726b577af694"
   },
   "current_surface_policies": [
     {
@@ -561,7 +567,7 @@
       "path_regex": "^docs/00_overview\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/00_overview.md": "9f9432a29b44d85fa8b949b95e89ab2a7c2d676024e586724d5cf8ca2a73d136"
+        "docs/00_overview.md": "560f3626d0c7aea5da31414c34cc088f84784640e880039483b18b71168ebdb1"
       },
       "required_regexes": [],
       "forbidden_regexes": []
