@@ -10,7 +10,7 @@
 - [second-brain/raw/obsidian-commercial-license-20260704.md](second-brain/raw/obsidian-commercial-license-20260704.md) — 商用ライセンス条件（WebFetch 要約経由・markitdown は JS ページで空出力の罠あり）
 - [second-brain/notebooklm-second-brain-critique.md](second-brain/notebooklm-second-brain-critique.md) — NotebookLM「第二の脳」論の批評: 主脳不適（サイロ・API Enterprise 限定）／窓なら可／還流思想は Karpathy と収束（2026-07-04・確度は claim 別）
 - [model-steering/fable-behavior-porting-audit.md](model-steering/fable-behavior-porting-audit.md) — connect24h「型は移植できる」検分: output style での型移植は Fable に逆行（公式 L174/L9-13）＝棄却。記事の「Opus 4.8 は 200K」は誤り（1M 既定）。うちの会話規範は Fable の型と整合／憲法の選択的スリム化が宿題（2026-07-05・確度高・refuter 通過）
-- [agent-config/agents-md-vs-claude-md-2026.md](agent-config/agents-md-vs-claude-md-2026.md) — AGENTS.md vs CLAUDE.md の 2026 規約: Claude Code は CLAUDE.md を読み AGENTS.md は `@import` 推奨／AGENTS.md は横断標準だがリポ単位のみ（グローバル等価物なし）。dotagents に適用（2026-07-05・確度高・一次ソース）
+- [agent-config/agents-md-vs-claude-md-2026.md](agent-config/agents-md-vs-claude-md-2026.md) — AGENTS.md vs CLAUDE.md の 2026 規約: Claude Code v2.1.277（2026-09-18）から CLAUDE.md が無いプロジェクトで AGENTS.md を直接読む（既定は排他・user スコープ相当なし＝グローバルは ~/.claude/CLAUDE.md のまま）／Codex global scope／dotagents 適用（2026-09-23 全面改訂・確度高・一次ソース raw 保存）
 - [models/gpt-6-astra.md](models/gpt-6-astra.md) — Astra公式指針と指示監査: 承認・工程・検証の適用条件を整合し、既存の安全契約と役割別配置を維持（2026-09-08・公式仕様／静的監査、配置比較は未実施）
 - [models/gpt-5.6-family.md](models/gpt-5.6-family.md) — GPT-5.6世代（Sol/Terra/Luna）: 2026-08-14公式価格・API/Codex effort差、Luna×maxのローカル実測と運用判断、native agent role・sidecar連携（確度はclaim別）
 - [models/claude-5-family.md](models/claude-5-family.md) — Claude Fable 5 / Opus 5 / Sonnet 5 / Haiku 4.5: 現行価格・effort。Sonnet 5の$2/$10恒久化、Opus 5のscope creep外部観測とtask別effort benchmarkを分離（2026-08-14・確度はclaim別）
