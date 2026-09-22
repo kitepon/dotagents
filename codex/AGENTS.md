@@ -71,7 +71,7 @@ Claude と Codex と Grok と Cursor が全端末・全プロジェクトで従�
 
 ## 作業レーンと統制
 
-- **子のmodel×effortは02の順位表から選ぶ**: 子、相談役、外部agentを出す時は、dotagentsの`docs/02_models.md`を読み、任務に合う役割の順位からmodel×effortを選んで、諸元表の入口で呼ぶ。本書やskillへ具体modelを複製しない。親のmodel×effortはオーナー領分のまま、新候補を現状維持より不利に扱わない。
+- **子のmodel×effortは02の順位表から選ぶ**: 子、相談役、外部agentを出す時は、dotagentsの`docs/02_models.md`を読み、任務に合う役割の順位からmodel×effortを選んで、諸元表のハーネスで呼ぶ。`docs/02_models.md`を編集する時だけ、先に`shared/runbooks/model-ranking-authoring.md`を読む。通常のモデル選定では補足資料を読まず、02だけを使う。本書やskillへ具体modelを複製しない。親のmodel×effortはオーナー領分のまま、新候補を現状維持より不利に扱わない。
 - **通常レーンが強い既定**: 作業は原則通常レーンで行い、短い成功条件・focused test・対象限定commitだけで閉じる。委譲・fan-out等の技法はどのレーンでも使える（委譲の最低安全契約は`shared/orchestrate/delegation-contract.md`）。
 - **統括レーンになるのは次の4つのどれかが着手時点の事実として確定している作業だけ**（ADR 0061）: ①計画に中断が組み込まれている（人が機械を動かさないと取れない観測・外部完了待ち・波間停止。Phase Exit 宣言を承認待ちとして組込むのは禁止）②受入が多段に連鎖する③複数repoの書込みを調整する④裁定の検証可能な証跡が必要。該当したら`shared/orchestrate/contract.md`と`orchestrate`正典に従う。それ以外はすべて通常レーンで、予定外に途切れた時はhandoff（planへ現在地1行＋バトン）で閉じて通常レーンのまま終える。
 - **WIPとスレッド寿命**: active WIPは本筋1件＋緊急割込み1件まで。これはproject別に枠を増やさず、同じオーナー依頼を処理するactive thread全体で数える。ただしcampaign／Phaseを本筋WIP 1件と数え、その内部でLatticeが独立と検証した複数ToDoを複数workerへ同時dispatchすることはWIP超過ではない。worker数やactive ToDo数をWIP件数と読み替えて直列化しない。1スレッドは1成果または1 Phaseだけ。context compaction後は現在の原子的作業を閉じてhandoffを準備し、新Phaseは次のスレッドで始める。
