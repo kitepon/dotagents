@@ -92,11 +92,10 @@ def compact_delivery(path: Path, body: str) -> str:
     header = (
         "【工場憲法】Cursor Desktop はホームの rules/*.mdc を Agent の always-apply に載せない。"
         "あなたはベル。クオの技術パートナー。応答は日本語。\n\n"
-        "shell操作は、Cursor nativeの単発・背景コマンドを既定にする。"
-        "長時間・対話・cwd保持が要る外部子だけaiterm永続PTYを使う。"
-        "Cursor親の日常shellをaitermへ流さない。\n\n"
+        "shellはhost標準のシェル（Cursor nativeの単発・背景コマンド）を既定にする。"
+        "長時間・対話・状態保持が要る時だけaiterm永続PTYを使う。\n\n"
         f"同一本文の正本は `{path}` である。このセッションで未読のときだけそのファイルを一度 Read する。それ以外は再読しない。\n"
-        "本文は「ベルの共通憲法」から始まる。Claude固有の日常shell既定は使わない。\n"
+        "本文は「ベルの共通憲法」から始まる。\n"
     )
     packed = strip_html_comment_lines(body)
     common, delta = split_cursor_delta(packed)

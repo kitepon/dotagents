@@ -20,9 +20,7 @@ Windows nativeのCursor配線はWindows側`~/.cursor`だけを所有し、WSL2�
 - `~/.cursor/skills-cursor/`
 - 個人hook。所有面は `~/.cursor/hooks.json` と `bin/cursor-*-hook`。apply-cursor-config が工場hookを upsert し、個人hookは残す。
 
-工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読み、Claude形（`permissionDecision`）へcanonicalizeしない。Spotter / Throughline / Caveatの製品hookは工場hookへ複製せず、各製品installerが同じ`~/.cursor/hooks.json`へupsertする。`apply-cursor-config`はそれらを保持し、製品hookの有無や内部commandを工場側で決めない。`cursor-constitution-hook`は`~/.cursor/rules/factory.mdc`をDesktop Agentへ配達する。10000字以内なら同一本文を`additional_context`へ載せ、超過時はcap内の案内と本文冒頭をinlineし、末尾のCursor deltaは切らず、同一全文は正本ファイルのReadで届ける。sessionStartはfire-and-forgetでhandle未作成だと落とすため、同じhookをawaitedのbeforeSubmitPromptと次ターンのpreToolUseにも置く。Cursorに`exit_plan_mode`がないためplan-gateは採用しない。
-
-責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12）は Claude frontend だけで、Cursor の `hooks.json` へは未配線。Cursor 席からの越境書込は本ゲートで止まらない。
+工場hookはCursor envelope（`hook_event_name` / `permission` / `additional_context`）をそのまま読み、Claude形（`permissionDecision`）へcanonicalizeしない。Spotter / Throughline / Caveatの製品hookは工場hookへ複製せず、各製品installerが同じ`~/.cursor/hooks.json`へupsertする。`apply-cursor-config`はそれらを保持し、製品hookの有無や内部commandを工場側で決めない。`cursor-constitution-hook`は`~/.cursor/rules/factory.mdc`をDesktop Agentへ配達する。10000字以内なら同一本文を`additional_context`へ載せ、超過時はcap内の案内と本文冒頭をinlineし、末尾のCursor deltaは切らず、同一全文は正本ファイルのReadで届ける。sessionStartはfire-and-forgetでhandle未作成だと落とすため、同じhookをawaitedのbeforeSubmitPromptと次ターンのpreToolUseにも置く。
 
 ## 3. 受入
 

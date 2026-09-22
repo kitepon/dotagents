@@ -191,6 +191,18 @@ remove_retired_link \
   "$HOME/.local/bin/verify-observer-package" \
   "$HERE/bin/verify-observer-package.sh" \
   "$HOME/Developer/dotagent/bin/verify-observer-package.sh"
+# 廃止した呼びかけ・強制hook。settings側の登録は apply-*-config が外す。
+for retired_hook in \
+  boundary-gate-hook codex-callout-hook codex-lattice-gantt-hook \
+  cursor-delegation-gate-hook cursor-lattice-gantt-hook cursor-orchestrate-advisory-hook cursor-todo-gate-hook \
+  delegation-gate-hook grok-delegation-gate-hook grok-lattice-gantt-hook grok-onset-gate-hook \
+  grok-orchestrate-advisory-hook grok-plan-gate-hook grok-todo-gate-hook \
+  lattice-gantt-hook onset-gate-hook orchestrate-advisory-hook plan-gate-hook todo-gate-hook; do
+  remove_retired_link \
+    "$HOME/.local/bin/$retired_hook" \
+    "$HERE/bin/$retired_hook.sh" \
+    "$HOME/Developer/dotagent/bin/$retired_hook.sh"
+done
 for f in "$HERE/bin"/*.sh; do
   [ -e "$f" ] || continue
   link_one "$f" "$HOME/.local/bin/$(basename "$f" .sh)"

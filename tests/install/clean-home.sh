@@ -76,7 +76,7 @@ def is_callout_stop(command):
     parts = shlex.split(command, posix=os.name != "nt")
     parts = [part.strip('"\'') for part in parts if part != "&"]
     return len(parts) >= 2 and parts[-2].endswith("codex-callout-hook") and parts[-1] == "stop"
-raise SystemExit(0 if sum(is_callout_stop(command) for command in commands) == 1 else 1)
+raise SystemExit(0 if sum(is_callout_stop(command) for command in commands) == 0 else 1)
 PY
 }
 
@@ -91,6 +91,7 @@ ln -s "$ROOT/bin/windows-native-product-smoke.mjs" "$OFFICIAL_HOME/.local/bin/wi
 ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/render-current-docs.mjs" "$OFFICIAL_HOME/.local/bin/render-current-docs"
 ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/apply-observer-hook-config.sh" "$OFFICIAL_HOME/.local/bin/apply-observer-hook-config"
 ln -s "$OFFICIAL_HOME/Developer/dotagent/bin/verify-observer-package.sh" "$OFFICIAL_HOME/.local/bin/verify-observer-package"
+ln -s "$ROOT/bin/todo-gate-hook.sh" "$OFFICIAL_HOME/.local/bin/todo-gate-hook"
 if HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official --profile official >/dev/null 2>&1; then
   fail 'install が重複 profile を受理した'
 fi
@@ -236,7 +237,7 @@ verify_fixture_output="$(HOME="$OFFICIAL_HOME" DOTAGENTS_SKIP_FACTORY_CORE=1 "$V
 grep -Fq 'が共有委譲契約を参照していない' <<<"$verify_fixture_output" || fail 'Claude shared delegation reference の欠落を verify が検出しない'
 mkdir -p "$OFFICIAL_HOME/.claude"
 cat >"$OFFICIAL_HOME/.claude/settings.json" <<'EOF'
-{"hooks":{"PreToolUse":[{"hooks":[{"type":"command","command":"~/.local/bin/boundary-gate-hook","timeout":5}]},{"hooks":[{"type":"command","command":"~/.local/bin/delegation-gate-hook","timeout":5}]},{"matcher":"Bash","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]}],"SessionStart":[{"hooks":[{"type":"command","command":"~/.local/bin/todo-gate-hook session-start","timeout":10}]},{"hooks":[{"type":"command","command":"~/.local/bin/orchestrate-advisory-hook","timeout":5}]},{"hooks":[{"type":"command","command":"~/.local/bin/lattice-gantt-hook session-start","timeout":6}]}],"Stop":[{"hooks":[{"type":"command","command":"~/.local/bin/todo-gate-hook stop","timeout":10}]}],"UserPromptSubmit":[{"hooks":[{"type":"command","command":"~/.local/bin/onset-gate-hook","timeout":5}]},{"hooks":[{"type":"command","command":"~/.local/bin/lattice-gantt-hook user-prompt-submit","timeout":5}]}],"PostToolUse":[{"hooks":[{"type":"command","command":"~/.local/bin/plan-gate-hook","timeout":5}]}]}}
+{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]}]}}
 EOF
 "$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
 import json
@@ -265,109 +266,16 @@ import json
 import sys
 path = sys.argv[1]
 data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"][1]["hooks"][0]["unexpected"] = True
+data["hooks"]["PreToolUse"][0]["hooks"][0]["unexpected"] = True
 json.dump(data, open(path, "w", encoding="utf-8"))
 PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude advisory hook の余計な field を verify が見逃した'; fi
+if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude git-destroy hook の余計な field を verify が見逃した'; fi
 "$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
 import json
 import sys
 path = sys.argv[1]
 data = json.load(open(path, encoding="utf-8"))
-del data["hooks"]["SessionStart"][1]["hooks"][0]["unexpected"]
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-verify "$OFFICIAL_HOME" official
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"].append({"hooks":[{"type":"command","command":"~/.local/bin/orchestrate-advisory-hook","timeout":5}]})
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude advisory duplicate を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"] = data["hooks"]["SessionStart"][:3]
-data["hooks"]["SessionStart"][1]["hooks"][0]["command"] = "echo ~/.local/bin/orchestrate-advisory-hook"
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude advisory echo/stale command を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" "$OFFICIAL_HOME" <<'PY'
-import json
-import sys
-from pathlib import Path
-path, home = sys.argv[1:]
-data = json.load(open(path, encoding="utf-8"))
-hook = data["hooks"]["SessionStart"][1]["hooks"][0]
-hook["command"] = str(Path(home).resolve() / ".local/bin/orchestrate-advisory-hook")
-hook["timeout"] = 4
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude advisory stale timeout を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" "$OFFICIAL_HOME" <<'PY'
-import json
-import sys
-from pathlib import Path
-path, home = sys.argv[1:]
-data = json.load(open(path, encoding="utf-8"))
-hook = data["hooks"]["SessionStart"][1]["hooks"][0]
-hook["command"] = str(Path(home).resolve() / ".local/bin/orchestrate-advisory-hook")
-hook["timeout"] = 5
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-verify "$OFFICIAL_HOME" official
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"][2]["hooks"][0]["unexpected"] = True
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude Lattice hook の余計な field を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-del data["hooks"]["SessionStart"][2]["hooks"][0]["unexpected"]
-data["hooks"]["SessionStart"].append({"hooks":[{"type":"command","command":"~/.local/bin/lattice-gantt-hook session-start","timeout":5}]})
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude Lattice hook duplicate を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"] = data["hooks"]["SessionStart"][:3]
-data["hooks"]["SessionStart"][2]["hooks"][0]["command"] = "echo ~/.local/bin/lattice-gantt-hook session-start"
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude Lattice echo/stale command を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" "$OFFICIAL_HOME" <<'PY'
-import json
-import sys
-from pathlib import Path
-path, home = sys.argv[1:]
-data = json.load(open(path, encoding="utf-8"))
-hook = data["hooks"]["SessionStart"][2]["hooks"][0]
-hook["command"] = str(Path(home).resolve() / ".local/bin/lattice-gantt-hook") + " session-start"
-hook["timeout"] = 4
-json.dump(data, open(path, "w", encoding="utf-8"))
-PY
-if verify "$OFFICIAL_HOME" official >/dev/null 2>&1; then fail 'Claude Lattice stale timeout を verify が見逃した'; fi
-"$PYTHON_BIN" - "$OFFICIAL_HOME/.claude/settings.json" <<'PY'
-import json
-import sys
-path = sys.argv[1]
-data = json.load(open(path, encoding="utf-8"))
-data["hooks"]["SessionStart"][2]["hooks"][0]["timeout"] = 6
+del data["hooks"]["PreToolUse"][0]["hooks"][0]["unexpected"]
 json.dump(data, open(path, "w", encoding="utf-8"))
 PY
 verify "$OFFICIAL_HOME" official
@@ -404,12 +312,10 @@ import sys
 data = json.loads(sys.argv[1])
 raise SystemExit(0 if data.get("contract_version") == "dotagents.orchestrate.control-record.v2" and data.get("mode") == "record-only" and data.get("external_execution") is False and "init" in data.get("commands", []) else 1)
 PY
-assert_link "$OFFICIAL_HOME/.local/bin/orchestrate-advisory-hook" "$ROOT/bin/orchestrate-advisory-hook.sh"
-[ -x "$OFFICIAL_HOME/.local/bin/orchestrate-advisory-hook" ] || fail 'orchestrate-advisory-hook が実行可能でない'
-assert_link "$OFFICIAL_HOME/.local/bin/lattice-gantt-hook" "$ROOT/bin/lattice-gantt-hook.sh"
-assert_link "$OFFICIAL_HOME/.local/bin/codex-lattice-gantt-hook" "$ROOT/bin/codex-lattice-gantt-hook.sh"
-[ -x "$OFFICIAL_HOME/.local/bin/lattice-gantt-hook" ] || fail 'lattice-gantt-hook が実行可能でない'
-[ -x "$OFFICIAL_HOME/.local/bin/codex-lattice-gantt-hook" ] || fail 'codex-lattice-gantt-hook が実行可能でない'
+for retired_hook in orchestrate-advisory-hook lattice-gantt-hook codex-lattice-gantt-hook todo-gate-hook; do
+  [ ! -e "$OFFICIAL_HOME/.local/bin/$retired_hook" ] && [ ! -L "$OFFICIAL_HOME/.local/bin/$retired_hook" ] \
+    || fail "廃止hook $retired_hook の配布linkが残った"
+done
 assert_link "$OFFICIAL_HOME/.local/bin/bughub-external-probe" "$ROOT/bin/bughub-external-probe.mjs"
 [ ! -e "$OFFICIAL_HOME/.codex/skills/orchestrate" ] || fail 'official が legacy skill 面を作った'
 grep -Fq 'model = "keep-me"' "$OFFICIAL_HOME/.codex/config.toml" || fail '既存 config を保持しない'
@@ -418,7 +324,7 @@ if grep -Eq '^[[:space:]]*codex_hooks[[:space:]]*=' "$OFFICIAL_HOME/.codex/confi
   fail 'deprecated codex_hooks flag を除去しない'
 fi
 grep -Fq '/custom/keep stop' "$OFFICIAL_HOME/.codex/hooks.json" || fail '既存 hook を保持しない'
-assert_stop_count "$OFFICIAL_HOME/.codex/hooks.json" || fail '~ 表記の callout hook を重複追加した'
+assert_stop_count "$OFFICIAL_HOME/.codex/hooks.json" || fail '~ 表記の廃止 callout hook を除去しない'
 "$PYTHON_BIN" - "$OFFICIAL_HOME/.codex/hooks.json" "$OFFICIAL_HOME" <<'PY' || fail 'Codex hook 群をOSの正規設定へ修正しない'
 import json
 import os
@@ -451,11 +357,9 @@ def assert_hook(event, script, prefix, arguments, timeout):
     }
     assert command_parts(hook["command"]) == [*prefix, str(home / ".local/bin" / script), *arguments]
 
-assert_hook("SessionStart", "orchestrate-advisory-hook", shell_prefix, [], 5)
 assert_hook("PreToolUse", "codex-git-destroy-gate-hook", python_prefix, [], 5)
-assert_hook("SessionStart", "codex-lattice-gantt-hook", python_prefix, ["session-start"], 6)
-assert_hook("UserPromptSubmit", "codex-lattice-gantt-hook", python_prefix, ["user-prompt-submit"], 5)
-assert_hook("Stop", "codex-callout-hook", python_prefix, ["stop"], 10)
+retired = ("codex-callout-hook", "orchestrate-advisory-hook", "codex-lattice-gantt-hook")
+assert not [h for entries in data["hooks"].values() for entry in entries for h in entry.get("hooks", []) if isinstance(h, dict) and any(name in h.get("command", "") for name in retired)]
 matcher_entries = [entry for entry in data["hooks"]["Stop"] if entry.get("matcher") == "never-match"]
 assert matcher_entries and matcher_entries[0]["hooks"] == []
 PY
@@ -507,15 +411,12 @@ from pathlib import Path
 path, home_arg = sys.argv[1:]
 home = Path(home_arg).resolve()
 data = json.load(open(path, encoding="utf-8"))
-for entry in data["hooks"]["Stop"]:
-    for hook in entry.get("hooks", []):
-        if hook.get("command") == "~/.local/bin/codex-callout-hook stop":
-            hook["command"] = f"{home / '.local/bin/codex-callout-hook'} stop"
+data["hooks"]["Stop"].append({"hooks": [{"type": "command", "command": f"/usr/bin/env python3 {home / '.local/bin/codex-callout-hook'} stop"}]})
 with open(path, "w", encoding="utf-8") as file:
     json.dump(data, file)
 PY
-apply_config "$OFFICIAL_HOME" --apply | grep -Fq '変更なし' || fail '絶対 path の既存 callout hook を重複回避できない'
-assert_stop_count "$OFFICIAL_HOME/.codex/hooks.json" || fail '絶対 path の callout hook を重複追加した'
+apply_config "$OFFICIAL_HOME" --apply >/dev/null
+assert_stop_count "$OFFICIAL_HOME/.codex/hooks.json" || fail '絶対 path の廃止 callout hook を除去しない'
 
 mkdir -p "$OFFICIAL_HOME/.codex/skills"
 ln -s "$ROOT/codex/skills/orchestrate" "$OFFICIAL_HOME/.codex/skills/orchestrate"

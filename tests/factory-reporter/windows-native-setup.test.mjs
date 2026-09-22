@@ -45,7 +45,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.doesNotMatch(source, /lattice hooks install --host grok/u);
   assert.match(source, /function Invoke-VerifyInstall.*if \(\$code -ne 0\) \{ throw "verify-install failed with exit \$code" \}.*return 'passed'/su);
   assert.doesNotMatch(source, /LatticeUnsupported|known Lattice native-Windows status\/install contract mismatch|failureMarkers|latticeFailures|latticeHosts/su);
-  assert.match(source, /function Normalize-WindowsCodexHooks.*codex-callout-hook.*orchestrate-advisory-hook.*codex-lattice-gantt-hook/su);
+  assert.match(source, /function Normalize-WindowsCodexHooks.*codex-git-destroy-gate-hook/su);
   assert.match(source, /\$null \| & \$File @Arguments/u);
   assert.match(source, /function Test-External.*Get-Command.*ErrorActionPreference = 'Continue'.*return \$code -eq 0/su);
   assert.match(source, /function Invoke-Checked.*& \$File @Arguments \| ForEach-Object \{ Write-Host \$_ \}.*\$LASTEXITCODE/su);

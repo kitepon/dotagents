@@ -16,14 +16,14 @@ HOME="$HOME_FIXTURE" "$ROOT/install.sh" --profile official >/dev/null
   || fail 'apply-claude-config を ~/.local/bin へ配布しない'
 
 dry="$(HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-claude-config" --dry-run)"
-grep -Fq 'delegation-gate-hook' <<<"$dry" || fail 'dry-run がClaude hook差分を表示しない'
+grep -Fq 'git-destroy-gate-hook' <<<"$dry" || fail 'dry-run がClaude hook差分を表示しない'
 [ ! -e "$HOME_FIXTURE/.claude/settings.json" ] || fail 'dry-run が settings.json を作成した'
 
 HOME="$ABSENT_HOME" "$HOME_FIXTURE/.local/bin/apply-claude-config" --apply >/dev/null
 [ -f "$ABSENT_HOME/.claude/settings.json" ] || fail '不在の settings.json をapplyで作成しない'
 
 mkdir -p "$HOME_FIXTURE/.claude"
-printf '%s\n' '{"model":"keep-me","permissions":{"allow":["keep"]},"hooks":{"Stop":[{"matcher":"keep","hooks":[{"type":"command","command":"/custom/keep"}]}]}}' >"$HOME_FIXTURE/.claude/settings.json"
+printf '%s\n' '{"model":"keep-me","permissions":{"allow":["keep"]},"hooks":{"Stop":[{"matcher":"keep","hooks":[{"type":"command","command":"/custom/keep"}]},{"hooks":[{"type":"command","command":"~/.local/bin/todo-gate-hook stop","timeout":10}]}],"UserPromptSubmit":[{"hooks":[{"type":"command","command":"~/.local/bin/onset-gate-hook","timeout":5}]}]}}' >"$HOME_FIXTURE/.claude/settings.json"
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-claude-config" --apply >/dev/null
 applied="$(cat "$HOME_FIXTURE/.claude/settings.json")"
 python3 - "$HOME_FIXTURE/.claude/settings.json" <<'PY'
@@ -33,20 +33,13 @@ import sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
 assert data["model"] == "keep-me"
 assert data["permissions"] == {"allow": ["keep"]}
-assert data["hooks"]["Stop"][0] == {
+assert data["hooks"]["Stop"] == [{
     "matcher": "keep",
     "hooks": [{"type": "command", "command": "/custom/keep"}],
-}
+}]
+assert "UserPromptSubmit" not in data["hooks"], "廃止hookだけのeventを残した"
 expected = {
-    ("PreToolUse", ("delegation-gate-hook",)),
     ("PreToolUse", ("git-destroy-gate-hook",)),
-    ("SessionStart", ("todo-gate-hook", "session-start")),
-    ("SessionStart", ("orchestrate-advisory-hook",)),
-    ("SessionStart", ("lattice-gantt-hook", "session-start")),
-    ("Stop", ("todo-gate-hook", "stop")),
-    ("UserPromptSubmit", ("onset-gate-hook",)),
-    ("UserPromptSubmit", ("lattice-gantt-hook", "user-prompt-submit")),
-    ("PostToolUse", ("plan-gate-hook",)),
 }
 commands = [
     (event, hook["command"])
@@ -67,7 +60,7 @@ def win_quote(token: str) -> str:
         return token
     return '"' + token.replace('"', '\\"') + '"'
 assert win_quote(r'C:\Users\kite_\AppData\Local\Programs\Python\Python312\python3.exe') == r'"C:\Users\kite_\AppData\Local\Programs\Python\Python312\python3.exe"'
-assert win_quote(r'C:\Users\kite_\.local\bin\todo-gate-hook') == r'"C:\Users\kite_\.local\bin\todo-gate-hook"'
+assert win_quote(r'C:\Users\kite_\.local\bin\git-destroy-gate-hook') == r'"C:\Users\kite_\.local\bin\git-destroy-gate-hook"'
 assert win_quote('session-start') == '"session-start"'
 print('win_quote quotes backslash paths')
 PY

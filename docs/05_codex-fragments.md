@@ -3,7 +3,7 @@
 <!-- 前提: 2026-09-08 Astra移行指針を更新。版を明記したCodex実測は当時の記録。defaults の正は docs/02_models.md。本ファイルの体裁・構成は
      docs/03_settings-fragments.md（Claude Code settings.json の推奨断片カタログ）を踏襲する -->
 
-`~/.codex/config.toml` と `~/.codex/hooks.json` は端末固有（コミットしない）。このファイルは「各端末で貼る断片」と限定適用器の正典である。routing 必須2キー、deprecated hook flag移行、dotagents callout hook 4イベント、PreToolUseのGit破壊操作ゲート、SessionStart advisory 1件、Lattice工程表のSessionStart / UserPromptSubmit entryだけは [`../bin/apply-codex-config.sh`](../bin/apply-codex-config.sh) が安全に扱い、それ以外は手で判断する。スキーマの根拠は [公式 Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)・[公式Feature Flags](https://developers.openai.com/codex/config-basic#feature-flags)・[公式 Subagents 文書](https://learn.chatgpt.com/docs/agent-configuration/subagents)と、端末Codexの実効parser。端末バイナリと実セッションrolloutも突合し、未再現の主張には確度を明記する。
+`~/.codex/config.toml` と `~/.codex/hooks.json` は端末固有（コミットしない）。このファイルは「各端末で貼る断片」と限定適用器の正典である。routing 必須2キー、deprecated hook flag移行、PreToolUseのGit破壊操作ゲートと廃止hookの除去だけは [`../bin/apply-codex-config.sh`](../bin/apply-codex-config.sh) が安全に扱い、それ以外は手で判断する。スキーマの根拠は [公式 Configuration Reference](https://learn.chatgpt.com/docs/config-file/config-reference#configtoml)・[公式Feature Flags](https://developers.openai.com/codex/config-basic#feature-flags)・[公式 Subagents 文書](https://learn.chatgpt.com/docs/agent-configuration/subagents)と、端末Codexの実効parser。端末バイナリと実セッションrolloutも突合し、未再現の主張には確度を明記する。
 
 ## 1. 親既定モデル×エフォート（オーナー領分・情報提供のみ）
 
@@ -111,9 +111,7 @@ codex --profile work
 | 対象 | 許可する変更 |
 |---|---|
 | `config.toml` | `[features.multi_agent_v2]` の `hide_spawn_agent_metadata = false` と `tool_namespace = "agents"`。旧`[features].codex_hooks`があれば現行`hooks`へ移行し、両方あれば現行値を保持して旧キーだけ除去 |
-| `hooks.json` | `SessionStart` / `PreToolUse` / `UserPromptSubmit` / `Stop` の dotagents callout handlerを各1件、PreToolUseの`codex-git-destroy-gate-hook`、SessionStartの`orchestrate-advisory-hook`、Lattice工程表のSessionStart / UserPromptSubmit entryを各1件のcanonical entryに正規化 |
-
-責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12・[docs/03](03_settings-fragments.md)）は Claude frontend だけを持つ。Codex の `hooks.json` へは未配線で、Codex 席からの越境書込は本ゲートで止まらない（追加時は `codex-boundary-gate-hook` を同じ規約で足す）。
+| `hooks.json` | PreToolUseの`codex-git-destroy-gate-hook`を1件のcanonical entryに正規化し、廃止したdotagents hook（callout・orchestrate advisory・Lattice工程表案内）の登録を取り除く |
 
 `--apply` は端末設定を書き換えるので、dry-run の差分を確認し、対象端末への適用承認を得てからだけ実行する。
 
@@ -127,7 +125,7 @@ codex --profile work
 - 既存・提案後の TOML は Codex CLI 自身の parser で検証する。不正なら fail-loud で書き込まない。
 - lifecycle hookの現行flagは`[features].hooks`。`codex_hooks`はdeprecated警告を出すため限定applierが除去し、hook機能を無効化するfallbackには使わない。
 - `config.toml` / `hooks.json` が symlink なら所有境界を壊さないため fail-loud にする。
-- inline comment と他 section / 他 hook は保持する。dotagents 自身のcallout・advisory・Lattice工程表案内だけを、絶対パス・`type: command`・イベント別 `timeout`・`async: false`・`statusMessage: null` の1件に畳む。
+- inline comment と他 section / 他 hook は保持する。dotagents 自身のGit破壊操作ゲートだけを、絶対パス・`type: command`・`timeout: 5`・`async: false`・`statusMessage: null` の1件に畳む。
 - 変更がある時だけ `~/Archives/dotagents-codex-config-*.tar.gz` に backup を作る。directory は `0700`、archive と member は `0600`。`CODEX_HOME` が HOME 外でも archive 内は安全な相対名にする。
 - 2ファイルは temp へ先に prepare / fsync してから置換し、途中失敗なら既に置換した側も original へ rollback する。rollback 自体が失敗した場合は明示エラーで止まる。
 - `CODEX_HOME` は test や別 home 用に指定できる。実端末の通常値は `$HOME/.codex`。
@@ -141,49 +139,13 @@ codex --profile work
 3. tar 退避してから削除: `tar czf ~/.codex/AGENTS.md.bak-$(date +%Y%m%d).tar.gz -C ~/.codex AGENTS.md && rm ~/.codex/AGENTS.md`
 4. `./install.sh --profile official` を再実行し、symlink が張られることを確認: `readlink ~/.codex/AGENTS.md` が dotagents の `codex/AGENTS.md` を指すこと。
 
-## 9. hooks.json への呼びかけ hook 配線
+## 9. hooks.json のdotagents hook
 
-Claude 側の呼びかけ hook 群（配置ゲート C1／TODO ゲート C2-C3／着手案内 C4）の Codex ミラーが X1-X5 である。現行の義務はグローバルAGENTS.md「作業レーンと統制」、実装履歴は [archive版](archive/plan_callout-hooks.md) を参照する。通常の配線は section 7 の `apply-codex-config` だけを使い、古い jq 手挿し断片を併用しない。
-
-| イベント | command | 役割 | timeout |
-|---|---|---|---:|
-| `SessionStart` | `codex-callout-hook session-start` | X1・C2 ミラー、snapshot と棚卸し | 10 |
-| `PreToolUse` | `codex-callout-hook pre-tool-use` | X2・`update_plan` / 初回 `spawn_agent` の短い INFO、model・scope・同一repo writer競合をdeny | 5 |
-| `UserPromptSubmit` | `codex-callout-hook user-prompt-submit` | X3 pending drain と X5 初回 / compact 後案内 | 5 |
-| `Stop` | `codex-callout-hook stop` | X4・rolling baseline で pending 保存 | 10 |
-
-X2 の `spawn_agent` は、具体 `model` があれば許可する。省略時は、配布先 `~/.codex/agents/<agent_type>.toml` に具体固定 `model` があり、effort系fieldが存在する場合はそれも具体値である時だけ明示等価として許可する。`inherit`、空、空白のみ、`${...}`等の変数風、roleなし・定義なし・model継承は `decision:"deny"` で拒否する。加えて全 `spawn_agent` は `[scope:read-only]` または `[scope:write]` をちょうど一つ宣言する。write宣言はC1と同じ `hook_state.writer-reservations` を `git rev-parse --git-common-dir` の絶対パスで予約し、非gitは共有 `unidentified-repo` sentinelで直列化する。未解放writer・安全なstate確保不能はそれぞれ `P11_WRITER_BUSY`・`P11_STATE_UNAVAILABLE` で拒否し、解放は既存の `delegation-gate-hook --release --common-dir <common-dir>`（sentinelは `unidentified-repo`）だけを使う。scopeの欠如・混在はP9、model不備はP10である。denyには最小例と `shared/orchestrate/delegation-contract.md`参照を含める。`DOTAGENTS_PLACEMENT_GATE=off` はこれらのdenyと初回INFOをともに止める。
-
-各 command は、WSL2 interop の拡張子dispatchへ落ちないよう、展開済み絶対pathのscriptを明示interpreterで起動する。POSIXではPython製のcalloutとLattice案内を `/usr/bin/env python3 $HOME/.local/bin/<hook> ...`、shell製のorchestrate advisoryを `/bin/sh $HOME/.local/bin/orchestrate-advisory-hook` とする。Windows nativeではPowerShellのcall operator `&` に続けてapplier自身の`python.exe`とGit for Windowsの`sh.exe`を絶対pathで固定し、全tokenを二重引用符で囲む。この`sh.exe`はWindows native executableであり、`System32\bash.exe`、`wsl.exe`、WSL distro内のshellではない。Codex hook runnerは現在のturn shellを使うため、`&`がquoted executableの呼出しを成立させ、引用はspaceとbackslashを保つ。各hookはmatcherのない専用entryに1件だけ置き、旧direct-exec表記はapplierが同一hookとして回収してhost別canonical表記へ置換する。`async` は **必ず `false`**（Codex CLI 0.144.1 では `async: true` が非対応で、trust にも乗らない）。他ツール（Throughline / caveat / claude-spotter など）の entry は保持する。
-
-`~/.codex/hooks.json` は共有 append ファイルであり、hook trust は applier が変更しない。適用後に対話Codex CLIの`/hooks`でtrustを承認し、新規sessionでX1から実火確認する。App／IDE入口を受け入れる場合も、同じuser homeのCLIでtrustした後、その入口の新規sessionで実火する。`verify-install` は4イベントのcallout、SessionStartの`orchestrate-advisory-hook`、`codex-lattice-gantt-hook`のSessionStart / UserPromptSubmit entryが各1件のcanonical entryであることを検証する。
+dotagentsがCodexへ配るhookはGit破壊操作ゲートだけとする。配線は section 7 の `apply-codex-config` だけを使う。command は、展開済み絶対pathのscriptを明示interpreterで起動する（POSIXは`/usr/bin/env python3 $HOME/.local/bin/<hook>`）。`~/.codex/hooks.json` は共有 append ファイルであり、hook trust は applier が変更しない。適用後に対話Codex CLIの`/hooks`でtrustを承認する。
 
 ### Git破壊操作ゲート（PreToolUse）
 
 `codex-git-destroy-gate-hook`をPreToolUseへ1件だけ追加する。shell系toolの`command`から`checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`だけを保守的に検知する。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyする。branch切替checkout、`restore --staged`だけ、clean・非git・status失敗はallowする。退避には`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。同一 script の死んだ interpreter（存在しない Python313 等）は同一 entry として畳み、PreToolUse を毎回 code 1 にしない。
-
-### Orchestrate advisory（SessionStart）
-
-`orchestrate-advisory-hook`は同じSessionStartに別entryとして追加する。hookの起動元配布dirにあるinstalled
-`orchestrate-run`、またはresolve済みsource配布dirにある`orchestrate-run.mjs`だけを、host側hook timeoutは5秒、
-hook全体は3秒、CLIは2秒以下・64KiB上限でshellなしに呼ぶ。wrapperは固定absolute Pythonを`-I`で起動し、sourceの`lib/orchestrate/advisory-hook.py`を
-固定参照する。coreは固定absolute git/nodeだけを使い、childにはHOME/TMPDIR/LANG/LC_*と必要なsystem PATHだけを
-渡す。対象repo内のCLI、親PATH、`GIT_*`、`NODE_OPTIONS`、`PYTHON*`等の環境汚染を自動実行へ使わない。active Control、unknown／未回収Run、
-write conflict、H参照不足、capacity警告だけを最大6節・各3件までのINFOへ整形する。状態変更、認証、
-executor/provider/network/cancelを行わない。非git、CLI不在、timeout、失敗、不正JSON、schema不一致は
-stdout/stderr 0byte・exit 0で沈黙する。`DOTAGENTS_ORCHESTRATE_ADVISORY=off`で無効化でき、成功表示後だけ
-session×repoで一度表示するcache markerを置き、7日後にGCする。cache baseと`dotagents/hooks`がowner-owned
-directoryかつsymlinkでないことを先に確認し、不適合ならcacheを作成・変更せず沈黙する。
-
-### Lattice工程表案内（SessionStart → UserPromptSubmit）
-
-`codex-lattice-gantt-hook session-start`を同じSessionStartへ別entryとして、`codex-lattice-gantt-hook user-prompt-submit`をUserPromptSubmitへ別entryとして追加する。commandは
-`$HOME/.local/bin/codex-lattice-gantt-hook session-start`の展開済み絶対path、`timeout: 6`、
-`async: false`、`statusMessage: null`とする。SessionStartはworkerを起動して即returnし、UserPromptSubmitが同じsession×repoの中継結果を一度だけ`hookSpecificOutput.additionalContext`へ包む。最初のUserPromptSubmit時点で未完了なら「status取得をバックグラウンドで実行中です。このINFOは依頼範囲を拡張しません。」を一度だけ返す。`source=startup|clear`ごとに発火し、スロットルしない。
-
-中継はClaude側と共通で、owner-ownedかつsymlinkでない`$XDG_CACHE_HOME`（未設定時は`~/.cache`）配下の`dotagents/hooks/`に`SHA-256(session_id).SHA-256(repo-root).lattice-gantt.*`として置き、`.pending`／`.waiting`／`.result`／`.consumed`を7日後に掃除する。
-
-受理するschema、案内対象、表示文、失敗時の分類は[`lib/lattice-hook.py`](../lib/lattice-hook.py)とfocused hook testを正とし、本書へ版別に複製しない。HTMLやstore journalを直接parseするfallbackと工程表の自動生成は持たない。`DOTAGENTS_LATTICE_HOOK=off`で無効化できる。
 
 ### Spotter Codex hook（工場コア・Spotter所有）
 

@@ -19,8 +19,9 @@ dead = (
     r'"' + str(hook) + r'"'
 )
 live = ns["python_hook_command"](hook)
-assert ns["is_python_hook_command"](dead, hook, home), "死んだ interpreter を同一 hook と見なさない"
-assert ns["is_python_hook_command"](live, hook, home), "現行 interpreter を同一 hook と見なさない"
-assert not ns["is_python_hook_command"](dead, home / ".local/bin/codex-callout-hook", home)
+same = lambda command, path: ns["is_script_command"](command, path, (), home, ns["PYTHON_HOOK_PREFIX"])
+assert same(dead, hook), "死んだ interpreter を同一 hook と見なさない"
+assert same(live, hook), "現行 interpreter を同一 hook と見なさない"
+assert not same(dead, home / ".local/bin/other-hook")
 print("codex hook dead interpreter matching")
 PY

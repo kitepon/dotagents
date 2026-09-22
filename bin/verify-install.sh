@@ -255,14 +255,6 @@ except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
 home = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
 required = (
     ("PreToolUse", "grok-git-destroy-gate-hook"),
-    ("PreToolUse", "grok-delegation-gate-hook"),
-    ("SessionStart", "grok-todo-gate-hook session-start"),
-    ("SessionStart", "grok-lattice-gantt-hook session-start"),
-    ("SessionStart", "grok-orchestrate-advisory-hook"),
-    ("UserPromptSubmit", "grok-onset-gate-hook"),
-    ("UserPromptSubmit", "grok-lattice-gantt-hook user-prompt-submit"),
-    ("Stop", "grok-todo-gate-hook stop"),
-    ("PostToolUse", "grok-plan-gate-hook"),
 )
 missing = []
 for event, required_command in required:
@@ -316,10 +308,6 @@ for entries in hooks.values():
 required = (
     "cursor-constitution-hook",
     "cursor-git-destroy-gate-hook",
-    "cursor-delegation-gate-hook",
-    "cursor-todo-gate-hook",
-    "cursor-lattice-gantt-hook",
-    "cursor-orchestrate-advisory-hook",
 )
 missing = [name for name in required if not any(name in command for command in commands)]
 if missing:
@@ -357,8 +345,8 @@ if not isinstance(ctx, str) or not ctx.strip():
 if len(ctx) > 10000:
     print(f"FAIL: cursor-constitution-hook の additional_context が {len(ctx)} 字（cap 10000）")
     raise SystemExit(1)
-if "ベルの共通憲法" not in ctx or "Cursor nativeの単発" not in ctx:
-    print("FAIL: cursor-constitution-hook がベル／Cursor native を配達しない")
+if "ベルの共通憲法" not in ctx or "shellはhost標準のシェル" not in ctx:
+    print("FAIL: cursor-constitution-hook がベル／shell既定を配達しない")
     raise SystemExit(1)
 if "mcp__aiterm__pty_" in ctx:
     print("FAIL: cursor-constitution-hook が Claude の日常shell既定を混ぜた")
@@ -508,13 +496,7 @@ except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
 
 home = Path(os.environ.get("HOME", str(Path.home()))).expanduser().resolve()
 required = (
-    ("PreToolUse", "delegation-gate-hook"),
     ("PreToolUse", "git-destroy-gate-hook"),
-    ("PreToolUse", "boundary-gate-hook"),
-    ("SessionStart", "todo-gate-hook session-start"),
-    ("Stop", "todo-gate-hook stop"),
-    ("UserPromptSubmit", "onset-gate-hook"),
-    ("PostToolUse", "plan-gate-hook"),
 )
 missing = []
 for event, required_command in required:
@@ -535,61 +517,6 @@ if missing:
     print("FAIL: Claude Code 必須 hook が欠落: " + "、".join(missing))
     raise SystemExit(1)
 
-advisory = (home / ".local/bin/orchestrate-advisory-hook").resolve(strict=False)
-relevant = []
-canonical = []
-for entry in data.get("hooks", {}).get("SessionStart", []):
-    if not isinstance(entry, dict):
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
-            continue
-        command = hook["command"]
-        parsed = hook_script(command, home)
-        if "orchestrate-advisory-hook" in command:
-            relevant.append(hook)
-        if parsed is not None and parsed[0] == advisory and parsed[1] == ():
-            canonical.append(hook)
-expected = {"type": "command", "command": None, "timeout": 5}
-if len(relevant) != 1 or len(canonical) != 1 or set(canonical[0]) != {"type", "command", "timeout"} or canonical[0].get("type") != expected["type"] or canonical[0].get("timeout") != expected["timeout"]:
-    print("FAIL: Claude SessionStart の orchestrate-advisory-hook は canonical command / type=command / timeout=5 の1件である必要がある")
-    raise SystemExit(1)
-
-lattice = (home / ".local/bin/lattice-gantt-hook").resolve(strict=False)
-relevant = []
-canonical = []
-for entry in data.get("hooks", {}).get("SessionStart", []):
-    if not isinstance(entry, dict):
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
-            continue
-        command = hook["command"]
-        parsed = hook_script(command, home)
-        if "lattice-gantt-hook" in command:
-            relevant.append(hook)
-        if parsed is not None and parsed[0] == lattice and parsed[1] == ("session-start",):
-            canonical.append(hook)
-if len(relevant) != 1 or len(canonical) != 1 or canonical[0] != {"type": "command", "command": canonical[0]["command"], "timeout": 6}:
-    print("FAIL: Claude SessionStart の lattice-gantt-hook session-start は canonical command / type=command / timeout=6 の1件である必要がある")
-    raise SystemExit(1)
-relevant = []
-canonical = []
-for entry in data.get("hooks", {}).get("UserPromptSubmit", []):
-    if not isinstance(entry, dict):
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
-            continue
-        command = hook["command"]
-        parsed = hook_script(command, home)
-        if "lattice-gantt-hook" in command:
-            relevant.append(hook)
-        if parsed is not None and parsed[0] == lattice and parsed[1] == ("user-prompt-submit",):
-            canonical.append(hook)
-if len(relevant) != 1 or len(canonical) != 1 or canonical[0] != {"type": "command", "command": canonical[0]["command"], "timeout": 5}:
-    print("FAIL: Claude UserPromptSubmit の lattice-gantt-hook user-prompt-submit は canonical command / type=command / timeout=5 の1件である必要がある")
-    raise SystemExit(1)
 gate = (home / ".local/bin/git-destroy-gate-hook").resolve(strict=False)
 matches = []
 for entry in data.get("hooks", {}).get("PreToolUse", []):
@@ -627,34 +554,8 @@ except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
     print(f"FAIL: {path} の JSON パース失敗: {exc}")
     raise SystemExit(1)
 
-required = {
-    "SessionStart": ("session-start", 10),
-    "PreToolUse": ("pre-tool-use", 5),
-    "UserPromptSubmit": ("user-prompt-submit", 5),
-    "Stop": ("stop", 10),
-}
 missing = []
-hook_path = str(Path(os.environ["HOME"]).expanduser().resolve() / ".local/bin/codex-callout-hook")
 python_prefix = [str(Path(sys.executable).resolve())] if os.name == "nt" else ["/usr/bin/env", "python3"]
-for event, (subcommand, timeout) in required.items():
-    parts = [*python_prefix, hook_path, subcommand]
-    command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
-    matches = [
-        hook
-        for entry in data.get("hooks", {}).get(event, [])
-        if isinstance(entry, dict)
-        for hook in entry.get("hooks", [])
-        if isinstance(hook, dict) and hook.get("command") == command
-    ]
-    if len(matches) != 1 or matches[0] != {
-        "type": "command",
-        "command": command,
-        "timeout": timeout,
-        "async": False,
-        "statusMessage": None,
-    }:
-        missing.append(f"{event}: codex-callout-hook {subcommand} の正規 entry")
-
 gate_path = str(Path(os.environ["HOME"]).expanduser().resolve() / ".local/bin/codex-git-destroy-gate-hook")
 parts = [*python_prefix, gate_path]
 gate_command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
@@ -674,91 +575,6 @@ if missing:
     raise SystemExit(1)
 PY
 then
-  fail=1
-fi
-
-# Orchestrate advisory はSessionStartへ一件だけの追加INFOであり、既存calloutとは別entryで保持する。
-if [ -f "$codex_hooks" ] && ! "$PYTHON_BIN" - "$codex_hooks" <<'PY'
-import json
-import os
-import shlex
-import shutil
-import sys
-from pathlib import Path
-
-try:
-    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-    raise SystemExit(1)
-path = str(Path(os.environ["HOME"]).expanduser().resolve() / ".local/bin/orchestrate-advisory-hook")
-shell_prefix = str((Path(os.environ["ProgramFiles"]) / "Git/bin/bash.exe").resolve()) if os.name == "nt" else "/bin/sh"
-parts = [shell_prefix, path]
-command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
-expected = {"type": "command", "command": command, "timeout": 5, "async": False, "statusMessage": None}
-matches = [
-    hook
-    for entry in data.get("hooks", {}).get("SessionStart", [])
-    if isinstance(entry, dict)
-    for hook in entry.get("hooks", [])
-    if isinstance(hook, dict) and hook.get("command") == command
-]
-raise SystemExit(0 if matches == [expected] else 1)
-PY
-then
-  echo "FAIL: Codex SessionStart に orchestrate-advisory-hook の正規 entry がない"
-  fail=1
-fi
-
-# Lattice工程表案内もSessionStartへ独立したcanonical entryで保持する。
-if [ -f "$codex_hooks" ] && ! "$PYTHON_BIN" - "$codex_hooks" <<'PY'
-import json
-import os
-import shlex
-import sys
-from pathlib import Path
-
-try:
-    data = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-    raise SystemExit(1)
-path = str(Path(os.environ["HOME"]).expanduser().resolve() / ".local/bin/codex-lattice-gantt-hook")
-python_prefix = [str(Path(sys.executable).resolve())] if os.name == "nt" else ["/usr/bin/env", "python3"]
-parts = [*python_prefix, path, "session-start"]
-command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
-expected = {"type": "command", "command": command, "timeout": 6, "async": False, "statusMessage": None}
-relevant = []
-matches = []
-for entry in data.get("hooks", {}).get("SessionStart", []):
-    if not isinstance(entry, dict):
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
-            continue
-        if "codex-lattice-gantt-hook" in hook["command"]:
-            relevant.append(hook)
-        if hook["command"] == command:
-            matches.append(hook)
-if relevant != [expected] or matches != [expected]:
-    raise SystemExit(1)
-parts = [*python_prefix, path, "user-prompt-submit"]
-command = "& " + " ".join(f'"{part}"' for part in parts) if os.name == "nt" else shlex.join(parts)
-expected = {"type": "command", "command": command, "timeout": 5, "async": False, "statusMessage": None}
-relevant = []
-matches = []
-for entry in data.get("hooks", {}).get("UserPromptSubmit", []):
-    if not isinstance(entry, dict):
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
-            continue
-        if "codex-lattice-gantt-hook" in hook["command"]:
-            relevant.append(hook)
-        if hook["command"] == command:
-            matches.append(hook)
-raise SystemExit(0 if relevant == [expected] and matches == [expected] else 1)
-PY
-then
-  echo "FAIL: Codex Lattice工程表hook（SessionStart / UserPromptSubmit）の正規 entry がない"
   fail=1
 fi
 

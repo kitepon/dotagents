@@ -26,7 +26,7 @@ lint-sh: ## shellcheck: install.sh + bin/ と tests/ の shell スクリプト�
 	shellcheck install.sh $$(grep -lE '^#!.*sh$$' bin/*.sh tests/**/*.sh)
 
 lint-py: ## bin/ と lib/ の Python script を構文チェック（py_compile・依存なし）
-	@for f in $$(grep -lE '^#!.*python' bin/*.sh) lib/*.py lib/orchestrate/*.py; do $(PYTHON) -m py_compile "$$f" && echo "py-syntax OK: $$f"; done
+	@for f in $$(grep -lE '^#!.*python' bin/*.sh) lib/*.py; do $(PYTHON) -m py_compile "$$f" && echo "py-syntax OK: $$f"; done
 
 lint-js: ## bin/・scripts/・lib/orchestrate/ の Node.js script を構文チェック
 	@for f in bin/*.mjs scripts/*.mjs lib/orchestrate/*.mjs; do node --check "$$f"; done
@@ -55,10 +55,7 @@ lint-skills: ## Codex skill の frontmatter と安全契約を静的検証
 	bash tests/skills/smoke.sh
 
 lint-hooks: ## Claude / Codex / Grok / Cursor hook の空打ち smoke
-	$(PYTHON) -B tests/hooks/stocktake.py
-	$(PYTHON) -B tests/hooks/session-context.py
 	bash tests/hooks/smoke.sh
-	bash tests/hooks/codex-smoke.sh
 	bash tests/hooks/grok-smoke.sh
 	bash tests/hooks/cursor-smoke.sh
 

@@ -88,56 +88,6 @@ else
   fail_case grok-destroy-clean
 fi
 
-# delegation deny on spawn_subagent camelCase
-run grok-delegation-model-deny "$PYTHON_EXE" "$ROOT/bin/grok-delegation-gate-hook.sh" <<<'{"sessionId":"g-del","toolName":"spawn_subagent","toolInput":{"effort":"high"}}'
-if json && [[ "$RUN_OUT" == *'"decision": "deny"'* && "$RUN_OUT" == *'P10_MODEL_EFFORT_MISSING'* && "$RUN_OUT" != *permissionDecision* ]]; then
-  pass grok-delegation-model-deny
-else
-  fail_case grok-delegation-model-deny
-fi
-
-# snake_case では Grok frontend は動かない
-run grok-delegation-snake-noop "$PYTHON_EXE" "$ROOT/bin/grok-delegation-gate-hook.sh" <<<'{"session_id":"g-del-snake","tool_name":"spawn_subagent","tool_input":{"effort":"high"}}'
-if [ "$RUN_BYTES" -eq 0 ]; then
-  pass grok-delegation-snake-noop
-else
-  fail_case grok-delegation-snake-noop
-fi
-
-# Stop: camelCase で exit 0、continuation を出さない
-run grok-todo-stop-no-continue "$PYTHON_EXE" "$ROOT/bin/grok-todo-gate-hook.sh" stop <<EOF
-{"hookEventName":"stop","sessionId":"g-stop","cwd":"$HOOK_REPO","stopHookActive":false,"reason":"end_turn"}
-EOF
-if [[ "$RUN_OUT" != *'"decision": "block"'* && "$RUN_OUT" != *additionalContext* && "$RUN_STATUS" -eq 0 ]]; then
-  pass grok-todo-stop-no-continue
-else
-  fail_case grok-todo-stop-no-continue
-fi
-
-# session_id 欠落（sessionId だけ）でも exit 2 にしない
-run grok-onset-camel "$PYTHON_EXE" "$ROOT/bin/grok-onset-gate-hook.sh" <<<'{"sessionId":"g-onset","hookEventName":"user_prompt_submit"}'
-if [ "$RUN_STATUS" -eq 0 ]; then
-  pass grok-onset-camel
-else
-  fail_case grok-onset-camel
-fi
-
-run grok-plan-camel /bin/bash "$ROOT/bin/grok-plan-gate-hook.sh" <<<'{"sessionId":"g-plan","toolName":"exit_plan_mode","toolInput":{}}'
-if [ "$RUN_STATUS" -eq 0 ] && [ "$RUN_BYTES" -eq 0 ]; then
-  pass grok-plan-camel
-else
-  fail_case grok-plan-camel
-fi
-
-run grok-lattice-camel "$PYTHON_EXE" "$ROOT/bin/grok-lattice-gantt-hook.sh" session-start <<EOF
-{"sessionId":"g-lattice","cwd":"$HOOK_REPO","source":"startup"}
-EOF
-if [ "$RUN_STATUS" -eq 0 ]; then
-  pass grok-lattice-camel
-else
-  fail_case grok-lattice-camel
-fi
-
 # 所有JSONは工場hookだけ。製品hook名を載せない。
 FACTORY="$ROOT/grok/hooks/factory.json"
 if "$PYTHON_EXE" - "$FACTORY" <<'PY'

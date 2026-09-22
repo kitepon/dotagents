@@ -578,7 +578,7 @@ function Normalize-WindowsCodexHooks {
   $data = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
   foreach ($eventProperty in @($data.hooks.PSObject.Properties)) {
     $entries = @($eventProperty.Value)
-    foreach ($owned in @('codex-callout-hook', 'orchestrate-advisory-hook', 'codex-lattice-gantt-hook')) {
+    foreach ($owned in @('codex-git-destroy-gate-hook')) {
       $occurrences = @()
       for ($entryIndex = 0; $entryIndex -lt $entries.Count; $entryIndex++) {
         $hooks = @($entries[$entryIndex].hooks)

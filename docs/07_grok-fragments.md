@@ -24,7 +24,7 @@
 
 工場hookはGrok camelCaseをそのまま読む。Claude 形へ canonicalize しない。製品hookは工場hookに載せない。
 
-責務境界ゲート（`boundary-gate`。憲法「姿勢の原則」12）は Claude frontend だけで、Grok の `factory.json` へは未配線。Grok 席からの越境書込は本ゲートで止まらない。Throughline の導入・hook出力・再適用は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) が正である。
+Throughline の導入・hook出力・再適用は [Throughline README「In 30 seconds」](https://github.com/kitepon/Throughline#in-30-seconds) が正である。
 
 工場hookは全OSで`apply-grok-config`がrepoの正本から`~/.grok/hooks/factory.json`へ実ファイルとして反映する。Grokのsandboxがhook sourceのsymlinkを拒否するため、初回のsymlink配置は適用時に置き換える。以後の更新もrepoの正本から反映する。Windows nativeでは、解決できた`python.exe` / `sh.exe`を絶対パスで前置し、拡張子なしのhookがアプリ選択画面を開くのを防ぐ。POSIXはrepoのshebang commandを使う。
 ここで使う`sh.exe`はGit for Windowsのnative executableであり、WSL／`System32\bash.exe`ではない。Windows nativeのGrok配線はWSL2・Docker・仮想化を要求せず、WSL側`~/.grok`へfallbackしない。

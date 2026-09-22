@@ -19,16 +19,17 @@ from pathlib import Path
 
 
 HOOKS = (
-    ("PreToolUse", "Agent|Task|Workflow|mcp__codex-sidecar__codex_.*|mcp__aiterm__(codex|grok|composer)_agent", "delegation-gate-hook", (), 5),
     ("PreToolUse", "Bash", "git-destroy-gate-hook", (), 5),
-    ("PreToolUse", "Edit|Write|MultiEdit|NotebookEdit|Bash", "boundary-gate-hook", (), 5),
-    ("SessionStart", None, "todo-gate-hook", ("session-start",), 10),
-    ("SessionStart", None, "orchestrate-advisory-hook", (), 5),
-    ("SessionStart", None, "lattice-gantt-hook", ("session-start",), 6),
-    ("Stop", None, "todo-gate-hook", ("stop",), 10),
-    ("UserPromptSubmit", None, "onset-gate-hook", (), 5),
-    ("UserPromptSubmit", None, "lattice-gantt-hook", ("user-prompt-submit",), 5),
-    ("PostToolUse", "ExitPlanMode", "plan-gate-hook", (), 5),
+)
+# 廃止したdotagents hook。既存のsettings.jsonから取り除くだけで、再登録しない。
+RETIRED_HOOKS = (
+    "delegation-gate-hook",
+    "boundary-gate-hook",
+    "todo-gate-hook",
+    "orchestrate-advisory-hook",
+    "lattice-gantt-hook",
+    "onset-gate-hook",
+    "plan-gate-hook",
 )
 
 
@@ -158,6 +159,28 @@ def update(data: dict, home: Path) -> bool:
     if not isinstance(hooks, dict):
         raise ValueError("hooks は object である必要があります")
     changed = False
+    retired = {(home / ".local/bin" / name).resolve(strict=False) for name in RETIRED_HOOKS}
+    for event in list(hooks):
+        entries = hooks[event]
+        if not isinstance(entries, list):
+            continue
+        kept_entries = []
+        for entry in entries:
+            if not isinstance(entry, dict) or not isinstance(entry.get("hooks"), list):
+                kept_entries.append(entry)
+                continue
+            kept = [
+                hook for hook in entry["hooks"]
+                if not (isinstance(hook, dict) and (command_path(hook.get("command"), home) or (None,))[0] in retired)
+            ]
+            if len(kept) != len(entry["hooks"]):
+                changed = True
+            if kept:
+                kept_entries.append({**entry, "hooks": kept})
+        if kept_entries:
+            hooks[event] = kept_entries
+        else:
+            del hooks[event]
     for event, matcher, name, arguments, timeout in HOOKS:
         entries = hooks.setdefault(event, [])
         if not isinstance(entries, list):

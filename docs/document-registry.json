@@ -547,7 +547,7 @@
       "path_regex": "^docs/05_codex-fragments\\.md$",
       "expected_role": "policy",
       "exact_sha256_by_path": {
-        "docs/05_codex-fragments.md": "86bc2c381c656aa73f2215be554cc815551f85655f3bac998ce3bfac29ceaa81"
+        "docs/05_codex-fragments.md": "e718929c6e2ec9c7b022ab7acd75a66f0d974fdc5f129de6d6f2801b68a62d70"
       },
       "required_regexes": [],
       "forbidden_regexes": []

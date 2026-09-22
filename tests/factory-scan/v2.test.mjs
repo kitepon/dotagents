@@ -148,12 +148,12 @@ test('v2 scannerは公開CLIとnative diagnosticsだけで固定12製品をfull 
   const previousHome = process.env.HOME; process.env.HOME = root; t.after(() => { process.env.HOME = previousHome; });
   await mkdir(join(root, '.claude'), { recursive: true }); await mkdir(join(root, '.codex'), { recursive: true });
   const claudeHook = (command, timeout) => ({ type: 'command', command, timeout });
-  const claudeHooks = { hooks: { PreToolUse: [{ matcher: 'Agent|Task|Workflow|mcp__codex-sidecar__codex_.*|mcp__aiterm__(codex|grok|composer)_agent', hooks: [claudeHook('~/.local/bin/delegation-gate-hook', 5)] }], SessionStart: [{ hooks: [claudeHook('~/.local/bin/todo-gate-hook session-start', 10)] }], Stop: [{ hooks: [claudeHook('~/.local/bin/todo-gate-hook stop', 10)] }], UserPromptSubmit: [{ hooks: [claudeHook('~/.local/bin/onset-gate-hook', 5)] }], PostToolUse: [{ matcher: 'ExitPlanMode', hooks: [claudeHook('~/.local/bin/plan-gate-hook', 5)] }] } }; await writeFile(join(root, '.claude', 'settings.json'), JSON.stringify(claudeHooks));
+  const claudeHooks = { hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [claudeHook('~/.local/bin/git-destroy-gate-hook', 5)] }] } }; await writeFile(join(root, '.claude', 'settings.json'), JSON.stringify(claudeHooks));
   await writeFile(join(root, '.codex', 'config.toml'), '[features]\nhooks = true\n[features.multi_agent_v2]\nhide_spawn_agent_metadata = false\ntool_namespace = "agents"\n');
-  const codexCommand = (subcommand) => process.platform === 'win32'
-    ? `& "C:\\Python\\python.exe" "${join(root, '.local', 'bin', 'codex-callout-hook')}" "${subcommand}"`
-    : `/usr/bin/env python3 ${join(root, '.local', 'bin', 'codex-callout-hook')} ${subcommand}`;
-  const codexHook = (subcommand, timeout) => ({ type: 'command', command: codexCommand(subcommand), timeout, async: false, statusMessage: null }); const codexHooks = { hooks: { SessionStart: [{ hooks: [codexHook('session-start', 10)] }], PreToolUse: [{ hooks: [codexHook('pre-tool-use', 5)] }], UserPromptSubmit: [{ hooks: [codexHook('user-prompt-submit', 5)] }], Stop: [{ hooks: [codexHook('stop', 10)] }] } }; await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(codexHooks));
+  const codexCommand = () => process.platform === 'win32'
+    ? `& "C:\\Python\\python.exe" "${join(root, '.local', 'bin', 'codex-git-destroy-gate-hook')}"`
+    : `/usr/bin/env python3 ${join(root, '.local', 'bin', 'codex-git-destroy-gate-hook')}`;
+  const codexHook = (timeout) => ({ type: 'command', command: codexCommand(), timeout, async: false, statusMessage: null }); const codexHooks = { hooks: { PreToolUse: [{ hooks: [codexHook(5)] }] } }; await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(codexHooks));
   const script = (name, body) => writeCommandFixture(bin, name, body);
   await script('caveat', `echo '${JSON.stringify(caveatDiagnostic())}'`);
   const fixtures = nativeFixtures();
@@ -188,15 +188,15 @@ test('v2 scannerは公開CLIとnative diagnosticsだけで固定12製品をfull 
   assert.equal(report.products['claude-code'].compatibility_status, 'compatible'); assert.equal(report.products['codex-cli'].compatibility_status, 'compatible');
   assert.equal(report.products['claude-code'].checks.at(-1).status, 'pass');
   assert.deepEqual(acknowledgements, { schema_version: '2.0', report_id: report.report_id, acknowledgements: [{ product: 'gpt-connector', cursor: 1, command: 'gpt-connector', args: ['runtime-errors', 'ack', '1', '--json'] }] });
-  const malformedClaude = structuredClone(claudeHooks); malformedClaude.hooks.PreToolUse[0] = { matcher: 'never-match', hooks: [{ type: 'shell', command: 'prefix delegation-gate-hook suffix' }] }; await writeFile(join(root, '.claude', 'settings.json'), JSON.stringify(malformedClaude));
+  const malformedClaude = structuredClone(claudeHooks); malformedClaude.hooks.PreToolUse[0] = { matcher: 'never-match', hooks: [{ type: 'shell', command: 'prefix git-destroy-gate-hook suffix' }] }; await writeFile(join(root, '.claude', 'settings.json'), JSON.stringify(malformedClaude));
   const malformedCodex = structuredClone(codexHooks); malformedCodex.hooks.PreToolUse[0].matcher = 'never-match'; await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(malformedCodex));
   const malformed = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform, toolchainLedgerPath: ledgerPath });
   assert.equal(malformed.products['claude-code'].compatibility_status, 'incompatible'); assert.equal(malformed.products['codex-cli'].compatibility_status, 'incompatible');
   await writeFile(join(root, '.claude', 'settings.json'), JSON.stringify(claudeHooks));
-  const directCodex = structuredClone(codexHooks); directCodex.hooks.PreToolUse[0].hooks[0].command = `${join(root, '.local', 'bin', 'codex-callout-hook')} pre-tool-use`; await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(directCodex));
+  const directCodex = structuredClone(codexHooks); directCodex.hooks.PreToolUse[0].hooks[0].command = `${join(root, '.local', 'bin', 'codex-git-destroy-gate-hook')}`; await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(directCodex));
   const direct = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform, toolchainLedgerPath: ledgerPath });
   assert.equal(direct.products['codex-cli'].compatibility_status, 'incompatible');
-  const duplicateCodex = structuredClone(codexHooks); duplicateCodex.hooks.PreToolUse.push({ matcher: 'never-match', hooks: [codexHook('pre-tool-use', 5)] }); await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(duplicateCodex));
+  const duplicateCodex = structuredClone(codexHooks); duplicateCodex.hooks.PreToolUse.push({ matcher: 'never-match', hooks: [codexHook(5)] }); await writeFile(join(root, '.codex', 'hooks.json'), JSON.stringify(duplicateCodex));
   await writeFile(join(root, '.codex', 'config.toml'), 'hooks = true\n[features]\nhooks = false\n[foo]\nhooks = true\n[features.multi_agent_v2]\nhide_spawn_agent_metadata = false\ntool_namespace = "agents"\n');
   const misplaced = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform, toolchainLedgerPath: ledgerPath });
   assert.equal(misplaced.products['claude-code'].compatibility_status, 'compatible'); assert.equal(misplaced.products['codex-cli'].compatibility_status, 'incompatible');

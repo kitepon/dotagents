@@ -444,12 +444,12 @@
     },
     {
       "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "統括レーンになるのは次の4つ",
+      "receiver_phrase": "委譲・並列化・反証を使うかは",
       "l0_path": "shared/orchestrate/contract.md",
       "l0_pointer_phrase": "共通憲法",
       "source_text": "**本正典を適用するのは統括レーンだけ**（ADR 0061）: ①計画に中断が組み込まれている②受入が多段に連鎖する③複数repoの書込みを調整する④裁定の検証可能な証跡が必要、のいずれかが**着手時点の事実として確定**している戦役（campaign）。判定材料は着手時点で確定している作業の構造だけ。重装備（Packet/Report・Control記録）が要るのはwriter委譲・受入裁定・Phase gate・H操作の4関節だけで、campaign単位のdocs計画正本は統括レーン共通の前提であり、F/A/H宣言・Control Record・ADR・独立監査・receipt/evidence文書もこの4関節だけのもの。それ以外（直接処理・read-only呼び出し・queueで束ねた小粒消化）は通常レーンと同じ軽さで進め、証跡はgate evidenceとdocsに残す。技法（fan-out・重複統合・反証・網羅性Critic）はどのレーンでも使え、統括レーン専用はControl儀式（Elastic Control lifecycle、Packet/Report、受入・回収契約）だけ。対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。",
       "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **統括レーンになるのは次の4つのどれかが着手時点の事実として確定している作業だけ**（ADR 0061）: ①計画に中断が組み込まれている（人が機械を動かさないと取れない観測・外部完了待ち・波間停止。Phase Exit 宣言を承認待ちとして組込むのは禁止）②受入が多段に連鎖する③複数repoの書込みを調整する④裁定の検証可能な証跡が必要。該当したら`shared/orchestrate/contract.md`と`orchestrate`正典に従う。それ以外はすべて通常レーンで、予定外に途切れた時はhandoff（planへ現在地1行＋バトン）で閉じて通常レーンのまま終える。"
+      "receiver_text": "- 委譲・並列化・反証を使うかは、AIが任務を見て自分で決める。オーナーの指示を待たない。"
     },
     {
       "receiver_path": "shared/constitution.md",
@@ -458,25 +458,25 @@
       "l0_pointer_phrase": "共通憲法",
       "source_text": "1. 独立した反証で実在性と価値を確認するのは、契約クリティカル（F相当：認可・トランザクション・公開契約・依存方向・本番操作・履歴修復）な変更・監査指摘・設計判断だけ。それ以外は統括自身の確認で足りる。確信できない指摘は棄却する。",
       "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **確信できない指摘は棄却する**。通常レーンは親自身が反対仮説を確認すれば足り、別エージェントや反復監査を要求しない。統括レーンの反証・監査構造と頻度は`orchestrate`正典に従う。"
+      "receiver_text": "- **確信できない指摘は棄却する。** 反対仮説は自分で確認すれば足りる。"
     },
     {
       "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "高リスク操作は、目的・影響・戻し方",
+      "receiver_phrase": "高リスク操作は目的・影響・戻し方",
       "l0_path": "shared/orchestrate/contract.md",
       "l0_pointer_phrase": "共通憲法",
       "source_text": "5. 外部状態を変更する前には、目的・影響・rollback を説明し、H 承認が必要な操作は承認後だけ実行する。失敗を fallback で隠さない。",
       "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- 高リスク操作は、目的・影響・戻し方を短く説明してから進める。"
+      "receiver_text": "高リスク操作は目的・影響・戻し方を短く説明してから自分で行う。"
     },
     {
       "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "並行エージェント作業中の commit",
+      "receiver_phrase": "並行エージェント作業中のcommit",
       "l0_path": "shared/orchestrate/contract.md",
       "l0_pointer_phrase": "共通憲法",
       "source_text": "- 安全網より先に本体を変更しない。反証なしの監査指摘を実装へ流さず、並行作業中に裸のcommitで他者の変更を巻き込まない。",
       "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **並行エージェント作業中の commit は必ず pathspec 明示**（対象だけ `git add` して直後に `git status` 確認、または `git commit -- <paths>`）。裸の `git commit` は他エージェントが stage した変更を巻き込む。"
+      "receiver_text": "- **並行エージェント作業中のcommitはpathspecを明示する**（対象だけ`git add`して直後に`git status`を確認、または`git commit -- <paths>`）。"
     },
     {
       "receiver_path": "shared/orchestrate/contract.md",

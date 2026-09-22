@@ -82,7 +82,7 @@ if grep -Fq '[mcp_servers.aiterm]' <<<"$applied"; then fail '工場が製品MCP�
 [ ! -L "$HOME_FIXTURE/.grok/hooks/factory.json" ] \
   || fail 'factory.json が symlink のまま'
 if [ "${OS:-}" = "Windows_NT" ]; then
-  grep -Fq 'grok-lattice-gantt-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
+  grep -Fq 'grok-git-destroy-gate-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
     || fail 'Windows factory.json に工場hook名が無い'
   grep -Eiq 'python' "$HOME_FIXTURE/.grok/hooks/factory.json" \
     || fail 'Windows factory.json が python interpreter を書かない'
@@ -97,7 +97,7 @@ hook_only_config="$(cat "$HOME_FIXTURE/.grok/config.toml")"
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --hooks-only --apply >/dev/null
 [ "$(cat "$HOME_FIXTURE/.grok/config.toml")" = "$hook_only_config" ] \
   || fail 'hook限定適用がconfig.tomlを変更した'
-grep -Fq 'grok-lattice-gantt-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
+grep -Fq 'grok-git-destroy-gate-hook' "$HOME_FIXTURE/.grok/hooks/factory.json" \
   || fail '実ファイル化後のapplyがrepo正本を再反映しない'
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --hooks-only --apply | grep -Fq '変更なし' \
   || fail '正本再反映後のapplyが冪等でない'

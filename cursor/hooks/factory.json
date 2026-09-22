@@ -11,17 +11,6 @@
       {
         "command": "${HOME}/.local/bin/cursor-constitution-hook",
         "timeout": 10
-      },
-      {
-        "command": "${HOME}/.local/bin/cursor-delegation-gate-hook",
-        "matcher": "Task",
-        "timeout": 5
-      }
-    ],
-    "subagentStart": [
-      {
-        "command": "${HOME}/.local/bin/cursor-delegation-gate-hook",
-        "timeout": 5
       }
     ],
     "beforeSubmitPrompt": [
@@ -33,24 +22,6 @@
     "sessionStart": [
       {
         "command": "${HOME}/.local/bin/cursor-constitution-hook",
-        "timeout": 10
-      },
-      {
-        "command": "${HOME}/.local/bin/cursor-todo-gate-hook session-start",
-        "timeout": 10
-      },
-      {
-        "command": "${HOME}/.local/bin/cursor-lattice-gantt-hook session-start",
-        "timeout": 5
-      },
-      {
-        "command": "${HOME}/.local/bin/cursor-orchestrate-advisory-hook",
-        "timeout": 5
-      }
-    ],
-    "stop": [
-      {
-        "command": "${HOME}/.local/bin/cursor-todo-gate-hook stop",
         "timeout": 10
       }
     ]

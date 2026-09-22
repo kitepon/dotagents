@@ -97,20 +97,6 @@ else
   fail_case claude-destroy-cursor-envelope
 fi
 
-run cursor-delegation-task-deny "$PYTHON_EXE" "$ROOT/bin/cursor-delegation-gate-hook.sh" <<<'{"hook_event_name":"preToolUse","session_id":"c-del","tool_name":"Task","tool_input":{"effort":"high"},"cursor_version":"1.0.0"}'
-if json && [[ "$RUN_OUT" == *'"permission": "deny"'* && "$RUN_OUT" == *'P10_MODEL_EFFORT_MISSING'* && "$RUN_OUT" != *permissionDecision* && "$RUN_OUT" != *'"decision": "deny"'* ]]; then
-  pass cursor-delegation-task-deny
-else
-  fail_case cursor-delegation-task-deny
-fi
-
-run cursor-delegation-grok-noop "$PYTHON_EXE" "$ROOT/bin/cursor-delegation-gate-hook.sh" <<<'{"sessionId":"c-del-grok","toolName":"spawn_subagent","toolInput":{"effort":"high"}}'
-if [ "$RUN_BYTES" -eq 0 ]; then
-  pass cursor-delegation-grok-noop
-else
-  fail_case cursor-delegation-grok-noop
-fi
-
 mkdir -p "$CONST_HOME/.cursor/rules"
 printf '%s\n' '---' 'alwaysApply: true' '---' '# ベルの共通憲法' 'Cursor nativeの単発' >"$CONST_HOME/.cursor/rules/factory.mdc"
 run cursor-constitution-session-start env HOME="$CONST_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
@@ -274,15 +260,6 @@ then
   pass cursor-constitution-live-factory-over-cap
 else
   fail_case cursor-constitution-live-factory-over-cap
-fi
-
-run cursor-todo-stop-no-followup "$PYTHON_EXE" "$ROOT/bin/cursor-todo-gate-hook.sh" stop <<EOF
-{"hook_event_name":"stop","session_id":"c-stop","workspace_roots":["$HOOK_REPO"],"status":"completed","cursor_version":"1.0.0"}
-EOF
-if [[ "$RUN_OUT" != *followup_message* && "$RUN_OUT" != *'"decision": "block"'* && "$RUN_STATUS" -eq 0 ]]; then
-  pass cursor-todo-stop-no-followup
-else
-  fail_case cursor-todo-stop-no-followup
 fi
 
 FACTORY="$ROOT/cursor/hooks/factory.json"

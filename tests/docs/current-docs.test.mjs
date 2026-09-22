@@ -1409,7 +1409,6 @@ test('一般policyは製品内部のSpotter契約とLattice schema版を再掲�
 
   const latticePolicy = `${policy.get('docs/03_settings-fragments.md')}\n${policy.get('docs/05_codex-fragments.md')}`;
   assert.doesNotMatch(latticePolicy, /lattice\.todo_status_result\.v[0-9]+/u);
-  assert.equal((latticePolicy.match(/lib\/lattice-hook\.py/g) ?? []).length >= 2, true);
 });
 
 test('一般policyはLattice hookの対応hostと内部契約を再掲しない', async () => {

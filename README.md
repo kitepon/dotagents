@@ -175,7 +175,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 | SKILLS | `codex/skills/` → user skill 面（公式面が既定） |
 | PLUGINS | — 非採用（個人git＋symlink配布と二重化するため） |
 | SUBAGENTS | `docs/02_models.md`に基づく呼出し時のmodel／effort指定 |
-| HOOKS | `bin/codex-callout-hook.sh`＋`docs/05_codex-fragments.md` |
+| HOOKS | `bin/codex-git-destroy-gate-hook.sh`＋`docs/05_codex-fragments.md` |
 | COMMANDS | Claude command に対応する Codex skill |
 | SESSIONS | Throughline＋Codex handoff smoke |
 
@@ -296,7 +296,7 @@ Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`�
 ```
 
 既定は公式 user skill 面 `$HOME/.agents/skills`。`--dry-run` は一切書き込まず、routing の必須2キー、
-callout hook 4イベント、SessionStartの`orchestrate-advisory-hook` 1件、`codex-lattice-gantt-hook`のSessionStart / UserPromptSubmit entryを各1件だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場hookの差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
+Git破壊操作ゲート1件と廃止hookの除去だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場hookの差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
 
 ```bash
 ./bin/apply-codex-config.sh --apply
@@ -321,7 +321,6 @@ Grok親の所有面は次だけである。Claude面を吸うことを完成形�
 | skill / agent | `~/.grok/skills` / `~/.grok/agents` | `compat.claude.skills`は切らない（Wave 2: `~/.grok/skills`が同名に勝つ） |
 | 製品MCP | 製品の公開setupへ委譲 | 工場適用器はMCPを書かず、`compat.claude.mcps`は切らない |
 | 工場hook | `~/.grok/hooks/factory.json` | `compat.claude.hooks=false`。工場hookに製品hookは載せない |
-| Lattice工程表 | `grok-lattice-gantt-hook`（dotagents所有の案内） | `lattice hooks install --host` にGrokを足さない |
 
 Cursor親の所有面は次だけである。Claude面を吸うことを完成形にしない。
 
