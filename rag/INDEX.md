@@ -19,6 +19,7 @@
 - [models/cursor-quota-and-catalog-20260921.md](models/cursor-quota-and-catalog-20260921.md) — Cursor個人契約の2 pool、catalog、effortの実測（2026-09-21・hmer-001）
 - [models/grok-quota-and-catalog-20260921.md](models/grok-quota-and-catalog-20260921.md) — Grok直接契約の週次poolとBuild catalogの実測（2026-09-21・hmer-002）
 - [models/role-placement-experiment-20260819.md](models/role-placement-experiment-20260819.md) — 役割配置実験: 948行・変異10件でのfinder 3席、claims14件の反証3席、Luna medium/max比較。各セルn=1で一般化禁止（2026-08-19）
+- [models/role-placement-light-benchmark-20260923.md](models/role-placement-light-benchmark-20260923.md) — 02順位の軽量実測: 8役割の短文課題、7役割は1位と2位が同点、Fableのみ未実測。順位変更なし（2026-09-23）
 - [hooks/callout-hooks-firing-behavior.md](hooks/callout-hooks-firing-behavior.md) — 呼びかけ hook 群の発火挙動実測（Claude C1-C4／Codex X1-X5）と現行INFO契約: セッション初回＋compact再武装、Stop pending配送、PreToolUse additionalContext、hot-reload、Codex async/trust、状態ファイル形式（2026-07-12・確度 reproduced・実火観測）
 - [codex/codex-full-support-foundations.md](codex/codex-full-support-foundations.md) — dotagents Codex 全対応の公式仕様基盤: 9監査面、公式 skill 面 `$HOME/.agents/skills`、legacy `~/.codex/skills` 実測、import は同期でなく検出器、plugin は二重管理防止を実証後に裁定。Wave 2 のclean HOME受入れとCI parser固定も記録（2026-07-12・確度高）
 - [codex/subagent-thread-limits.md](codex/subagent-thread-limits.md) — Codex subagentの公開設定 `agents.max_threads`（既定6）／`max_depth`（既定1）と、Desktopセッション側の低い実効上限を分離。旧「max_threadsは起動エラー」説を公式仕様で訂正（2026-07-13・確度はclaim別）

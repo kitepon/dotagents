@@ -449,6 +449,7 @@
         "rag/models/gpt-6-astra.md",
         "rag/models/grok-quota-and-catalog-20260921.md",
         "rag/models/role-placement-experiment-20260819.md",
+        "rag/models/role-placement-light-benchmark-20260923.md",
         "rag/models/sprite-forge-roundtable-placement-20260904.md",
         "rag/models/xai-grok46.md",
         "rag/npm/npm-view-json-20260912.md",
