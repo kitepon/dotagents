@@ -219,7 +219,9 @@ if "ベルの共通憲法" not in ctx or "Cursor nativeの単発" not in ctx:
     raise SystemExit(1)
 if str(path.resolve()) not in ctx:
     raise SystemExit(1)
-if "Read" not in ctx:
+if "応答する前に必ず Read" in ctx:
+    raise SystemExit(1)
+if "未読のときだけ" not in ctx or "再読しない" not in ctx:
     raise SystemExit(1)
 if "xxxx" not in ctx:
     raise SystemExit(1)
@@ -259,7 +261,9 @@ if "## Cursor固有差分" not in ctx:
     raise SystemExit(1)
 if "factory.mdc" not in ctx:
     raise SystemExit(1)
-if "Read" not in ctx:
+if "応答する前に必ず Read" in ctx:
+    raise SystemExit(1)
+if "未読のときだけ" not in ctx or "再読しない" not in ctx:
     raise SystemExit(1)
 if ctx.strip() == rest.strip():
     raise SystemExit(1)

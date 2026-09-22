@@ -21,7 +21,8 @@ system_reminder。超過分は agent-tools の uuid.txt へ spill し、
 モデルへは「そのファイルを Read」という短文だけが残る。現行の生成憲法は
 10000 字を超えるため、超過時は spill に頼らず cap 内へ案内（ベル・
 Cursor native shell・正本パス）と本文冒頭を載せ、末尾の Cursor delta は
-切らず、同一全文は正本ファイルの Read で届ける。
+切らず、同一全文はこのセッションで未読のときだけ正本ファイルを一度
+Read して届ける。それ以外は再読しない。
 """
 
 from __future__ import annotations
@@ -86,7 +87,7 @@ def compact_delivery(path: Path, body: str) -> str:
     """10000 字超の本文を Desktop spill に渡さない。
 
     identity と Cursor delta を inline し、残り cap に本文冒頭を載せる。
-    同一全文は正本 Read。
+    このセッションで未読のときだけ正本を一度 Read する。それ以外は再読しない。
     """
     header = (
         "【工場憲法】Cursor Desktop はホームの rules/*.mdc を Agent の always-apply に載せない。"
@@ -94,7 +95,7 @@ def compact_delivery(path: Path, body: str) -> str:
         "shell操作は、Cursor nativeの単発・背景コマンドを既定にする。"
         "長時間・対話・cwd保持が要る外部子だけaiterm永続PTYを使う。"
         "Cursor親の日常shellをaitermへ流さない。\n\n"
-        f"同一本文の正本は `{path}` である。応答する前に必ず Read し、以後その本文に従う。\n"
+        f"同一本文の正本は `{path}` である。このセッションで未読のときだけそのファイルを一度 Read する。それ以外は再読しない。\n"
         "本文は「ベルの共通憲法」から始まる。Claude固有の日常shell既定は使わない。\n"
     )
     packed = strip_html_comment_lines(body)
