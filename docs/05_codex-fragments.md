@@ -73,7 +73,7 @@ ChatGPTの第二意見をCodex親へ接続する工場entryは、server ID `gpt_
 
 ## 4. `project_doc_fallback_filenames = ["CLAUDE.md"]`（任意・副作用明記）
 
-CLAUDE.md しか無いリポ（このリポ含む）に指示を届かせるための設定。`project_doc_fallback_filenames` と `project_doc_max_bytes` は config.toml のキーとして実在確認済み（実装文字列に両キー名が連続して実在）。
+CLAUDE.md しか無いリポ（第三者製品など）に指示を届かせるための設定。`project_doc_fallback_filenames` と `project_doc_max_bytes` は config.toml のキーとして実在確認済み（実装文字列に両キー名が連続して実在）。
 
 副作用3点:
 

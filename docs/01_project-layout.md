@@ -19,11 +19,11 @@
 
 | 要素 | 内容 |
 |---|---|
-| `CLAUDE.md` | 正典（docs/00 等）への参照・検証コマンド・そのリポの掟。AI の入口 |
+| `AGENTS.md` | 正典（docs/00 等）への参照・検証コマンド・そのリポの掟。全 AI の入口（Claude Code も CLAUDE.md が無ければ直接読む） |
 | `README.md` | 人間の入口（何ができるか・起動方法） |
 | `docs/` | **00_ 番号順の正典**（00=overview から連番）＋ `adr/`（決定記録）＋ 監査ダイジェスト `audit-YYYY-MM/` ＋ **進行中プラン（docs/ に作り TODO を兼ねる。役目を終えた文書は `archive/` へ）**。命名: 正典=`NN_` 連番・小文字ケバブ／一時文書=`plan_`・`queue_` 接頭辞／archive 内=`YYYY-MM_` 接頭辞（dotagents/docs/adr/0004） |
 | `rag/` | 調査・研究の再利用棚。`INDEX.md`（1行台帳）＋ `<topic>/raw/`（一次ソース）＋コンパイル記事。運用は dotagents/PLAN.md 原則7（還流・Lint・選球眼） |
-| `.claude/settings.json` | 読み取り系 allowlist（fewer-permission-prompts で生成）。端末固有につき gitignore 対象なら生成手順を CLAUDE.md に書く |
+| `.claude/settings.json` | 読み取り系 allowlist（fewer-permission-prompts で生成）。端末固有につき gitignore 対象なら生成手順を AGENTS.md に書く |
 | Spotter project install | 一撃展開は対象projectで `spotter install -y` を呼ぶ。生成物・host別挙動・再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とし、dotagentsはmarkerやhookを複製せず配布接続だけを所有する |
 | 工場コア互換 | 自作コアと第三者管理の現行集合は[工場の現行状態](factory-current-state.md)から読む。MarkItDownは公開CLIだけを使う第三者管理製品。独立CodegraphとObserverはretiredで導入しない。Claude Code CLI／Codex CLI／Grok Buildは基盤toolchainとして別管理する。Oracleは互換・rollback専用 |
 | テスト＋CI | 各機能をfocused testで確認し、CI・E2E・full regressionは全関連確認後の最終通し試験だけに使う。試験がないリポで大きな作業を始めるなら、対象機能を確認できる最小の試験から用意する |
@@ -34,7 +34,7 @@
 1. **罠・実測教訓** → caveat（dotagents/caveat 経由で端末横断。記録前に caveat_search）
 2. **外部仕様・研究** → `rag/`（取得・変換の作法と罠は共通憲法「調査と知識の置き場」と caveat が正）
 3. **設計判断** → `docs/adr/`・監査ダイジェスト
-4. **作法・手順** → CLAUDE.md（グローバル正本＋リポ別）
+4. **作法・手順** → グローバル正本＋リポ別 AGENTS.md
 5. **進捗・状態** → プラン文書が TODO を兼ねる（docs/ 内。規約は dotagents/PLAN.md「文書の作法」）＋ issue
 
 - 検索・理解の道具: **Lattice sensor**（コード構造。MCP登録はdotagents READMEランブック）・caveat MCP・grep。
@@ -45,7 +45,7 @@
 ### A. pnpm モノレポ型（NoveLore 実測形。Web サービス・複数アプリ）
 
 ```
-CLAUDE.md README.md docs/(00_..連番+adr/) rag/
+AGENTS.md README.md docs/(00_..連番+adr/) rag/
 apps/<app>/          … 実行体（web・mcp-server 等）
 packages/<pkg>/      … 共有ライブラリ（core・db・schema 等。依存方向は packages→apps 禁止）
 infra/               … デプロイ・IaC
@@ -55,7 +55,7 @@ pnpm-workspace.yaml tsconfig.base.json
 ### B. 単一パッケージ型（CLI・ライブラリ）
 
 ```
-CLAUDE.md README.md docs/ rag/
+AGENTS.md README.md docs/ rag/
 src/  tests/  package.json（or pyproject 等）
 ```
 
@@ -72,7 +72,7 @@ src/  tests/  package.json（or pyproject 等）
 
 1. リポごとに必須要件9点＋型判定を突き合わせ「欠落・過剰・移動候補・リスク」を採点（安価枠へ委譲可）。
 2. 統括が移行順を裁定（見送り基準を先に適用）。
-3. 適用は同期→標準化→CLAUDE.md 磨きを1リポで連続処理し、1リポ=独立コミット。
+3. 適用は同期→標準化→AGENTS.md 磨きを1リポで連続処理し、1リポ=独立コミット。
 
 ## dotagents リポの配置規約
 

@@ -19,7 +19,6 @@
   // サブディレクトリ（audit-YYYY-MM 等）を **/*.md で先取りしつつ archive を外す。
   "globs": [
     "AGENTS.md",
-    "CLAUDE.md",
     "README.md",
     "claude/CLAUDE.md",
     "claude/skills/**/*.md",

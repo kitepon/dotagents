@@ -3,7 +3,7 @@
 Claude Code / Codex の環境そのもの（skill・command・agents・rule・グローバル共通憲法・調査資産・環境整備の聖典）を**複数端末で同期する個人 dotfiles**。GitHub が真実の源。
 
 - **趣旨・原則・残件**: [PLAN.md](PLAN.md)（憲章＝聖典 v4。プランは docs/ に作る。目的・判断理由・受入条件と工程正本への導線を持つ）
-- **AI 向けの掟（全エージェント共通）**: [AGENTS.md](AGENTS.md)（Claude は [CLAUDE.md](CLAUDE.md) が `@AGENTS.md` で取り込む）。**URL を渡された AI のオンボーディング入口も AGENTS.md**（「AI オンボーディング」節）
+- **AI 向けの掟（全エージェント共通）**: [AGENTS.md](AGENTS.md)（Claude Code も CLAUDE.md が無ければ直接読む）。**URL を渡された AI のオンボーディング入口も AGENTS.md**（「AI オンボーディング」節）
 
 ## 構成
 
@@ -11,7 +11,6 @@ Claude Code / Codex の環境そのもの（skill・command・agents・rule・�
 dotagents/
 ├── PLAN.md              … 開発工場の憲章（趣旨・原則・定常運用・残件）
 ├── AGENTS.md            … 全 AI 共通のプロジェクト正典＋AI オンボーディング入口
-├── CLAUDE.md            … Claude 用の薄いラッパ（@AGENTS.md ＋ ベル固有）
 ├── install.sh           … symlink 配置（冪等・実ファイルは SKIP・失敗は停止）
 ├── docs/                … 00_overview.md（地図）・02_models.md（役割→モデル×effort順位表）・01_project-layout.md・進行中プラン／archive/（役目を終えた文書）
 ├── rag/                 … 調査・研究の再利用棚（INDEX.md＋topic/raw/ 一次ソース）
@@ -386,7 +385,7 @@ report／outbox／credentialを削除しない。
 
 ## 編集ワークフロー
 
-**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [CLAUDE.md](CLAUDE.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。
+**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [AGENTS.md](AGENTS.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。
 
 ## 含めないもの
 

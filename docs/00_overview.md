@@ -57,6 +57,6 @@ ADR本文と状態は裁定時点の不変記録であり、後から改稿し�
 - 罠DB: [Caveat](https://github.com/kitepon/Caveat)（own DB・schema・同期・診断はCaveat自身が所有する）
 - 調査資産: [../rag/INDEX.md](../rag/INDEX.md)
 - 人格・全端末共通規範: [../shared/constitution.md](../shared/constitution.md)（唯一の共通正本。harness固有差分と配布生成物は各harnessディレクトリ。現役のGrok/Cursor配線は[07](07_grok-fragments.md)／[08](08_cursor-fragments.md)、完了した導入工程は[archive](archive/)が持つ）
-- 規範の入口: ルート [../AGENTS.md](../AGENTS.md) は全AI向けのproject正典であり、Claude Code はルート [../CLAUDE.md](../CLAUDE.md) の `@AGENTS.md` 経由で取り込む。共通憲法は `shared/constitution.md`、host固有差分は各host delta、runtime配布物は生成物として管理する。
+- 規範の入口: ルート [../AGENTS.md](../AGENTS.md) は全AI向けのproject正典であり、Claude Code も直接読む。共通憲法は `shared/constitution.md`、host固有差分は各host delta、runtime配布物は生成物として管理する。
 - 同期ハブ: `install.sh` がskill・command・agent・rule・binを端末へsymlink配布し、GitHubを真実の源とする。初回導入と再適用は`setup-macos-factory`／`setup-linux-factory`／`setup-linux-workstation-factory`／`setup-windows-native-factory.ps1`がhost固有配線を所有し、共有する製品集合だけをdeployment contractから読む。Windows nativeはWSL・Docker・仮想化を導入／検証せず、Git for Windowsの`bash.exe`／`sh.exe`をWSLと混同しない。同入口はmain-server専用SSH鍵・pinned host key・alias／直IP config・runner経由公開鍵登録・非対話再接続も所有する。知識台帳は `rag/`（調査）と `docs/`（判断・計画）、Caveatのown DBはdotagents外でCaveat自身が管理する。
 - 文書はregistry上の5種と所有roleへ機械分類する。変動する現行値は構造化正本から生成し、current文書は[工場の現行状態](factory-current-state.md)を参照する。完了文書は`archive/`、固定証拠は`evidence/`へ置き、製品内部契約は各製品repoへ返す。archiveはinventoryとdigest、製品接続面はsurface policyで機械検査する。
