@@ -42,3 +42,4 @@
 - 段階6の削減案（オーナー裁定待ち）: Caveat＝(1)罠シグナル通知は内容が変わった時だけ送る、(2)定型の案内文は1行に縮めて詳細はtool説明へ移す、(3)Codexのエラー後通知は案内文を1通に1回にし、environmentが合わない罠を出さない。Throughline＝L2本文からANSI制御文字とtask通知の生出力を落とす。Lattice・Spotterは変更なし。
 - 段階6の裁定（2026-09-23）: ChimeのCI失敗はそのまま。Throughlineは修理として実施、Caveatは別課題としてCaveatへ依頼文を渡す。
 - Throughline 0.10.18を公開した（2026-09-23）。L2のuser本文から端末制御（CSI・OSC・private mode・CR上書き）を落とし、Claude Codeのtask通知は状態・要約・event・resultだけを残す。直近30日の実記録でtask通知の本文を12%（約13.8万字）削り、制御文字が残るuser発言は0件。0.10.18は9/13に準備したまま未公開だったので、この修正を含めて公開した。npm公開はTrusted Publishingへ移し（`.github/workflows/publish.yml`、tag起動）、provenance付きで公開できた。4台（Mac・main-server・rabbit・fox）は`throughline self-update`で0.10.18、診断はready。Windows・Linuxの記録には比較できる制御文字の実例がなく、OS差は系列の網羅（ConPTYのOSC等）で扱った。
+- codex-sidecarのnpm package（cli・mcp・core 0.3.13）を4台（Mac・main-server・rabbit・fox）から`npm uninstall -g`で外した（2026-09-23、オーナー承認）。CaveatのcodexSidecar設定autoがPATH上のcodex-sidecarを呼び、毎ターン「advisory unavailable」を注入していた。外した後のCaveat hookは、この表示を出さない。
