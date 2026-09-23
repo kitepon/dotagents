@@ -18,7 +18,7 @@ PYTHON := python3
 endif
 endif
 
-.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
+.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
 
 lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks ## 静的 lint + skill/hook smoke
 
@@ -53,6 +53,9 @@ test-constitution: ## 共通憲法generatorの冪等性とdrift拒否
 
 test-current-docs: ## 現行状態ページの生成・drift・link切れ
 	node --test tests/docs/current-docs.test.mjs
+
+test-pick-model: ## 子のハーネス×モデル×effort選定（02とJev）
+	node --test tests/pick-model/*.test.mjs
 
 test-ci-plan: ## 変更分類と最終合否のfail-closed契約
 	node --test tests/ci/*.test.mjs
@@ -95,7 +98,7 @@ test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽
 	node --test tests/lattice-cutover/*.test.mjs
 	node bin/lattice-todo-inventory.mjs --verify-cutover
 
-ci: lint test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ## ローカル/CI 共通の全ゲート
+ci: lint test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ## ローカル/CI 共通の全ゲート
 
 help: ## タスク一覧
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \

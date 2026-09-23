@@ -36,3 +36,21 @@
 この3件は**仮定した利用枠での読解確認**であり、実際のハーネス残量や繰り返しの安定性は示さない。特にCursorの選択は確率0.49・confidence 0.24なので、一回の一致を安定動作と解釈しない。以前の推薦CLIで、取得不能の利用枠観測をJevへ渡すと`none`になった実例は[修理記録](../../evidence/harness-model-effort-recommender/hmer-005-live-fix.md)にある。利用枠の未観測を「枯渇」として入力しない。
 
 次の編集後も、同じ3条件と、変更した役割の代表任務を正規のTypeSafe APIへ投げる。Jevの選択肢には02で実際に使えるモデル×ハーネスだけを置き、期待した条件で停止したか、選択確率とconfidenceまで記録する。
+
+## pick-modelの実呼出し（2026-09-23）
+
+`pick-model`はJevへ2回問い合わせる。1回目は02の役割から任務の役割を選ばせ、2回目はその役割の候補だけを、閉じているハーネスを除いた選択肢として選ばせる。19の選択肢から一度に選ばせた版では9任務中1件（監査・発見）で規則1を適用せずGrokを選んだ（confidence 0.41）。2回に分けた版では、Codexの週次利用枠が100%（自動で閉鎖扱い）の状態で、9役割の代表任務すべてが02の規則どおりの選択になった。
+
+| 役割 | 選択 | confidence（役割 / 選択） |
+|---|---|---|
+| 実装 | Claude Code / Opus 5.5×medium | 0.95 / 0.62 |
+| 反証 | Grok Build / Grok 4.7×high | 0.99 / 0.45 |
+| 監査・発見 | Claude Code / Sonnet 5×medium | 1.0 / 0.49 |
+| 設計 | Claude Code / Opus 5.5×high | 1.0 / 0.71 |
+| 相談 | Claude Code / Fable 5.1×high | 0.99 / 0.51 |
+| 局所コーディング | Claude Code / Sonnet 5×high | 1.0 / 0.55 |
+| 軽作業 | Claude Code / Sonnet 5×high | 0.92 / 0.64 |
+| 調査 | Grok Build / Grok 4.7×medium | 1.0 / 0.38 |
+| 難問・研究 | Claude Code / Fable 5.1×high | 1.0 / 0.69 |
+
+役割の分類は安定して高いが、ハーネスの選択のconfidenceは0.38〜0.71にとどまる。各1回の結果であり、繰り返しの安定性は示さない。
