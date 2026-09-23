@@ -29,3 +29,4 @@
 - rabbitでnpmによるCodex CLI 0.156.0→0.156.1の更新がLinux本体のoptional dependencyを落とし、aiterm setupが`codex_parent_delivery_unavailable`で失敗した。工場のledgerは`post_version_unavailable`として正しく失敗を記録していた。公式の再導入で復旧。
 - foxへの反映完了（2026-09-23）。止まっていた原因はWindows標準のssh.exeで、SSH越しの非対話sessionで出力を受け取ると終了しない（Win32-OpenSSH #1769）。工場のWindows SSHをGit for Windows同梱のOpenSSHへ切り替えた。あわせてfoxのdotagentsを`Developer\dotagent`から`Developer\dotagents`へ改名し、setupは17製品の報告と2時のタスクのsmokeまで通った。
 - codex-sidecarのMCP登録を4台（Mac・main-server・rabbit・fox）のClaude・Codex・Grok・Cursorから外した（2026-09-23）。npm packageは各端末に残っている。
+- 段階5の棚卸し（2026-09-23、Mac の ~/Developer 直下、worktree含む）: 1行importだけのCLAUDE.md＋AGENTS.mdは31件（削除対象。多くはLattice・Spotter・peertableのworktreeで元repoに従う）。CLAUDE.mdに中身がありAGENTS.mdもあるのは24件（統合対象。中身が短いhost固有差分だけのものは残す判断もありうる）。CLAUDE.mdだけのrepoは9件（ConnectC2X・MMOAuction・agent-desktop・Kikoeru・nextflic・entry・tools-manager・dobojo・browser-to-api、AGENTS.mdへ改名）。AGENTS.mdだけは11件、どちらも無いのは10件（対象外）。
