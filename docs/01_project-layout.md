@@ -28,7 +28,6 @@
 | 工場コア互換 | 自作コアと第三者管理の現行集合は[工場の現行状態](factory-current-state.md)から読む。MarkItDownは公開CLIだけを使う第三者管理製品。独立CodegraphとObserverはretiredで導入しない。Claude Code CLI／Codex CLI／Grok Buildは基盤toolchainとして別管理する。Oracleは互換・rollback専用 |
 | テスト＋CI | 各機能をfocused testで確認し、CI・E2E・full regressionは全関連確認後の最終通し試験だけに使う。試験がないリポで大きな作業を始めるなら、対象機能を確認できる最小の試験から用意する |
 | `.gitignore` 衛生 | `.env`・鍵・`.obsidian/`・`.venv/`・ビルド生成物。**gitignore された貴重物は push で保護されない**ことを常に意識 |
-| `.codex-sidecar.yml` | sidecar 委譲を受けるリポはルートに置く（テンプレ: dotagents/docs/05_codex-fragments.md） |
 
 ## 知識基盤スタック（このリポ群の長期記憶の型）
 

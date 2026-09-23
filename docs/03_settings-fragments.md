@@ -42,7 +42,6 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
       "<HOME>/Developer/Lattice",
       "<HOME>/Developer/gpt-connector",
       "<HOME>/Developer/aiterm-mcp",
-      "<HOME>/Developer/codex-sidecar",
       "<HOME>/Developer/aishell",
       "<HOME>/Developer/ServerManager",
       "<HOME>/Developer/peertable",

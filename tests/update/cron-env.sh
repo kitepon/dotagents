@@ -224,13 +224,13 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   fail 'Jev導入の失敗が更新失敗にならない'
 fi
 
-expected_npm_packages=13
+expected_npm_packages=10
 if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
-  expected_npm_packages=14
+  expected_npm_packages=11
 fi
 node --input-type=module - <<'EOF' || fail 'OS/arch別npm package集合がdeployment contractと一致しない'
 import { npmPackagesForHost } from './lib/factory/deployment-contract.mjs';
-const base = ['@anthropic-ai/claude-code','@openai/codex','gpt-connector','@anthropic-ai/sdk','aiterm-mcp','caveat-cli','claude-spotter','codex-sidecar-cli','codex-sidecar-core','codex-sidecar-mcp','@quolu/lattice','peertable','pnpm','throughline'];
+const base = ['@anthropic-ai/claude-code','@openai/codex','gpt-connector','@anthropic-ai/sdk','aiterm-mcp','caveat-cli','claude-spotter','@quolu/lattice','peertable','pnpm','throughline'];
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 if (!same(npmPackagesForHost({ os: 'Linux', arch: 'x64' }), base)
  || !same(npmPackagesForHost({ os: 'Windows_NT', arch: 'x64' }), base)
@@ -484,7 +484,7 @@ fi
   || fail '途中失敗後も残り package を更新しなかった'
 grep -q '^FAILED: claude-spotter$' "$TEST_HOME/.local/state/agents-update/agents-update.log" \
   || fail '失敗した package 名を log に残さない'
-grep -q '^npm-fail:install -g codex-sidecar-mcp@latest$' "$TEST_HOME/npm-calls.log" \
+grep -q '^npm-fail:install -g @quolu/lattice@latest$' "$TEST_HOME/npm-calls.log" \
   || fail '途中失敗後の package を fake npm へ渡していない'
 [ "$(grep -c '^npm-fail:tool upgrade markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
   || fail 'npm 失敗後も uv tool upgrade を継続しなかった'

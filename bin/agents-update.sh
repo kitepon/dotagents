@@ -4,8 +4,6 @@
 #
 # 注意: `npm link` や `npm install -g .`（ローカル版のグローバル導入）中の package を
 # このリストに残すと registry 版で上書きされる。ローカル開発に切り替える時は先にリストから外すこと。
-# codex-sidecar-cli/core は registry 運用で確定（2026-07-04 オーナー裁定「そのままで」）。
-# link 開発へ戻す場合は先にこのリストから外して npm link する（将来の任意事項）。
 
 set -uo pipefail
 
@@ -314,7 +312,7 @@ fi
   if ! node "$SCRIPT_DIR/factory-jev-setup.mjs"; then update_failed=1; fi
 
   # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
-  for setup_product in aiterm caveat gpt-connector codex-sidecar lattice peertable; do
+  for setup_product in aiterm caveat gpt-connector lattice peertable; do
     if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then
       update_failed=1
     fi

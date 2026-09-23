@@ -25,7 +25,6 @@
 | MarkItDown | required | required | required | required | high |
 | gpt-connector | required（live面supported） | required（live面unsupported） | required（live面unsupported） | required（live面unsupported） | high（presence。live面はMacのみ） |
 | aiterm-mcp | required | required | required | required | high |
-| codex-sidecar | required | required | required | required | high |
 | Lattice | required | required | required | required | high |
 | AIShell | required（対応Mac） | unsupported | unsupported | unsupported | high（対応Macのみ） |
 | ServerManager | not_applicable | required | not_applicable | not_applicable | high（main-serverのみ） |
@@ -49,7 +48,6 @@
 | MarkItDown | CLI required | CLI required | not_applicable | not_applicable |
 | gpt-connector | MCP contract required。live面は対応Macだけsupported、非Darwinは`unsupported` | 同左 | 同左 | 同左 |
 | aiterm-mcp | MCP required | MCP required | MCP required | MCP required |
-| codex-sidecar | MCP required | MCP required | MCP required | MCP required |
 | Lattice | MCP required | MCP required | MCP required | MCP required |
 | AIShell | MCP required（対応Mac） | MCP required（対応Mac） | MCP required（対応Mac） | MCP required（対応Mac） |
 | ServerManager | not_applicable | not_applicable | not_applicable | not_applicable |

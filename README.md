@@ -139,7 +139,6 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | 中央管理コア | ServerManager（dotagents 外） | 自作コア一覧に含まれる中央運用管理製品。内部のBugHubをversion・bug・compatibility結果の統括に使い、BugHubを独立製品へ分離しない |
 | コード構造・工程graph | Lattice（dotagents外） | 自作コア一覧に含まれる。Codegraphを完全吸収した正式後継で、`lattice-mcp`と同梱sensorを所有する。独立Codegraphはretired／not_applicable履歴だけを保持。[導入完了記録](docs/archive/plan_lattice-factory-integration.md) |
 | 知識 | `rag/` | 調査の一次ソース＋結論（第二の脳。人間用の窓は Obsidian） |
-| 設定 | `.codex-sidecar.yml` | codex-sidecar 委譲のプロジェクト既定（model/effort・readonly。正典 docs/05_codex-fragments.md） |
 
 Claude command の Codex 正規入口は slash command の模造ではなく、対応 skill の明示 invocation とする。
 
@@ -195,17 +194,15 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 - **Jev（TypeSafe）**: 全hostの一撃展開・定期更新が通る`agents-update`で、[公式TypeSafe skill](https://github.com/typesafe-ai/skills)を`npx --yes skills add typesafe-ai/skills --skill typesafe-ai --global --agent codex claude-code cursor grok --yes`により4hostへ導入・更新する。工場キーはmain-serverの`~/.config/dotagents/credentials/typesafe/api.env`を配布元とし、端末にない時は既存のSSH認証で同じ相対パスへ取得する（接続先は`MAIN_SERVER_SSH_TARGET`、既定`kite@192.168.1.2`）。POSIXはdirectory 0700／file 0600、Windowsは所有者限定ACLで保存する。明示した`TYPESAFE_API_KEY`は優先する。公式一覧の導入結果と公開APIの分類が通った時だけ成功とし、転送・導入・APIの失敗は更新失敗にする。キー値をGit・引数・ログへ載せない。通常利用もこのenvファイルをNodeの`--env-file`等の標準機能で読む。GUI操作には[上流Jev実行系](shared/runbooks/jev-computer-use.md)を使う。公式TypeSafe skillは工場コア製品へは追加しない。
 - 独立CodegraphはPATHに存在してはならない。
 - **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場設定適用（`apply-grok-config --apply`）は端末への展開承認に含める。現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。旧4席の新規session受入履歴は2026-08-16に閉じたが、rabbitは別hostとして新たに受け入れる。
-- **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`codex-sidecar-mcp`・`gpt-connector-mcp`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermとcodex-sidecarを登録する。登録・loginは端末configを変えるH操作。
+- **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`gpt-connector-mcp`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermを登録する。登録・loginは端末configを変えるH操作。
 - **MCP（ユーザースコープ登録。上の CLI 導入後）**:
   ```bash
   claude mcp add --scope user aiterm -- aiterm-mcp
   claude mcp add --scope user caveat -- caveat mcp-server
   claude mcp add --scope user lattice -- lattice-mcp
-  claude mcp add --scope user codex-sidecar -- codex-sidecar-mcp
   claude mcp add --scope user gpt_connector -- gpt-connector-mcp
   claude mcp add --scope user aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
   codex mcp add aiterm -- aiterm-mcp
-  codex mcp add codex-sidecar -- codex-sidecar-mcp
   codex mcp add gpt_connector -- gpt-connector-mcp
   codex mcp add lattice -- lattice-mcp
   codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp

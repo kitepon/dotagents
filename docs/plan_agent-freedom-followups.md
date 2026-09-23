@@ -24,3 +24,4 @@
 - 段階4完了（2026-09-23）。Lattice工程 `product-document-autonomy` のpda-006を保留→退役。各repoの`.git/dotagents/orchestrate`（Control記録）、廃止hookのcacheと責務境界の宣言は`~/Archives/dotagents-retired-state-20260923T112731.tar.gz`へ保存してから削除。docs直下の旧統括の互換stubは、進行中のLattice計画から参照されうるため動かさない。
 - 段階3（2026-09-23）: main-serverとrabbitは廃止hookとorchestrate skillの撤去まで反映済み。foxはsetup入口の`ssh -G main-server`がSSH越しの非対話実行で応答せず中断した。foxでの直接実行が残る。
 - 段階3で見つけた別問題: main-serverの工場レポーターの送信先がwire v8のまま（入口はv9を要求して停止）。rabbitでcodex-sidecarのsetupが`SETUP_CONFIG_UNSUPPORTED`で失敗（smol-toml 1.9.0がnull prototypeのobjectを返し、往復確認のisDeepStrictEqualが不一致になる。Macは1.8.0で成功）。
+- codex-sidecarを工場のコア製品から外した（2026-09-23、オーナー裁定）。導入・更新・setupをやめ、wire v9では対象外（not_applicable）として報告する。各端末のMCP登録とpackageは残っている。

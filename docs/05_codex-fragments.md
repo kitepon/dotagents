@@ -157,8 +157,8 @@ MCP は親に応じて入口を分ける。Codex親はnative枠だけを工場�
 
 | 親 | core | 任意 / 認証依存 | 禁止 / 非採用 |
 |---|---|---|---|
-| Claude Code | `codex-sidecar`、`aiterm`、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
-| Codex | native subagents、`codex-sidecar`、`aiterm`（Codex / Grok / Composer）、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
+| Claude Code | `aiterm`、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
+| Codex | native subagents、`aiterm`（Codex / Grok / Composer）、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
 
 利用可能性はinstalled（CLI存在）→registered（親へconnector登録）→verified（read-only疎通）→execution-verified（実タスク完遂と回収）で区別する。外部writerに使うのはexecution-verifiedだけ。timeoutは状態不明として同じtask IDのsession/jobを回収し、稼働中の重複起動をしない。
 
@@ -175,7 +175,6 @@ codex mcp get caveat --json
 codex mcp add caveat -- caveat mcp-server
 codex mcp add lattice -- lattice-mcp
 codex mcp add aiterm -- aiterm-mcp
-codex mcp add codex-sidecar -- codex-sidecar-mcp
 codex mcp add gpt_connector -- gpt-connector-mcp
 codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
 ```

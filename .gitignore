@@ -20,9 +20,6 @@ __pycache__/
 # 正規生成入口は各projectでの `spotter install -y`。
 .spotter/
 
-# codex-sidecar の作業物（隔離 worktree の App Server ログ等）は端末ローカル
-.codex-sidecar/
-
 # Obsidian vault config is per-machine (view state, workspace). The brain is
 # the markdown itself; the viewer's settings stay local. See PLAN.md 原則5.
 .obsidian/
