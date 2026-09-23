@@ -197,7 +197,7 @@ ensure_node24() {
     . "$NVM_DIR/nvm.sh"
   fi
   local node_major installer
-  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\\1/' || true)"
+  node_major="$(node --version 2>/dev/null | sed -E 's/^v([0-9]+).*/\1/' || true)"
   [ -z "$node_major" ] || [ "$node_major" -lt 24 ] || return 0
   if [ ! -s "$NVM_DIR/nvm.sh" ]; then
     installer="$(mktemp)"
@@ -213,7 +213,7 @@ ensure_node24() {
   nvm install 24
   nvm alias default 24
   nvm use 24
-  node_major="$(node --version | sed -E 's/^v([0-9]+).*/\\1/')"
+  node_major="$(node --version | sed -E 's/^v([0-9]+).*/\1/')"
   [ "$node_major" -ge 24 ] || die 'nvmのNode.js 24導入結果を確認できない'
 }
 
