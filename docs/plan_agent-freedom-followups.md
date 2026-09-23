@@ -21,3 +21,4 @@
 
 - 段階1完了（2026-09-23、`3c91a08`）。
 - 段階2完了（2026-09-23）。9役割の代表任務で02の規則どおりの選択を確認。
+- 段階4完了（2026-09-23）。Lattice工程 `product-document-autonomy` のpda-006を保留→退役。各repoの`.git/dotagents/orchestrate`（Control記録）、廃止hookのcacheと責務境界の宣言は`~/Archives/dotagents-retired-state-20260923T112731.tar.gz`へ保存してから削除。docs直下の旧統括の互換stubは、進行中のLattice計画から参照されうるため動かさない。
