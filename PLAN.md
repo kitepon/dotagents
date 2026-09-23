@@ -25,7 +25,7 @@ dotagents は**開発工場そのもの**。全プロジェクトに共通して
 
 - **統括レーンのプランはプロジェクトの docs/ に作る**。通常レーンは会話上の成功条件または内蔵planで足り、会話・端末メモリ・`~/.claude/plans` を工程正本にしない。
 - **実行TODOの正本はLattice typed discoveryで決める**: Latticeの明示適用が決まった作業、またはオーナー承認済みの既存Lattice工程を継続する時だけ、工程を読む/作る前に `lattice status --json` で正本を判定する（判定・cutover・fallback禁止の詳細は lattice-workflow runbook が正）。
-- **文書は所有者と寿命を同時に決める**: current／contract／generated／history／evidenceの分類とarchive例外は[docsの地図](docs/00_overview.md)と[document registry](docs/document-registry.json)が正。完了文書はarchiveへ移し、同義currentは一つへ統合する。各製品の内部制御は各製品repoが所有し、dotagentsは横断統合だけを所有する。
+- **文書は所有者と寿命を同時に決める**: 文書の地図は[docsの地図](docs/00_overview.md)が正。完了文書はarchiveへ移し、同義currentは一つへ統合する。各製品の内部制御は各製品repoが所有し、dotagentsは横断統合だけを所有する。
 - **時間見積を計画の制約・判断材料にしない**（AI の作業時間見積は実際の約20倍過大）。計画は順序・依存関係・承認ゲート（H）だけで組む。
 - （書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**方針級の発見はその場で正典へ**。共通文書の書き方（端末非依存・絶対日付・方針は理由ごと本文に）と書き先の振り分けは canon-authoring runbook が正。
 

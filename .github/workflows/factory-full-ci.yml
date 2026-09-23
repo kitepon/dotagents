@@ -60,8 +60,6 @@ jobs:
       - name: documentation check
         if: steps.changes.outputs.product_change == 'false'
         shell: bash
-        env:
-          DOCUMENT_REGISTRY_BASE_REF: ${{ steps.changes.outputs.comparison_base }}
         run: ${{ inputs.documentation-command }}
       - name: skip product full CI
         if: steps.changes.outputs.product_change == 'false'
@@ -72,8 +70,6 @@ jobs:
   full:
     needs: classify
     if: needs.classify.outputs.product_change == 'true'
-    env:
-      DOCUMENT_REGISTRY_BASE_REF: ${{ needs.classify.outputs.comparison_base }}
     strategy:
       fail-fast: false
       matrix:

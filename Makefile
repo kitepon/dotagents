@@ -18,9 +18,9 @@ PYTHON := python3
 endif
 endif
 
-.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration canon-migration-gate lint-skills lint-hooks test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
+.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
 
-lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-canon-migration lint-skills lint-hooks ## 静的 lint + skill/hook smoke
+lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks ## 静的 lint + skill/hook smoke
 
 lint-sh: ## shellcheck: install.sh + bin/ と tests/ の shell スクリプト（python は lint-py へ）
 	shellcheck install.sh $$(grep -lE '^#!.*sh$$' bin/*.sh tests/**/*.sh)
@@ -37,19 +37,8 @@ lint-md: ## markdownlint（緩い設定・生きた正典のみ / .markdownlint-
 lint-constitution: ## 共通憲法＋host deltaと生成物の完全一致を照合
 	./bin/verify-constitution-parity.sh
 
-lint-current-docs: ## 全document分類・現行状態生成物・手書き現行値を検証
-	@if [ "$$GITHUB_ACTIONS" = "true" ] && [ -z "$$DOCUMENT_REGISTRY_BASE_REF" ]; then \
-		printf '%s\n' 'DOCUMENT_REGISTRY_BASE_REF is required in GitHub Actions' >&2; \
-		exit 2; \
-	fi
-	node bin/render-current-docs.mjs --check --base-ref "$${DOCUMENT_REGISTRY_BASE_REF:-HEAD}"
-
-lint-canon-migration: ## 正典移設manifestの受け皿・L0ポインタ必須句を検証
-	node scripts/verify-canon-migration.mjs
-
-canon-migration-gate: ## BASEとの差分にある正典削除行の移設被覆を検証
-	@test -n "$(BASE)" || { echo "BASE is required (例: make canon-migration-gate BASE=origin/main)" >&2; exit 2; }
-	node scripts/verify-canon-migration.mjs --base "$(BASE)"
+lint-current-docs: ## 現行状態ページのdriftとlocal link切れを検出
+	node bin/render-current-docs.mjs --check
 
 lint-skills: ## Codex skill の frontmatter と安全契約を静的検証
 	bash tests/skills/smoke.sh
@@ -62,7 +51,7 @@ lint-hooks: ## Claude / Codex / Grok / Cursor hook の空打ち smoke
 test-constitution: ## 共通憲法generatorの冪等性とdrift拒否
 	node --test tests/constitution/generation.test.mjs
 
-test-current-docs: ## document registryの自動分類・生成・drift拒否
+test-current-docs: ## 現行状態ページの生成・drift・link切れ
 	node --test tests/docs/current-docs.test.mjs
 
 test-ci-plan: ## 変更分類と最終合否のfail-closed契約

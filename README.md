@@ -120,7 +120,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Grok skill | `auto-deploy-on-push` / `gpt-connector` / `polish-github` | `~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
-| repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、archive inventory、凍結digestを検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
+| repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、既存evidenceの不変性を検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | bin | `apply-cursor-config` | Cursor の工場hookを `~/.cursor/hooks.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `shared/runbooks/02_models.md` | 役割と任務からmodel×effortを選び、呼出しごとに指定 |

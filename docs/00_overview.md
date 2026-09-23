@@ -1,8 +1,8 @@
 # docs/ の地図（正典入口）
 
-dotagents の文書群の全体地図。全てのMarkdown／MDCは[document registry](document-registry.json)が先頭一致で`generated`／`current`／`contract`／`history`／`evidence`へ分類する。docs/ 直下は原則として生きた文書だけを置き、役目を終えた文書は [archive/](archive/) へ退避する。ControlやLatticeが固定パスを束縛する履歴・証拠・互換stubだけは直下の同じpathを保ち、registryで`history`／`evidence`へ落として通常の読書入口から外す。
+dotagents の文書群の全体地図。docs/ 直下は原則として生きた文書だけを置き、役目を終えた文書は [archive/](archive/) へ退避する。
 
-archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文digestを同時登録する。互換stubはstub自身のdigestも固定する。登録外のarchive増減、凍結本文の要約や修正、stubの肥大化、current文書のlocal link切れはCIが拒否する。製品を接続するhost skill・pointer・matrixはcurrent surface policyで薄さを検査し、製品内部手順を戻せない。
+CIは履歴以外の文書のlocal link切れと、生成物のずれだけを検出する。
 
 各製品の導入・設定・状態・schema・migration・診断の意味・復旧・更新・releaseは、その製品repoの文書だけが正本である。dotagentsは製品集合、host/wire、公開入口のprojection、横断受入を統括するが、製品を制御しない。
 
