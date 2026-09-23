@@ -28,3 +28,4 @@
 - main-serverの工場レポーターをwire v9へ切り替えた（2026-09-23）。v9切替でsetup入口の検査とrabbit用の設定書込みはv9になったが、server profileの設定を書き換える手順がなかった。endpointをv9へ変えて`factory-reporter-scheduler install --apply`でcronをv9 runnerへ張り替え、setupは17製品の報告と配送確認まで通った。
 - rabbitでnpmによるCodex CLI 0.156.0→0.156.1の更新がLinux本体のoptional dependencyを落とし、aiterm setupが`codex_parent_delivery_unavailable`で失敗した。工場のledgerは`post_version_unavailable`として正しく失敗を記録していた。公式の再導入で復旧。
 - foxへの反映完了（2026-09-23）。止まっていた原因はWindows標準のssh.exeで、SSH越しの非対話sessionで出力を受け取ると終了しない（Win32-OpenSSH #1769）。工場のWindows SSHをGit for Windows同梱のOpenSSHへ切り替えた。あわせてfoxのdotagentsを`Developer\dotagent`から`Developer\dotagents`へ改名し、setupは17製品の報告と2時のタスクのsmokeまで通った。
+- codex-sidecarのMCP登録を4台（Mac・main-server・rabbit・fox）のClaude・Codex・Grok・Cursorから外した（2026-09-23）。npm packageは各端末に残っている。
