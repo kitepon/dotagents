@@ -24,7 +24,7 @@ __pycache__/
 .codex-sidecar/
 
 # Obsidian vault config is per-machine (view state, workspace). The brain is
-# the markdown itself; the viewer's settings stay local. See PLAN.md 原則7.
+# the markdown itself; the viewer's settings stay local. See PLAN.md 原則5.
 .obsidian/
 .lattice/generated/
 .lattice/runs/

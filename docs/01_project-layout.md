@@ -22,7 +22,7 @@
 | `CLAUDE.md` | 正典（docs/00 等）への参照・検証コマンド・そのリポの掟。AI の入口 |
 | `README.md` | 人間の入口（何ができるか・起動方法） |
 | `docs/` | **00_ 番号順の正典**（00=overview から連番）＋ `adr/`（決定記録）＋ 監査ダイジェスト `audit-YYYY-MM/` ＋ **進行中プラン（docs/ に作り TODO を兼ねる。役目を終えた文書は `archive/` へ）**。命名: 正典=`NN_` 連番・小文字ケバブ／一時文書=`plan_`・`queue_` 接頭辞／archive 内=`YYYY-MM_` 接頭辞（dotagents/docs/adr/0004） |
-| `rag/` | 調査・研究の再利用棚。`INDEX.md`（1行台帳）＋ `<topic>/raw/`（一次ソース）＋コンパイル記事。運用は dotagents/PLAN.md 原則10（還流・Lint・選球眼） |
+| `rag/` | 調査・研究の再利用棚。`INDEX.md`（1行台帳）＋ `<topic>/raw/`（一次ソース）＋コンパイル記事。運用は dotagents/PLAN.md 原則7（還流・Lint・選球眼） |
 | `.claude/settings.json` | 読み取り系 allowlist（fewer-permission-prompts で生成）。端末固有につき gitignore 対象なら生成手順を CLAUDE.md に書く |
 | Spotter project install | 一撃展開は対象projectで `spotter install -y` を呼ぶ。生成物・host別挙動・再適用条件は[Spotter README「Install」](https://github.com/kitepon/Spotter#install)を正とし、dotagentsはmarkerやhookを複製せず配布接続だけを所有する |
 | 工場コア互換 | 自作コアと第三者管理の現行集合は[工場の現行状態](factory-current-state.md)から読む。MarkItDownは公開CLIだけを使う第三者管理製品。独立CodegraphとObserverはretiredで導入しない。Claude Code CLI／Codex CLI／Grok Buildは基盤toolchainとして別管理する。Oracleは互換・rollback専用 |
@@ -39,7 +39,7 @@
 5. **進捗・状態** → プラン文書が TODO を兼ねる（docs/ 内。規約は dotagents/PLAN.md「文書の作法」）＋ issue
 
 - 検索・理解の道具: **Lattice sensor**（コード構造。MCP登録はdotagents READMEランブック）・caveat MCP・grep。
-- 記法: `[[wikilink]]`＋YAML frontmatter（出典・取得日・確度）で **vault-friendly** に保つ。人間用の窓は Obsidian（真実は git+md のまま＝dotagents/PLAN.md 原則7）。
+- 記法: `[[wikilink]]`＋YAML frontmatter（出典・取得日・確度）で **vault-friendly** に保つ。人間用の窓は Obsidian（真実は git+md のまま＝dotagents/PLAN.md 原則5）。
 
 ## 型別レイアウト
 

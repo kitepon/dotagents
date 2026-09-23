@@ -12,7 +12,7 @@ CIは履歴以外の文書のlocal link切れと、生成物のずれだけを�
 
 | 文書 | 役割 |
 |---|---|
-| [../PLAN.md](../PLAN.md) | **憲章（聖典 v4）**。趣旨・原則1〜10・文書の作法・定常運用・残件 |
+| [../PLAN.md](../PLAN.md) | **憲章（聖典 v4）**。趣旨・原則・文書の作法・定常運用・残件 |
 | `lattice todo status --json` | 進行中工程の正本。完了したMarkdown計画を現在地として読まない |
 | [01_project-layout.md](01_project-layout.md) | 全プロジェクト共通のフォルダ構成標準 |
 | [02_models.md](../shared/runbooks/02_models.md) | 役割→モデル×effort順位表（唯一の参照点） |
