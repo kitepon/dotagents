@@ -1,4 +1,0 @@
-interface:
-  display_name: "Orchestrate"
-  short_description: "Coordinate complex multi-agent work safely"
-  default_prompt: "Use $orchestrate to plan and coordinate this multi-phase task with verification gates."

@@ -44,6 +44,7 @@ const REGISTRY = {
   },
   archive_relocations: [],
   compatibility_stub_paths: [],
+  retired_link_targets: [],
   current_surface_policies: [
     {
       id: 'integration-contracts',
@@ -729,6 +730,26 @@ test('archive移動後の切れたlocal linkを拒否する', async (t) => {
   const result = run(root, '--write');
   assert.equal(result.status, 1);
   assert.match(result.stderr, /凍結本文の元path基準local linkが切れています: missing\.md/);
+});
+
+test('意図して退役したlink先だけは凍結本文から参照できる', async (t) => {
+  const root = await fixture(t);
+  const registryPath = join(root, 'docs', 'document-registry.json');
+  const registry = JSON.parse(await readFile(registryPath, 'utf8'));
+  const archived = '# 履歴\n\n[退役したコード](../lib/retired.mjs)\n';
+  registry.archive_relocations = [{
+    old_path: 'docs/old.md',
+    new_path: 'docs/archive/old.md',
+    preserve_old_path: false,
+    old_path_mode: 'removed',
+    archive_sha256: digest(archived),
+  }];
+  registry.retired_link_targets = ['lib/retired.mjs'];
+  setArchivePaths(registry, ['docs/archive/old.md']);
+  await writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`, 'utf8');
+  await writeFile(join(root, 'docs', 'archive', 'old.md'), archived, 'utf8');
+  const result = run(root, '--write');
+  assert.doesNotMatch(result.stderr, /凍結本文の元path基準local linkが切れています/);
 });
 
 test('archive本文の書き換えをdigestで拒否する', async (t) => {

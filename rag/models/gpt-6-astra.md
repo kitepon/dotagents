@@ -24,4 +24,4 @@ Astraは指示への感度が高く、曖昧なskillやAGENTS.mdによって承�
 
 所有境界、秘密保護、破壊操作前の退避、公開commitの条件、監査後に意匠を選ぶ手順、routing回避策は残す。旧モデルの履歴・fixture・役割別配置を一括置換しない。親のモデル設定はオーナー領分のままとする。
 
-現行の配置は[モデル配置表](../../docs/02_models.md)、Codexの設定指針は[設定文書](../../docs/05_codex-fragments.md)が正本。
+現行の配置は[モデル配置表](../../shared/runbooks/02_models.md)、Codexの設定指針は[設定文書](../../docs/05_codex-fragments.md)が正本。

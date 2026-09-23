@@ -37,7 +37,7 @@ connect24h の記事は「Fable 5 の賢さは買うしかないが、**行動�
 
 ### 判定3 — effort（棄却＋宿題1件）
 - 「Fable high = Opus xhigh」等式は誤り。effort レベルは各モデルで token 配分が recalibrated（[[raw/migration-guide]] L688）。公式が言うのは「Fable の低 effort でも前世代 xhigh を超えることが多い」という能力比較（L43/L638）。
-- 換算表を docs/02_models.md に作るのは、同 doc の「役割→モデル解決のみ・定量スペックを持たない」設計（02_models.md L1/L5・PLAN 原則9）に反する越境。
+- 換算表を shared/runbooks/02_models.md に作るのは、同 doc の「役割→モデル解決のみ・定量スペックを持たない」設計（02_models.md L1/L5・PLAN 原則9）に反する越境。
 - **生きた宿題**: うちの settings.json は `effortLevel:"xhigh"`。migration L651 は「Opus 4.8 で xhigh だったワークロードも Fable では high から再評価せよ」。ただし L638「xhigh は capability-sensitive に温存」。うちの統括役（監査確定・契約クリティカル・不可逆操作）は capability-sensitive の典型＝**xhigh 据え置きが妥当**。結論：再評価は済み、現状維持が正当。high への一律切替は公式が支持していない。
 
 ### 判定5 — 「Opus 4.8 は 200K」は記事の誤り（確定）
@@ -59,5 +59,5 @@ connect24h の記事は「Fable 5 の賢さは買うしかないが、**行動�
 
 ## 関連
 - [AI協業をコード化する（履歴）](../../docs/archive/research/orchestration/ai-collaboration-as-code.md) — 委譲構造（worker への指示は agent 焼き込みで渡す＝判定2の裏付け）
-- docs/02_models.md — 役割→モデル解決の唯一の参照点（effort 換算の越境を退けた根拠）
+- shared/runbooks/02_models.md — 役割→モデル解決の唯一の参照点（effort 換算の越境を退けた根拠）
 - 一次資料 verbatim: raw/prompting-fable-5.md, raw/output-styles.md, raw/migration-guide.md, raw/introducing-fable-5-mythos-5.md, raw/release-notes-system-prompts.md, raw/excellentprompts-fable-5-notes.md

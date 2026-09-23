@@ -55,6 +55,6 @@ Luna と Terra/Sonnet の差が小さいため、仕様固定・focused test あ
 
 ## 関連
 
-- [[../../docs/02_models.md]] — 役割→モデル×effort の正本
+- [[../../shared/runbooks/02_models.md]] — 役割→モデル×effort の正本
 - [[gpt-5.6-family.md]] — GPT-5.6 の価格・effort
 - [[claude-5-family.md]] — Claude 5 の役割・価格・effort

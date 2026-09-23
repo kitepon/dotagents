@@ -25,13 +25,6 @@ assert_link() {
     fail "$1 が $2 向き symlink でない"
   fi
 }
-assert_orchestrate_references() {
-  local skill="$1"
-  for file in contract.md delegation-contract.md aiterm-dispatch.md recipes.md; do
-    [ -r "$skill/references/shared-orchestrate/$file" ] \
-      || fail "配布済みorchestrateから $file を読めない: $skill"
-  done
-}
 seed_config() {
   mkdir -p "$1/.codex"
   cat >"$1/.codex/config.toml" <<'EOF'
@@ -84,6 +77,7 @@ seed_config "$OFFICIAL_HOME"
 mkdir -p "$OFFICIAL_HOME/.claude/skills" "$OFFICIAL_HOME/.claude/commands" \
   "$OFFICIAL_HOME/.agents/skills" "$OFFICIAL_HOME/.codex/skills" "$OFFICIAL_HOME/.local/bin"
 ln -s "$ROOT/claude/skills/audit-gauntlet" "$OFFICIAL_HOME/.claude/skills/audit-gauntlet"
+ln -s "$ROOT/claude/skills/orchestrate" "$OFFICIAL_HOME/.claude/skills/orchestrate"
 ln -s "$ROOT/claude/commands/audit-gauntlet.md" "$OFFICIAL_HOME/.claude/commands/audit-gauntlet.md"
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.agents/skills/audit-gauntlet"
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.codex/skills/audit-gauntlet"
@@ -116,8 +110,7 @@ assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
 assert_link "$OFFICIAL_HOME/.codex/runbooks" "$ROOT/shared/runbooks"
 assert_link "$OFFICIAL_HOME/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$OFFICIAL_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
-assert_link "$OFFICIAL_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
-assert_orchestrate_references "$OFFICIAL_HOME/.grok/skills/orchestrate"
+[ ! -e "$OFFICIAL_HOME/.grok/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.grok/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $OFFICIAL_HOME/.grok/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.grok/skills/auto-deploy-on-push" "$ROOT/grok/skills/auto-deploy-on-push"
 assert_link "$OFFICIAL_HOME/.grok/skills/gpt-connector" "$ROOT/grok/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.grok/skills/polish-github" "$ROOT/grok/skills/polish-github"
@@ -128,14 +121,13 @@ assert_link "$OFFICIAL_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/facto
 assert_link "$OFFICIAL_HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
-assert_link "$OFFICIAL_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
-assert_orchestrate_references "$OFFICIAL_HOME/.cursor/skills/orchestrate"
+[ ! -e "$OFFICIAL_HOME/.cursor/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.cursor/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $OFFICIAL_HOME/.cursor/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.cursor/skills/auto-deploy-on-push" "$ROOT/cursor/skills/auto-deploy-on-push"
 assert_link "$OFFICIAL_HOME/.cursor/skills/gpt-connector" "$ROOT/cursor/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.cursor/skills/polish-github" "$ROOT/cursor/skills/polish-github"
 assert_link "$OFFICIAL_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 assert_link "$OFFICIAL_HOME/.cursor/agents/refuter.md" "$ROOT/cursor/agents/refuter.md"
-[ ! -e "$OFFICIAL_HOME/.cursor/skills-cursor/orchestrate" ] || fail '工場skillを skills-cursor へ置いた'
+[ ! -e "$OFFICIAL_HOME/.cursor/skills-cursor/polish-github" ] || fail '工場skillを skills-cursor へ置いた'
 rm "$OFFICIAL_HOME/.grok/runbooks"
 if grok_runbook_missing_output="$(verify "$OFFICIAL_HOME" official 2>&1)"; then
   fail 'Grok runbooks欠落をverifyが見逃した'
@@ -219,22 +211,6 @@ dry_run="$(apply_config "$OFFICIAL_HOME" --dry-run)"
   || fail 'dry-run が backup を作った'
 apply_config "$OFFICIAL_HOME" --apply
 verify "$OFFICIAL_HOME" official
-mkdir -p "$VERIFY_FIXTURE/bin" "$VERIFY_FIXTURE/claude/skills/orchestrate"
-cp "$ROOT/bin/verify-install.sh" "$VERIFY_FIXTURE/bin/verify-install.sh"
-chmod +x "$VERIFY_FIXTURE/bin/verify-install.sh"
-cp "$ROOT/claude/skills/orchestrate/SKILL.md" "$VERIFY_FIXTURE/claude/skills/orchestrate/SKILL.md"
-"$PYTHON_BIN" - "$VERIFY_FIXTURE/claude/skills/orchestrate/SKILL.md" <<'PY'
-import sys
-from pathlib import Path
-path = Path(sys.argv[1])
-path.write_text(path.read_text(encoding="utf-8").replace("](references/shared-orchestrate/delegation-contract.md)", "`references/shared-orchestrate/delegation-contract.md`"), encoding="utf-8")
-PY
-ln -s "$ROOT/codex" "$VERIFY_FIXTURE/codex"
-ln -s "$ROOT/shared" "$VERIFY_FIXTURE/shared"
-verify_fixture_output="$(HOME="$OFFICIAL_HOME" DOTAGENTS_SKIP_FACTORY_CORE=1 "$VERIFY_FIXTURE/bin/verify-install.sh" --profile official 2>&1 || true)"
-# pipefail下の`printf | grep -q`はgrepの早期exitでprintfがSIGPIPEになり、マッチ成功でも
-# パイプライン全体が非0になる（実被弾: 出力がpipe bufferを超えた環境で誤FAIL）。herestringで回避する。
-grep -Fq 'が共有委譲契約を参照していない' <<<"$verify_fixture_output" || fail 'Claude shared delegation reference の欠落を verify が検出しない'
 mkdir -p "$OFFICIAL_HOME/.claude"
 cat >"$OFFICIAL_HOME/.claude/settings.json" <<'EOF'
 {"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]}]}}
@@ -279,9 +255,8 @@ del data["hooks"]["PreToolUse"][0]["hooks"][0]["unexpected"]
 json.dump(data, open(path, "w", encoding="utf-8"))
 PY
 verify "$OFFICIAL_HOME" official
-assert_link "$OFFICIAL_HOME/.agents/skills/orchestrate" "$ROOT/codex/skills/orchestrate"
-assert_orchestrate_references "$OFFICIAL_HOME/.claude/skills/orchestrate"
-assert_orchestrate_references "$OFFICIAL_HOME/.agents/skills/orchestrate"
+[ ! -e "$OFFICIAL_HOME/.agents/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.agents/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $OFFICIAL_HOME/.agents/skills/orchestrate"
+[ ! -e "$OFFICIAL_HOME/.claude/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.claude/skills/orchestrate" ] || fail "廃止したorchestrate skillのlinkを除去しない"
 assert_link "$OFFICIAL_HOME/.agents/skills/polish-github" "$ROOT/codex/skills/polish-github"
 rm "$OFFICIAL_HOME/.agents/skills/polish-github"
 [ ! -e "$OFFICIAL_HOME/.agents/skills/polish-github" ] \
@@ -303,21 +278,12 @@ assert_link "$OFFICIAL_HOME/.local/bin/factory-scan" "$ROOT/bin/factory-scan.mjs
 assert_link "$OFFICIAL_HOME/.local/bin/factory-scan-v6" "$ROOT/bin/factory-scan-v6.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-scan-v8" "$ROOT/bin/factory-scan-v8.mjs"
 assert_link "$OFFICIAL_HOME/.local/bin/factory-scan-v9" "$ROOT/bin/factory-scan-v9.mjs"
-assert_link "$OFFICIAL_HOME/.local/bin/orchestrate-run" "$ROOT/bin/orchestrate-run.mjs"
-[ -x "$OFFICIAL_HOME/.local/bin/orchestrate-run" ] || fail 'orchestrate-run が実行可能でない'
-help_json="$(node "$OFFICIAL_HOME/.local/bin/orchestrate-run" --help)"
-"$PYTHON_BIN" - "$help_json" <<'PY' || fail 'orchestrate-run help がrecord-only versioned contractを示さない'
-import json
-import sys
-data = json.loads(sys.argv[1])
-raise SystemExit(0 if data.get("contract_version") == "dotagents.orchestrate.control-record.v2" and data.get("mode") == "record-only" and data.get("external_execution") is False and "init" in data.get("commands", []) else 1)
-PY
-for retired_hook in orchestrate-advisory-hook lattice-gantt-hook codex-lattice-gantt-hook todo-gate-hook; do
+for retired_hook in orchestrate-advisory-hook lattice-gantt-hook codex-lattice-gantt-hook todo-gate-hook orchestrate-run; do
   [ ! -e "$OFFICIAL_HOME/.local/bin/$retired_hook" ] && [ ! -L "$OFFICIAL_HOME/.local/bin/$retired_hook" ] \
     || fail "廃止hook $retired_hook の配布linkが残った"
 done
 assert_link "$OFFICIAL_HOME/.local/bin/bughub-external-probe" "$ROOT/bin/bughub-external-probe.mjs"
-[ ! -e "$OFFICIAL_HOME/.codex/skills/orchestrate" ] || fail 'official が legacy skill 面を作った'
+[ ! -e "$OFFICIAL_HOME/.codex/skills/polish-github" ] || fail 'official が legacy skill 面を作った'
 grep -Fq 'model = "keep-me"' "$OFFICIAL_HOME/.codex/config.toml" || fail '既存 config を保持しない'
 grep -Fq 'hooks = true' "$OFFICIAL_HOME/.codex/config.toml" || fail '現行 hooks flag を保持しない'
 if grep -Eq '^[[:space:]]*codex_hooks[[:space:]]*=' "$OFFICIAL_HOME/.codex/config.toml"; then
@@ -419,7 +385,7 @@ apply_config "$OFFICIAL_HOME" --apply >/dev/null
 assert_stop_count "$OFFICIAL_HOME/.codex/hooks.json" || fail '絶対 path の廃止 callout hook を除去しない'
 
 mkdir -p "$OFFICIAL_HOME/.codex/skills"
-ln -s "$ROOT/codex/skills/orchestrate" "$OFFICIAL_HOME/.codex/skills/orchestrate"
+ln -s "$ROOT/codex/skills/polish-github" "$OFFICIAL_HOME/.codex/skills/polish-github"
 if verify "$OFFICIAL_HOME" official; then
   fail '反対面の同名 skill 重複を verify が見逃した'
 fi
@@ -491,25 +457,21 @@ assert_link "$LEGACY_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.codex/runbooks" "$ROOT/shared/runbooks"
 assert_link "$LEGACY_HOME/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$LEGACY_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
-assert_link "$LEGACY_HOME/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
-assert_orchestrate_references "$LEGACY_HOME/.grok/skills/orchestrate"
+[ ! -e "$LEGACY_HOME/.grok/skills/orchestrate" ] && [ ! -L "$LEGACY_HOME/.grok/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $LEGACY_HOME/.grok/skills/orchestrate"
 assert_link "$LEGACY_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$LEGACY_HOME/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 assert_link "$LEGACY_HOME/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/factory-constitution/.cursor/rules/factory.mdc" "$ROOT/cursor/rules/factory.mdc"
 assert_link "$LEGACY_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
-assert_link "$LEGACY_HOME/.cursor/skills/orchestrate" "$ROOT/cursor/skills/orchestrate"
-assert_orchestrate_references "$LEGACY_HOME/.cursor/skills/orchestrate"
+[ ! -e "$LEGACY_HOME/.cursor/skills/orchestrate" ] && [ ! -L "$LEGACY_HOME/.cursor/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $LEGACY_HOME/.cursor/skills/orchestrate"
 assert_link "$LEGACY_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 [ ! -e "$LEGACY_HOME/.cursor/AGENTS.md" ] || fail 'legacy が Cursor AGENTS.md を ~/.cursor へ置いた'
 apply_grok_config "$LEGACY_HOME"
 apply_config "$LEGACY_HOME" --apply
 verify "$LEGACY_HOME" legacy
-assert_link "$LEGACY_HOME/.codex/skills/orchestrate" "$ROOT/codex/skills/orchestrate"
-assert_orchestrate_references "$LEGACY_HOME/.claude/skills/orchestrate"
-assert_orchestrate_references "$LEGACY_HOME/.codex/skills/orchestrate"
+[ ! -e "$LEGACY_HOME/.codex/skills/orchestrate" ] && [ ! -L "$LEGACY_HOME/.codex/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $LEGACY_HOME/.codex/skills/orchestrate"
 assert_link "$LEGACY_HOME/.codex/skills/polish-github" "$ROOT/codex/skills/polish-github"
-[ ! -e "$LEGACY_HOME/.agents/skills/orchestrate" ] || fail 'legacy が official skill 面を作った'
+[ ! -e "$LEGACY_HOME/.agents/skills/polish-github" ] || fail 'legacy が official skill 面を作った'
 [ ! -e "$LEGACY_HOME/.agents/skills/polish-github" ] \
   || fail 'legacy が official polish-github 面を作った'
 

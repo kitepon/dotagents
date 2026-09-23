@@ -15,7 +15,7 @@ archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文di
 | [../PLAN.md](../PLAN.md) | **憲章（聖典 v4）**。趣旨・原則1〜10・文書の作法・定常運用・残件 |
 | `lattice todo status --json` | 進行中工程の正本。完了したMarkdown計画を現在地として読まない |
 | [01_project-layout.md](01_project-layout.md) | 全プロジェクト共通のフォルダ構成標準 |
-| [02_models.md](02_models.md) | 役割→モデル×effort順位表（唯一の参照点） |
+| [02_models.md](../shared/runbooks/02_models.md) | 役割→モデル×effort順位表（唯一の参照点） |
 | [03_settings-fragments.md](03_settings-fragments.md) | .claude/settings.json の生成手順・断片 |
 | [04_ci.md](04_ci.md) | lint / CI ゲート（`make ci`＝CI同一、`make lint`＝静的部分ゲート）の正典 |
 | [factory-current-state.md](factory-current-state.md) | 配備契約から生成する製品数・区分・現役wire・本番endpoint・rollback先 |
@@ -24,8 +24,6 @@ archive移動はregistryへ旧path・新path・旧pathの扱い・凍結本文di
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
 | [../README.md](../README.md#他端末セットアップランブック) | 現役4席（Mac / main-server / rabbit native Linux / Windows native）の一撃展開と定期更新。Windows nativeはPowerShell 7＋Git for Windowsだけで閉じ、WSL／Dockerを前提にせず、main-server恒久SSHも同じ入口で閉じる |
-| [../shared/orchestrate/contract.md](../shared/orchestrate/contract.md) | 両親共通のorchestrate use-not-use・Control lifecycle・統括ゲート |
-| [../shared/orchestrate/delegation-contract.md](../shared/orchestrate/delegation-contract.md) | 製品中立のDelegation Packet／Worker Reportと統括側受入契約 |
 | `plan_*.md` | 現役計画だけ。完遂時は`archive/`へ移し、固定path consumerが実在する場合だけroot stubを残す |
 | [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式、完遂した推薦入口の計画） |
 | [adr/](adr/) / [evidence/](evidence/) | 固定された判断・証拠。個別の現行文書から必要な時だけ辿り、通常の読む順には入れない |

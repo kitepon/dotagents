@@ -1,4 +1,4 @@
-# 前提: GPT-6の役割別配置（2026-09-22整合）。defaults・presetsの正はdocs/02_models.md
+# 前提: GPT-6の役割別配置（2026-09-22整合）。defaults・presetsの正はshared/runbooks/02_models.md
 #
 # スキーマは codex-sidecar-core/dist/{config.js,presets.js,types.js,profiles.js} を実読して確認
 # （2026-07-11・/opt/homebrew/lib/node_modules/codex-sidecar-core）。USAGE.md 等の文書は端末に

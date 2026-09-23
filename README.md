@@ -103,12 +103,9 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 
 | 種類 | 名前 | 用途 |
 |---|---|---|
-| Claude skill | `orchestrate` | 共有Control lifecycle／委譲契約を読み、Claude固有status projectionとWorkflow appendixを使う入口 |
-| Codex skill | `orchestrate` | 共有Control lifecycle／委譲契約を読み、native・外部実行・相談レーンを裁定する製品固有入口 |
-| 共有契約 | `shared/orchestrate/{contract,delegation-contract}.md` | 両skillのuse-not-use、Control lifecycle、製品中立のDelegation Packet／Worker Reportの唯一の正本 |
 | Claude skill | `auto-deploy-on-push` | push 契機の SSH + docker compose 自動デプロイ構築 |
 | Codex skill | `auto-deploy-on-push` | read-only調査とH承認を先行するpush起点デプロイ構築 |
-| Claude agent | `implementer` | 委譲契約焼き込み済みの実装者（安価枠。順位表は docs/02_models.md） |
+| Claude agent | `implementer` | 委譲契約焼き込み済みの実装者（安価枠。順位表は shared/runbooks/02_models.md） |
 | Claude agent | `refuter` | 敵対的検証者（読み取り専用） |
 | Claude command | `auto-deploy-on-push` / `polish-github` | 各スキルの入口 |
 | Codex skill | `polish-github` | GitHub presentation 整備（正本は Claude 版・Codex 版は薄いポインタ＝一本化済み） |
@@ -118,15 +115,15 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Codexグローバル規範 | `codex/AGENTS.delta.md` → `codex/AGENTS.md` | 共通憲法＋Codex固有deltaから合成する配布生成物。配置・配線の正典はdocs/02・docs/05 |
 | Grokグローバル規範 | `grok/AGENTS.delta.md` → `grok/AGENTS.md` | 共通憲法＋Grok固有deltaから合成する配布生成物。配置先は`~/.grok/rules/AGENTS.md` |
 | Cursorグローバル規範 | `cursor/AGENTS.delta.md` → `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | 共通憲法＋Cursor固有delta。runtime mountは`~/.cursor/rules/factory.mdc`のみ |
-| Cursor skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Cursor appendix。`~/.cursor/skills`。`skills-cursor/`は触らない |
+| Cursor skill | `auto-deploy-on-push` / `gpt-connector` / `polish-github` | `~/.cursor/skills`。`skills-cursor/`は触らない |
 | Cursor agent | `implementer` / `refuter` | `~/.cursor/agents`。bundled explore/planは置換えない |
-| Grok skill | `orchestrate` / `auto-deploy-on-push` / `gpt-connector` / `polish-github` | 共通契約＋Grok appendix。`~/.grok/skills`が同名のCodex/Claude面に勝つ |
+| Grok skill | `auto-deploy-on-push` / `gpt-connector` / `polish-github` | `~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
 | repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、archive inventory、凍結digestを検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
 | bin | `apply-grok-config` | Grok の `compat.claude.agents=false` / `hooks=false` と工場hookを dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/07） |
 | bin | `apply-cursor-config` | Cursor の工場hookを `~/.cursor/hooks.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
-| Codex サブエージェント | `docs/02_models.md` | 役割と任務からmodel×effortを選び、呼出しごとに指定 |
+| Codex サブエージェント | `shared/runbooks/02_models.md` | 役割と任務からmodel×effortを選び、呼出しごとに指定 |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、公開結果の記録とreportの配送を実行 |
 | bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各製品の公式入口の実行と工場の配置・報告配送を行う。Windows入口はmain-serverへの恒久SSHも所有する |
 | GitHub Actions | `ci.yml` / `factory-full-ci.yml` | [工場の現行状態](docs/factory-current-state.md)で`full CI`としたrunnerだけに、論理CPU数をjob数とする同じ`make ci`を実行する。main-server runnerは運用workflow専用。運用契約は[Factory CI runbook](shared/runbooks/factory-ci.md) |
@@ -174,7 +171,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 | CONFIG / MCP_SERVER_CONFIG | `docs/05_codex-fragments.md`＋`apply-codex-config`＋`verify-install` |
 | SKILLS | `codex/skills/` → user skill 面（公式面が既定） |
 | PLUGINS | — 非採用（個人git＋symlink配布と二重化するため） |
-| SUBAGENTS | `docs/02_models.md`に基づく呼出し時のmodel／effort指定 |
+| SUBAGENTS | `shared/runbooks/02_models.md`に基づく呼出し時のmodel／effort指定 |
 | HOOKS | `bin/codex-git-destroy-gate-hook.sh`＋`docs/05_codex-fragments.md` |
 | COMMANDS | Claude command に対応する Codex skill |
 | SESSIONS | Throughline＋Codex handoff smoke |
@@ -338,16 +335,16 @@ Throughlineは共通更新入口が未導入時だけ公式npm導入と`throughl
 
 Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する。機能別の未対応を公開結果のまま記録し、工場Gantt hookとは分けて扱う。対応範囲と結果の意味は[Latticeの正本](https://github.com/kitepon/Lattice#readme)に従う。
 
-- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——dotagentsが配置するsymlink、共有orchestrate契約、routing、各AI向け工場hook、退役配線と互換wrapperを確認する。製品の導入・MCP登録・製品hook・診断の合否は各製品の公式入口が所有する。host別setupは公開結果を記録し、工場自身の更新予約とfresh reportの配送を確認する。Grok未login時は配布symlinkの整合を確認する。`~/.local/bin`をPATHに通していれば`verify-install --profile official`でも実行できる。
-- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
-- 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`orchestrate` が skill 一覧に出る／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす／極小タスクを implementer に委譲して契約どおりの報告が返る
-- 新しい Codex セッションで（対話確認）: skill 一覧に `orchestrate` が出る／`spawn_agent` schema に `agent_type` がある／model／reasoning_effortを指定して任務を直接渡せる／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす
+- **`./bin/verify-install.sh --profile official` が OK を返すこと（省略不可）**——dotagentsが配置するsymlink、routing、各AI向け工場hook、退役配線と互換wrapperを確認する。製品の導入・MCP登録・製品hook・診断の合否は各製品の公式入口が所有する。host別setupは公開結果を記録し、工場自身の更新予約とfresh reportの配送を確認する。Grok未login時は配布symlinkの整合を確認する。`~/.local/bin`をPATHに通していれば`verify-install --profile official`でも実行できる。
+- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`へGit破壊操作hookを冪等追加し、廃止hookの登録を取り除く。Codex側は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が同じGit破壊操作hookを冪等正規化し、廃止hookの登録を取り除く。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。
+- 新しい Claude Code セッションで（対話確認）: グローバル CLAUDE.md がロードされる／`implementer`・`refuter` が agent 一覧に出る／pty（aiterm）と caveat が `/mcp` で connected／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす／極小タスクを implementer に委譲して契約どおりの報告が返る
+- 新しい Codex セッションで（対話確認）: `spawn_agent` schema に `agent_type` がある／model／reasoning_effortを指定して任務を直接渡せる／Spotterは[製品READMEの導入後確認](https://github.com/kitepon/Spotter#install)を満たす
 - 新しい Grok セッションで（対話確認・H）: user rulesが`~/.grok/rules/AGENTS.md`だけから乗る（Claude delta固有条文が無い）／工場skillが`~/.grok/skills`から列挙される／対応する製品MCPのhandshakeが`supported`かtyped失敗のまま残る／Claude `settings.json` hookが現れない。既存sessionの見た目は受入に数えない
 - 新しい Cursor セッションで（対話確認・H）: user hooks を load 済みの Desktop 窓で人が文を送ったチャットを数える（Cmd+Shift+L の新規、または `hooks.json` を live reload 済みの既存窓）。憲法は `cursor-constitution-hook` が beforeSubmitPrompt で cap 内案内を載せ、同一本文は `~/.cursor/rules/factory.mdc` の Read（Claude delta固有条文が無い。Desktop 3.17.8 は home mdc を always-apply しない）。証拠は hook ログに `cursor-constitution-hook` が `from user config` で出ることと `~/.cursor/factory-hook-state/constitution-delivered/` の stamp。goal continuation・Task/cloud・`cursor --chat` は Desktop hook を踏まないので数えない／工場skillが`~/.cursor/skills`から列挙される（`skills-cursor`は工場所有に数えない。Cursorは互換で`~/.claude/skills`も読むので、Claude面の列挙を切断成功と読まない）／対応する製品MCPのhandshakeが connected か typed失敗のまま残る／Claude `settings.json` hookが正規契約になっていない
 
 ### 4. その端末のメモリ整理
 
-`orchestrate` references の bulk-curation 手順で（各端末のメモリはその端末でしか整理できない。リポ操作でないため P2 掃引より先で OK）。
+各端末のメモリを整理する（各端末のメモリはその端末でしか整理できない。リポ操作でないため P2 掃引より先で OK）。
 
 ## 自動アップデート（常設・全端末必須）
 

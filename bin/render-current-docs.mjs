@@ -312,6 +312,12 @@ function compileRegistry(registry) {
     new Set(registry.compatibility_stub_paths).size !== registry.compatibility_stub_paths.length) {
     throw new Error('compatibility_stub_pathsが不正です');
   }
+  // 意図して退役したlink先。凍結本文からの参照だけを許し、current文書のlink検査には使わない。
+  if (!Array.isArray(registry.retired_link_targets) ||
+    registry.retired_link_targets.some((path) => !isRepositoryRelativePath(path)) ||
+    new Set(registry.retired_link_targets).size !== registry.retired_link_targets.length) {
+    throw new Error('retired_link_targetsが不正です');
+  }
   for (const relocation of registry.archive_relocations) {
     if (relocation.old_path_mode === 'compatibility-stub' &&
       !registry.compatibility_stub_paths.includes(relocation.old_path)) {
@@ -1012,8 +1018,9 @@ async function validateCurrentLinks(root, classified, contentOverrides = new Map
   return violations;
 }
 
-async function validateArchiveRelocations(root, relocations) {
+async function validateArchiveRelocations(root, relocations, retiredTargets) {
   const violations = [];
+  const retired = new Set(retiredTargets);
   const relocatedTargets = new Map(relocations.map((relocation) => [relocation.old_path, relocation.new_path]));
   for (const relocation of relocations) {
     const oldPath = join(root, relocation.old_path);
@@ -1042,6 +1049,7 @@ async function validateArchiveRelocations(root, relocations) {
       const archiveTarget = resolve(dirname(newPath), link.target);
       const originalRelative = normalizePath(relative(root, originalTarget));
       const mappedTarget = relocatedTargets.get(originalRelative);
+      if (retired.has(originalRelative.replace(/\/$/u, ''))) continue;
       if (!await pathExists(originalTarget) && !await pathExists(archiveTarget) &&
         (mappedTarget === undefined || !await pathExists(join(root, mappedTarget)))) {
         violations.push(`${relocation.new_path}:${link.line}: 凍結本文の元path基準local linkが切れています: ${link.target}`);
@@ -1144,7 +1152,7 @@ async function main() {
     new Map([[generatedPath, expected]]),
     mode === 'write' ? new Set([output]) : new Set(),
   );
-  const relocationViolations = await validateArchiveRelocations(root, registry.archive_relocations);
+  const relocationViolations = await validateArchiveRelocations(root, registry.archive_relocations, registry.retired_link_targets);
   const archiveInventoryViolations = validateArchiveInventory(
     archiveFiles,
     registry.archive_relocations,

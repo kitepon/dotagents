@@ -3,7 +3,6 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-node "$ROOT/bin/render-orchestrate-skill-references.mjs" --check
 PYTHON=python3
 if [ "${OS:-}" = "Windows_NT" ]; then
   PYTHON=python
@@ -70,7 +69,7 @@ if not set(sys.argv[2:]).issubset(keys):
 PY
 }
 
-for skill in orchestrate auto-deploy-on-push polish-github; do
+for skill in auto-deploy-on-push polish-github; do
   file="$ROOT/codex/skills/$skill/SKILL.md"
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"
@@ -81,71 +80,13 @@ for skill in orchestrate auto-deploy-on-push polish-github; do
   contains "$yaml" "\$$skill"
 done
 
-[ -d "$ROOT/codex/skills/orchestrate" ] || fail 'Codex orchestrate は実ディレクトリでない'
-[ ! -L "$ROOT/codex/skills/orchestrate" ] || fail 'Codex orchestrate が symlink のまま'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
-contains "$ROOT/shared/orchestrate/contract.md" '統括の共通契約'
-contains "$ROOT/shared/orchestrate/contract.md" '非目標（やらないこと）、既知の罠、検証方法を必ず含める'
-contains "$ROOT/shared/orchestrate/contract.md" 'Control Recordの最小lifecycle'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Delegation Packet（8点）'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Worker Reportの受入'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" 'references/workflow-templates.md'
-contains "$ROOT/grok/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
-contains "$ROOT/grok/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
-for host in claude codex grok cursor; do
-  absent "$ROOT/$host/skills/orchestrate/SKILL.md" '../../../shared/orchestrate/'
-done
-absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" '../../../../shared/orchestrate/'
 contains "$ROOT/PLAN.md" 'ラベル運用は統括レーンの4関節（writer委譲・受入裁定・Phase gate・H操作）の裁定用とする。'
 contains "$ROOT/PLAN.md" '作業後はpushで真実を返す（本原則は、dotagentsと製品契約台帳で自作コアに分類された製品の正規repoに対する恒久push裁定である。第三者製品・基盤toolchainには適用しない。認定手順は憲法git鉄則に従う）'
 contains "$ROOT/PLAN.md" '10. （書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**知識は還流させて育てる（第二の脳）**'
 contains "$ROOT/PLAN.md" '（書込みscopeは憲法「調査と知識の置き場」冒頭に従う）**方針級の発見はその場で正典へ**'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '**配置は統括レーンの4関節で宣言**'
-contains "$ROOT/shared/orchestrate/contract.md" '統括レーンへ入った後、4関節で扱う役割をF/A/Hに分ける。'
-# shellcheck disable=SC2016 # backticks are literal Markdown from the contract.
-contains "$ROOT/shared/orchestrate/contract.md" '対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本は lattice-workflow runbook のtyped discoveryで決める。'
-contains "$ROOT/shared/orchestrate/control-record.md" 'docs計画正本（実行TODOの正本はtyped discoveryで解決）'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '役割に対するmodel×effortの解決と順位は[docs/02_models.md]'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" 'Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない'
-contains "$ROOT/docs/02_models.md" '| 反証 | GPT-6 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |'
-contains "$ROOT/docs/02_models.md" '| 実装 | GPT-6 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |'
-contains "$ROOT/shared/orchestrate/contract.md" '反証は、成果物を作ったモデルと別ベンダーのモデルで行う。'
-absent "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'low'"
-contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "model:'sonnet', effort:'medium'"
-contains "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" "const VERIFY_MODEL = 'opus'; // Claude内反証projection。順位の判断正本はdocs/02_models.md"
-assert_order "$ROOT/claude/skills/orchestrate/references/workflow-templates.md" \
-  "phase('Verify')" \
-  "model:VERIFY_MODEL, effort:'high'" \
-  "phase('Critic')" \
-  "model:VERIFY_MODEL, effort:'high'"
-[ ! -e "$ROOT/claude/skills/orchestrate/references/delegation-contract.md" ] || fail 'Claude 固有の旧 delegation-contract.md が残っている'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'fork_turns="none"'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'モデル順位表'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '固定roleのTOMLは配布しない'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '実効sandboxは親から継承する'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '入れ子のCodexを起動してよい'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'execution-verified'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" '同一taskを重複起動しない'
-contains "$ROOT/shared/orchestrate/contract.md" '対象diff、受入条件、関連gate、未検証範囲を自ら確認してaccept/reject'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" 'tightに結合した作業ならCodex native'
-contains "$ROOT/codex/skills/orchestrate/SKILL.md" '通常レーンは委譲を既定にしない'
-contains "$ROOT/shared/orchestrate/executor-adapters.md" 'まず新規admissionを止める'
-# shellcheck disable=SC2016 # backticks are literal Markdown from the contract.
-contains "$ROOT/shared/orchestrate/executor-adapters.md" '`unknown`を別terminal stateへ暗黙変換しない'
-# 2026-09-22裁定: 委譲3レーン・4段階はdelegation-contract、worker安全契約はdelegation-contractが正典（生成憲法は共通部のみ）
-contains "$ROOT/shared/orchestrate/delegation-contract.md" '① native subagent＝'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" '② external execution＝'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" '③ consultation＝'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" 'branch切替、commit、push、merge、rebase、reset、stash'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" '秘密・token・cookie・OAuth・private key'
-contains "$ROOT/shared/orchestrate/delegation-contract.md" 'installed→registered→verified→execution-verified'
+contains "$ROOT/shared/runbooks/02_models.md" '| 反証 | GPT-6 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |'
+contains "$ROOT/shared/runbooks/02_models.md" '| 実装 | GPT-6 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |'
 contains "$ROOT/docs/05_codex-fragments.md" 'codex mcp add codex-sidecar -- codex-sidecar-mcp'
-if rg -qi 'Workflow' "$ROOT/codex/skills/orchestrate/SKILL.md"; then
-  fail 'Codex orchestrate が Claude 専用 Workflow を実行入口としている'
-fi
 
 deploy="$ROOT/codex/skills/auto-deploy-on-push/SKILL.md"
 assert_order "$deploy" \
@@ -168,8 +109,6 @@ contains "$polish" '正本が読めない場合はエラーとして報告'
 contains "$polish" '以下の要約だけで代行しない（フォールバック禁止）'
 
 # 現行の主要 workflow 3件と Codex 正規入口を固定する。
-contains "$ROOT/README.md" "| Claude skill | \`orchestrate\` |"
-contains "$ROOT/README.md" "| Codex skill | \`orchestrate\` |"
 contains "$ROOT/README.md" "| Claude skill | \`auto-deploy-on-push\` |"
 contains "$ROOT/README.md" "| Codex skill | \`auto-deploy-on-push\` |"
 contains "$ROOT/README.md" "| Claude command | \`auto-deploy-on-push\` / \`polish-github\` |"
@@ -178,7 +117,6 @@ contains "$ROOT/README.md" "| \`/auto-deploy-on-push\` | \`\$auto-deploy-on-push
 contains "$ROOT/README.md" "| \`/polish-github\` | \`\$polish-github\` |"
 [ ! -e "$ROOT/codex/skills/audit-gauntlet" ] || fail 'retired Codex skill audit-gauntlet が残っている'
 for file in \
-  "$ROOT/codex/skills/orchestrate/SKILL.md" \
   "$ROOT/codex/skills/auto-deploy-on-push/SKILL.md" \
   "$ROOT/codex/skills/polish-github/SKILL.md"; do
   for claude_entry in AskUserQuestion EnterPlanMode ExitPlanMode TaskCreate TaskUpdate TodoWrite 'Agent(' 'Task(' 'Workflow('; do
@@ -187,7 +125,7 @@ for file in \
 done
 
 # 現行 Claude surface: 配布される skill / command / agent の入口契約だけを確認する。
-for skill in auto-deploy-on-push gpt-connector orchestrate; do
+for skill in auto-deploy-on-push gpt-connector; do
   file="$ROOT/claude/skills/$skill/SKILL.md"
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"
@@ -198,9 +136,6 @@ contains "$ROOT/claude/skills/auto-deploy-on-push/SKILL.md" 'GitHub Actions'
 contains "$ROOT/claude/skills/gpt-connector/SKILL.md" '正規MCP server IDは `gpt_connector`'
 contains "$ROOT/claude/skills/gpt-connector/SKILL.md" 'https://github.com/kitepon/gpt-connector#readme'
 contains "$ROOT/claude/skills/gpt-connector/SKILL.md" '製品の操作契約を複製しない'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '共通契約'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" '委譲契約'
-contains "$ROOT/claude/skills/orchestrate/SKILL.md" 'references/workflow-templates.md'
 
 # gpt-connectorは全harnessで同じ製品正本を指し、各面にはrouting差分だけを置く。
 for harness in claude codex grok cursor; do
@@ -239,16 +174,11 @@ contains "$ROOT/claude/agents/implementer.md" 'git commit`・push は禁止'
 contains "$ROOT/claude/agents/refuter.md" '読み取り専用'
 contains "$ROOT/claude/agents/refuter.md" '書き込み禁止'
 
-for skill in orchestrate auto-deploy-on-push polish-github gpt-connector; do
+for skill in auto-deploy-on-push polish-github gpt-connector; do
   file="$ROOT/cursor/skills/$skill/SKILL.md"
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"
 done
-contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/contract.md)'
-contains "$ROOT/cursor/skills/orchestrate/SKILL.md" '](references/shared-orchestrate/delegation-contract.md)'
-contains "$ROOT/cursor/skills/orchestrate/SKILL.md" 'GetDynamicTools'
-absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'mcp__aiterm__pty_'
-absent "$ROOT/cursor/skills/orchestrate/SKILL.md" 'spawn_agent'
 [ ! -e "$ROOT/cursor/skills-cursor" ] || fail 'cursor/skills-cursor を工場所有にした'
 for agent in implementer refuter; do
   file="$ROOT/cursor/agents/$agent.md"

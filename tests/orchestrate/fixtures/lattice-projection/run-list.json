@@ -1,1 +1,0 @@
-{"schema":"lattice.run_list.v1","active_runs":[{"run_id":"run-1","run_ref":".lattice/runs/run-1","base_sha":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","executor_adapter":"codex"}],"result_digest":"5819ea226e9ed0c1839e571900c98eb7992f27711c16326fb2e550f6a5f2516d"}

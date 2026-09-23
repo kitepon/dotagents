@@ -65,16 +65,6 @@ check() { # check <dst> <expect_src>
   fi
 }
 
-check_orchestrate_references() {
-  local skill="$1" file
-  for file in contract.md delegation-contract.md aiterm-dispatch.md recipes.md; do
-    if [ ! -r "$skill/references/shared-orchestrate/$file" ]; then
-      echo "FAIL: 配布済みorchestrateから $file を読めない: $skill"
-      fail=1
-    fi
-  done
-}
-
 verify_factory_core() {
   # 工場所有の退役配線と互換wrapperだけを確認する。製品の導入結果は再検査しない。
   if command -v codegraph >/dev/null 2>&1; then
@@ -106,76 +96,10 @@ if [ "${DOTAGENTS_FACTORY_CORE_ONLY:-0}" = 1 ]; then
   exit "$fail"
 fi
 
-# Codex の orchestrate は製品固有の実ディレクトリとし、製品中立の共通契約を参照する。
-# Claude 本文の複製や symlink への後退をここで明示的に検出する。
-codex_orchestrate="$REPO/codex/skills/orchestrate"
-claude_orchestrate="$REPO/claude/skills/orchestrate/SKILL.md"
-shared_orchestrate_contract="$REPO/shared/orchestrate/contract.md"
-shared_delegation_contract="$REPO/shared/orchestrate/delegation-contract.md"
-if [ -L "$codex_orchestrate" ] || [ ! -d "$codex_orchestrate" ]; then
-  echo "FAIL: $codex_orchestrate は製品固有の実ディレクトリではない（Claude 側への symlink を置かない）"
-  fail=1
-elif [ ! -r "$codex_orchestrate/SKILL.md" ]; then
-  echo "FAIL: $codex_orchestrate/SKILL.md を読めない"
-  fail=1
-elif [ ! -r "$shared_orchestrate_contract" ]; then
-  echo "FAIL: $shared_orchestrate_contract を読めない"
-  fail=1
-elif [ ! -r "$shared_delegation_contract" ]; then
-  echo "FAIL: $shared_delegation_contract を読めない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$codex_orchestrate/SKILL.md"; then
-  echo "FAIL: $codex_orchestrate/SKILL.md が共通契約を参照していない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$codex_orchestrate/SKILL.md"; then
-  echo "FAIL: $codex_orchestrate/SKILL.md が共有委譲契約を参照していない"
-  fail=1
-elif [ ! -r "$claude_orchestrate" ]; then
-  echo "FAIL: $claude_orchestrate を読めない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$claude_orchestrate"; then
-  echo "FAIL: $claude_orchestrate が共通契約を参照していない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$claude_orchestrate"; then
-  echo "FAIL: $claude_orchestrate が共有委譲契約を参照していない"
-  fail=1
-elif [ -e "$REPO/claude/skills/orchestrate/references/delegation-contract.md" ]; then
-  echo "FAIL: Claude 固有の旧 delegation-contract.md が残っている"
-  fail=1
-fi
-
-grok_orchestrate="$REPO/grok/skills/orchestrate/SKILL.md"
-if [ ! -r "$grok_orchestrate" ]; then
-  echo "FAIL: $grok_orchestrate を読めない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$grok_orchestrate"; then
-  echo "FAIL: $grok_orchestrate が共通契約を参照していない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$grok_orchestrate"; then
-  echo "FAIL: $grok_orchestrate が共有委譲契約を参照していない"
-  fail=1
-fi
-
-cursor_orchestrate="$REPO/cursor/skills/orchestrate/SKILL.md"
-if [ ! -r "$cursor_orchestrate" ]; then
-  echo "FAIL: $cursor_orchestrate を読めない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/contract.md)' "$cursor_orchestrate"; then
-  echo "FAIL: $cursor_orchestrate が共通契約を参照していない"
-  fail=1
-elif ! grep -Fq '](references/shared-orchestrate/delegation-contract.md)' "$cursor_orchestrate"; then
-  echo "FAIL: $cursor_orchestrate が共有委譲契約を参照していない"
-  fail=1
-fi
 if [ -e "$REPO/cursor/skills-cursor" ] || [ -L "$REPO/cursor/skills-cursor" ]; then
   echo "FAIL: $REPO/cursor/skills-cursor が存在する（Cursor内蔵面は工場所有外）"
   fail=1
 fi
-
-check_orchestrate_references "$HOME/.claude/skills/orchestrate"
-check_orchestrate_references "$codex_skills_dir/orchestrate"
-check_orchestrate_references "$HOME/.grok/skills/orchestrate"
-check_orchestrate_references "$HOME/.cursor/skills/orchestrate"
 
 # install.sh の配布グループと対称に検証
 [ -f "$REPO/claude/CLAUDE.md" ] && check "$HOME/.claude/CLAUDE.md" "$REPO/claude/CLAUDE.md"

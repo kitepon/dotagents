@@ -125,16 +125,7 @@
       "l0_pointer_phrase": "docs/factory-product-contracts.md",
       "source_text": "- **工場欠陥は重大度とPhaseで処理する（本リポ固有の恒久裁定）**: コア製品、ServerManager/BugHub、dotagents所有の連携で再現した欠陥のうち、データ損失、security・認可・秘密漏洩、公開契約・履歴破壊、回復不能、現在のcritical pathまたはPhase受入を塞ぐP0/P1だけを即時修理する。非クリティカル欠陥は最小再現・影響・所有repoを既存planのmaintenance queueへ一度記録して本筋を続け、Phaseの通常TODO後、full regression/Phase監査前のmaintenance wave一回で重複統合・再現確認・repo別修理・focused/related gate・repo別commitまで閉じる。欠陥ごとのplan、Control、ADR、独立監査、receiptは作らない。**原因と修理所有者がコア製品、ServerManager/BugHub、dotagentsのいずれにも属さない第三者製品または基盤toolchain本体の欠陥は、dotagentsのToDo、maintenance queue、H承認待ちへ登録せず完全に範囲外とする。** ただしdotagents所有adapter・設定生成・互換projectionの欠陥はdotagents欠陥であり、外部製品名が入力に現れるだけで範囲外へ逃がさない。権限外変更、コア製品のpublish・本番deploy・credential/login・意図的障害試験は、理由と必要条件を記録しH承認待ちとしてcarry overする。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- 工場の再現欠陥の重大度分類とmaintenance waveは[orchestrate契約](../shared/orchestrate/contract.md)が正である。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/delegation-contract.md",
-      "receiver_phrase": "入口とモデル指定",
-      "l0_path": "AGENTS.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "- **Codex外部エージェント限界突破**: native Codexの同時枠上限（親を含む）を工場全体の上限にしない。Codex親は`codex-sidecar`とaitermのCodex/Grok/Composerを外部実行レーンとして積極利用し、入れ子Codexを起動してよい。`gpt_connector`は相談レーンであり実装workerではない。委譲の安全・回収・受入契約は[委譲契約](shared/orchestrate/delegation-contract.md)、レーンとexecution-verified資格は[docs/02_models.md](docs/02_models.md)、Codex配線は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)を正とする。",
-      "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- Aitermの`codex_agent`/`grok_agent`/`claude_agent`はmodelとeffortを毎回明示する。live catalog不在・effort非対応は明示エラーにし、別modelへfallbackしない。external writerはinstalled→registered→verified→execution-verifiedの最終段だけに置く。"
+      "receiver_text": "- コア製品の再現欠陥は、共通憲法「応対規範」の依頼範囲の条に従って修理する。第三者製品・基盤toolchain本体の欠陥はdotagentsの修理範囲外、dotagents所有adapter・設定生成・互換projectionの欠陥は範囲内とする。自作製品の修理は製品repo、工場統合の修理はdotagentsへ分ける。"
     },
     {
       "receiver_path": "README.md",
@@ -152,7 +143,7 @@
       "l0_pointer_phrase": "README",
       "source_text": "新しい端末でこのリポを稼働させる手順。上から順に実行する。**詳細な前提・トラブルシュートは [README.md](README.md) の「他端末セットアップ・ランブック」（§0〜4）が正典**——本節はその AI 実行用の要約＋`install.sh` が触らない `settings.json` だけを補う。\n\n1. **前提の確認**（README §0）: git identity・node>=22・docker・python3（実行判定 `python3 -c \"print(1)\"`＝Windows ストア偽エイリアス回避）・基盤CLI（`claude`/`codex`/`grok`）・端末側管理対象（`caveat`/`throughline`/`spotter`/`lattice`/`markitdown`/`gpt-connector`/`aiterm-mcp`/`codex-sidecar-mcp`、macOSは`observer`、Apple Silicon Macは`aishell-mcp`）を導入し、親別matrixどおり`lattice-mcp`・`observer`・`aishell`を登録する。独立`codegraph` package／MCP／daemonは導入しない。正規MCP IDは`gpt_connector`、commandは`gpt-connector-mcp`。Oracleは互換・rollback時だけ扱う。\n2. **clone**（README §1）: `gh repo clone kitepon-rgb/dotagents ~/Developer/dotagents && cd ~/Developer/dotagents`。\n3. **既存実ファイルの退避**（README §2・重要）: install.sh は実ファイルを SKIP するので、先に tar 退避し stale な `~/.claude/CLAUDE.md` 実体を削除。飛ばすと正本化が静かに失敗する。`~/.codex/AGENTS.md` が実ファイルなら同様——中身を確認し、価値ある共通行は`shared/constitution.md`、Codex固有行は`codex/AGENTS.delta.md`へPRし、generatorで配布物を更新してからtar退避・削除する（生成物を直接編集・黙って上書き・破棄しない）。\n4. **install → Codex routing / hook 差分確認 → 製品管理hook導入 → 検証**（README §3）: 既定の `./install.sh --profile official` 後、`./bin/apply-codex-config.sh --dry-run` で変更範囲を確認する。`--apply` は routing 2キー、dotagents callout hook 4イベント、SessionStart advisory 1件、SessionStart Lattice工程表案内1件だけを backup 付きで書き込むため、対象端末への適用承認後に限る。続けてREADME §3どおりLattice 0.40.0+の`lattice hooks install --host claude|codex`とdotagentsルートの`spotter install -y`を実行し、各製品自身にhookを管理させる。最後に `./bin/verify-install.sh --profile official` を通す（FAIL 行が退避すべき実ファイルまたは不足設定を名指しする）。\n5. **`settings.json` 断片の適用**（install.sh は `settings.json` を触らない＝ここが手挿しの代替）: 正典・配線断片・実例はすべて [docs/03_settings-fragments.md](docs/03_settings-fragments.md)。AI は jq で「既存確認→バックアップ→追加分のみ→JSON 妥当性確認」の冪等マージを行う。**正本化ゲート hook と呼びかけ hook 4本（C1-C4）は全端末必須**。ライブ反映＝次の発火から有効。\n6. **Codex 断片の適用**: 正典は [docs/05_codex-fragments.md](docs/05_codex-fragments.md)（V2 routing 断片必須・`apply-codex-config --apply` の適用範囲契約・routing smoke 手順を含む）。親モデル×effort の既定はオーナー領分（AI は変更しない）。`verify-codex-agent-routing` が green になるまで本作業を渡さない。hook trust の UI 承認は別途 H を要する。\n7. **メモリ整理・自動アップデート常設**（README §4・「自動アップデート」節）: 各端末のメモリ整理と週次 `agents-update`（macOS=launchd／Linux・WSL=cron）を必須で設置。",
       "source_ref": "AGENTS.md@36b699b",
-      "receiver_text": "- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`の正本化gate・呼びかけ・advisory・Lattice Gantt・Git破壊操作hookを冪等追加する。Codex側のX1-X5は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が4イベントを限定して冪等正規化する。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。"
+      "receiver_text": "- **hook の配線**: Claude側は[docs/03_settings-fragments.md](docs/03_settings-fragments.md)が正本であり、`apply-claude-config`が`settings.json`へGit破壊操作hookを冪等追加し、廃止hookの登録を取り除く。Codex側は[docs/05_codex-fragments.md](docs/05_codex-fragments.md)に従い、`apply-codex-config`が同じGit破壊操作hookを冪等正規化し、廃止hookの登録を取り除く。Grok側は[docs/07_grok-fragments.md](docs/07_grok-fragments.md)が正本で、`~/.grok/hooks/factory.json`が工場hookを所有する。Cursor側は[docs/08_cursor-fragments.md](docs/08_cursor-fragments.md)が正本で、`apply-cursor-config`が`~/.cursor/hooks.json`へ工場hookを upsert する。trust承認は別途必要。"
     },
     {
       "receiver_path": "README.md",
@@ -225,42 +216,6 @@
       "source_text": "- **工場管理対象11製品**: 自作コア10製品＝Caveat（罠知識）・Throughline（セッション継続）・Spotter（未使用ツール監査）・Lattice（工程graphとコード構造理解）・gpt-connector（ChatGPT接続）・aiterm-mcp（PTYと外部モデル枠）・codex-sidecar（Claude親からのCodex実行）・AIShell（macOS native開発面）・Observer（親watchと監査）・ServerManager（中央運用管理）。MarkItDownは自作コアではなく、公開CLIだけを使う第三者管理製品。LatticeはCodegraphを完全吸収した正式後継で、独立Codegraphはretired／not_applicableの履歴だけを保持する。Claude Code CLI・Codex CLI・Grok Buildは基盤toolchain、Oracleはv1互換・rollback専用。BugHubはServerManager内部コンポーネント（[Lattice編入記録](docs/archive/plan_lattice-factory-integration.md)・[Observer編入記録](docs/archive/plan_observer-core-integration.md)）。",
       "source_ref": "PLAN.md@36b699b",
       "receiver_text": "- 製品数・区分・現役wire・本番endpointは[工場の現行状態](factory-current-state.md)が正。本台帳は製品ID、version入口、公開diagnosticsとschema ID、adapter projection、privacy、host/wire互換、製品文書へのpointerだけを所有する。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/delegation-contract.md",
-      "receiver_phrase": "世代交代時は",
-      "l0_path": "PLAN.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "6. **自作資産の終活**: 自作 skill / command / rule / 契約は、作成時期を問わず現行 Claude のネイティブ能力と突合してから残す。突合で負ける資産は延命せず廃止を提案する（廃止承認は常に H）。**見直しのトリガーはオーナー**——モデル世代交代の時期はオーナーだけが観測・宣言できる。資産見直しのカレンダー駆動はしない（判断の定期化は形骸化する。判断を要しない機械的衛生作業＝メモリ棚卸し・rag Lint は月次で回してよい）。見直しを安くするため、各資産の冒頭に**前提行**を1行仕込む（例: `前提: Fable級統括／Sonnet級実装者（2026-07 時点）`）——宣言が出た瞬間、次のモデルが grep で再検討対象を機械列挙できる。",
-      "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 世代交代時は、オーナーの宣言を受けて02と公認projectionを同じcommitで更新し、`grep -rn \"前提:\"`で旧世代前提の資産を洗い出してCIで一致を確認してからpushする。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/contract.md",
-      "receiver_phrase": "成果物を作ったモデルと別ベンダー",
-      "l0_path": "PLAN.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "8. **重い検証構造（多視点Find→Dedup→指摘ごとの反証→Critic）は統括レーンの契約クリティカルだけ**（頻度と範囲は`shared/orchestrate/contract.md`「監査の頻度」が正）。Phase完了時の検証は原則クロスprovider（Claude親→Codex、Codex親→Claude）。もっともらしい指摘・提案ほど反証にかけ、確信できないものは棄却する。",
-      "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- **反証は、成果物を作ったモデルと別ベンダーのモデルで行う。** 順位表の反証候補が作り手と同じベンダーなら、その候補を飛ばして次の順位を使う。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/delegation-contract.md",
-      "receiver_phrase": "具体名への判断は",
-      "l0_path": "PLAN.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "9. **モデルはバージョン固定禁止**: latest 型で指定する。役割→現行最強の対応表 **docs/02_models.md** を唯一の参照点にし、各所にモデル名を書き散らさない。役割の骨格: 統括=現行最強推論／実装=安価高速枠／反証=強推論枠／外部併走=レート非依存の他社枠。",
-      "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- skill・agents・委譲契約・スクリプトは**役割名**でモデルを指し、具体名への判断は[docs/02_models.md](../../docs/02_models.md)の順位表だけが担う。runtimeが具体値を要求する`.codex-sidecar.yml`、`claude/agents/*.md`のfrontmatter、Claude Workflowのper-call引数は公認projectionであり、別の判断正本ではない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/delegation-contract.md",
-      "receiver_phrase": "世代交代時は",
-      "l0_path": "PLAN.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "- **世代交代時**: オーナーが宣言 → 02_models.md の解決例列を更新して push → `grep -rn \"前提:\"` で旧世代前提の資産を原則6で再検討（手順の正は 02_models.md）。",
-      "source_ref": "PLAN.md@36b699b",
-      "receiver_text": "- 世代交代時は、オーナーの宣言を受けて02と公認projectionを同じcommitで更新し、`grep -rn \"前提:\"`で旧世代前提の資産を洗い出してCIで一致を確認してからpushする。"
     },
     {
       "receiver_path": "shared/runbooks/knowledge-return.md",
@@ -342,168 +297,6 @@
       "source_text": "4. **全リポを残す前提を置かない**: 終わったプロジェクトはローカルから消してよい。ただし**削除の決定は必ずオーナーに提案→承認**（AI が勝手に消さない）。安全判定は「定常運用」の終活手順に従う。",
       "source_ref": "PLAN.md@36b699b",
       "receiver_text": "分類は継続・休眠・削除候補とする。休眠は端末単位の状態であり、生死はオーナー宣言だけで決める。削除承認は常にHかつ端末ごとである。削除できるのはremoteあり、全branch push済み、dirtyゼロ、stash空、gitignoreされた貴重物なしを実走査で確認した時だけ。欠ける場合はdirtyをcommit、stashをbranch化し、gitignoreされた貴重物（.env・鍵・ローカルdocs/CLAUDE.md類）は`git add -f`で収容する。鍵・.envだけはpushせずtar退避してから再走査し、GitHub側は削除でなく`gh repo archive`を用いる。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "既存Controlでphase gateの設定漏れ",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "1. docs正本を確認してからControlを`init`し、直後・最初のTask前にriskとbehavior laneを`phase-gate-record`で固定する。phase gate未設定のまま`task-record`へ進まない。既存Controlで設定漏れを発見した場合は、実在するretained evidenceだけで順序どおりphaseを記録し、事後の推測や証拠再構成で完了へ丸めない。その後、Taskを`task-record`、Worker RunまたはConsultationをそれぞれ`worker-run-record`または`consultation-record`で記録する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "既存Controlでphase gateの設定漏れを発見した時は、実在するretained evidenceだけで順序どおりphaseを記録する。\n事後の推測や証拠再構成で完了へ丸めない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "delegation-packet-recover",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "2. Registry observationを記録し、`placement-dry-run`で候補を出す。親が候補を選び、`placement-reserve`でreservation proposalとして固定する。複数Runの完了を後続Taskの条件にする時は、親が`campaign-record`でmembers／gate／audit要否を宣言する。planned/admitted Workerの`delegation-packet`を生成してから、親自身がExecutor固有入口でdispatchする。packet保存漏れはactive Run専用のread-only `delegation-packet-recover`で回収し、同じRunを再dispatchしない。自動dispatchやExecutor stateの複製はしない。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "`delegation-packet-recover`は、packet保存漏れから同一Runを再dispatchせず相関情報を回収するため、\n`dispatched | running | unknown` Workerだけから同じprojectionを再構成する専用read-only出力である。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "status --brief",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "3. 観測・strict Worker Reportを回収し、`worker-report-import`で記録してから親がaccept/rejectを裁定する。`status --brief`でunresolved/unknown/uncollectedを確認し、timeoutや中断後は`resume-check`と同一handleで回収する。Task取消とRun cancel要求は別に記録し、外部側でcancel済みと推測しない。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "`status --brief`は`dotagents.orchestration-status-brief.v7`としてmanifest全体を複製せず、\n次だけを親の再開用に固定shapeで返す。`resumeCheck`はこのbriefを含むため\n`dotagents.orchestration-resume-check.v7`とする。v7はv6の`slug`直接投影を\n`consultation_handle`投影へ置換したprojection bumpで、v25 manifestのconsultationも\n`{ \"slug\": ... }`へ正規化して返す（silent shape変形を許さない。ADR 0045）。\n\n- Control ID、schema/revision/status、objective、last update、Task／Registry／Worker／Consultation／Campaign件数\n- Task取消件数、取消済みTask ID、未terminalのcancel要求済みWorker ID\n- nonterminal WorkerのExecutor envelope、workflow、opaque handle、最終観測、cancel要求snapshot\n- nonterminal Consultationのconnector、consultation_handle、model／effort、最終観測\n- finalizationもcancellationも未記録のTask、completed未受入Worker、Control finalization未完\n- Campaignごとのtype、all-terminal、audit-required、release有無と、未release Campaign ID\n- stateが`unknown`のRun／Consultationと、値がunknownのRegistry field\n- `dispatched | running | unknown`で所有Executorから未回収のRun／Consultation\n\n`resumeCheck`はread-onlyでglobal lockを取り、全manifestの整合を再検証してから次を返す。\n\n```text\noutcome = ready | review-required | blocked\nbrief\ncurrent_workspace\nevidence_retention\nblocking_reasons\nreview_reasons\n```\n\n- Controlのproject/common/git directory realpathとgit directory generationを再照合する。realpathまたは\n  inodeの変更は`blocked`。同じrealpath・inodeを保ったdevice番号だけの変化は、再起動やmount namespace\n  差で起こり得るため`review-required`として親へ返す。HEAD、dirty boolean、porcelain status digest、\n  bounded workspace fingerprintのinit時との差も`review-required`。dirtyのまま同じpathの内容だけが\n  変わる場合もfingerprint差として見落とさない。\n- nonterminal Workerのworkspace identity/generationを再解決する。予約中writerのHEAD変更、workspace消失、\n  generation変更は`blocked`。全worktree Workerは記録時のbounded fingerprintを持ち、read／planned Workerの\n  内容差は`review-required`。予約中writerのscope外差分、index／HEAD／ignored output driftは`blocked`、\n  scope内の作業途中は`review-required`。read Worker等のHEAD変更も親reviewへ送る。\n- `dispatched | running | unknown`のWorker／Consultationは、opaque handleまたはconsultation handleを一覧へ戻し、\n  所有Executorへの再照会が必要なため`review-required`とする。timeoutをfailedへ変換しない。\n- `file | decision` evidenceはproject rootの非symlink regular fileを合計64 MiBまで再hashする。欠損、\n  digest不一致、unsafe path、hash上限超過、読取中driftは`blocked`。現内容が変わっていても、\n  最大256 commitのgit履歴（到達可能ref）に同一path・regular blob・同一SHA-256が残る時だけ\n  `retained-history`として保持し、任意の別pathやhash不一致へfallbackしない（2026-07-17に\n  file型へも拡張。ADR 0060）。file型のpath消失＋履歴実在（archive退避等）は無音にせず\n  `evidence-retained-history-missing`として`review-required`へ出す。履歴に無いdigest（未commitの\n  dirty状態で観測した証拠）と256 commit超の深履歴は救済せず`blocked`のまま＝fail closed。\n  履歴走査は64 MiB共有budgetに含まれ、超過は`unsafe`→`blocked`へ落ちる。\n  **この救済はresume-checkの再開助言に限る**。finalization／archiveのfile型evidence検証は\n  不変Decision（docs/elastic-orchestrator-archive-decision-history.md 2026-07-15）どおり\n  厳格のまま変更しない——resume側とarchive側の非対称は意図であり、archive側の裁定変更は\n  親計画の予約裁定（archive退避とevidence解決の正典衝突）でだけ行う。bareでworktree内容を\n  検証できないlocal evidenceだけは`review-required`。\n- `command | url | executor-receipt`は内容を複製せずtype/ref/digestだけをopaque一覧へ返す。v1 dogfood以前に\n  provider URI（`native:`等）を誤って`decision`と記録したlegacy descriptorも内容をlocal fileと推測せず\n  opaqueへ分離し、`evidence-legacy-decision-ref`として`review-required`にする。成功やretainedへ丸めない。\n- `resumeCheck`は観測を更新せず、readyを捏造しない。親が所有Executorへ再照会し、既存のobserve operationで\n  新しい事実を記録する。各製品のsession/job state、report、credentialをControlへ複製しない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "release後の後続Runは、親が改めてplacement",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "4. `campaign-status`で全member terminalを確認し、audit-requiredなら証拠を揃えて親が`campaign-release`する。releaseは後続Runを自動起動しないため、親が改めてplacement／admission／dispatchする。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- release後の後続Runは、親が改めてplacement、admission、dispatchを行う。releaseをそれらの自動実行へ\n  読み替えない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "固定順で結合し、archive直前にも全Task／Control finalization文書を再hashする。過去の",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "5. 受入済みTaskを`docs/adr/<file>.md`の不変Decisionで`task-finalize-record`し、全Campaign release後に同じく不変ADRの親DecisionでControlを`control-finalize`する。追記可能なplan/TODOをaccept/reject/finalizationのDecision証拠へ使わない。過去digestの保持確認は同一repoのgit履歴にある同一path・regular blob・完全一致SHA-256だけを認め、別pathや近似一致へfallbackしない。検証・再発防止に有用な知識を正本へ還流してから`archive`する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "  固定順で結合し、archive直前にも全Task／Control finalization文書を再hashする。過去の\n  `type=decision`だけは、現内容が変わっていても同一repoの最大256 commitにある同一path・regular blob・\n  完全一致SHA-256を合計64 MiB以内で確認できれば保持済みとする。`type=file`、別path、近似一致、unsafeな\n  現path、bare repoへこの履歴保持を拡張しない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/contract.md",
-      "receiver_phrase": "役割と配置関係の機械可読な対応",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "docs/02_models.md",
-      "source_text": "役割と配置関係の機械可読な対応は`lib/orchestrate/placement-policy.mjs`\n（`dotagents.placement-policy.v1`）が固定し、fixtureがadapter catalogのconsultation laneおよび\nControl schema v26のconnector enumとの整合を検証する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "役割と配置関係の機械可読な対応は`lib/orchestrate/placement-policy.mjs` v1が固定する。自動ConsultationはAnthropic/OpenAIだけだが、これは現行配線のclosed enumであり、xAIの能力評価ではない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/composition.md",
-      "receiver_phrase": "本書でいう並列作業は",
-      "l0_path": "shared/orchestrate/delegation-contract.md",
-      "l0_pointer_phrase": "composition.md",
-      "source_text": "- **語義**: 本節の並列作業は、独立した複数ToDoを複数workerへ同時dispatchして実行することを指す。本体実装1件とその監査、親の作業とread-only観測、同一ToDo内の補助調査だけを「複数ToDoの並列化を実施した」証拠にしない。",
-      "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "本書でいう並列作業は、独立した複数ToDoを複数workerへ同時dispatchして実行することである。本体実装1件と\nその監査、親の作業とread-only観測、同一ToDo内の補助調査は、「複数ToDoの並列化を実施した」証拠にしない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/composition.md",
-      "receiver_phrase": "lattice todo independence",
-      "l0_path": "shared/orchestrate/delegation-contract.md",
-      "l0_pointer_phrase": "composition.md",
-      "source_text": "- **Lattice既定のscope**: **同一repoへ書込みするworkerを2つ以上同時に走らせる場合**は、Lattice run経由（`plan compile`→`run start`）を既定とする。交差判定を親の自前判断で行わない（witness無しの「交差しないはず」が事故の源。工程レーンは`lattice todo independence`の検証済みparallel group、run経路は`plan compile`の競合検出へ委ねる。未検査・staleは競合なしを意味しない）。**別repoへの並列・read-only workerの並列・直列委譲は対象外**。最低安全契約の「writerは専用worktree」は並列時もそのまま適用され、本項はその上に競合判定を重ねるだけで置き換えない。直列化規則そのものの正本は[合成契約](composition.md)であり、本節はその委譲側の帰結だけを持つ。",
-      "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "- Latticeが選択されている場合だけ、同一repoの複数writerを並列投入できる。**並列投入してよい根拠は、\n  `lattice todo independence`が返す検証済みparallel groupだけとする**。`unknown`（未検査）・`stale`・\n  記録なしは「競合が無い」を意味しない——依存線の不在は順序制約の無申告であって、書き込み境界の\n  非干渉ではないからである（Lattice ADR 0127）。判定材料が無い組は直列側へ倒す。\n  判定を宣言するのはToDoごとのwitness setであり、その誠実さが判定の上限になる。\n  runtime面（`plan compile`の競合検出）は同じ境界規律をrun経路で適用する面であり、\n  工程レーンの根拠はtodo independenceが持つ。"
-    },
-    {
-      "receiver_path": "shared/runbooks/lattice-workflow.md",
-      "receiver_phrase": "既存runとの照合と引継ぎ",
-      "l0_path": "shared/orchestrate/delegation-contract.md",
-      "l0_pointer_phrase": "lattice-workflow runbook",
-      "source_text": "- **既存runとの照合**: 着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、active runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぎ、引き継がない場合は`run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し新規runを作る（無言の放置・無言の二重起動の両方を禁じる）。`run`面の継続・close・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない——この面の違いを混同しない。",
-      "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "### 既存runとの照合と引継ぎ\n\n上記の適用対象でrunを使う時は、着手前に対象repoのrun store（現契約ではrepo配下・端末ローカル）を`run status`／`run observe`で確認し、\nactive runに属するTODOを二重dispatchしない。中断runは`run resume`で同一handleを引き継ぐ。引き継がない場合は\n`run abandon --reason <理由>`で明示退役してからControl記録またはplanへ記録し、新規runを作る。`run`面の継続・\nclose・abandonは現CLI（`run resume`／`run close`／`run abandon`）に実装済みであり、`todo`面はこれらを持たない。\nこの面の違いを混同しない。"
-    },
-    {
-      "receiver_path": "docs/adr/0113-composable-orchestration-invariants.md",
-      "receiver_phrase": "fail-closed時の直列化はこのDecisionの一部",
-      "l0_path": "shared/orchestrate/delegation-contract.md",
-      "l0_pointer_phrase": "ADR 0113",
-      "source_text": "- Latticeが使えない環境・fail closedで止まった場合は、並列を諦めて直列へ落とすのが正で、自前判定での並列強行を回避策にしない。これはADR 0113 Decision 4で不変Decisionとして確定済みのsupported degraded modeであり（旧「L7 waveで硬化を裁定する」という留保はこの裁定で失効した）、断念した事実と理由を統括レーンならControl記録、通常レーンならplanまたは工程正本へ一度残す。",
-      "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "**fail-closed時の直列化はこのDecisionの一部である**: Latticeが利用不能またはfail closed（例:\n`INVALID_RUN_STORE`）の時、同一repoへの複数writer並列は明示的に断念して直列化する。これは暗黙の\nfallbackではなく、機能と安全性を明示したsupported degraded modeであり、理由をControl記録またはplanへ\n残す。自前のscope交差推測による並列強行を回避策にしない。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/control-record.md",
-      "receiver_phrase": "import前に親が受入差分を返した時は",
-      "l0_path": "shared/orchestrate/delegation-contract.md",
-      "l0_pointer_phrase": "control-record.md",
-      "source_text": "`reject`は成果物の受入棄却であって、Taskの取消・終了・blocker認定ではない。ただし正式な`worker-report-import → reject`はそのWorker Runを終端する。report import前に親が修正可能な受入差分を返した時は、Workerは同じRun相関とexecutor handleで再作業し、完了報告を撤回しただけで停止しない。import後にrejectした時は、同じTaskとassignmentの新しいretry Runを作り、新しいPacket／Report相関で再配置する。rejected Runの書換えや再dispatchは禁止する。契約矛盾、権限不足、外部状態待ちなど具体的blockerがある時だけ、その証拠と未充足条件を統括へ返す。Taskを取消す場合は、統括がrejectとは別のDecisionとして明示する。",
-      "source_ref": "shared/orchestrate/delegation-contract.md@0b54f64",
-      "receiver_text": "import前に親が受入差分を返した時は、Workerは同一Run相関とexecutor handleで再作業する。import後にrejectした時は、\n同じTaskとassignmentの新しいretry Runを作り、新しいPacket／Report相関で再配置する。完了報告の撤回だけで\n停止したり、既存Runを書き換えたりしない。"
-    },
-    {
-      "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "委譲・並列化・反証を使うかは",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "共通憲法",
-      "source_text": "**本正典を適用するのは統括レーンだけ**（ADR 0061）: ①計画に中断が組み込まれている②受入が多段に連鎖する③複数repoの書込みを調整する④裁定の検証可能な証跡が必要、のいずれかが**着手時点の事実として確定**している戦役（campaign）。判定材料は着手時点で確定している作業の構造だけ。重装備（Packet/Report・Control記録）が要るのはwriter委譲・受入裁定・Phase gate・H操作の4関節だけで、campaign単位のdocs計画正本は統括レーン共通の前提であり、F/A/H宣言・Control Record・ADR・独立監査・receipt/evidence文書もこの4関節だけのもの。それ以外（直接処理・read-only呼び出し・queueで束ねた小粒消化）は通常レーンと同じ軽さで進め、証跡はgate evidenceとdocsに残す。技法（fan-out・重複統合・反証・網羅性Critic）はどのレーンでも使え、統括レーン専用はControl儀式（Elastic Control lifecycle、Packet/Report、受入・回収契約）だけ。対象projectの`docs/`にあるcampaign計画正本を最初に確認し、実行TODOの正本はtyped discovery（憲法「計画文書の作法」）で決める。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- 委譲・並列化・反証を使うかは、AIが任務を見て自分で決める。オーナーの指示を待たない。"
-    },
-    {
-      "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "確信できない指摘は棄却する",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "共通憲法",
-      "source_text": "1. 独立した反証で実在性と価値を確認するのは、契約クリティカル（F相当：認可・トランザクション・公開契約・依存方向・本番操作・履歴修復）な変更・監査指摘・設計判断だけ。それ以外は統括自身の確認で足りる。確信できない指摘は棄却する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **確信できない指摘は棄却する。** 反対仮説は自分で確認すれば足りる。"
-    },
-    {
-      "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "高リスク操作は目的・影響・戻し方",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "共通憲法",
-      "source_text": "5. 外部状態を変更する前には、目的・影響・rollback を説明し、H 承認が必要な操作は承認後だけ実行する。失敗を fallback で隠さない。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "高リスク操作は目的・影響・戻し方を短く説明してから自分で行う。"
-    },
-    {
-      "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "並行エージェント作業中のcommit",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "共通憲法",
-      "source_text": "- 安全網より先に本体を変更しない。反証なしの監査指摘を実装へ流さず、並行作業中に裸のcommitで他者の変更を巻き込まない。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "- **並行エージェント作業中のcommitはpathspecを明示する**（対象だけ`git add`して直後に`git status`を確認、または`git commit -- <paths>`）。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/contract.md",
-      "receiver_phrase": "高リスク操作の説明義務はレーンに関係なく適用する。",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "高リスク操作の説明義務はレーンに関係なく適用する。",
-      "source_text": "H 承認が必要な操作は承認後だけ実行する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "高リスク操作の説明義務はレーンに関係なく適用する。承認待ちにしない。"
-    },
-    {
-      "receiver_path": "shared/constitution.md",
-      "receiver_phrase": "フォールバック禁止",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "共通憲法",
-      "source_text": "失敗を fallback で隠さない。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "4. **フォールバック禁止**: 失敗したら静かに別経路でごまかさず、エラーを出す。原因が追えなくなる実装をしない。やむを得ずフォールバックする場合は、発動条件・記録方法・ユーザーへの見え方を明示する。"
-    },
-    {
-      "receiver_path": "shared/orchestrate/contract.md",
-      "receiver_phrase": "通常レーンはControl Recordを使わない。",
-      "l0_path": "shared/orchestrate/contract.md",
-      "l0_pointer_phrase": "通常レーンはControl Recordを使わない。",
-      "source_text": "それ以外はすべて通常レーンとし、Control Recordを使わない。短い成功条件、focused test、対象限定commitで閉じる。通常レーンでもWorkerへのコーディング委譲は可能で、Packetなしの明確な指示と親のdiff・test確認で受け入れる。途中で統括条件が揃ったら原子的作業を止めて昇格し、既存active Controlに属する作業を通常レーンへ降格しない。H操作の承認と高リスク操作の説明義務はレーンに関係なく適用する。",
-      "source_ref": "shared/orchestrate/contract.md@0b54f64",
-      "receiver_text": "通常レーンはControl Recordを使わない。短い成功条件、focused test、対象限定commitで閉じる。通常レーンでもWorkerへのコーディング委譲は可能で、Packetなしの明確な指示と親のdiff・test確認で受け入れる。途中で統括条件が揃ったら原子的作業を止めて昇格し、既存active Controlに属する作業を通常レーンへ降格しない。高リスク操作の説明義務はレーンに関係なく適用する。承認待ちにしない。"
     }
   ]
 }

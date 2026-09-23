@@ -39,7 +39,7 @@
 
 ## 親別connector
 
-外部実行connectorの段階とwriter制限は[モデル配置](02_models.md)が正である。この表は有効化の期待だけを持ち、製品の操作手順を持たない。
+外部実行connectorの段階とwriter制限は[モデル配置](../shared/runbooks/02_models.md)が正である。この表は有効化の期待だけを持ち、製品の操作手順を持たない。
 
 | product | Claude親 | Codex親 | Grok親 | Cursor親 |
 |---|---|---|---|---|

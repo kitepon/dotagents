@@ -130,13 +130,13 @@ test("実repoの共通契約とhost固有契約を交差させず保持する", 
   assert.match(common, /project側を優先する/);
   assert.match(common, /\*\*通常のpushを完了に含めるのは次のrepoだけ\*\*/);
   assert.match(common, /\*\*shellはhost標準のシェルを既定にする。\*\*/);
-  assert.match(common, /orchestrate skill同梱の`02_models\.md`/);
+  assert.match(common, /02 runbook（各hostのrunbooksディレクトリの`02_models\.md`）/);
   assert.match(common, /公式`typesafe-ai` skill/);
   assert.match(common, /\*\*各製品は自身のソース・状態・schema・migration・正規診断を所有する。\*\*/);
   assert.match(common, /\*\*dotagentsの製品連携責務は/);
   // 規範は判断だけを持ち、出典・経緯・dotagents内相対パスを持たない
   assert.doesNotMatch(common, /オーナー裁定 20|実被弾|ADR \d|物理ゲート/);
-  assert.doesNotMatch(common, /`docs\/02_models\.md`|`shared\/orchestrate\//);
+  assert.doesNotMatch(common, /`docs\/02_models\.md`|shared\/orchestrate|orchestrate skill/);
   assert.doesNotMatch(common, /spawn_agent|agent_type|fork_turns/);
 
   // host deltaはhost固有の差分だけを持ち、共通契約を重複保持しない

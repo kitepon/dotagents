@@ -70,6 +70,17 @@ remove_retired_link "$HOME/.agents/skills/audit-gauntlet" \
   "$HERE/codex/skills/audit-gauntlet" "$HOME/Developer/dotagent/codex/skills/audit-gauntlet"
 remove_retired_link "$HOME/.codex/skills/audit-gauntlet" \
   "$HERE/codex/skills/audit-gauntlet" "$HOME/Developer/dotagent/codex/skills/audit-gauntlet"
+# 廃止したorchestrate skill。委譲の判断はAIに任せ、モデル選定は02 runbookとJevが担う。
+remove_retired_link "$HOME/.claude/skills/orchestrate" \
+  "$HERE/claude/skills/orchestrate" "$HOME/Developer/dotagent/claude/skills/orchestrate"
+remove_retired_link "$HOME/.agents/skills/orchestrate" \
+  "$HERE/codex/skills/orchestrate" "$HOME/Developer/dotagent/codex/skills/orchestrate"
+remove_retired_link "$HOME/.codex/skills/orchestrate" \
+  "$HERE/codex/skills/orchestrate" "$HOME/Developer/dotagent/codex/skills/orchestrate"
+remove_retired_link "$HOME/.grok/skills/orchestrate" \
+  "$HERE/grok/skills/orchestrate" "$HOME/Developer/dotagent/grok/skills/orchestrate"
+remove_retired_link "$HOME/.cursor/skills/orchestrate" \
+  "$HERE/cursor/skills/orchestrate" "$HOME/Developer/dotagent/cursor/skills/orchestrate"
 
 # Claude
 mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/agents"
@@ -191,17 +202,18 @@ remove_retired_link \
   "$HOME/.local/bin/verify-observer-package" \
   "$HERE/bin/verify-observer-package.sh" \
   "$HOME/Developer/dotagent/bin/verify-observer-package.sh"
-# 廃止した呼びかけ・強制hook。settings側の登録は apply-*-config が外す。
+# 廃止した呼びかけ・強制hookとorchestrate用CLI。settings側のhook登録は apply-*-config が外す。
 for retired_hook in \
   boundary-gate-hook codex-callout-hook codex-lattice-gantt-hook \
   cursor-delegation-gate-hook cursor-lattice-gantt-hook cursor-orchestrate-advisory-hook cursor-todo-gate-hook \
   delegation-gate-hook grok-delegation-gate-hook grok-lattice-gantt-hook grok-onset-gate-hook \
   grok-orchestrate-advisory-hook grok-plan-gate-hook grok-todo-gate-hook \
-  lattice-gantt-hook onset-gate-hook orchestrate-advisory-hook plan-gate-hook todo-gate-hook; do
+  lattice-gantt-hook onset-gate-hook orchestrate-advisory-hook plan-gate-hook todo-gate-hook \
+  orchestrate-run render-orchestrate-skill-references; do
   remove_retired_link \
     "$HOME/.local/bin/$retired_hook" \
-    "$HERE/bin/$retired_hook.sh" \
-    "$HOME/Developer/dotagent/bin/$retired_hook.sh"
+    "$HERE/bin/$retired_hook.sh" "$HERE/bin/$retired_hook.mjs" \
+    "$HOME/Developer/dotagent/bin/$retired_hook.sh" "$HOME/Developer/dotagent/bin/$retired_hook.mjs"
 done
 for f in "$HERE/bin"/*.sh; do
   [ -e "$f" ] || continue

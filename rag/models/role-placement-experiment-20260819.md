@@ -77,4 +77,4 @@ finderが全滅したB1/B6/B8も、claimとして反証工程へ載せると回�
 
 ## 関連リンク
 
-- [[../../docs/02_models.md]]
+- [[../../shared/runbooks/02_models.md]]

@@ -99,6 +99,6 @@ codex-sidecar は端末 config の `model`/`model_provider`/`model_reasoning_eff
 
 ## 関連
 
-- [[../../docs/02_models.md]] — 役割→ティア×effort 決定表（この記事の要点を反映済み）
+- [[../../shared/runbooks/02_models.md]] — 役割→ティア×effort 決定表（この記事の要点を反映済み）
 - [[../../docs/05_codex-fragments.md]] — Codex 端末設定断片（V2 role routing・実効値ゲート・再ピン問題・AGENTS.override.md シャドー）
 - [[../../docs/archive/plan_gpt56-rewiring.md]] — 本記事の元になった設計・実装完了記録

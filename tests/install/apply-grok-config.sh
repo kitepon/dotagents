@@ -22,7 +22,7 @@ assert_link() {
 }
 assert_link "$HOME_FIXTURE/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$HOME_FIXTURE/.grok/runbooks" "$ROOT/shared/runbooks"
-assert_link "$HOME_FIXTURE/.grok/skills/orchestrate" "$ROOT/grok/skills/orchestrate"
+assert_link "$HOME_FIXTURE/.grok/skills/polish-github" "$ROOT/grok/skills/polish-github"
 assert_link "$HOME_FIXTURE/.grok/agents/refuter.md" "$ROOT/grok/agents/refuter.md"
 assert_link "$HOME_FIXTURE/.grok/hooks/factory.json" "$ROOT/grok/hooks/factory.json"
 

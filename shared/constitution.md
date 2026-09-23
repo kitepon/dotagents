@@ -54,7 +54,7 @@ Claude・Codex・Grok・Cursorが全端末・全プロジェクトで従う共�
 ## 委譲とオーケストレーション
 
 - 委譲・並列化・反証を使うかは、AIが任務を見て自分で決める。オーナーの指示を待たない。
-- 子（相談役・外部agentを含む）のハーネス×モデル×effortは、任務とorchestrate skill同梱の`02_models.md`（`~/.<host>/skills/orchestrate/references/shared-orchestrate/02_models.md`、Codexは`~/.agents/skills/…`）をJevに渡して選ばせ、その結果で呼ぶ。判断基準は02の順位表だけとし、Jevにも親にも自前の知識で選ばせない。Jevは公式`typesafe-ai` skillで呼び、キーは`~/.config/dotagents/credentials/typesafe/api.env`から読んで値を出力しない。親自身のモデル×effortはオーナーが決める。新しいモデル候補を現状維持より不利に扱わない。02を編集する時だけ、先に model-ranking-authoring runbook を読む。
+- 子（相談役・外部agentを含む）のハーネス×モデル×effortは、任務と02 runbook（各hostのrunbooksディレクトリの`02_models.md`）をJevに渡して選ばせ、その結果で呼ぶ。判断基準は02の順位表だけとし、Jevにも親にも自前の知識で選ばせない。Jevは公式`typesafe-ai` skillで呼び、キーは`~/.config/dotagents/credentials/typesafe/api.env`から読んで値を出力しない。親自身のモデル×effortはオーナーが決める。新しいモデル候補を現状維持より不利に扱わない。02を編集する時だけ、先に model-ranking-authoring runbook を読む。
 - 子には目的・完了条件・書き込んでよい範囲を渡し、成果は親が実物で受け入れる。
 - 同じrepoへ並列に書く子は、worktreeを分ける。
 - Latticeの工程管理（plan／ToDo／run）は、オーナーが指示した時と、オーナー承認済みの進行中Lattice工程を継続する時だけ使う。手順は lattice-workflow runbook に従う。コード索引としてのLattice sensorは自由に使ってよい。
