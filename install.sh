@@ -202,6 +202,10 @@ remove_retired_link \
   "$HOME/.local/bin/verify-observer-package" \
   "$HERE/bin/verify-observer-package.sh" \
   "$HOME/Developer/dotagent/bin/verify-observer-package.sh"
+remove_retired_link \
+  "$HOME/.local/bin/configure-windows-wsl-ssh" \
+  "$HERE/bin/configure-windows-wsl-ssh.sh" \
+  "$HOME/Developer/dotagent/bin/configure-windows-wsl-ssh.sh"
 # 廃止した呼びかけ・強制hookとorchestrate用CLI。settings側のhook登録は apply-*-config が外す。
 for retired_hook in \
   boundary-gate-hook codex-callout-hook codex-lattice-gantt-hook \
