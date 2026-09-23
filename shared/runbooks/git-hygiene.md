@@ -12,10 +12,6 @@
 - 消費者ゼロの確認はgrep単独にしない。grepはバイナリ判定したファイルを黙って飛ばすので、Lattice sensor等の索引を併用する。
 - 削除・移行・remote乗換の前に、statusに出ない資産（stash、gitignore済みの貴重物、shallow clone等）を疑う。個別の罠はCaveatが正。
 
-## sync-sweep
-
-プロジェクト作業は`bin/sync-sweep.sh`の台帳がgreenの状態から始める。掃引台帳はcampaign単位で`docs/`に起票し、完了後はarchiveする。
-
 ## リポの終活
 
 - 継続・休眠・削除候補に分ける。生死はオーナーの宣言だけで決め、削除の承認は端末ごとにオーナーが出す。
