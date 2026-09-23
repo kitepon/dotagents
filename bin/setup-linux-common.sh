@@ -557,7 +557,10 @@ backup_managed_config() {
   local backup_dir="$HOME/Archives"
   local backup_file
   mkdir -p "$backup_dir"
-  backup_file="$(mktemp "$backup_dir/dotagents-pre-$SETUP_VARIANT-setup-$(date +%Y%m%d-%H%M%S)-XXXXXX.tar.gz")"
+  # BSD mktempは末尾以外のXを置換しないため、Xを末尾にして作ってから拡張子を付ける。
+  backup_file="$(mktemp "$backup_dir/dotagents-pre-$SETUP_VARIANT-setup-$(date +%Y%m%d-%H%M%S)-XXXXXX")"
+  mv "$backup_file" "$backup_file.tar.gz"
+  backup_file="$backup_file.tar.gz"
   tar -czf "$backup_file" -C "$HOME" "${paths[@]}"
 }
 
