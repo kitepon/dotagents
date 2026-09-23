@@ -101,16 +101,17 @@ test('転送失敗と不正な内容ではキーを保存しない', async (t) =
 test('Windowsではキー書込前に所有者ACLを適用し、失敗時は保存しない', async (t) => {
   const home = await temporaryHome(t);
   const calls = [];
+  const gitSsh = 'C:\\Program Files\\Git\\usr\\bin\\ssh.exe';
   const execute = async (command, args, options) => {
     calls.push(command);
-    if (command === 'ssh') return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
+    if (command === gitSsh) return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
     assert.equal(command, 'pwsh.exe');
     assert.equal(options.env.DOTAGENTS_FACTORY_ACL_TARGET, dirname(typeSafeKeyPath(home)));
     assert.match(args.at(-1), /SetAccessRuleProtection/u);
     await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
     return { ok: false };
   };
-  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute, platform: 'win32' }), /TYPESAFE_CREDENTIAL_ACL_FAILED/u);
-  assert.deepEqual(calls, ['ssh', 'pwsh.exe']);
+  await assert.rejects(loadTypeSafeKey({ home, env: { ProgramFiles: 'C:\\Program Files' }, execute, platform: 'win32' }), /TYPESAFE_CREDENTIAL_ACL_FAILED/u);
+  assert.deepEqual(calls, [gitSsh, 'pwsh.exe']);
   await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
 });

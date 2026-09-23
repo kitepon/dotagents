@@ -55,6 +55,10 @@ if ($PlanOnly) {
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $GitBash = Join-Path $env:ProgramFiles 'Git\bin\bash.exe'
+# Windows標準のssh.exeは、SSH越しの非対話sessionで出力を受け取ると終了しない（Win32-OpenSSH #1769）。
+# 工場はGit for Windows同梱のOpenSSHだけを使う。
+$GitSsh = Join-Path $env:ProgramFiles 'Git\usr\bin\ssh.exe'
+$GitSshKeygen = Join-Path $env:ProgramFiles 'Git\usr\bin\ssh-keygen.exe'
 $ConfigPath = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter\config.json'
 $StateDirectory = Join-Path $env:LOCALAPPDATA 'dotagents\windows-native-factory-setup'
 $ReceiptPath = Join-Path $StateDirectory 'latest-receipt.json'
@@ -114,10 +118,10 @@ function Ensure-WindowsPrerequisites {
   Ensure-WingetCommand -Command 'make' -PackageId 'ezwinports.make'
   Ensure-WingetCommand -Command 'shellcheck' -PackageId 'koalaman.shellcheck'
   Ensure-WingetCommand -Command 'rg' -PackageId 'BurntSushi.ripgrep.MSVC'
-  foreach ($sshCommand in @('ssh', 'ssh-keygen')) {
-    if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+  foreach ($sshCommand in @($GitSsh, $GitSshKeygen)) {
+    if (-not (Test-Path -LiteralPath $sshCommand -PathType Leaf)) {
       Invoke-WingetPackage -Id 'Git.Git' -Upgrade
-      if (-not (Get-Command $sshCommand -ErrorAction SilentlyContinue)) {
+      if (-not (Test-Path -LiteralPath $sshCommand -PathType Leaf)) {
         throw "Git.Git was installed but required OpenSSH command $sshCommand is unavailable"
       }
     }
@@ -220,7 +224,7 @@ function Test-MainServerSsh {
   $previousPreference = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
   try {
-    $output = & ssh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
+    $output = & $GitSsh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
     $code = $LASTEXITCODE
   } finally {
     $ErrorActionPreference = $previousPreference
@@ -237,7 +241,7 @@ function Ensure-MainServerKnownHost([string]$SshDirectory) {
     $updated = @($existing | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) + $MainServerHostKey
     Write-Utf8NoBom -Path $knownHosts -Content (($updated -join "`n") + "`n")
   }
-  $fingerprint = (& ssh-keygen -lf $knownHosts -F $MainServerHost 2>$null) -join "`n"
+  $fingerprint = (& $GitSshKeygen -lf $knownHosts -F $MainServerHost 2>$null) -join "`n"
   if ($LASTEXITCODE -ne 0 -or $fingerprint -notmatch [regex]::Escape($MainServerHostKeyFingerprint)) {
     throw "main-server pinned host key readback failed: $MainServerHostKeyFingerprint"
   }
@@ -263,11 +267,12 @@ function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) 
   $current = if (Test-Path -LiteralPath $configPath -PathType Leaf) { Get-Content -Raw -LiteralPath $configPath } else { '' }
   $pattern = "(?ms)^$([regex]::Escape($begin))\r?\n.*?^$([regex]::Escape($end))\r?\n?"
   $withoutManaged = ([regex]::Replace($current, $pattern, '')).TrimEnd()
-  $next = if ([string]::IsNullOrWhiteSpace($withoutManaged)) { "$managed`n" } else { "$withoutManaged`n`n$managed`n" }
+  # sshは最初に一致した値を採るため、手書きの同名Hostより前に管理blockを置く。
+  $next = if ([string]::IsNullOrWhiteSpace($withoutManaged)) { "$managed`n" } else { "$managed`n`n$($withoutManaged.TrimStart())`n" }
   Write-Utf8NoBom -Path $configPath -Content $next
   Set-OwnerOnlyAcl $configPath
 
-  $effective = & ssh -G $MainServerAlias 2>$null
+  $effective = & $GitSsh -G $MainServerAlias 2>$null
   $expected = @(
     "hostname $MainServerHost",
     "user $MainServerUser",
@@ -278,7 +283,7 @@ function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) 
   foreach ($entry in $expected) {
     if ($effective -notcontains $entry) { throw "main-server SSH config readback is missing: $entry" }
   }
-  $directEffective = & ssh -G $MainServerHost 2>$null
+  $directEffective = & $GitSsh -G $MainServerHost 2>$null
   foreach ($entry in $expected) {
     if ($directEffective -notcontains $entry) { throw "direct-IP main-server SSH config readback is missing: $entry" }
   }
@@ -333,7 +338,7 @@ function Ensure-MainServerSsh {
   New-Item -ItemType Directory -Force -Path $sshDirectory | Out-Null
 
   if (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -and -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
-    & ssh-keygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $privateKey
+    & $GitSshKeygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $privateKey
     if ($LASTEXITCODE -ne 0) { throw 'Failed to generate the permanent main-server SSH key' }
   } elseif (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -or -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
     throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half'
@@ -344,7 +349,7 @@ function Ensure-MainServerSsh {
   if ($publicKey -notmatch "^ssh-ed25519 [A-Za-z0-9+/]+={0,3} $([regex]::Escape($MainServerKeyComment))$") {
     throw "Unexpected permanent main-server public key format or comment: $publicKeyPath"
   }
-  $derived = (& ssh-keygen -y -P '' -f $privateKey 2>$null).Trim()
+  $derived = (& $GitSshKeygen -y -P '' -f $privateKey 2>$null).Trim()
   if ($LASTEXITCODE -ne 0 -or $publicKey.Split(' ')[1] -ne $derived.Split(' ')[1]) {
     throw 'The permanent main-server key is passphrase-protected or its public half does not match'
   }
@@ -357,7 +362,7 @@ function Ensure-MainServerSsh {
   foreach ($attempt in 1..3) {
     if (-not (Test-MainServerSsh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
   }
-  $directOutput = & ssh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
+  $directOutput = & $GitSsh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
   if ($LASTEXITCODE -ne 0 -or $directOutput -ne 'dotagents-main-server-direct-ssh-ok') {
     throw 'Permanent direct-IP main-server SSH verification failed'
   }

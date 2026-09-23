@@ -60,13 +60,14 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /PSEdition -ne 'Core'.*PSVersion\.Major -lt 7.*official GitHub release win-x64 MSI.*machine scope/su);
   assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
-  assert.match(source, /function Ensure-WindowsPrerequisites.*ssh.*ssh-keygen.*Git\.Git/su);
-  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*ssh-keygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
+  assert.match(source, /\$GitSsh = .*Git\\usr\\bin\\ssh\.exe.*\$GitSshKeygen = .*function Ensure-WindowsPrerequisites.*\$GitSsh, \$GitSshKeygen.*Git\.Git/su);
+  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*\$GitSshKeygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
   assert.doesNotMatch(source, /ssh-keyscan/u);
+  assert.doesNotMatch(source, /& ssh(?:-keygen)? /u);
   assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*pinned host key readback/su);
-  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*ssh -G.*direct-IP/su);
+  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*\$managed`n`n.*\$GitSsh -G.*direct-IP/su);
   assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
-  assert.match(source, /ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
+  assert.match(source, /\$GitSsh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
@@ -104,7 +105,7 @@ test('固定ホスト鍵の反復配置は未認証接続を作らず同じ内�
   const root = await mkdtemp(join(tmpdir(), 'dotagents-host-key-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const body = source.slice(source.indexOf('function Ensure-MainServerKnownHost'), source.indexOf('function Ensure-MainServerSshConfig'));
-  const constants = source.split('\n').filter(line => /^\$MainServerHost(?:Key|KeyFingerprint)? =/u.test(line)).join('\n');
+  const constants = source.split('\n').filter(line => /^\$(?:MainServerHost(?:Key|KeyFingerprint)?|GitSshKeygen) =/u.test(line)).join('\n');
   const script = `$ErrorActionPreference = 'Stop'
 ${constants}
 function ssh-keyscan { throw '未認証スキャンを実行した' }
