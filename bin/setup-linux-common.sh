@@ -33,7 +33,7 @@ esac
 REPORT_CONFIG="${FACTORY_REPORTER_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/factory-reporter.json}"
 FACTORY_CREDENTIAL_FILE="${FACTORY_CREDENTIAL_FILE:-${XDG_CONFIG_HOME:-$HOME/.config}/dotagents/credentials/factory.token}"
 MAIN_SERVER_SSH_TARGET="${MAIN_SERVER_SSH_TARGET:-kite@192.168.1.2}"
-RABBIT_SSH_HOST="${RABBIT_SSH_HOST:-192.168.1.55}"
+RABBIT_SSH_HOST="${RABBIT_SSH_HOST:-192.168.1.5}"
 REPORT_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/dotagents/factory-reporter-v9"
 UPDATE_LOG="${XDG_STATE_HOME:-$HOME/.local/state}/agents-update/agents-update.log"
 
