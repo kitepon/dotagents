@@ -24,6 +24,15 @@ test('gpt-connectorの診断項目追加を許し、製品が返した失敗を�
   assert.equal(projected.checks[0].status, 'fail');
   assert.ok(!JSON.stringify(projected).includes('/private/path'));
 });
+test('gpt-connectorの未ログインは製品非対応として記録し、障害checkにしない', () => {
+  const diagnostic = { package_version: '1.2.3', overall: 'not_ready', state: { schema: '2', migration: 'current' },
+    checks: [{ id: 'auth', status: 'not_ready', reason: 'auth_required' },
+      { id: 'runtime_bridge', status: 'not_ready', reason: 'bridge_failed' }] };
+  const projected = projectGptConnectorFactory(diagnostic, null, false, '2026-09-25T00:00:00.000Z');
+  assert.equal(projected.compatibility_status, 'incompatible');
+  assert.deepEqual(projected.checks[0], { check_id: 'auth', status: 'skipped', reason_code: 'auth_required' });
+  assert.equal(projected.checks[1].status, 'fail');
+});
 test('旧wireのgpt投影も実発生版を保持し、unknownは版欠落として扱う', () => {
   const diagnostic = { package_version: '3.0.0', overall: 'ready', state: { schema: '1.0', migration: 'current' }, checks: [] };
   for (const version of ['1.2.3', 'unknown']) {
