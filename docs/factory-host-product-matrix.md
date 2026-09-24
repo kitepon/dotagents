@@ -23,7 +23,7 @@
 | Throughline | required | required | required | required | high |
 | Spotter | required | required | required | required | high |
 | MarkItDown | required | required | required | required | high |
-| gpt-connector | required（live面supported） | required（live面unsupported） | required（live面unsupported） | required（live面unsupported） | high（presence。live面はMacのみ） |
+| gpt-connector | required（live面supported） | required（live面supported） | required（live面supported） | required（live面supported） | high |
 | aiterm-mcp | required | required | required | required | high |
 | Lattice | required | required | required | required | high |
 | AIShell | required（対応Mac） | unsupported | unsupported | unsupported | high（対応Macのみ） |
@@ -46,7 +46,7 @@
 | Throughline | hook/skill/CLI required | hook/skill/CLI required | hook/CLI required | hook/CLI required |
 | Spotter | 対象projectだけrequired | 対象projectだけrequired | unsupported | 対象projectだけrequired |
 | MarkItDown | CLI required | CLI required | not_applicable | not_applicable |
-| gpt-connector | MCP contract required。live面は対応Macだけsupported、非Darwinは`unsupported` | 同左 | 同左 | 同左 |
+| gpt-connector | MCP contract required。live面は製品診断で判定する | 同左 | 同左 | 同左 |
 | aiterm-mcp | MCP required | MCP required | MCP required | MCP required |
 | Lattice | MCP required | MCP required | MCP required | MCP required |
 | AIShell | MCP required（対応Mac） | MCP required（対応Mac） | MCP required（対応Mac） | MCP required（対応Mac） |
