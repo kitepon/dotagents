@@ -11,8 +11,9 @@
 
 ## 一撃展開と更新
 
-- 工場の標準セットアップと定期更新が、上流Gitのmain、jev-ultrafastのuv lock、agent-desktopのnpm latestと公開Skill installerを呼ぶ。旧版固定・自動降格はしない。agent-desktopはMacだけに入れ、他OSはunsupportedとして報告する。
-- 導入結果は公式installerの終了結果で決め、定期報告は公開versionを読む。定期診断でGUIを起動しないので、versionが取れてもGUI操作は未検証として記録する。
+- 工場の標準セットアップと定期更新が、上流Gitのmain、jev-ultrafastのuv lock、agent-desktopのnpm latestと公開Skill installerを呼ぶ。agent-desktopはMacだけに入れ、他OSはunsupportedとして報告する。
+- オーナーが特定端末のfork導入を明示した場合は、その端末の`~/.config/dotagents/agent-desktop-fork.json`にGitHubの`repository`と40桁の`revision`を置く。更新入口は公式npm版を外し、Cargoで指定revisionを`~/.local/bin`へ導入する。指定に不備や導入失敗があれば停止し、公式版へ自動で戻さない。
+- 導入結果は選択したpackage managerの終了結果で決め、定期報告は公開versionを読む。定期診断でGUIを起動しないので、versionが取れてもGUI操作は未検証として記録する。
 - 上流は本体・操作・OS対応・製品設定を、dotagentsは公式入口の呼出し・工場キーの配布・結果の記録を所有する。上流の不具合を工場のpatchやwrapperで補修しない。
 - 上流のコードや原文のSkillをdotagentsへ複製・改変せず、独自のwrapper・工程管理・判断や確認のAPIを作らない。観測・選択・操作の繰り返しは上流のJevループへ渡す。
 

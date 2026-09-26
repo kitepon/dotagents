@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setupJevProduct } from '../../lib/factory/jev-setup.mjs';
@@ -42,6 +42,27 @@ test('デスクトップはMacだけ、npm latestと上流Skillを導入する',
   assert.ok(calls.some(([cmd, args]) => cmd === 'npm' && args.includes('agent-desktop@latest')));
   assert.ok(calls.some(([cmd, args]) => cmd === 'npx' && args.includes('jev-desktop')));
   assert.equal(JSON.stringify(calls).includes('0.4.7'), false);
+});
+
+test('端末別fork指定は公式npm版を外して固定revisionをCargo導入する', async (t) => {
+  const home = await homeFor(t); const calls = [];
+  const config = join(home, '.config', 'dotagents', 'agent-desktop-fork.json');
+  const repository = 'https://github.com/quolu/agent-desktop.git';
+  const revision = 'c'.repeat(40);
+  await mkdir(join(home, '.config', 'dotagents'), { recursive: true });
+  await writeFile(config, JSON.stringify({ repository, revision }));
+  const result = await setupJevProduct('agent-desktop', { home, platform: 'darwin', output: quiet,
+    execute: async (cmd, args) => { calls.push([cmd, args]); return ok; } });
+  assert.equal(result.revision, revision);
+  assert.ok(calls.some(([cmd, args]) => cmd === 'npm' && args.join(' ') === 'uninstall --global agent-desktop'));
+  assert.ok(calls.some(([cmd, args]) => cmd === 'cargo' && args.includes(repository) && args.includes(revision) && args.includes(join(home, '.local'))));
+  assert.equal(calls.some(([cmd, args]) => cmd === 'npm' && args.includes('agent-desktop@latest')), false);
+  await writeFile(config, JSON.stringify({ repository, revision: 'bad' }));
+  await assert.rejects(setupJevProduct('agent-desktop', { home, platform: 'darwin', output: quiet,
+    execute: () => assert.fail('不正な指定でコマンドを実行しない') }), /JEV_FORK_CONFIG_INVALID/);
+  await writeFile(config, 'null');
+  await assert.rejects(setupJevProduct('agent-desktop', { home, platform: 'darwin', output: quiet,
+    execute: () => assert.fail('不正な指定でコマンドを実行しない') }), /JEV_FORK_CONFIG_INVALID/);
 });
 
 test('導入失敗を停止として返し、別版や別経路へ切り替えない', async (t) => {
