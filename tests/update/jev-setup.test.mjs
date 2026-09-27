@@ -32,6 +32,35 @@ test('既存checkoutは公式originとdirtyを確認し、ff-onlyで最新版を
   await assert.rejects(setupJevProduct('jev-ultrafast', { home, output: quiet, execute: async (cmd, args) => ({ ...ok, stdout: args[0] === 'remote' ? 'https://github.com/browser-use/jev-ultrafast.git' : ' M changed.py' }) }), /CHECKOUT_DIRTY/);
 });
 
+test('ブラウザJevの指定forkをrevision固定で導入し、上流mainに採用後だけ卒業する', async (t) => {
+  const home = await homeFor(t); const calls = [];
+  const cwd = join(home, 'Developer', 'jev-ultrafast');
+  const config = join(home, '.config', 'dotagents', 'jev-ultrafast-fork.json');
+  const repository = 'https://github.com/quolu/jev-ultrafast.git';
+  const revision = 'd'.repeat(40);
+  await mkdir(cwd, { recursive: true });
+  await mkdir(join(home, '.config', 'dotagents'), { recursive: true });
+  await writeFile(config, JSON.stringify({ repository, revision }));
+  const execute = async (cmd, args) => {
+    calls.push([cmd, args]);
+    return { ...ok, stdout: cmd === 'git' && args[0] === 'remote'
+      ? 'https://github.com/browser-use/jev-ultrafast.git'
+      : cmd === 'git' && args[0] === 'rev-parse' ? revision : '' };
+  };
+  const pinned = await setupJevProduct('jev-ultrafast', { home, output: quiet, execute, releaseCheck: async () => null });
+  assert.equal(pinned.revision, revision);
+  assert.ok(calls.some(([cmd, args]) => cmd === 'git' && args.join(' ') === `fetch --no-tags ${repository} ${revision}`));
+  assert.ok(calls.some(([cmd, args]) => cmd === 'git' && args.join(' ') === `switch --detach ${revision}`));
+  assert.equal(calls.some(([, args]) => args[0] === 'pull'), false);
+  assert.ok((await readFile(config, 'utf8')).includes(revision));
+  calls.length = 0;
+  await setupJevProduct('jev-ultrafast', { home, output: quiet, execute,
+    releaseCheck: async () => ({ version: 'main', tag: 'main' }) });
+  assert.ok(calls.some(([cmd, args]) => cmd === 'git' && args.join(' ') === 'switch main'));
+  assert.ok(calls.some(([cmd, args]) => cmd === 'git' && args.join(' ') === 'pull --ff-only origin main'));
+  await assert.rejects(stat(config), { code: 'ENOENT' });
+});
+
 test('デスクトップはMacだけ、npm latestと上流Skillを導入する', async (t) => {
   const home = await homeFor(t); const calls = [];
   const execute = async (cmd, args) => { calls.push([cmd, args]); return ok; };
@@ -116,6 +145,20 @@ test('Browser Harnessは許可シート修正PRが先に通るまで卒業しな
   assert.equal(await officialForkRelease('browser-harness', { execute, fetchJson }), null);
   responses['repos/ironerumi/browser-harness/pulls/1'].merged_at = '2026-10-01T00:00:00Z';
   assert.deepEqual(await officialForkRelease('browser-harness', { execute, fetchJson }), { version: '0.1.14', tag: 'v0.1.14' });
+});
+
+test('ブラウザJevは上流PRがmainへ入った時だけforkを卒業する', async () => {
+  const sha = 'd'.repeat(40);
+  const responses = {
+    'repos/browser-use/jev-ultrafast/pulls/153': { merged_at: null, merge_commit_sha: sha },
+    [`repos/browser-use/jev-ultrafast/compare/${sha}...main`]: { status: 'ahead' },
+  };
+  const execute = async (_, args) => ({ ...ok, stdout: JSON.stringify(responses[args[1]]) });
+  assert.equal(await officialForkRelease('jev-ultrafast', { execute }), null);
+  responses['repos/browser-use/jev-ultrafast/pulls/153'].merged_at = '2026-09-27T00:00:00Z';
+  assert.deepEqual(await officialForkRelease('jev-ultrafast', { execute }), { version: 'main', tag: 'main' });
+  responses[`repos/browser-use/jev-ultrafast/compare/${sha}...main`].status = 'diverged';
+  assert.equal(await officialForkRelease('jev-ultrafast', { execute }), null);
 });
 
 test('agent-desktopの公式導入と旧Cargo版除去が済んでからfork指定を削除する', async (t) => {

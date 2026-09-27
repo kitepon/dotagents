@@ -39,7 +39,7 @@
 
 ### `jev-ultrafast` と `agent-desktop`
 
-上流本体・依存・操作ループ・OS対応・製品設定と修理は上流が所有する。dotagentsは導入・更新呼出し、工場キーの配布、公開versionとsource revisionの報告を所有する。既定の導入は上流最新版を選び、Browser HarnessのCLIはjev-ultrafastの構成要素としてuv toolで更新し、Jev内部の依存版は上流lockに従う。端末限定のfork指定と公式版への復帰は[Jev runbook](../shared/runbooks/jev-computer-use.md)に従う。
+上流本体・依存・操作ループ・OS対応・製品設定と修理は上流が所有する。dotagentsは導入・更新呼出し、工場キーの配布、公開versionとsource revisionの報告を所有する。既定の導入は上流最新版を選び、Browser HarnessのCLIはjev-ultrafastの構成要素としてuv toolで更新し、Jev内部の依存版は上流lockに従う。jev-ultrafastを含む端末限定のfork指定と公式版への復帰は[Jev runbook](../shared/runbooks/jev-computer-use.md)に従う。
 
 jev-ultrafastはPythonの公開package metadata、checkout revision、Browser Harnessの公開CLI版を読み、agent-desktopは`agent-desktop --version`を読む。agent-desktopの実行バイナリとJevスクリプトのcheckoutを同じrevisionとは扱わない。画面・入力本文・製品設定を読まず、GUIやdaemonを起動しない。導入済みとGUI利用可能を分け、操作未確認は`unverified`、非対応OSは`unsupported`として保持する。両製品のsafe_contextは空集合。
 
