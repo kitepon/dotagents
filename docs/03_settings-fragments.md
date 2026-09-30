@@ -68,7 +68,7 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
 
 ### Git破壊操作ゲート（PreToolUse・Bash）
 
-`git checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`を検知する。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyし、branch切替checkout、`restore --staged`のみ、clean・非git・status失敗はallowする。退避は`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。
+`git checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`を検知する。`-C <path>`／`-c <key=value>`付き、RTKが書き換えた`rtk git`、生出力用の`rtk proxy git`も同じgit起動として扱う。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyし、branch切替checkout、`restore --staged`のみ、clean・非git・status失敗はallowする。退避は`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。
 
 ```bash
 S=~/.claude/settings.json

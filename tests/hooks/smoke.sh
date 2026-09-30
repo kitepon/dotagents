@@ -134,6 +134,18 @@ run git-destroy-codex "$PYTHON_EXE" "$ROOT/bin/codex-git-destroy-gate-hook.sh" <
 {"tool_name":"shell_command","tool_input":{"command":"git checkout .","cwd":"$HOOK_REPO"}}
 EOF
 json && [[ "$RUN_OUT" == *'"decision": "deny"'* && "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-codex || fail_case git-destroy-codex
+run git-destroy-rtk "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
+{"tool_name":"Bash","tool_input":{"command":"rtk git checkout -- source.txt && rtk proxy git reset --hard","cwd":"$HOOK_REPO"}}
+EOF
+json && [[ "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-rtk || fail_case git-destroy-rtk
+run git-destroy-dash-c "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
+{"tool_name":"Bash","tool_input":{"command":"rtk git -c core.pager=cat -C $HOOK_REPO checkout .","cwd":"$HOOK_STATE/non-git"}}
+EOF
+json && [[ "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-dash-c || fail_case git-destroy-dash-c
+run git-destroy-rtk-read "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
+{"tool_name":"Bash","tool_input":{"command":"rtk git status","cwd":"$HOOK_REPO"}}
+EOF
+[ "$RUN_BYTES" -eq 0 ] && pass git-destroy-rtk-read || fail_case git-destroy-rtk-read
 printf '%s\n' base >"$REPO/source.txt"
 
 if [ "$fail" -ne 0 ]; then exit 1; fi

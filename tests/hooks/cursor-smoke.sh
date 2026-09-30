@@ -60,6 +60,15 @@ if json && [[ "$RUN_OUT" == *'"permission": "deny"'* && "$RUN_OUT" == *'P12_UNCO
 else
   fail_case cursor-destroy-shell-deny
 fi
+# preToolUseのRTK hookが書き換えた後の形でbeforeShellExecutionが届く。
+run cursor-destroy-rtk-rewritten "$PYTHON_EXE" "$ROOT/bin/cursor-git-destroy-gate-hook.sh" <<EOF
+{"hook_event_name":"beforeShellExecution","session_id":"c-destroy","cwd":"$HOOK_REPO","command":"rtk git checkout -- source.txt","cursor_version":"1.0.0"}
+EOF
+if json && [[ "$RUN_OUT" == *'"permission": "deny"'* && "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]]; then
+  pass cursor-destroy-rtk-rewritten
+else
+  fail_case cursor-destroy-rtk-rewritten
+fi
 
 run cursor-destroy-grok-noop "$PYTHON_EXE" "$ROOT/bin/cursor-git-destroy-gate-hook.sh" <<EOF
 {"hookEventName":"pre_tool_use","sessionId":"c-grok","cwd":"$HOOK_REPO","toolName":"run_terminal_command","toolInput":{"command":"git checkout -- source.txt","cwd":"$HOOK_REPO"}}

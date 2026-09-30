@@ -70,13 +70,22 @@ def shell_segments(command):
 
 
 def git_tokens(segment):
+    """gitの起動なら(-C の移動先, subcommand以降)を返す。"""
     try:
         tokens = shlex.split(segment, posix=True)
     except ValueError:
         return None
+    # RTK hookは git を `rtk git` へ書き換え、生出力は `rtk proxy git` で取り直す。
+    if tokens and os.path.basename(tokens[0]).lower() in {"rtk", "rtk.exe"}:
+        tokens = tokens[2:] if tokens[1:2] == ["proxy"] else tokens[1:]
     if not tokens or os.path.basename(tokens[0]).lower() not in {"git", "git.exe"}:
         return None
-    return tokens[1:]
+    directories, arguments = [], tokens[1:]
+    while len(arguments) >= 2 and arguments[0] in {"-C", "-c"}:
+        if arguments[0] == "-C":
+            directories.append(arguments[1])
+        arguments = arguments[2:]
+    return directories, arguments
 
 
 def checkout_target(arguments):
@@ -118,19 +127,23 @@ def detected_targets(command):
         return []
     targets = []
     for segment in shell_segments(command):
-        arguments = git_tokens(segment.strip())
-        if arguments is None:
+        parsed = git_tokens(segment.strip())
+        if parsed is None:
             continue
+        directories, arguments = parsed
         target = destroy_target(arguments)
         if target is not False:
-            targets.append(target)
+            targets.append((directories, target))
     return targets
 
 
-def has_changes(cwd, target):
+def has_changes(cwd, directories, target):
     if not isinstance(cwd, str) or not cwd:
         return False
-    command = ["git", "-C", cwd, "status", "--porcelain"]
+    command = ["git", "-C", cwd]
+    for directory in directories:
+        command.extend(["-C", directory])
+    command.extend(["status", "--porcelain"])
     if target:
         command.extend(["--", *target])
     try:
@@ -189,8 +202,8 @@ def main(frontend):
         if not targets:
             return
         cwd = tool_input.get("cwd") or data.get("cwd") or cwd
-        for target in targets:
-            if has_changes(cwd, target):
+        for directories, target in targets:
+            if has_changes(cwd, directories, target):
                 emit_deny(frontend, "対象pathspec" if target else "worktree全体")
                 return
     except Exception:
