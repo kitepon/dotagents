@@ -20,14 +20,14 @@
 | 役割 | 第1候補群 | 第2候補群 | 第3候補群 |
 |---|---|---|---|
 | 統括 | オーナー指定 | — | — |
-| 反証 | GPT-6 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |
-| 監査・発見 | Grok 4.7×medium、Sonnet 5×medium（同格） | GPT-6 Sol×medium | — |
-| 設計 | Opus 5.5×high、GPT-6 Sol×high（同格） | Grok 4.7×high | — |
+| 反証 | GPT-6.1 Sol×high、Grok 4.7×high（同格） | Opus 5.5×high | — |
+| 監査・発見 | Grok 4.7×medium、Sonnet 5×medium（同格） | GPT-6.1 Sol×medium | — |
+| 設計 | Opus 5.5×high、GPT-6.1 Sol×high（同格） | Grok 4.7×high | — |
 | 相談 | GPT-6 Astra×high | Fable 5.1×high | Grok 4.7×medium |
-| 実装 | GPT-6 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |
+| 実装 | GPT-6.1 Sol×high、Opus 5.5×medium（同格） | Grok 4.7×medium | — |
 | 局所コーディング | GPT-6 Luna×high、Sonnet 5×high（同格） | Composer 2.5 | — |
 | 軽作業 | GPT-6 Luna×high、Sonnet 5×high（同格） | Grok 4.7×high | — |
-| 調査 | Grok 4.7×medium、GPT-6 Sol×medium（同格） | Opus 5.5×medium | — |
+| 調査 | Grok 4.7×medium、GPT-6.1 Sol×medium（同格） | Opus 5.5×medium | — |
 | 難問・研究 | Fable 5.1×high | Opus 5.5×high | GPT-6 Astra×high |
 
 ## 同格候補のハーネス選択
@@ -46,7 +46,7 @@ Codexを基本の親とする。子のモデルは候補群を左から選ぶ。
 | Opus 5.5 | Anthropic | Claude Code / Cursor | `opus` | $4/$20 | 1M | low〜max（medium） |
 | Sonnet 5 | Anthropic | Claude Code / Cursor | `sonnet` | $2/$10 | 1M | low〜max（high） |
 | GPT-6 Astra | OpenAI | Codex | `gpt-6-astra` | $10/$50（272K超 $20/$75） | 1.05M | low〜max |
-| GPT-6 Sol | OpenAI | Codex | `gpt-6-sol` | $2/$10 | 1.05M | none〜max（medium） |
+| GPT-6.1 Sol | OpenAI | Codex | `gpt-6.1-sol` | $2/$10（272K超 $4/$15） | 1.05M | low〜max（medium） |
 | GPT-6 Luna | OpenAI | Codex | `gpt-6-luna` | $0.10/$0.50 | 1.05M | none〜max（medium） |
 | Grok 4.7 | xAI | Grok Build / Cursor | `grok-4.7` | $2/$6（200K超 $4/$12） | 500K | low〜xhigh（high） |
 | Composer 2.5 | Cursor | Cursor | Composer 2.5 | $0.50/$2.50 | 1M | なし |
