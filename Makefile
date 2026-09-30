@@ -63,6 +63,7 @@ test-ci-plan: ## 変更分類と最終合否のfail-closed契約
 test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/apply-claude-config.sh
 	bash tests/install/quoted-hook-command.sh
+	bash tests/install/codex-hook-dead-interpreter.sh
 	bash tests/install/apply-grok-config.sh
 	bash tests/install/apply-cursor-config.sh
 	bash tests/install/install-unai.sh

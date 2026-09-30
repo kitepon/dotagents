@@ -278,11 +278,26 @@ def update_hooks(data: dict, home: Path) -> dict:
         "async": False,
         "statusMessage": None,
     }
-    normalized = without_hooks(
-        event_entries(data, event),
-        lambda command: is_script_command(command, hook_path, (), home, PYTHON_HOOK_PREFIX),
-    )
-    normalized.append({"hooks": [canonical]})
+    # Codexの信頼記録は `hooks.json:pre_tool_use:<group>:<i>` の位置で鍵を持つ。
+    # 既存のゲートは最初の位置で正規化し、無い時だけ末尾へ足す。
+    placed = False
+    normalized = []
+    for entry in event_entries(data, event):
+        if not isinstance(entry, dict) or not isinstance(entry.get("hooks"), list):
+            normalized.append(entry)
+            continue
+        hooks = []
+        for hook in entry["hooks"]:
+            if isinstance(hook, dict) and is_script_command(hook.get("command"), hook_path, (), home, PYTHON_HOOK_PREFIX):
+                if not placed:
+                    hooks.append(canonical)
+                    placed = True
+                continue
+            hooks.append(hook)
+        if hooks or set(entry) != {"hooks"}:
+            normalized.append({**entry, "hooks": hooks})
+    if not placed:
+        normalized.append({"hooks": [canonical]})
     data["hooks"][event] = normalized
     return data
 

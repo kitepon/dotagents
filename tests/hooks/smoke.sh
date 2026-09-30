@@ -133,7 +133,7 @@ json && [[ "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-comp
 run git-destroy-codex "$PYTHON_EXE" "$ROOT/bin/codex-git-destroy-gate-hook.sh" <<EOF
 {"tool_name":"shell_command","tool_input":{"command":"git checkout .","cwd":"$HOOK_REPO"}}
 EOF
-json && [[ "$RUN_OUT" == *'"decision": "deny"'* && "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-codex || fail_case git-destroy-codex
+json && [[ "$RUN_OUT" == *'"permissionDecision": "deny"'* && "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* && "$RUN_OUT" != *'"decision"'* ]] && pass git-destroy-codex || fail_case git-destroy-codex
 run git-destroy-rtk "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
 {"tool_name":"Bash","tool_input":{"command":"rtk git checkout -- source.txt && rtk proxy git reset --hard","cwd":"$HOOK_REPO"}}
 EOF

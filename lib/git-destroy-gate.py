@@ -36,9 +36,10 @@ def emit_deny(frontend, target):
     )
     if frontend == "cursor":
         payload = {"permission": "deny", "user_message": message, "agent_message": message}
-    elif frontend in {"codex", "grok"}:
+    elif frontend == "grok":
         payload = {"decision": "deny", "reason": message}
     else:
+        # Codexの旧decisionは approve/block だけを受け、"deny" は不正JSONとして通してしまう。
         payload = {
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",

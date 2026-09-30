@@ -125,7 +125,7 @@ codex --profile work
 - 既存・提案後の TOML は Codex CLI 自身の parser で検証する。不正なら fail-loud で書き込まない。
 - lifecycle hookの現行flagは`[features].hooks`。`codex_hooks`はdeprecated警告を出すため限定applierが除去し、hook機能を無効化するfallbackには使わない。
 - `config.toml` / `hooks.json` が symlink なら所有境界を壊さないため fail-loud にする。
-- inline comment と他 section / 他 hook は保持する。dotagents 自身のGit破壊操作ゲートだけを、絶対パス・`type: command`・`timeout: 5`・`async: false`・`statusMessage: null` の1件に畳む。
+- inline comment と他 section / 他 hook は保持する。dotagents 自身のGit破壊操作ゲートだけを、絶対パス・`type: command`・`timeout: 5`・`async: false`・`statusMessage: null` の1件に畳む。Codexの信頼記録は`hooks.json:pre_tool_use:<group>:<i>`の位置で鍵を持つため、既存のゲートは最初の位置のまま畳み、無い時だけ末尾へ足す。
 - 変更がある時だけ `~/Archives/dotagents-codex-config-*.tar.gz` に backup を作る。directory は `0700`、archive と member は `0600`。`CODEX_HOME` が HOME 外でも archive 内は安全な相対名にする。
 - 2ファイルは temp へ先に prepare / fsync してから置換し、途中失敗なら既に置換した側も original へ rollback する。rollback 自体が失敗した場合は明示エラーで止まる。
 - `CODEX_HOME` は test や別 home 用に指定できる。実端末の通常値は `$HOME/.codex`。
@@ -145,7 +145,7 @@ dotagentsがCodexへ配るhookはGit破壊操作ゲートだけとする。配�
 
 ### Git破壊操作ゲート（PreToolUse）
 
-`codex-git-destroy-gate-hook`をPreToolUseへ1件だけ追加する。shell系toolの`command`から`checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`だけを保守的に検知する。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyする。branch切替checkout、`restore --staged`だけ、clean・非git・status失敗はallowする。退避には`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。同一 script の死んだ interpreter（存在しない Python313 等）は同一 entry として畳み、PreToolUse を毎回 code 1 にしない。
+`codex-git-destroy-gate-hook`をPreToolUseへ1件だけ追加する。shell系toolの`command`から`checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`だけを保守的に検知する。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyする。denyは`hookSpecificOutput.permissionDecision`で返す。Codexの旧`decision`は`approve`／`block`だけを受け、それ以外の値は不正JSONとして失敗扱いになりcommandを通す。branch切替checkout、`restore --staged`だけ、clean・非git・status失敗はallowする。退避には`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。同一 script の死んだ interpreter（存在しない Python313 等）は同一 entry として畳み、PreToolUse を毎回 code 1 にしない。
 
 ### Spotter Codex hook（工場コア・Spotter所有）
 
