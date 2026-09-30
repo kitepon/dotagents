@@ -171,7 +171,8 @@ def windows_hook_command(command: str, home: Path) -> str:
         script = home / script
     interpreter = hook_interpreter(script)
     tokens = [interpreter, str(script), *parts[1:]]
-    return " ".join(win_quote(token) for token in tokens)
+    # Windows nativeのGrokはhookをPowerShellで実行する。引用したexecutableは呼出し演算子で呼ぶ。
+    return "& " + " ".join(win_quote(token) for token in tokens)
 
 
 def rewrite_factory_hooks(data: dict, home: Path) -> dict:

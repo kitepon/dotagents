@@ -442,19 +442,20 @@ if missing:
     raise SystemExit(1)
 
 gate = (home / ".local/bin/git-destroy-gate-hook").resolve(strict=False)
-matches = []
-for entry in data.get("hooks", {}).get("PreToolUse", []):
-    if not isinstance(entry, dict) or entry.get("matcher") != "Bash":
-        continue
-    for hook in entry.get("hooks", []):
-        if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
+for matcher in ("Bash", "PowerShell"):
+    matches = []
+    for entry in data.get("hooks", {}).get("PreToolUse", []):
+        if not isinstance(entry, dict) or entry.get("matcher") != matcher:
             continue
-        parsed = hook_script(hook["command"], home)
-        if parsed is not None and parsed[0] == gate and parsed[1] == ():
-            matches.append(hook)
-if len(matches) != 1 or set(matches[0]) != {"type", "command", "timeout"} or matches[0].get("type") != "command" or matches[0].get("timeout") != 5:
-    print("FAIL: Claude PreToolUse の git-destroy-gate-hook は matcher=Bash / canonical command / timeout=5 の1件である必要がある")
-    raise SystemExit(1)
+        for hook in entry.get("hooks", []):
+            if not isinstance(hook, dict) or not isinstance(hook.get("command"), str):
+                continue
+            parsed = hook_script(hook["command"], home)
+            if parsed is not None and parsed[0] == gate and parsed[1] == ():
+                matches.append(hook)
+    if len(matches) != 1 or set(matches[0]) != {"type", "command", "timeout"} or matches[0].get("type") != "command" or matches[0].get("timeout") != 5:
+        print(f"FAIL: Claude PreToolUse の git-destroy-gate-hook は matcher={matcher} / canonical command / timeout=5 の1件である必要がある")
+        raise SystemExit(1)
 PY
 then
   fail=1

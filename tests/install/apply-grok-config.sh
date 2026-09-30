@@ -86,6 +86,8 @@ if [ "${OS:-}" = "Windows_NT" ]; then
     || fail 'Windows factory.json に工場hook名が無い'
   grep -Eiq 'python' "$HOME_FIXTURE/.grok/hooks/factory.json" \
     || fail 'Windows factory.json が python interpreter を書かない'
+  grep -Fq '"command": "& ' "$HOME_FIXTURE/.grok/hooks/factory.json" \
+    || fail 'Windows factory.json がPowerShellの呼出し演算子を前置しない'
 fi
 
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-grok-config" --apply | grep -Fq '変更なし' \

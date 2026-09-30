@@ -142,6 +142,23 @@ run git-destroy-dash-c "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
 {"tool_name":"Bash","tool_input":{"command":"rtk git -c core.pager=cat -C $HOOK_REPO checkout .","cwd":"$HOOK_STATE/non-git"}}
 EOF
 json && [[ "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-dash-c || fail_case git-destroy-dash-c
+run git-destroy-powershell "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
+{"tool_name":"PowerShell","tool_input":{"command":"Set-Location .; rtk git checkout -- source.txt"},"cwd":"$HOOK_REPO"}
+EOF
+json && [[ "$RUN_OUT" == *'permissionDecision'* && "$RUN_OUT" == *'P12_UNCOMMITTED_DESTROY'* ]] && pass git-destroy-powershell || fail_case git-destroy-powershell
+# PowerShellは `\` を文字として渡す。Bashは退避として消す。
+if "$PYTHON_EXE" - "$ROOT/lib/git-destroy-gate.py" <<'PY'
+import importlib.util
+import sys
+
+spec = importlib.util.spec_from_file_location("gate", sys.argv[1])
+gate = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(gate)
+assert gate.detected_targets(r'git checkout -- "docs\a b.md"; & git.exe reset --hard', "`") == [([], ["docs\\a b.md"]), ([], None)]
+assert gate.detected_targets(r'git checkout -- docs\plan_x.md', "\\") == [([], ["docsplan_x.md"])]
+assert gate.command_escape("claude", "PowerShell") == "`" and gate.command_escape("claude", "Bash") == "\\"
+PY
+then pass git-destroy-powershell-words; else fail_case git-destroy-powershell-words; fi
 run git-destroy-rtk-read "$PYTHON_EXE" "$ROOT/bin/git-destroy-gate-hook.sh" <<EOF
 {"tool_name":"Bash","tool_input":{"command":"rtk git status","cwd":"$HOOK_REPO"}}
 EOF

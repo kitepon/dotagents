@@ -15,7 +15,17 @@ SHELL_TOOLS = {
     "shell_command",
     "functions.shell_command",
     "run_terminal_command",
+    "PowerShell",
 }
+# PowerShellは `\` を文字として渡し、バッククォートで退避する。
+POWERSHELL_ESCAPE = "`"
+
+
+def command_escape(frontend, tool_name):
+    """ClaudeはツールでBashとPowerShellを分け、他hostはWindows nativeでPowerShellを使う。"""
+    if frontend == "claude":
+        return POWERSHELL_ESCAPE if tool_name == "PowerShell" else "\\"
+    return POWERSHELL_ESCAPE if os.name == "nt" else "\\"
 
 
 def emit_deny(frontend, target):
@@ -39,7 +49,7 @@ def emit_deny(frontend, target):
     sys.stdout.buffer.write((json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8"))
 
 
-def shell_segments(command):
+def shell_segments(command, escape):
     """引用内の区切りを壊さず、単純な複合shell commandだけを分割する。"""
     segments, current, quote, escaped, index = [], [], None, False, 0
     while index < len(command):
@@ -47,7 +57,7 @@ def shell_segments(command):
         if escaped:
             current.append(character)
             escaped = False
-        elif character == "\\" and quote != "'":
+        elif character == escape and quote != "'":
             current.append(character)
             escaped = True
         elif character in "'\"":
@@ -69,12 +79,19 @@ def shell_segments(command):
     return segments
 
 
-def git_tokens(segment):
+def git_tokens(segment, escape):
     """gitの起動なら(-C の移動先, subcommand以降)を返す。"""
+    lexer = shlex.shlex(segment, posix=True)
+    lexer.whitespace_split = True
+    lexer.commenters = ""
+    lexer.escape = escape
     try:
-        tokens = shlex.split(segment, posix=True)
+        tokens = list(lexer)
     except ValueError:
         return None
+    # PowerShellの呼出し演算子 `& git ...`。
+    if escape == POWERSHELL_ESCAPE and tokens[:1] == ["&"]:
+        tokens = tokens[1:]
     # RTK hookは git を `rtk git` へ書き換え、生出力は `rtk proxy git` で取り直す。
     if tokens and os.path.basename(tokens[0]).lower() in {"rtk", "rtk.exe"}:
         tokens = tokens[2:] if tokens[1:2] == ["proxy"] else tokens[1:]
@@ -122,12 +139,12 @@ def destroy_target(arguments):
     return False
 
 
-def detected_targets(command):
+def detected_targets(command, escape):
     if not isinstance(command, str) or not command.strip():
         return []
     targets = []
-    for segment in shell_segments(command):
-        parsed = git_tokens(segment.strip())
+    for segment in shell_segments(command, escape):
+        parsed = git_tokens(segment.strip(), escape)
         if parsed is None:
             continue
         directories, arguments = parsed
@@ -198,7 +215,7 @@ def main(frontend):
             tool_input = data.get("tool_input")
         if tool_name not in SHELL_TOOLS or not isinstance(tool_input, dict):
             return
-        targets = detected_targets(tool_input.get("command"))
+        targets = detected_targets(tool_input.get("command"), command_escape(frontend, tool_name))
         if not targets:
             return
         cwd = tool_input.get("cwd") or data.get("cwd") or cwd

@@ -20,6 +20,8 @@ from pathlib import Path
 
 HOOKS = (
     ("PreToolUse", "Bash", "git-destroy-gate-hook", (), 5),
+    # Windows nativeのClaudeはshellを `PowerShell` ツールで実行する。
+    ("PreToolUse", "PowerShell", "git-destroy-gate-hook", (), 5),
 )
 # 廃止したdotagents hook。既存のsettings.jsonから取り除くだけで、再登録しない。
 RETIRED_HOOKS = (

@@ -53,6 +53,12 @@ missing = [
     if not any(item_event == event and all(needle in command for needle in needles) for item_event, command in commands)
 ]
 assert not missing, missing
+gate_matchers = sorted(
+    entry.get("matcher")
+    for entry in data["hooks"]["PreToolUse"]
+    if any("git-destroy-gate-hook" in hook.get("command", "") for hook in entry.get("hooks", []))
+)
+assert gate_matchers == ["Bash", "PowerShell"], gate_matchers
 PY
 python3 - <<'PY'
 def win_quote(token: str) -> str:

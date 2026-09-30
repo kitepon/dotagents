@@ -289,7 +289,7 @@ Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`�
 ```
 
 既定は公式 user skill 面 `$HOME/.agents/skills`。`--dry-run` は一切書き込まず、routing の必須2キー、
-Git破壊操作ゲート1件と廃止hookの除去だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場hookの差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
+Git破壊操作ゲート（CodexはPreToolUse 1件、ClaudeはBash／PowerShellの2件）と廃止hookの除去だけの差分を出す。Grok側は`compat.claude.agents=false` / `hooks=false` と工場hookの差分だけを出す。対象端末への適用を承認した後だけ、次を実行する。
 
 ```bash
 ./bin/apply-codex-config.sh --apply

@@ -66,16 +66,16 @@ dotagentsセッションからコア製品repoへ直接手を届かせるのは�
 - **Claude hook の正規入口**: [`../bin/apply-claude-config.sh`](../bin/apply-claude-config.sh) が下記のGit破壊操作ゲートを `~/.claude/settings.json` へ冪等に追加し、廃止したdotagents hookの登録を取り除く。既存entry・model・permissions・他ツールの設定は変更しない。
 - dotagentsが配るhookは、機械でしか防げない実害の大きい事故を止めるものだけとする。規範の案内・計画の催促・委譲の形式検査はhookで行わない。
 
-### Git破壊操作ゲート（PreToolUse・Bash）
+### Git破壊操作ゲート（PreToolUse・Bash／PowerShell）
 
-`git checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`を検知する。`-C <path>`／`-c <key=value>`付き、RTKが書き換えた`rtk git`、生出力用の`rtk proxy git`も同じgit起動として扱う。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyし、branch切替checkout、`restore --staged`のみ、clean・非git・status失敗はallowする。退避は`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。
+`git checkout -- <pathspec>`／`checkout .`、worktreeを戻す`restore`、`clean -f`系、`reset --hard`、`stash drop`／`clear`を検知する。`-C <path>`／`-c <key=value>`付き、RTKが書き換えた`rtk git`、生出力用の`rtk proxy git`も同じgit起動として扱う。ClaudeはBashツールとPowerShellツールの両方に登録する。PowerShellツールとWindows nativeのCodex・Grok・Cursorのcommandは、PowerShellの字句（`\`は文字、バッククォートで退避、呼出し演算子`&`）で読む。対象pathspec（不明時はworktree全体）に未commit差分がある時だけ`P12_UNCOMMITTED_DESTROY`でdenyし、branch切替checkout、`restore --staged`のみ、clean・非git・status失敗はallowする。退避は`stash push`またはdiffのpatch保存を使う。`DOTAGENTS_GIT_DESTROY_GATE=off`で無効化できる。
 
 ```bash
 S=~/.claude/settings.json
 if ! jq -e '.hooks.PreToolUse[]?.hooks[]?.command | select(.=="~/.local/bin/git-destroy-gate-hook")' "$S" >/dev/null; then
   cp "$S" "$S.bak-git-destroy-gate"
   tmp=$(mktemp)
-  jq '.hooks.PreToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]}]' "$S" > "$tmp" \
+  jq '.hooks.PreToolUse += [{"matcher":"Bash","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]},{"matcher":"PowerShell","hooks":[{"type":"command","command":"~/.local/bin/git-destroy-gate-hook","timeout":5}]}]' "$S" > "$tmp" \
     && jq -e . "$tmp" >/dev/null && mv "$tmp" "$S"
 fi
 ```
