@@ -7,7 +7,7 @@
 
 ## JevによるComputer Use
 
-- JevによるGUI操作は、ブラウザに上流`jev-ultrafast`、デスクトップに上流`agent-desktop`の`jev-desktop`を使う。導入と呼出しはjev-computer-use runbookと上流の標準入口に従う。通常の操作ループへCodexの逐次判断や独自の工程管理・追加ゲートを重ねない。自作`codex-jev`／`jev-use`は使わない。
+- JevによるGUI操作は、ブラウザに上流`jev-ultrafast`、デスクトップに上流`agent-desktop`の`jev-desktop`を使う。導入と呼出しはjev-computer-use runbookと上流の標準入口に従う。自作`codex-jev`／`jev-use`は使わない。
 
 ## Codex子の入口とaitermの境界
 
