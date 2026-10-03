@@ -118,12 +118,13 @@ test('win32はtask XMLをUTF-16LE+BOMで書き、存在照会をlocaleテキス�
 test('runnerはlaunchd/cron最小PATHでもuser binとnpm globalの製品CLIを補完解決し、明示PATHを先勝ちに保つ', { skip: process.platform === 'win32' }, async () => {
   const { extendedSchedulerPath } = await import('../../lib/factory/scheduler-path.mjs');
   const minimal = '/usr/bin:/bin:/usr/sbin:/sbin';
-  const extended = extendedSchedulerPath({ platform: 'darwin', path: minimal, execPath: '/opt/homebrew/bin/node', home: '/Users/u' });
+  const noNode = () => null;
+  const extended = extendedSchedulerPath({ platform: 'darwin', path: minimal, execPath: '/opt/homebrew/bin/node', home: '/Users/u', resolveNode: noNode });
   assert.ok(extended.startsWith(`${minimal}:`));
   assert.ok(extended.includes('/Users/u/.local/bin'));
   assert.ok(extended.includes('/opt/homebrew/bin'));
   assert.equal(extendedSchedulerPath({ platform: 'win32', path: 'C:\\x', execPath: '', home: '' }), 'C:\\x');
-  const linuxExtended = extendedSchedulerPath({ platform: 'linux', path: '/a:/opt/homebrew/bin', execPath: '/nvm/v1/bin/node', home: '/home/u' });
+  const linuxExtended = extendedSchedulerPath({ platform: 'linux', path: '/a:/opt/homebrew/bin', execPath: '/nvm/v1/bin/node', home: '/home/u', resolveNode: noNode });
   assert.ok(linuxExtended.includes('/home/u/.npm-global/bin'));
   assert.equal(linuxExtended.split(':').filter((p) => p === '/opt/homebrew/bin').length, 1);
   const box = await sandbox(CURRENT_PROFILE, true, false);
@@ -145,6 +146,36 @@ test('runnerはlaunchd/cron最小PATHでもuser binとnpm globalの製品CLIを�
   assert.equal(overrideRun.code, 0, overrideRun.stderr);
   const overrideReport = JSON.parse(await readFile(join(box.state, 'latest-report.json'), 'utf8'));
   assert.notEqual(overrideReport.products.caveat.presence_status, 'missing');
+});
+test('PATHで先に当たるnodeがrunnerのnodeと違う時だけ、runnerのnodeの置き場を先頭へ足す', { skip: process.platform === 'win32' }, async () => {
+  const { extendedSchedulerPath } = await import('../../lib/factory/scheduler-path.mjs');
+  const nvmBin = '/home/u/.nvm/versions/node/v24/bin';
+  const cron = { platform: 'linux', path: '/usr/bin:/bin', execPath: `${nvmBin}/node`, home: '/home/u' };
+  assert.ok(extendedSchedulerPath({ ...cron, resolveNode: () => '/usr/bin/node' }).startsWith(`${nvmBin}:/usr/bin:/bin:`));
+  assert.ok(extendedSchedulerPath({ ...cron, resolveNode: () => null }).startsWith(`/usr/bin:/bin:${nvmBin}:`));
+  assert.ok(extendedSchedulerPath({ ...cron, resolveNode: () => cron.execPath }).startsWith(`/usr/bin:/bin:${nvmBin}:`));
+  // すでにPATHにある置き場は動かさない。明示PATHの順序を保つ。
+  const explicit = `/fake/bin:/usr/bin:${nvmBin}`;
+  assert.ok(extendedSchedulerPath({ ...cron, path: explicit, resolveNode: () => '/usr/bin/node' }).startsWith(`${explicit}:`));
+
+  // 既定の判定は、PATH上で最初に見つかる実行可能なnodeの実体とrunnerのnodeを比べる。
+  const box = await sandbox(CURRENT_PROFILE, true, false);
+  const systemBin = join(box.root, 'system-bin');
+  await mkdir(systemBin);
+  const systemNode = await fixtureCommand(systemBin, 'node', 'echo v0.0.0-system');
+  assert.ok(extendedSchedulerPath({ ...cron, path: `${box.root}/no-such-dir:${systemBin}` }).startsWith(`${nvmBin}:`));
+  assert.ok(extendedSchedulerPath({ ...cron, path: systemBin, execPath: systemNode }).startsWith(`${systemBin}:`));
+
+  // 製品CLIが `env node` で掴むnodeは、PATHで先に当たるsystemのnodeではなくrunnerのnodeになる。
+  const marker = join(box.root, 'product-node-version');
+  await fixtureCommand(systemBin, 'markitdown', `node --version > '${marker}'; exit 1`);
+  const localBin = join(box.root, '.local', 'bin');
+  await mkdir(localBin, { recursive: true });
+  for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'codegraph', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await fixtureCommand(localBin, name, 'exit 1');
+  await fixtureCommand(localBin, 'git', 'echo 1234567');
+  const result = await run(RUNNER, ['--config', box.config], box, { PATH: `${systemBin}:/usr/bin:/bin:/usr/sbin:/sbin` });
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal((await readFile(marker, 'utf8')).trim(), process.version);
 });
 test('runnerは原子的owner contenderの死んだPIDだけを掃除して再実行できる', async () => { const box = await sandbox(CURRENT_PROFILE, false, true); const child = spawn(process.execPath, ['-e', 'process.exit(0)']); const deadPid = child.pid; await new Promise((resolveClose) => child.on('close', resolveClose)); const dead = await writeRunnerLock(box, deadPid); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 0, result.stderr); assert.deepEqual(result.json, { ok: true, post_gate_status: 'success' }); await assert.rejects(lstat(dead)); assert.deepEqual((await readdir(box.state)).filter((name) => name.includes('schedule.lock.')), []); });
 test('runnerはowner完成後の固有hard-link公開とnonce一致cleanupで共有lock削除を避ける', async () => { const source = await readFile(RUNNER, 'utf8'); assert.match(source, /await link\(temporary, published\)/); assert.match(source, /current\?\.nonce === nonce/); assert.match(source, /schedule\\\.lock\\\.\[0-9a-f-\]\{36\}\\\.owner/); assert.doesNotMatch(source, /\.reclaim|oldEnough|mtimeMs/); });
