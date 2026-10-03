@@ -346,6 +346,8 @@ Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する
 
 `~/.local/bin/agents-update` はdeployment contractが返すOS/arch別の完全なnpm package集合を `@latest` へ更新する（Darwin arm64はAIShell、全対応hostはpeertable）。MarkItDownは`uv tool`、unaiは公開mainの公式installerだけで更新する。Jev製品も[公式導入経路](shared/runbooks/jev-computer-use.md#一撃展開と更新)で最新版へ更新し、GUI操作は起動しない。公式入口が返した失敗は製品名付きで記録し、公開結果のreportも継続する。製品の導入結果を追加診断で再判定しない。更新処理とreporterの成否は別々に記録し、どちらか一方でも失敗ならjobを非0終了する。詳細は [factory reporterランブック](docs/factory-reporter-runbook.md#agents-updateと更新報告) を参照。
 
+更新が失敗で終わった時は、失敗した手順の名前をdotagentsが自分の名前でBugHubへ報告する。送信は端末で有効にした時だけで、製品が返したエラーの中身は載せない（[運用](docs/factory-reporter-runbook.md#定期更新の失敗の報告)）。
+
 常設schedulerの生成・旧schedulerの整理・読み戻しは、上記host別一撃展開スクリプトだけが所有する。
 手書きのplist／crontab／Task XMLを第二の正本にしない。
 

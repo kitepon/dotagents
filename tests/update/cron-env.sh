@@ -627,5 +627,58 @@ grep -q '^FAILED: npm が PATH にない' "$EMPTY_HOME/out.log" \
   || fail 'npm 不在の原因を名指ししない'
 [ "$(grep -c '^npm-missing:' "$EMPTY_HOME/reporter-calls.log")" -eq 2 ] \
   || fail 'npm / NVM 不在でも factory reporter を実行しなかった'
+node -e '
+  const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+  if(v.records.npm?.status!=="open"||Object.keys(v.records).some((step)=>step.startsWith("package.")))process.exit(1)
+' "$EMPTY_HOME/.local/state/dotagents/update-failures.json" \
+  || fail 'npm 不在を失敗した手順として記録していない、または動かしていないpackageの手順を記録した'
+
+# 定期更新の失敗は、手順の名前だけを記録する。既定では送信しない。次の回で成功した手順は解決済みになる。
+FAILURE_STATE="$TEST_HOME/failure-state"
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=step-fail JEV_SETUP_FAIL=1 SCHEDULER_FAIL=17 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/step-fail.out" 2>&1; then
+  fail '手順の失敗を成功扱いした'
+fi
+grep -q '^agents-update result: update=failed report=failed$' "$TEST_HOME/step-fail.out" \
+  || fail '手順の失敗を更新の結果へ反映していない'
+grep -q '"failed_steps":\["jev","factory-report"\].*"reporting":"disabled","outcome":"not_sent"' "$TEST_HOME/step-fail.out" \
+  || fail '失敗した手順の名前を記録の道具へ渡していない、または既定で送信した'
+node -e '
+  const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+  const open=Object.keys(v.records).filter((step)=>v.records[step].status==="open").sort();
+  if(open.join()!=="factory-report,jev"||v.records.jev.occurrence_count!==1)process.exit(1)
+' "$FAILURE_STATE/dotagents/update-failures.json" \
+  || fail '失敗した手順だけを未解決として記録していない'
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=step-recover \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/step-recover.out" 2>&1; then
+  cat "$TEST_HOME/step-recover.out" >&2
+  fail '失敗の記録が残る端末で、次の成功した更新が失敗した'
+fi
+node -e '
+  const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+  if(Object.values(v.records).some((r)=>r.status!=="resolved")||Object.keys(v.records).sort().join()!=="factory-report,jev")process.exit(1)
+' "$FAILURE_STATE/dotagents/update-failures.json" \
+  || fail '次の回で成功した手順を解決済みにしていない'
+
+# 記録の道具が失敗しても、更新の結果は変えない。
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  UPDATE_FAILURE_REPORT_HELPER="$TEST_HOME/base-bin/failing-ledger-helper.mjs" \
+  RUN_ID=helper-fail \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/helper-fail.out" 2>&1; then
+  cat "$TEST_HOME/helper-fail.out" >&2
+  fail '記録の道具の失敗で、成功した更新を失敗扱いした'
+fi
+grep -q '^WARN: 定期更新の失敗を記録または報告できない$' "$TEST_HOME/helper-fail.out" \
+  || fail '記録の道具の失敗をlogへ残していない'
+grep -q '^agents-update result: update=success report=success$' "$TEST_HOME/helper-fail.out" \
+  || fail '記録の道具の失敗で更新の結果が変わった'
 
 echo 'agents-update cron env: OK'

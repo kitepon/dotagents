@@ -63,6 +63,18 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 導入の結果は各製品の公式入口が返す。製品が`partial`や`action_required`（利用者の対応待ち）と答えた時は、その値のまま記録し、工場の更新の失敗には数えない。現行runnerの`--post-update`は最終台帳を反映する前のreport準備であり、製品の診断を追加の導入gateにしない。公開された失敗・未対応・未検証は報告へ保持し、工場自身のreport生成・台帳確定・配送の成否と区別する。互換上残る`post_gate_status`はこの工場処理の状態を表す。
 
+## 定期更新の失敗の報告
+
+`agents-update`が失敗で終わった時、どの手順が失敗したかをdotagentsが自分の名前（`dotagents`）でBugHubへ報告する（オーナー裁定K-DNC248・K-N4QYA4、2026-10-03）。それまで更新の結果は端末のlogにしか残らず、失敗が続いても誰にも見えなかった。
+
+- **境界**: 報告するのは「この端末の定期更新で、この手順が失敗した」ことだけ。製品が返したエラーの中身は載せず、製品の不具合を工場が引き取ることもしない。届け先は1つで、製品ごとに振り分けない。修理へ繋ぐのはBugHubを見た人で、dotagentsは製品の担当へ届ける仕組みを持たない。
+- **手順の名前**: `setup.<製品>`（公開入口の導入手順）、`package.<npm package>`、`npm`、`markitdown`、`unai`、`typesafe`、`jev`、`spotter-install`、`toolchain-ledger`、`factory-report`。`claude-code`・`codex-cli`・`grok-build`の更新結果は台帳がreportへ運ぶので、ここでは数えない。
+- **記録**: `agents-update.sh`が最後に`bin/factory-update-failure-report.mjs record`へ、動いた手順と失敗した手順の名前を渡す。失敗した手順は回数を累計し、次の回で成功した手順は解決済みにする。今回動かなかった手順には触れない。記録や送信ができなくても、更新の結果は変えない。
+- **置き場**: 記録は`~/.local/state/dotagents/update-failures.json`、送信の設定は`~/.config/dotagents/update-failure-reporting.json`（Windowsはどちらも`%LOCALAPPDATA%\dotagents\`）。合鍵はBugHubの持ち主が置く`~/.config/bughub/product-credentials/dotagents.json`（Windowsは`%LOCALAPPDATA%\bughub\product-credentials\dotagents.json`）で、dotagentsは読むだけで作らない。
+- **送信**: 既定では送らない。端末で`factory-update-failure-report.mjs enable`を実行し、合鍵が本人だけの通常のファイル（0600、リンクでない）である時だけ送る。送る形はBugHubの製品報告の契約（`bughub/PRODUCT_REPORTING.md`）で、`error_code`は`UPDATE_STEP_FAILED`、`component`は手順の名前、版は`0.0.0+<revision>`。受領済みにするのは、200・`accepted`・同じ`report_id`・応答の署名がそろった時だけ。
+- **確認と停止**: `factory-update-failure-report.mjs status`が、送信の状態・未解決の手順・最後の結果を返す。届かなかった分は次の更新で送る。待たずに送る時は`flush`。止める時は`disable`。
+- **限界**: 更新が動かなかったこと（端末が止まっていた、予定が外れていた）は検出しない。WindowsはACLを確かめず、合鍵が通常のファイルでリンクでないことだけを見る。
+
 ## 停止・失敗
 
 - client送信停止は`reporting.enabled=false`。既存outboxを保持する。

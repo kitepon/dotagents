@@ -73,6 +73,7 @@ TOOLCHAIN_LEDGER_HELPER="${TOOLCHAIN_LEDGER_HELPER:-$SCRIPT_DIR/factory-toolchai
 TOOLCHAIN_CONTRACT_HELPER="${TOOLCHAIN_CONTRACT_HELPER:-$SCRIPT_DIR/factory-toolchain-contract.mjs}"
 DEPLOYMENT_CONTRACT_HELPER="${DEPLOYMENT_CONTRACT_HELPER:-$SCRIPT_DIR/factory-deployment-contract.mjs}"
 TOOLCHAIN_LEDGER_FILE="${TOOLCHAIN_LEDGER_FILE:-$LOG_DIR/toolchain-ledger.json}"
+UPDATE_FAILURE_REPORT_HELPER="${UPDATE_FAILURE_REPORT_HELPER:-$SCRIPT_DIR/factory-update-failure-report.mjs}"
 
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
@@ -104,6 +105,18 @@ record_toolchain() {
   node "$TOOLCHAIN_LEDGER_HELPER" record --file "$TOOLCHAIN_LEDGER_FILE" --product "$1" \
     --before "${2:-none}" --latest "${3:-none}" --operation "$4" --after "${5:-none}" \
     --post-gate "$6" --reason "$7" --observed-at "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+}
+# 定期更新の失敗は、dotagentsが自分の名前でBugHubへ報告する（製品ごとの届け先の振り分けはしない）。
+# ここでは、動いた手順と失敗した手順の名前だけを集める。製品が返したエラーの中身は集めない。
+# claude-code・codex-cli・grok-buildの更新結果は台帳がreportへ運ぶので、ここでは数えない。
+step_ran() { ran_steps+=("$1"); }
+step_failed() { update_failed=1; failed_steps+=("$1"); }
+package_step() {
+  local name="$1"
+  case "$name" in @*/*@*|[!@]*@*) name="${name%@*}" ;; esac
+  name="${name#@}"
+  name="${name//\//.}"
+  printf 'package.%s' "${name//[^abcdefghijklmnopqrstuvwxyz0123456789._-]/-}"
 }
 npm_install_spec() {
   case "$1" in
@@ -145,6 +158,9 @@ fi
 {
   update_failed=0
   report_failed=0
+  ran_steps=()
+  failed_steps=()
+  step_ran toolchain-ledger
   post_gate=failed
   claude_before=none; claude_latest=none; claude_operation=failed; claude_after=none; claude_reason=not_observed
   codex_before=none; codex_latest=none; codex_operation=failed; codex_after=none; codex_reason=not_observed
@@ -152,15 +168,17 @@ fi
   printf '\n=== agents-update start: %s ===\n' "$(date -Iseconds)"
   if ! command -v npm >/dev/null 2>&1; then
     printf 'FAILED: npm が PATH にない（NVM 利用時は %s/nvm.sh と default Node を確認）\n' "${NVM_DIR:-$HOME/.nvm}"
-    update_failed=1
-    record_toolchain claude-code none none failed none pending npm_unavailable || update_failed=1
-    record_toolchain codex-cli none none failed none pending npm_unavailable || update_failed=1
+    step_ran npm
+    step_failed npm
+    record_toolchain claude-code none none failed none pending npm_unavailable || step_failed toolchain-ledger
+    record_toolchain codex-cli none none failed none pending npm_unavailable || step_failed toolchain-ledger
     claude_reason=npm_unavailable; codex_reason=npm_unavailable
   else
     npm_global_bin=''
+    step_ran npm
     if ! npm_global_bin="$(resolve_npm_global_bin)"; then
       printf 'FAILED: npm global prefix/bin が不正または利用不能\n'
-      update_failed=1
+      step_failed npm
     else
       PATH="$npm_global_bin:$PATH"
     fi
@@ -168,9 +186,10 @@ fi
       printf -- '--- %s ---\n' "$pkg"
       if [[ "$pkg" = throughline ]]; then
         # package更新・host配線・DB migration・結果確認はThroughline製品入口が連続実行する。
+        step_ran package.throughline
         if ! update_throughline; then
           printf 'FAILED: throughline setup/update\n'
-          update_failed=1
+          step_failed package.throughline
         fi
         continue
       fi
@@ -199,9 +218,10 @@ fi
         fi
       fi
       install_spec="$(npm_install_spec "$pkg")"
+      [[ -n "$product" ]] || step_ran "$(package_step "$pkg")"
       if [[ "$skip_install" -eq 0 ]] && ! npm_install_global "$pkg" "$install_spec"; then
         printf 'FAILED: %s\n' "$pkg"
-        update_failed=1
+        if [[ -n "$product" ]]; then update_failed=1; else step_failed "$(package_step "$pkg")"; fi
         operation=failed; reason=install_failed
       fi
       if [[ -n "$product" ]]; then
@@ -215,39 +235,41 @@ fi
           elif [[ "$before" = "$after" ]]; then operation=skipped; reason=already_current
           fi
         fi
-        record_toolchain "$product" "$before" "$latest" "$operation" "$after" pending "$reason" || update_failed=1
+        record_toolchain "$product" "$before" "$latest" "$operation" "$after" pending "$reason" || step_failed toolchain-ledger
         if [[ "$product" = claude-code ]]; then claude_before="$before"; claude_latest="$latest"; claude_operation="$operation"; claude_after="$after"; claude_reason="$reason"
         else codex_before="$before"; codex_latest="$latest"; codex_operation="$operation"; codex_after="$after"; codex_reason="$reason"
         fi
       fi
     done
   fi
+  step_ran markitdown
   if ! command -v uv >/dev/null 2>&1; then
     printf 'FAILED: uv 不在（MarkItDownを更新できない）\n'
-    update_failed=1
+    step_failed markitdown
   else
     printf -- '--- MarkItDown:uv-tool ---\n'
     if ! uv_tools="$(uv tool list 2>&1)"; then
       printf 'FAILED: MarkItDown uv tool list\n'
-      update_failed=1
+      step_failed markitdown
     elif printf '%s' "$uv_tools" | node -e 'const text=require("fs").readFileSync(0,"utf8");process.exit(/^markitdown(?:\s|$)/m.test(text)?0:1)'; then
       if ! uv tool upgrade markitdown; then
         printf 'FAILED: MarkItDown uv tool upgrade\n'
-        update_failed=1
+        step_failed markitdown
       fi
     # Windows AppContainerからの初回導入ではuv metadataだけが仮想領域にあり、
     # scheduled runからは既存の公式executableだけが見える。uv ownershipを
     # 正規storeへ収束させるため、未登録branchは公式の--force契約で再導入する。
     elif ! uv tool install --force markitdown; then
       printf 'FAILED: MarkItDown uv tool install\n'
-      update_failed=1
+      step_failed markitdown
     fi
   fi
 
   printf -- '--- unai:official-installer ---\n'
+  step_ran unai
   if ! "$BASH" "$SCRIPT_DIR/install-unai.sh"; then
     printf 'FAILED: unai official installer\n'
-    update_failed=1
+    step_failed unai
   fi
 
   # Grok Build は npm 管理ではない。公開された stable JSON check だけを使い、
@@ -303,18 +325,21 @@ fi
       grok_after="$grok_before"; grok_operation=skipped; grok_reason=already_current
     fi
   fi
-  record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" pending "$grok_reason" || update_failed=1
+  record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" pending "$grok_reason" || step_failed toolchain-ledger
 
   # 公式skillの導入と工場キーの配布、実API確認を全hostで共通実行する。
-  if ! node "$SCRIPT_DIR/factory-typesafe-setup.mjs"; then update_failed=1; fi
+  step_ran typesafe
+  if ! node "$SCRIPT_DIR/factory-typesafe-setup.mjs"; then step_failed typesafe; fi
 
   # 上流の最新版を公式手順で導入する。操作セッションは起動しない。
-  if ! node "$SCRIPT_DIR/factory-jev-setup.mjs"; then update_failed=1; fi
+  step_ran jev
+  if ! node "$SCRIPT_DIR/factory-jev-setup.mjs"; then step_failed jev; fi
 
   # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
   for setup_product in aiterm caveat gpt-connector lattice peertable; do
+    step_ran "setup.$setup_product"
     if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then
-      update_failed=1
+      step_failed "setup.$setup_product"
     fi
   done
   for pkg in "${PACKAGES[@]}"; do
@@ -323,17 +348,23 @@ fi
       macos_major="${macos_major%%.*}"
       if [[ ! "$macos_major" =~ ^[0-9]+$ ]]; then
         printf 'FAILED: AIShellの対応判定に必要なmacOS版を取得できない\n'
-        update_failed=1
+        step_ran setup.aishell
+        step_failed setup.aishell
       elif [[ "$macos_major" -lt 15 ]]; then
         printf 'SKIPPED: AIShellの登録はmacOS 15以上だけに対応\n'
-      elif ! node "$SCRIPT_DIR/factory-product-setup.mjs" aishell; then update_failed=1; fi
+      else
+        step_ran setup.aishell
+        if ! node "$SCRIPT_DIR/factory-product-setup.mjs" aishell; then step_failed setup.aishell; fi
+      fi
     fi
   done
   if [[ "$setup_project" -eq 1 ]]; then
-    if ! spotter install -y; then update_failed=1; fi
+    step_ran spotter-install
+    if ! spotter install -y; then step_failed spotter-install; fi
   fi
 
   printf -- '--- factory-reporter:prepare-update-report ---\n'
+  step_ran factory-report
   # 更新周期とは別に、最新の障害観測を毎時届ける。送信形式はconfigから解決する。
   if ! node "$SCRIPT_DIR/factory-reporter-scheduler.mjs" install --apply --config "$FACTORY_REPORTER_CONFIG"; then
     printf 'FAILED: factory reporterの定期実行を登録できません\n'
@@ -366,9 +397,9 @@ fi
 
   [[ "$report_failed" -ne 0 ]] && post_gate=failed
   final_record_failed=0
-  record_toolchain claude-code "$claude_before" "$claude_latest" "$claude_operation" "$claude_after" "$post_gate" "$claude_reason" || { update_failed=1; final_record_failed=1; }
-  record_toolchain codex-cli "$codex_before" "$codex_latest" "$codex_operation" "$codex_after" "$post_gate" "$codex_reason" || { update_failed=1; final_record_failed=1; }
-  record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" "$post_gate" "$grok_reason" || { update_failed=1; final_record_failed=1; }
+  record_toolchain claude-code "$claude_before" "$claude_latest" "$claude_operation" "$claude_after" "$post_gate" "$claude_reason" || { step_failed toolchain-ledger; final_record_failed=1; }
+  record_toolchain codex-cli "$codex_before" "$codex_latest" "$codex_operation" "$codex_after" "$post_gate" "$codex_reason" || { step_failed toolchain-ledger; final_record_failed=1; }
+  record_toolchain grok-build "$grok_before" "$grok_latest" "$grok_operation" "$grok_after" "$post_gate" "$grok_reason" || { step_failed toolchain-ledger; final_record_failed=1; }
 
   # 更新結果を台帳へ確定した後に、最終bytesを再投影して送る。pending状態はBugHubへ送らない。
   if [[ "$final_record_failed" -ne 0 ]]; then
@@ -385,6 +416,17 @@ fi
       printf 'FAILED: factory reporter の最終update observation\n'
       report_failed=1
     fi
+  fi
+
+  # 動いた手順と失敗した手順を記録し、送信を有効にした端末ではBugHubへ報告する。
+  # 記録や送信ができなくても、更新の結果は変えない。届かなかった分は次の回に送る。
+  [[ "$report_failed" -ne 0 ]] && failed_steps+=(factory-report)
+  update_failure_args=()
+  for step in "${ran_steps[@]}"; do update_failure_args+=(--ran "$step"); done
+  for step in ${failed_steps[@]+"${failed_steps[@]}"}; do update_failure_args+=(--failed "$step"); done
+  printf -- '--- update-failure-report ---\n'
+  if ! node "$UPDATE_FAILURE_REPORT_HELPER" record "${update_failure_args[@]}"; then
+    printf 'WARN: 定期更新の失敗を記録または報告できない\n'
   fi
 
   printf 'agents-update result: update=%s report=%s\n' \
