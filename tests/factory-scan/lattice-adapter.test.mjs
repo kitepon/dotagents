@@ -134,6 +134,22 @@ test('runtime error snapshotを固定catalog検証つきでready projectionへ�
   });
 });
 
+test('Lattice本体が出す定義（0.71.1のsrc/runtime-errors.mjs）をすべて受け入れる', async () => {
+  const published = [
+    ['LATTICE.SENSOR_EVIDENCE_FAILED', 'sensor_adapter', 'LatticeSensor evidence collection failed'],
+    ['LATTICE.RUN_STORE_IO_FAILED', 'run_store', 'Lattice run store IO failed'],
+    ['LATTICE.EVENT_CHAIN_INTEGRITY_FAILED', 'event_store', 'Lattice run event chain integrity check failed'],
+    ['LATTICE.CLI_INTERNAL_FAILED', 'cli', 'Lattice CLI crashed outside the typed error contract'],
+    ['LATTICE.MCP_SERVER_FAILED', 'mcp', 'Lattice MCP server failed'],
+  ];
+  for (const [code, component, template] of published) {
+    const value = snapshotValue();
+    Object.assign(value.runtime_errors[0], { error_code: code, component, message_template: template, fingerprint: latticeFingerprint(component, code, template) });
+    const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(value) });
+    assert.equal(projection.runtime_errors[0].error_code, code);
+  }
+});
+
 test('catalog逸脱（未知code・template改変）はfail closedする', async () => {
   const unknown = snapshotValue();
   unknown.runtime_errors[0].error_code = 'LATTICE.NOT_A_CODE';
