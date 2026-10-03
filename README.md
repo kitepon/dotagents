@@ -385,7 +385,7 @@ report／outbox／credentialを削除しない。
 
 ## 編集ワークフロー
 
-**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [AGENTS.md](AGENTS.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。
+**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [AGENTS.md](AGENTS.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末（[host matrix](docs/factory-host-product-matrix.md)の4台。main-serverを含む）は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。定期更新はdotagents自身をpullしない。工場設定applierの期待値を変えた時は、各端末で `--dry-run` を見て、端末の承認後に `--apply` する。
 
 ## 含めないもの
 
