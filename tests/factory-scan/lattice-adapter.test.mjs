@@ -2,10 +2,13 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
 
+import { validateReportV9 } from '../../lib/factory/contract.mjs';
 import { latticeProduct } from '../../lib/factory/scan.mjs';
+import { V9_PRODUCT_IDS } from '../../lib/factory/v9.mjs';
 import {
   acknowledgeRuntimeErrors,
   acknowledgementBundle,
+  collectCaveatRuntimeErrors,
   collectLatticeRuntimeErrors,
 } from '../../lib/factory/runtime-errors.mjs';
 
@@ -148,6 +151,141 @@ test('Lattice本体が出す定義（0.71.1のsrc/runtime-errors.mjs）をすべ
     const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(value) });
     assert.equal(projection.runtime_errors[0].error_code, code);
   }
+});
+
+const CLI = Object.freeze({ code: 'LATTICE.CLI_INTERNAL_FAILED', component: 'cli', template: 'Lattice CLI crashed outside the typed error contract' });
+const CONTEXT = Object.freeze({ command_kind: 'run.list', error_kind: 'TypeError', cause_code: 'none' });
+
+// Latticeと合意した式: 現行の4要素の後ろへ command_kind・error_kind・cause_code をNUL区切りで足す。
+function contextFingerprint(context, { code, component, template } = CLI) {
+  return createHash('sha256')
+    .update(['lattice', component, code, template, context.command_kind, context.error_kind, context.cause_code].join('\0'))
+    .digest('hex');
+}
+
+function contextRecord(context = CONTEXT, definition = CLI) {
+  return {
+    ...snapshotValue().runtime_errors[0],
+    error_code: definition.code,
+    component: definition.component,
+    message_template: definition.template,
+    fingerprint: contextFingerprint(context, definition),
+    safe_context: { ...context },
+  };
+}
+
+function contextSnapshot(...records) {
+  const value = snapshotValue();
+  value.runtime_errors = records;
+  value.diagnostics.total_count = records.length;
+  value.diagnostics.pending_count = records.length;
+  return value;
+}
+
+test('safe_context付きの記録は3値を含む式で照合し、そのままprojectionへ運ぶ', async () => {
+  const legacy = {
+    ...snapshotValue().runtime_errors[0],
+    error_code: CLI.code,
+    component: CLI.component,
+    message_template: CLI.template,
+    fingerprint: latticeFingerprint(CLI.component, CLI.code, CLI.template),
+  };
+  // 古いstoreの記録（safe_contextなし・現行の式）と新しい記録は、同じerror_codeで1つのsnapshotに並ぶ。
+  const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(contextSnapshot(legacy, contextRecord())) });
+  assert.equal(projection.runtime_errors.length, 2);
+  assert.equal('safe_context' in projection.runtime_errors[0], false);
+  assert.equal(projection.runtime_errors[0].fingerprint, legacy.fingerprint);
+  assert.deepEqual(projection.runtime_errors[1].safe_context, CONTEXT);
+  assert.deepEqual(Object.keys(projection.runtime_errors[1].safe_context), ['command_kind', 'error_kind', 'cause_code']);
+  assert.equal(projection.runtime_errors[1].fingerprint, contextFingerprint(CONTEXT));
+  assert.notEqual(projection.runtime_errors[1].fingerprint, legacy.fingerprint);
+});
+
+test('safe_context付きのprojectionは、そのままwire v9のreport検査（privacy検査を含む）を通る', async () => {
+  const contexts = [
+    CONTEXT,
+    { command_kind: 'other', error_kind: 'other', cause_code: 'none' },
+    { command_kind: 'runtime-errors.snapshot', error_kind: 'SystemError', cause_code: `ERR_${'A'.repeat(60)}` },
+  ];
+  const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(contextSnapshot(...contexts.map((context) => contextRecord(context)))) });
+  const observedAt = '2026-07-18T00:02:00.000Z';
+  const empty = () => ({ presence_status: 'installed', installed_version: '0.2.0', contract_version: '9.0', checks: [], runtime_errors: [], resolutions: [] });
+  const report = {
+    schema_version: '9.0', report_id: '019f57f0-6bb7-7bc1-b94a-18f648f2d904',
+    host_id: 'mac-kite', host_profile: 'mac', platform: { os: 'darwin', arch: 'arm64' },
+    report_mode: 'full', observed_at: observedAt, created_at: observedAt,
+    reporter: { version: '9.0.0', dotagents_revision: 'abc1234' },
+    products: Object.fromEntries(V9_PRODUCT_IDS.map((id) => [id, empty()])),
+  };
+  report.products.lattice.runtime_errors = projection.runtime_errors;
+  assert.doesNotThrow(() => validateReportV9(report));
+  assert.deepEqual(report.products.lattice.runtime_errors.map((record) => record.safe_context), contexts);
+});
+
+test('safe_contextの語彙はLatticeが持ち、工場は形だけを検査する', async () => {
+  const accepted = [
+    ...['other', 'run.list', 'plan.compile', 'todo.start', 'runtime-errors.snapshot', 'a'.repeat(48)].map((command_kind) => ({ ...CONTEXT, command_kind })),
+    ...['Error', 'TypeError', 'RangeError', 'SyntaxError', 'ReferenceError', 'AggregateError', 'SystemError', 'other'].map((error_kind) => ({ ...CONTEXT, error_kind })),
+    ...['none', 'ENOENT', 'EACCES', 'EADDRINUSE', 'ERR_MODULE_NOT_FOUND', `ERR_${'A'.repeat(60)}`].map((cause_code) => ({ ...CONTEXT, cause_code })),
+  ];
+  for (const context of accepted) {
+    const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(contextSnapshot(contextRecord(context))) });
+    assert.deepEqual(projection.runtime_errors[0].safe_context, context, JSON.stringify(context));
+  }
+  // CLI以外の記録（MCP・sensor・run store・event store）にも付く。
+  const mcp = { code: 'LATTICE.MCP_SERVER_FAILED', component: 'mcp', template: 'Lattice MCP server failed' };
+  const context = { command_kind: 'other', error_kind: 'Error', cause_code: 'ENOENT' };
+  const projection = await collectLatticeRuntimeErrors({ runner: runnerFor(contextSnapshot(contextRecord(context, mcp))) });
+  assert.equal(projection.runtime_errors[0].fingerprint, contextFingerprint(context, mcp));
+});
+
+test('safe_contextはキー3つの完全一致・値の形・式の一致を外れるとfail closedする', async () => {
+  const mutate = (change) => { const record = contextRecord(); change(record); return record; };
+  const withContext = (context) => ({ ...contextRecord(), safe_context: context, fingerprint: contextFingerprint({ ...CONTEXT, ...context }) });
+  const rejected = [
+    ['キー欠け', mutate((record) => { delete record.safe_context.cause_code; })],
+    ['余分なキー', mutate((record) => { record.safe_context.detail = 'x'; })],
+    ['object以外', mutate((record) => { record.safe_context = null; })],
+    ['配列', mutate((record) => { record.safe_context = ['run.list', 'TypeError', 'none']; })],
+    ['文字列以外の値', withContext({ ...CONTEXT, cause_code: 2 })],
+    ['command_kind 大文字', withContext({ ...CONTEXT, command_kind: 'Run.List' })],
+    ['command_kind 3階層', withContext({ ...CONTEXT, command_kind: 'run.list.all' })],
+    ['command_kind path', withContext({ ...CONTEXT, command_kind: '/tmp/plan' })],
+    ['command_kind 49文字', withContext({ ...CONTEXT, command_kind: 'a'.repeat(49) })],
+    ['command_kind 空', withContext({ ...CONTEXT, command_kind: '' })],
+    ['error_kind 小文字', withContext({ ...CONTEXT, error_kind: 'typeerror' })],
+    ['error_kind 33文字', withContext({ ...CONTEXT, error_kind: `E${'r'.repeat(32)}` })],
+    ['error_kind 記号', withContext({ ...CONTEXT, error_kind: 'Type Error' })],
+    ['cause_code 小文字', withContext({ ...CONTEXT, cause_code: 'enoent' })],
+    ['cause_code E/ERR_以外', withContext({ ...CONTEXT, cause_code: 'MODULE_NOT_FOUND' })],
+    ['cause_code 空', withContext({ ...CONTEXT, cause_code: '' })],
+    ['safe_contextありで現行の式', mutate((record) => { record.fingerprint = latticeFingerprint(CLI.component, CLI.code, CLI.template); })],
+    ['safe_contextなしで新しい式', mutate((record) => { delete record.safe_context; })],
+    ['値の入れ替え', mutate((record) => { record.safe_context = { command_kind: 'other', error_kind: 'TypeError', cause_code: 'none' }; })],
+  ];
+  for (const [name, record] of rejected) {
+    await assert.rejects(collectLatticeRuntimeErrors({ runner: runnerFor(contextSnapshot(record)) }), { code: 'E_FACTORY_RUNTIME_ERRORS' }, name);
+  }
+});
+
+test('safe_contextを受け入れるのはlatticeだけ（他のnative製品は従来どおり完全一致）', async () => {
+  const fingerprint = createHash('sha256').update('caveat\0sync\0CAVEAT.SYNC_FAILED\0Caveat own sync failed').digest('hex');
+  const value = {
+    ...snapshotValue(),
+    schema: 'caveat.runtime_errors.v1',
+    product: 'caveat',
+    runtime_errors: [{
+      ...snapshotValue().runtime_errors[0],
+      error_code: 'CAVEAT.SYNC_FAILED',
+      component: 'sync',
+      message_template: 'Caveat own sync failed',
+      fingerprint,
+    }],
+  };
+  const projection = await collectCaveatRuntimeErrors({ runner: runnerFor(value) });
+  assert.equal(projection.runtime_errors.length, 1);
+  value.runtime_errors[0].safe_context = { ...CONTEXT };
+  await assert.rejects(collectCaveatRuntimeErrors({ runner: runnerFor(value) }), { code: 'E_FACTORY_RUNTIME_ERRORS' });
 });
 
 test('catalog逸脱（未知code・template改変）はfail closedする', async () => {

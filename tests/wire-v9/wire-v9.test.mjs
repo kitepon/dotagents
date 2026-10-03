@@ -51,6 +51,28 @@ test('v9は両第三者製品を必須にし、旧v8の集合を変更しない'
   assert.doesNotThrow(() => validateReportV8(old));
   assert.throws(() => validateReportV8(report));
 });
+test('safe_contextの許可keyはlatticeの3つだけで、他製品と未定義keyは拒否する', () => {
+  const runtimeError = (safeContext) => ({
+    error_code: 'LATTICE.CLI_INTERNAL_FAILED', component: 'cli', status: 'open', severity: 'high',
+    fingerprint: 'a'.repeat(64), message_template: 'Lattice CLI crashed outside the typed error contract',
+    occurrence_count: 1, first_seen: NOW, last_seen: NOW, state_schema_version: '1.0',
+    safe_context: safeContext,
+  });
+  const context = { command_kind: 'run.list', error_kind: 'TypeError', cause_code: 'ERR_MODULE_NOT_FOUND' };
+  const withContext = (id, safeContext) => {
+    const report = reportV9(); report.products[id].runtime_errors = [runtimeError(safeContext)]; return report;
+  };
+  assert.doesNotThrow(() => validateReportV9(withContext('lattice', context)));
+  // 同じ許可keyはrollback先のv8でも通る（contractは全majorで共有）。
+  const v8 = { ...reportV9(), schema_version: '8.0', products: Object.fromEntries(V8_PRODUCT_IDS.map((id) => [id, product('8.0')])) };
+  v8.products.lattice.runtime_errors = [runtimeError(context)];
+  assert.doesNotThrow(() => validateReportV8(v8));
+  assert.throws(() => validateReportV9(withContext('lattice', { ...context, detail: 'x' })), /allowlist/u);
+  assert.throws(() => validateReportV9(withContext('lattice', { ...context, cause_code: ['ENOENT'] })), /safe_context/u);
+  for (const id of ['caveat', 'throughline', 'spotter', 'aiterm-mcp']) {
+    assert.throws(() => validateReportV9(withContext(id, context)), /allowlist/u, id);
+  }
+});
 test('v9 reporterはv9 reportだけを専用stateで受理する', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'wire-v9-reporter-')); t.after(() => rm(root, { recursive: true, force: true }));
   const reportPath = join(root, 'report.json'); const configPath = join(root, 'config.json');
