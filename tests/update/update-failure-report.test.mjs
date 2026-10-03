@@ -204,6 +204,32 @@ test('有効な端末は署名を付けて1か所へ送り、受領されたら�
   assert.deepEqual(status.open_steps, ['setup.aiterm']);
 });
 
+test('verifyは記録に触れず、空の報告で合鍵と宛先と応答の署名を確かめる', async (t) => {
+  const { env, paths } = await workspace(t);
+  let reply = accepted;
+  const receiver = await intake(t, (report) => reply(report));
+  await placeCredential(paths, receiver.url);
+
+  // 送信を有効にしていない端末では送らない。
+  const disabled = await run(env, ['verify']);
+  assert.equal(disabled.code, 1);
+  assert.deepEqual(disabled.json, { ok: false, command: 'verify', reporting: 'disabled', outcome: 'not_sent' });
+  assert.equal(receiver.requests.length, 0);
+
+  await run(env, ['enable']);
+  const verified = await run(env, ['verify']);
+  assert.equal(verified.code, 0, verified.stderr);
+  assert.deepEqual(verified.json, { ok: true, command: 'verify', reporting: 'enabled', outcome: 'accepted' });
+  assert.deepEqual(receiver.requests[0].report.runtime_errors, []);
+  assert.deepEqual(receiver.requests[0].report.resolutions, []);
+  await assert.rejects(stat(paths.state));
+
+  reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: 'f'.repeat(64) } });
+  const forged = await run(env, ['verify']);
+  assert.equal(forged.code, 1);
+  assert.equal(forged.json.outcome, 'response_unverified');
+});
+
 test('受領を確かめられない応答では、送信待ちのまま残す', async (t) => {
   const { env, paths } = await workspace(t);
   let reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: '0'.repeat(64) } });

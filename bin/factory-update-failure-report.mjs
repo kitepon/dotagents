@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
-  applyRun, buildReport, markAccepted, markFailed, readCredential, readSettings, readState, sendReport,
+  applyRun, buildReport, emptyState, markAccepted, markFailed, readCredential, readSettings, readState, sendReport,
   updateFailurePaths, validStep, versionFromRevision, writeSettings, writeState,
 } from '../lib/factory/update-failure-report.mjs';
 
@@ -78,6 +78,17 @@ try {
       last_outcome: state.last_outcome,
       last_accepted_at: state.last_accepted_at,
     });
+  } else if (command === 'verify' && rest.length === 0) {
+    // 記録には触れず、中身が空の報告を1回送る。合鍵・宛先・応答の署名を、失敗が起きる前に確かめるため。
+    const { reporting, credential } = await reportingStatus(paths);
+    let outcome = 'not_sent';
+    if (credential) {
+      const nowMs = Date.now();
+      const report = buildReport(emptyState(), { observedAt: new Date(nowMs).toISOString(), version: installedVersion() });
+      ({ outcome } = await sendReport({ credential, report, nowMs }));
+    }
+    print({ ok: outcome === 'accepted', command, reporting, outcome });
+    if (outcome !== 'accepted') process.exitCode = 1;
   } else if ((command === 'enable' || command === 'disable') && rest.length === 0) {
     await writeSettings(paths.settings, command === 'enable');
     print({ ok: true, command, reporting: (await reportingStatus(paths)).reporting });

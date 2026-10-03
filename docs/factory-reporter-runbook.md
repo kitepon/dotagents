@@ -72,7 +72,7 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 - **記録**: `agents-update.sh`が最後に`bin/factory-update-failure-report.mjs record`へ、動いた手順と失敗した手順の名前を渡す。失敗した手順は回数を累計し、次の回で成功した手順は解決済みにする。今回動かなかった手順には触れない。記録や送信ができなくても、更新の結果は変えない。
 - **置き場**: 記録は`~/.local/state/dotagents/update-failures.json`、送信の設定は`~/.config/dotagents/update-failure-reporting.json`（Windowsはどちらも`%LOCALAPPDATA%\dotagents\`）。合鍵はBugHubの持ち主が置く`~/.config/bughub/product-credentials/dotagents.json`（Windowsは`%LOCALAPPDATA%\bughub\product-credentials\dotagents.json`）で、dotagentsは読むだけで作らない。
 - **送信**: 既定では送らない。端末で`factory-update-failure-report.mjs enable`を実行し、合鍵が本人だけの通常のファイル（0600、リンクでない）である時だけ送る。送る形はBugHubの製品報告の契約（`bughub/PRODUCT_REPORTING.md`）で、`error_code`は`UPDATE_STEP_FAILED`、`component`は手順の名前、版は`0.0.0+<revision>`。受領済みにするのは、200・`accepted`・同じ`report_id`・応答の署名がそろった時だけ。
-- **確認と停止**: `factory-update-failure-report.mjs status`が、送信の状態・未解決の手順・最後の結果を返す。届かなかった分は次の更新で送る。待たずに送る時は`flush`。止める時は`disable`。
+- **確認と停止**: `factory-update-failure-report.mjs status`が、送信の状態・未解決の手順・最後の結果を返す。`verify`は、記録に触れずに中身が空の報告を1回送り、合鍵・宛先・応答の署名を確かめる（BugHubにissueは出来ない）。届かなかった分は次の更新で送る。待たずに送る時は`flush`。止める時は`disable`。
 - **限界**: 更新が動かなかったこと（端末が止まっていた、予定が外れていた）は検出しない。WindowsはACLを確かめず、合鍵が通常のファイルでリンクでないことだけを見る。
 
 ## 停止・失敗
