@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { join } from 'node:path';
-import { canonicalClaudeHookCommand } from '../../lib/factory/v5.mjs';
+import { canonicalClaudeHookCommand, claudeRequiredHooksPresent } from '../../lib/factory/v5.mjs';
 
 const home = 'C:\\Users\\kite_';
 const hook = (name) => join(home, '.local', 'bin', name);
@@ -74,4 +74,21 @@ test('Claude hook command は別 script・引数ずれ・prefix を拒否する'
     ),
     false,
   );
+});
+
+test('Claude required_hooks は Bash と PowerShell のゲートを1件ずつ要求する', () => {
+  const gate = (matcher) => ({ matcher, hooks: [{ type: 'command', command: '~/.local/bin/git-destroy-gate-hook', timeout: 5 }] });
+  const rtk = (matcher) => ({ matcher, hooks: [{ type: 'command', command: 'rtk hook claude' }] });
+  const settings = (...entries) => ({ hooks: { PreToolUse: entries } });
+  // rabbit・macbook・foxの実配置（apply-claude-configの生成物とRTKの登録）
+  assert.equal(claudeRequiredHooksPresent(settings(gate('Bash'), rtk('Bash'), rtk('PowerShell'), gate('PowerShell')), home), true);
+  assert.equal(claudeRequiredHooksPresent(settings(gate('Bash')), home), false);
+  assert.equal(claudeRequiredHooksPresent(settings(gate('PowerShell')), home), false);
+  assert.equal(claudeRequiredHooksPresent(settings(gate('Bash'), gate('Bash'), gate('PowerShell')), home), false);
+  assert.equal(claudeRequiredHooksPresent(settings(gate('Bash'), gate('PowerShell'), { hooks: gate('Bash').hooks }), home), false);
+  const bundled = gate('Bash'); bundled.hooks.push(rtk('Bash').hooks[0]);
+  assert.equal(claudeRequiredHooksPresent(settings(bundled, gate('PowerShell')), home), false);
+  const slow = gate('PowerShell'); slow.hooks[0].timeout = 30;
+  assert.equal(claudeRequiredHooksPresent(settings(gate('Bash'), slow), home), false);
+  assert.equal(claudeRequiredHooksPresent({}, home), false);
 });
