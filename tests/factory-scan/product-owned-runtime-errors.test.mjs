@@ -13,14 +13,15 @@ const ok = (value) => ({ ok: true, code: 0, reason: null, stdout: typeof value =
 const REVISION = '0123456789abcdef0123456789abcdef01234567';
 const READINESS_IDS = ['database', 'schema', 'pull_poll', 'factory_ingest', 'factory_delivery', 'source_revision'];
 
-async function scan(t, profile, respond) {
+// serverはLinuxだけの種類なので、試験を走らせるOSに関わらずlinuxとして組み立てる。
+async function scan(t, profile, respond, platform = process.platform) {
   const root = await mkdtemp(join(tmpdir(), 'factory-product-owned-'));
   const home = join(root, 'home');
   await mkdir(home);
   t.after(() => rm(root, { recursive: true, force: true }));
   const calls = [];
   const result = await scanV9WithAcknowledgements({
-    host: { id: 'test-host', profile }, cwd: root, arch: 'x64', platform: process.platform, home,
+    host: { id: 'test-host', profile }, cwd: root, arch: 'x64', platform, home,
     collectionEnabled: true, toolchainLedgerPath: join(root, 'toolchain-ledger.json'),
     runCommand: async (command, args) => {
       calls.push([command, ...args].join(' '));
@@ -60,7 +61,7 @@ test('工場のscanはServerManagerの外部eventを読まず、readinessのchec
       status: 'ready', reason_code: 'ready',
       checks: READINESS_IDS.map((id) => ({ id, status: 'pass', reason_code: id === 'source_revision' ? 'revision_match' : 'ready' })),
     });
-  });
+  }, 'linux');
   assert.deepEqual(calls.filter((line) => line.startsWith('factory-external-event')), []);
   const product = report.products.servermanager;
   assert.equal(product.presence_status, 'installed');
@@ -83,7 +84,7 @@ test('readinessのcheckが落ちた時は、checkとして運び、実行時エ�
         ? { id, status: 'fail', reason_code: 'source_failed' }
         : { id, status: 'pass', reason_code: id === 'source_revision' ? 'revision_match' : 'ready' })),
     }) };
-  });
+  }, 'linux');
   const product = report.products.servermanager;
   assert.equal(product.compatibility_status, 'incompatible');
   const failed = product.checks.filter((check) => check.status === 'fail');
