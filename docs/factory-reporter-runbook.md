@@ -69,5 +69,4 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 - credential漏洩はServerManager側で対象credentialをrevokeし、host側fileを置換する。
 - scan非0はenqueueしない。reporter非0はstdoutのtyped codeに従い、acceptedでないoutboxを保持する。
 - 製品CLIの応答が上限（既定20秒）を超えた時は、そのcheckを`unverified`／`cli_timeout`で残す。出力を読めていないので`fail`にせず、製品側の契約違反（`native_schema_invalid`など）とも区別する。npm CLIの版を読む呼出しが時間切れした時は、PATH上の別の導入へ読み替えない。
-- 工場の設定が`collection.enabled=true`なのに、製品が実行時エラーの収集を無効と答えた時は、check `runtime_error_collection`を`fail`／`collection_disabled`（warn）で残し、その製品を`incompatible`にする。`pass`は、その製品の実行時エラーを実際に読めたことを表す。製品が`unsupported`（その端末では収集に対応しない）と答えた時は`unsupported`／`collection_unsupported`で残し、`incompatible`にしない。snapshotを読めなかった時と、工場の設定で収集が無効な端末には、このcheckを出さない。
 - server-side停止・migration・feature flag・credential lifecycle・BugHub復旧はServerManagerの正本に従う。
