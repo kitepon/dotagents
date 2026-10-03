@@ -109,4 +109,28 @@ p.write_text(json.dumps(v))
 PY
 HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
 grep -Fq 'product-owned-hook' "$HOME_FIXTURE/.cursor/hooks.json" || fail '他製品hookを消した'
+
+# 名前が cursor- で始まる製品hook（aiterm-mcp の cursor-parent-hook.js）は工場hookと数えない。
+# 工場hookは ~/.local/bin/cursor-*-hook だけで、廃止した工場hookは取り除く。
+python3 - "$HOME_FIXTURE/.cursor/hooks.json" <<'PY'
+import json, sys
+from pathlib import Path
+p = Path(sys.argv[1])
+v = json.loads(p.read_text())
+v["hooks"].setdefault("afterMCPExecution", []).append({"command": "'/opt/node/bin/node' '/opt/node/lib/node_modules/aiterm-mcp/dist/cursor-parent-hook.js'", "timeout": 15})
+v["hooks"]["beforeSubmitPrompt"].append({"command": "& 'C:\\Program Files\\nodejs\\node.exe' 'C:\\Users\\k\\AppData\\Roaming\\npm\\node_modules\\aiterm-mcp\\dist\\cursor-parent-hook.js'", "timeout": 15})
+v["hooks"].setdefault("stop", []).append({"command": "${HOME}/.local/bin/cursor-todo-gate-hook stop"})
+p.write_text(json.dumps(v))
+PY
+HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --apply >/dev/null
+python3 - "$HOME_FIXTURE/.cursor/hooks.json" <<'PY' || fail 'cursor-parent-hook.js を工場hookとして消した、または廃止hookを残した'
+import json, sys
+from pathlib import Path
+v = json.loads(Path(sys.argv[1]).read_text())["hooks"]
+commands = [entry.get("command", "") for entries in v.values() for entry in entries]
+assert sum("aiterm-mcp" in command for command in commands) == 2, commands
+assert "stop" not in v, v.get("stop")
+PY
+HOME="$HOME_FIXTURE" "$HOME_FIXTURE/.local/bin/apply-cursor-config" --dry-run | grep -Fq '変更なし' \
+  || fail '製品hookを残した状態で再適用が冪等でない'
 echo 'apply-cursor-config: OK'

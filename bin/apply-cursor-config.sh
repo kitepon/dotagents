@@ -8,6 +8,7 @@ import difflib
 import io
 import json
 import os
+import re
 import stat
 import sys
 import tarfile
@@ -39,9 +40,13 @@ def dump_json(data: dict) -> str:
 FACTORY_HOOKS_PATH = Path(__file__).resolve().parent.parent / "cursor" / "hooks" / "factory.json"
 
 
+# 工場hookは install.sh が配る ~/.local/bin/cursor-*-hook（拡張子なし）だけ。廃止した工場hookも同じ形だった。
+# 名前が cursor- で始まる製品hook（aiterm-mcp の dist/cursor-parent-hook.js など）を巻き込まない。
+FACTORY_HOOK_SCRIPT = re.compile(r"/\.local/bin/cursor-[a-z0-9]+(?:-[a-z0-9]+)*-hook(?=$|[\s'\"])", re.IGNORECASE)
+
+
 def is_factory_hook_command(command: str) -> bool:
-    name = Path(str(command).replace("\\", "/")).name.split()[0]
-    return name.startswith("cursor-") and "hook" in name
+    return FACTORY_HOOK_SCRIPT.search(str(command).replace("\\", "/")) is not None
 
 
 def win_quote(token: str) -> str:
