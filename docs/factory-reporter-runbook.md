@@ -61,7 +61,7 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 `agents-update`は更新結果とreporter結果を別々に記録し、どちらかが失敗すれば非0で終わる。post-update runnerはhost configのendpointからwire majorを解決し、同じmajorのschedule runnerを使う。configまたはrunnerを解決できない時は明示失敗し、別majorへfallbackしない。
 
-導入の結果は各製品の公式入口が返す。現行runnerの`--post-update`は最終台帳を反映する前のreport準備であり、製品の診断を追加の導入gateにしない。公開された失敗・未対応・未検証は報告へ保持し、工場自身のreport生成・台帳確定・配送の成否と区別する。互換上残る`post_gate_status`はこの工場処理の状態を表す。
+導入の結果は各製品の公式入口が返す。製品が`partial`や`action_required`（利用者の対応待ち）と答えた時は、その値のまま記録し、工場の更新の失敗には数えない。現行runnerの`--post-update`は最終台帳を反映する前のreport準備であり、製品の診断を追加の導入gateにしない。公開された失敗・未対応・未検証は報告へ保持し、工場自身のreport生成・台帳確定・配送の成否と区別する。互換上残る`post_gate_status`はこの工場処理の状態を表す。
 
 ## 停止・失敗
 
