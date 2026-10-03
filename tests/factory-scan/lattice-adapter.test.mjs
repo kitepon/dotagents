@@ -331,4 +331,17 @@ test('collection disabledは空projection（collection_disabled）で返しack�
   assert.equal(projection.status, 'collection_disabled');
   assert.deepEqual(projection.runtime_errors, []);
   assert.equal(projection.acknowledgement, null);
+
+  // 収集に対応しない端末（Windows）で製品が答える形。記録は空でなければならない。
+  const unsupported = { ...disabled, diagnostics: { ...disabled.diagnostics, collection: 'unsupported' } };
+  const skipped = await collectLatticeRuntimeErrors({ runner: runnerFor(unsupported) });
+  assert.equal(skipped.status, 'collection_unsupported');
+  assert.deepEqual(skipped.runtime_errors, []);
+  assert.equal(skipped.acknowledgement, null);
+  await assert.rejects(collectLatticeRuntimeErrors({
+    runner: runnerFor({ ...unsupported, cursor: { high_watermark: 1, acknowledged_through: 0, next: 1 } }),
+  }));
+  await assert.rejects(collectLatticeRuntimeErrors({
+    runner: runnerFor({ ...unsupported, diagnostics: { ...unsupported.diagnostics, collection: 'paused' } }),
+  }));
 });

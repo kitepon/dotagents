@@ -70,6 +70,14 @@ test('収集が有効で実行時エラーを読めた製品は、passで残す'
   }
 });
 
+test('製品がその端末では対応しないと答えたら、failにせずunsupportedで残す', async (t) => {
+  const products = await scan(t, { lattice: 'unsupported', gpt: 'enabled' });
+  assert.deepEqual(collectionCheck(products.lattice),
+    { check_id: 'runtime_error_collection', status: 'unsupported', reason_code: 'collection_unsupported' });
+  assert.equal(products.lattice.compatibility_status, 'compatible');
+  assert.deepEqual(products.lattice.checks.filter((item) => item.status === 'fail'), []);
+});
+
 test('実行時エラーを読めなかった製品には、収集のcheckを出さない', async (t) => {
   const products = await scan(t, { lattice: 'enabled', gpt: null });
   assert.equal(collectionCheck(products['gpt-connector']), undefined);
