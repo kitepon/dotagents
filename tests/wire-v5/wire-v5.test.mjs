@@ -85,7 +85,7 @@ test('v5 clientのprivacy gateはAIShellの許可pathを拒否する', () => {
 
 test('v5 scanはAIShellを非対応profileで構造的not_applicableにする', async () => {
   const source = await readFile(new URL('../../lib/factory/v5.mjs', import.meta.url), 'utf8');
-  assert.match(source, /aishellProduct\(\{ cwd, profile: host\.profile \}/u,
+  assert.match(source, /aishellProduct\(\{ cwd, profile: host\.profile\b/u,
     'host profileをaishellProductへ渡し、非対応hostでnot_applicableを返させる');
   // 言及ではなく実際の起動を見る。commentに書いた禁止事項でtestを緑にしない。
   assert.doesNotMatch(source, /run\('(?:osascript|\/bin\/sh|\/bin\/bash|sh|bash)'/u,
