@@ -16,6 +16,9 @@ esac
 
 # launchd / cron は最小 PATH で起動する（npm が /opt/homebrew 等にあると見つからず静かに失敗する）。
 PATH="${AGENTS_UPDATE_PATH_PREFIX:-$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/snap/bin:/usr/local/bin}:$PATH"
+# 端末別forkのagent-desktopはcargoで導入する。rustupの置き場は最小 PATH に無い。
+# 既存の解決順を変えないよう末尾へ足す。
+PATH="$PATH:$HOME/.cargo/bin"
 
 # Linux / WSL2 の cron は NVM の選択済み Node を PATH に含めない。
 # system npmがPATHにあっても選ばず、NVMがある端末では正規入口から必ず復元する。

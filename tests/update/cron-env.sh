@@ -28,6 +28,7 @@ cat > "$TEST_HOME/base-bin/node" <<EOF
 case "\$1" in
   */factory-jev-setup.mjs)
     printf '%s:jev-setup\\n' "\${RUN_ID:-default}" >> "\$HOME/update-events.log"
+    printf '%s:jev-cargo:%s\\n' "\${RUN_ID:-default}" "\$(command -v cargo || true)" >> "\$HOME/update-events.log"
     exit "\${JEV_SETUP_FAIL:-0}" ;;
   */factory-typesafe-setup.mjs)
     printf '%s:typesafe-setup\\n' "\${RUN_ID:-default}" >> "\$HOME/update-events.log"
@@ -39,6 +40,10 @@ esac
 exec "$(command -v node)" "\$@"
 EOF
 chmod +x "$TEST_HOME/base-bin/node"
+# rustupはcargoを ~/.cargo/bin へ置く。launchd / cron の最小 PATH には無い。
+mkdir -p "$TEST_HOME/.cargo/bin"
+printf '#!/bin/sh\n' > "$TEST_HOME/.cargo/bin/cargo"
+chmod +x "$TEST_HOME/.cargo/bin/cargo"
 cat > "$TEST_HOME/.local/bin/curl" <<'EOF'
 #!/bin/sh
 output=''
@@ -216,6 +221,8 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
 fi
 
 [ "$(grep -Fc 'normal:jev-setup' "$TEST_HOME/update-events.log")" -eq 1 ] || fail 'Jev公式導入が一回呼ばれていない'
+grep -Fxq "normal:jev-cargo:$TEST_HOME/.cargo/bin/cargo" "$TEST_HOME/update-events.log" \
+  || fail '最小PATHのJev導入からrustupのcargoを解決できない'
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
