@@ -61,6 +61,7 @@ test-ci-plan: ## 変更分類と最終合否のfail-closed契約
 	node --test tests/ci/*.test.mjs
 
 test-install: ## 隔離 HOME の install/profile/config apply 検証
+	$(PYTHON) tests/install/onepassword.test.py
 	bash tests/install/apply-claude-config.sh
 	bash tests/install/quoted-hook-command.sh
 	bash tests/install/codex-hook-dead-interpreter.sh

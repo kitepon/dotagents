@@ -1,6 +1,6 @@
 # 1PasswordとCodexの公式MCP連携
 
-取得日: 2026-10-04。確度: 機能と設定方法は公式資料、Macの起動・公開tool一覧・認証・環境一覧取得は実測。Codexの新しいチャットでのtool読込は未確認。
+取得日: 2026-10-04。確度: 機能と設定方法は公式資料、3OSの起動・公開tool一覧・CLI/MCP認証・環境一覧取得は実測。既存のCodexチャットのtool再読込は未確認。
 
 ## 出典
 
@@ -24,3 +24,22 @@
 - Codexの公式`mcp add`で登録を確認した。実測は登録した同じ公式実行ファイルに対するMCPプロトコルで行った。進行中のチャットの道具一覧には追加されたMCPがまだ含まれず、Codexの新規チャットでの読込は未確認。
 
 アカウントID、環境名、認証情報はこの記録へ保存していない。
+
+## 3OS・4ハーネス展開の観測
+
+Mac・main-server・rabbit・Windowsへ公式CLIを導入した。rabbitは公式APTのdesktopアプリ、Windowsは公式wingetのMSIXアプリを導入した。Mac/rabbit/WindowsのClaude・Codex・Grok・Cursorへ、同じ公式MCPのstdio入口を各ハーネスの公開登録方法で設定した。
+
+Windowsの公式MCPも初期化・tool一覧取得に成功した。Mac/Linuxは8tool、Windowsは6toolで、Windowsにはローカル`.env`作成と一覧がない。公式Claude/Cursorプラグイン資料のWindows対応記述と、Windows同梱resourceのMCP入口記述には不一致があるため、MCPの起動実測と認証成功を分ける。Windowsの本人認証・空の環境一覧取得も、本人のdesktop sessionから成功した。SSHはdesktopと異なるsessionで、本人のアプリが動く面からの接続を直接代替できない。
+
+main-serverはGUIを持たず、公式MCPのdesktop認証が成立しない。専用保管庫だけに読書きできるService Accountを公式CLIで作成し、tokenの正本を1Passwordへ保存した。永続値はOS標準のユーザー暗号化資格情報だけとし、既存login shellの初期環境へ公式認証変数を渡して、新しいsessionでCLI認証が成功した。Service Accountは個人契約でも使えるが、組込み個人保管庫へはアクセスできず、Environmentsへの権限は読取だけである。
+
+Grokの公開診断は、数字開始のMCP登録名`1password`を理由に全toolをsessionへ取り込まなかった。登録名を4ハーネス共通の`onepassword`に直すと、Mac/rabbitのGrok公開診断が成功した。Cursorの公開tool一覧とClaudeの接続確認も成功した。
+
+- [公式CLI導入](https://www.1password.dev/cli/get-started)
+- [Linux公式導入](https://support.1password.com/install-linux/)
+- [公式認証方式](https://www.1password.dev/get-started/build-integrations)
+- [Service Accountの作成と制約](https://www.1password.dev/service-accounts/get-started)
+- [Service Accountの利用枠](https://www.1password.dev/service-accounts/rate-limits)
+- [Claude公式プラグインの対応条件](https://www.1password.dev/environments/claude-plugin)
+- [Cursor公式プラグインの対応条件](https://www.1password.dev/environments/cursor-plugin)
+- [systemdの公式資格情報仕様](https://github.com/systemd/systemd/blob/v259/man/systemd-creds.xml)
