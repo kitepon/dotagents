@@ -4,6 +4,7 @@
 
 - [tools/cursor-origin.md](tools/cursor-origin.md) — Cursor Origin の同期挙動（push・tag の素通し、detach で GitHub 反映停止）と CLI 導入手順の実測（2026-08-29・確度高・β）
 - [tools/jev-fork-retirement.md](tools/jev-fork-retirement.md) — Jev関連のForkについて、ブラウザ初回停止の再現・上流PR・公式復帰条件を記録（2026-09-27・PR状態と分離Chromeは実測）
+- [tools/1password-codex-mcp-20261004.md](tools/1password-codex-mcp-20261004.md) — 1Password公式MCPとCLIの役割、Macでの登録・起動・認証・空の環境一覧取得、Codex新規チャットでの読込未確認（2026-10-04・公式資料＋実測）。
 - [npm/npm-view-json-20260912.md](npm/npm-view-json-20260912.md) — npm 12の単一版JSON配列と旧文字列形式の違い。公式文書・Mac実測を確認し、工場の共通decoderへ反映（2026-09-12・確度高）。
 
 - [second-brain/karpathy-obsidian-llm-knowledge-base.md](second-brain/karpathy-obsidian-llm-knowledge-base.md) — Karpathy 流 LLM 知識ベース×Obsidian の一次発言集約と、うちの rag/ 設計への含意（2026-07-04・確度高）
