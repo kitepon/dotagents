@@ -98,6 +98,25 @@ test('端末別fork指定は公式npm版を外して固定revisionをCargo導入
     execute: () => assert.fail('不正な指定でコマンドを実行しない') }), /JEV_FORK_CONFIG_INVALID/);
 });
 
+test('既存agent-desktopのfork指定では分岐した上流mainをpullしない', async (t) => {
+  const home = await homeFor(t); const calls = [];
+  await mkdir(join(home, 'Developer', 'agent-desktop'), { recursive: true });
+  await mkdir(join(home, '.config', 'dotagents'), { recursive: true });
+  const repository = 'https://github.com/quolu/agent-desktop.git';
+  const revision = 'c'.repeat(40);
+  await writeFile(join(home, '.config', 'dotagents', 'agent-desktop-fork.json'), JSON.stringify({ repository, revision }));
+  const execute = async (cmd, args) => {
+    calls.push([cmd, args]);
+    if (cmd === 'git' && args[0] === 'pull') return { ...ok, ok: false, code: 128 };
+    return { ...ok, stdout: cmd === 'git' && args[0] === 'remote' ? 'https://github.com/lahfir/agent-desktop.git' : '' };
+  };
+  const result = await setupJevProduct('agent-desktop', { home, platform: 'darwin', execute,
+    output: quiet, releaseCheck: async () => null });
+  assert.equal(result.revision, revision);
+  assert.ok(calls.some(([cmd, args]) => cmd === 'cargo' && args.includes(revision)));
+  assert.equal(calls.some(([cmd, args]) => cmd === 'git' && args[0] === 'pull'), false);
+});
+
 test('Browser Harnessのforkを固定導入し、公式release確認後に公式版へ移す', async (t) => {
   const home = await homeFor(t); const calls = [];
   const config = join(home, '.config', 'dotagents', 'browser-harness-fork.json');
