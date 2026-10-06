@@ -215,6 +215,10 @@ fi
           if [[ "$relation" = 1 ]]; then
             after="$before"; operation=failed; reason=downgrade_refused; skip_install=1; update_failed=1
             printf 'FAILED: %s registry latest is older than installed version\n' "$pkg"
+          elif [[ "$relation" = 0 ]]; then
+            # 導入済みが最新なら入れ直さない。Windowsでは稼働中のexeを抱えたpackageの入替がEBUSYで落ちる。
+            after="$before"; operation=skipped; reason=already_current; skip_install=1
+            printf 'SKIPPED: %s は最新（%s）\n' "$pkg" "$before"
           elif [[ "$relation" = invalid ]]; then
             before=none
           fi

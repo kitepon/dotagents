@@ -117,7 +117,11 @@ EOF
 cat > "$TEST_HOME/npm-global/bin/codex" <<'EOF'
 #!/bin/sh
 printf '%s:global-codex\n' "${RUN_ID:-default}" >> "$HOME/cli-calls.log"
-echo '0.144.3'
+count_file="$HOME/${RUN_ID:-default}-codex-version-count"
+count=0; [ ! -f "$count_file" ] || IFS= read -r count < "$count_file"
+count=$((count + 1)); printf '%s' "$count" > "$count_file"
+if [ "$count" -gt 1 ] && [ -n "${CODEX_POST_VERSION:-}" ]; then echo "$CODEX_POST_VERSION"; exit 0; fi
+echo "${CODEX_VERSION:-0.144.3}"
 EOF
 cat > "$TEST_HOME/npm-global/bin/throughline" <<'EOF'
 #!/bin/sh
@@ -206,6 +210,8 @@ if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   cat "$TEST_HOME/normal.out" >&2
   fail '正常fixtureのagents-updateが失敗した'
 fi
+node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products;for(const id of ["claude-code","codex-cli"]){const r=p[id];if(r.operation_status!=="skipped"||r.reason_code!=="already_current"||r.before_version!==r.after_version)process.exit(1)}' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '最新のClaude Code・Codexをalready_currentとして台帳へ保存しない'
 
 grep -Fq "normal:scheduler:$ROOT/bin/factory-reporter-scheduler.mjs install --apply --config $REPORTER_CONFIG" \
   "$TEST_HOME/update-events.log" || fail '更新後にreporterの定期実行を現行設定で登録していない'
@@ -231,9 +237,10 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   fail 'Jev導入の失敗が更新失敗にならない'
 fi
 
-expected_npm_packages=10
+# 既定のfixtureはClaude Code・Codexが最新で、この2つはnpmへ渡らない。
+expected_npm_packages=8
 if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
-  expected_npm_packages=11
+  expected_npm_packages=9
 fi
 node --input-type=module - <<'EOF' || fail 'OS/arch別npm package集合がdeployment contractと一致しない'
 import { npmPackagesForHost } from './lib/factory/deployment-contract.mjs';
@@ -246,8 +253,27 @@ if (!same(npmPackagesForHost({ os: 'Linux', arch: 'x64' }), base)
 EOF
 [ "$(grep -c '^normal:' "$TEST_HOME/npm-calls.log")" -eq "$expected_npm_packages" ] \
   || fail "curated package集合を fake npm へ正確に渡していない"
-grep -q '^normal:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' \
+if grep -Eq '^normal:install -g .*(@anthropic-ai/claude-code|@openai/codex)@latest$' "$TEST_HOME/npm-calls.log"; then
+  fail '最新のClaude Code・Codexを入れ直した'
+fi
+grep -Fxq 'SKIPPED: @anthropic-ai/claude-code は最新（2.1.207）' "$TEST_HOME/normal.out" \
+  || fail '最新のClaude Codeを入れ直さない理由をlogへ残していない'
+grep -Fxq 'SKIPPED: @openai/codex は最新（0.144.3）' "$TEST_HOME/normal.out" \
+  || fail '最新のCodexを入れ直さない理由をlogへ残していない'
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  CLAUDE_VERSION=2.1.206 CLAUDE_POST_VERSION=2.1.207 CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=toolchain-update \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/toolchain-update.out" 2>&1; then
+  cat "$TEST_HOME/toolchain-update.out" >&2
+  fail '古いClaude Code・Codexの更新が失敗した'
+fi
+grep -q '^toolchain-update:install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest$' \
   "$TEST_HOME/npm-calls.log" || fail 'Claude Code lifecycle scriptをpackage限定で許可しない'
+grep -q '^toolchain-update:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls.log" \
+  || fail '古いCodexを更新しない'
+node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products;const c=p["claude-code"],x=p["codex-cli"];if(c.operation_status!=="success"||c.reason_code!=="updated"||c.before_version!=="2.1.206"||c.after_version!=="2.1.207"||x.operation_status!=="success"||x.before_version!=="0.144.2"||x.after_version!=="0.144.3")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '古いClaude Code・Codexの更新前後を台帳へ保存しない'
 grep -q '^normal:install -g --allow-scripts=claude-spotter claude-spotter@latest$' \
   "$TEST_HOME/npm-calls.log" || fail 'Spotter lifecycle scriptをpackage限定で許可しない'
 if grep -q '@colbymchenry/codegraph' "$TEST_HOME/npm-calls.log"; then
@@ -332,7 +358,7 @@ fi
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
-  NPM_CLAUDE_LATEST_JSON='{"version":"2.1.207"}' RUN_ID=registry-drift \
+  NPM_CLAUDE_LATEST_JSON='{"version":"2.1.207"}' CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=registry-drift \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/registry-drift.out" 2>&1; then
   fail 'npm registry objectをlatest versionとして受理した'
 fi
@@ -373,7 +399,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
 if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
-  CLAUDE_POST_VERSION=2.1.208 RUN_ID=registry-advanced \
+  CLAUDE_VERSION=2.1.206 CLAUDE_POST_VERSION=2.1.208 RUN_ID=registry-advanced \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/registry-advanced.out" 2>&1; then
   cat "$TEST_HOME/registry-advanced.out" >&2
   fail 'latest取得後に公開された新しい版の正常導入を拒否した'
@@ -384,7 +410,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
-  CLAUDE_POST_VERSION=2.1.206 RUN_ID=post-version-older \
+  CLAUDE_VERSION=2.1.205 CLAUDE_POST_VERSION=2.1.206 RUN_ID=post-version-older \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/post-version-older.out" 2>&1; then
   fail '取得したlatestより古い版の導入を成功扱いした'
 fi
@@ -394,7 +420,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
-  CLAUDE_DISAPPEAR_AFTER_FIRST=1 RUN_ID=post-cli-missing \
+  CLAUDE_VERSION=2.1.206 CLAUDE_DISAPPEAR_AFTER_FIRST=1 RUN_ID=post-cli-missing \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/post-cli-missing.out" 2>&1; then
   fail '更新後CLI消失を成功扱いした'
 fi
