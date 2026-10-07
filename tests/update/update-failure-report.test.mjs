@@ -121,6 +121,41 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
   assert.equal(reopened.records['setup.gpt-connector'].first_seen, '2026-10-01T17:00:30.000Z');
 });
 
+test('重大度は、次の定期更新の再試行で直ったかで決める', () => {
+  const severity = (state) => buildReport(state, { observedAt: '2026-10-09T00:00:00.000Z', version: VERSION }).runtime_errors[0].severity;
+  // 1回目は原因が未確定で、次の回が再試行する。修理が要ると決めずにwarnで載せる。
+  const first = applyRun(emptyState(), { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-01T17:00:30.000Z', version: VERSION });
+  assert.equal(severity(first), 'warn');
+  // 動かなかった回は再試行に数えない。
+  assert.equal(severity(applyRun(first, { ran: ['typesafe'], failed: [], now: '2026-10-02T17:00:30.000Z', version: VERSION })), 'warn');
+  // 再試行でも直らなければ、人の手が要る。
+  const second = applyRun(first, { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-02T17:00:30.000Z', version: VERSION });
+  assert.equal(severity(second), 'high');
+  // 解決を届ける記録は、解決した時の重大度のまま載せる。
+  const recovered = applyRun(second, { ran: ['markitdown'], failed: [], now: '2026-10-03T17:00:30.000Z', version: VERSION });
+  assert.equal(severity(recovered), 'high');
+  // 直ったあとの失敗は、新しい1回目として数える。回数は累計のまま。
+  const reopened = applyRun(recovered, { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-04T17:00:30.000Z', version: VERSION });
+  assert.equal(severity(reopened), 'warn');
+  assert.equal(reopened.records.markitdown.occurrence_count, 3);
+});
+
+test('重大度を持たない以前の記録は読めて、送っていた重大度を変えない', async (t) => {
+  const { env, paths } = await workspace(t);
+  const legacy = { occurrence_count: 1, first_seen: '2026-10-01T17:00:30.000Z', last_seen: '2026-10-01T17:00:30.000Z', status: 'open', resolved_at: null, resolution_unsent: false, product_version: VERSION };
+  await mkdir(join(paths.state, '..'), { recursive: true });
+  await writeFile(paths.state, JSON.stringify({ ...emptyState(), records: { jev: legacy } }));
+  const status = await run(env, ['status']);
+  assert.equal(status.code, 0, status.stderr);
+  assert.deepEqual(status.json.open_steps, ['jev']);
+  const state = JSON.parse(await readFile(paths.state, 'utf8'));
+  assert.equal(buildReport(state, { observedAt: '2026-10-02T00:00:00.000Z', version: VERSION }).runtime_errors[0].severity, 'high');
+  // 触れていない記録は書き換えない。
+  const recorded = await run(env, ['record', '--ran', 'typesafe']);
+  assert.equal(recorded.code, 0, recorded.stderr);
+  assert.deepEqual(JSON.parse(await readFile(paths.state, 'utf8')).records.jev, legacy);
+});
+
 test('端末の時計が戻っても、記録の時刻は前へ戻らない', () => {
   const failed = applyRun(emptyState(), { ran: ['jev'], failed: ['jev'], now: '2026-10-03T17:00:30.000Z', version: VERSION });
   const again = applyRun(failed, { ran: ['jev'], failed: ['jev'], now: '2026-10-01T17:00:30.000Z', version: VERSION });

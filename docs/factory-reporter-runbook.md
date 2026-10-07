@@ -1,6 +1,6 @@
 # Factory reporter — 工場側クライアント運用
 
-更新日: 2026-10-03。ここはdotagentsが所有する収集・送信クライアントの正本である。BugHubのcredential発行、DB migration、feature flag、deploy、readiness、復旧は[ServerManagerの受信契約](https://github.com/kitepon/ServerManager/blob/main/bughub/FACTORY_INTEGRATION.md)が所有する。旧wire導入の全記録は[archive](archive/2026-08_factory-reporter-runbook-v1-v8-history.md)へ退避した。
+更新日: 2026-10-07。ここはdotagentsが所有する収集・送信クライアントの正本である。BugHubのcredential発行、DB migration、feature flag、deploy、readiness、復旧は[ServerManagerの受信契約](https://github.com/kitepon/ServerManager/blob/main/bughub/FACTORY_INTEGRATION.md)が所有する。旧wire導入の全記録は[archive](archive/2026-08_factory-reporter-runbook-v1-v8-history.md)へ退避した。
 
 ## 境界
 
@@ -69,11 +69,29 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 - **境界**: 報告するのは「この端末の定期更新で、この手順が失敗した」ことだけ。製品が返したエラーの中身は載せず、製品の不具合を工場が引き取ることもしない。届け先は1つで、製品ごとに振り分けない。修理へ繋ぐのはBugHubを見た人で、dotagentsは製品の担当へ届ける仕組みを持たない。
 - **手順の名前**: `setup.<製品>`（公開入口の導入手順）、`package.<npm package>`、`npm`、`markitdown`、`unai`、`typesafe`、`jev`、`spotter-install`、`toolchain-ledger`、`factory-report`。`claude-code`・`codex-cli`・`grok-build`の更新結果は台帳がreportへ運ぶので、ここでは数えない。
+- **重大度**: 手順の名前や累計の回数では決めない。前の回に成功していた手順（または初めて）の失敗は`warn`で載せる。この時点で確かめられているのは「この回の更新がその手順で止まった」ことだけで、原因（通信・製品・端末）は未確定、次の回が同じ手順をやり直す。前の回も失敗していた手順は、再試行でも直らなかったものとして`high`へ上げる。直ったあとの失敗は、また`warn`から数える。製品が動くかどうかは、工場のreportが製品の診断として別に運ぶ。重大度を持たない以前の記録は、送っていた`high`のまま扱う。
+- **届かなかっただけの回**: reportの準備・送信が、BugHubから応答を受け取れなかった保留だけで終わった回は、`factory-report`の失敗にも成功にも数えず、未解決の記録にも触れない。reportは送信待ちに残り、次の毎時の実行が送り直す。更新のlogには`DEFERRED:`の行が残り、更新の終了値は非0のまま。BugHubが応答して断った保留、隔離、ackの失敗、reportの生成や予約の失敗は、これまでどおり手順の失敗に数える。
 - **記録**: `agents-update.sh`が最後に`bin/factory-update-failure-report.mjs record`へ、動いた手順と失敗した手順の名前を渡す。失敗した手順は回数を累計し、次の回で成功した手順は解決済みにする。今回動かなかった手順には触れない。記録や送信ができなくても、更新の結果は変えない。
 - **置き場**: 記録は`~/.local/state/dotagents/update-failures.json`、送信の設定は`~/.config/dotagents/update-failure-reporting.json`（Windowsはどちらも`%LOCALAPPDATA%\dotagents\`）。合鍵はBugHubの持ち主が置く`~/.config/bughub/product-credentials/dotagents.json`（Windowsは`%LOCALAPPDATA%\bughub\product-credentials\dotagents.json`）で、dotagentsは読むだけで作らない。
 - **送信**: 既定では送らない。端末で`factory-update-failure-report.mjs enable`を実行し、合鍵が本人だけの通常のファイル（0600、リンクでない）である時だけ送る。送る形はBugHubの製品報告の契約（`bughub/PRODUCT_REPORTING.md`）で、`error_code`は`UPDATE_STEP_FAILED`、`component`は手順の名前、版は`0.0.0+<revision>`。受領済みにするのは、200・`accepted`・同じ`report_id`・応答の署名がそろった時だけ。
 - **確認と停止**: `factory-update-failure-report.mjs status`が、送信の状態・未解決の手順・最後の結果を返す。`verify`は、記録に触れずに中身が空の報告を1回送り、合鍵・宛先・応答の署名を確かめる（BugHubにissueは出来ない）。届かなかった分は次の更新で送る。待たずに送る時は`flush`。止める時は`disable`。
 - **限界**: 更新が動かなかったこと（端末が止まっていた、予定が外れていた）は検出しない。WindowsはACLを確かめず、合鍵が通常のファイルでリンクでないことだけを見る。
+
+## 通信失敗の報告
+
+登録の条件と重大度は[BugHubの通信失敗の契約](https://github.com/kitepon/ServerManager/blob/main/bughub/NETWORK_REPORTING.md)に従う（2026-10-07、オーナー指示）。工場は、通信の診断の記録と、修理が要る登録を分ける。理由コードや回数だけで`fail`や`high`にしない。
+
+- **工場自身の送信**: factory reportの`flush`と、定期更新の失敗報告の送信は、届かない時に送信待ちへ残し、次の実行で送り直す。BugHubは同じ`report_id`・同じ本文を重複として受け、失敗報告は累計を送るので、送り直しで二重に数えない。届かなかった事そのものはBugHubのissueにしない。`flush`は、保留のうちBugHubから応答を受け取れなかった件数を`unreachable`で返す。
+- **scanの通信を伴うcheck**: `npm_latest`（registryの最新版）は、読めない時に`unverified`／`registry_unverified`で残す。`fail`にしない。
+- **`last_update`（定期更新の台帳）**: 重大度は、失敗した更新のあとにCLIを起動できるかで決める。「起動できる」は、更新の直後（台帳の`after_version`）か今回のscan（`installed_version`）のどちらかで版を読めたことを指す。
+
+| 台帳の理由 | CLIを起動できる | 起動を確かめられない |
+|---|---|---|
+| `registry_unavailable`・`check_failed`（最新版の確認が失敗。導入に触れていない） | `unverified`（理由はそのまま） | `fail`・`high` |
+| `install_failed`・`update_failed`（入替が失敗。原因は台帳に無い） | `fail`・`warn` | `fail`・`high` |
+| 上記以外の失敗 | `fail`・`high` | `fail`・`high` |
+
+- **限界**: 入替の失敗の原因（通信・ファイルのlock・権限）は台帳に無く、端末の更新logにだけ残る。grok-buildはscanが`grok update --check --json`でしか版を読まないので、通信が切れている間は起動を確かめられず、`check_failed`が`high`のまま残る。
 
 ## 停止・失敗
 

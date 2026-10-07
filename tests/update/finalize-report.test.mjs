@@ -53,3 +53,53 @@ test('v8のreport確定は全件probeを起動せず、指定した診断report�
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(JSON.parse(await readFile(reportPath, 'utf8')), report);
 });
+
+// 重大度は理由コードで決めず、失敗した更新のあとにCLIを起動できるかで決める（bughub/NETWORK_REPORTING.md）。
+async function lastUpdate(t, { reason, after, installed }) {
+  const directory = await mkdtemp(join(tmpdir(), 'factory-last-update-'));
+  t.after(() => rm(directory, { recursive: true, force: true }));
+  const toolchainLedgerPath = join(directory, 'ledger.json');
+  const observedAt = '2026-10-07T00:00:00.000Z';
+  const ids = ['claude-code', 'codex-cli', 'grok-build'];
+  await writeFile(toolchainLedgerPath, JSON.stringify({ schema_version: 'dotagents.toolchain-update.v1',
+    products: Object.fromEntries(ids.map((id) => [id, { before_version: after, latest_version: null,
+      after_version: after, operation_status: 'failed', post_gate_status: 'success',
+      reason_code: reason, observed_at: observedAt }])) }), { mode: 0o600 });
+  const report = { report_id: 'report-one', observed_at: observedAt, products: Object.fromEntries(ids.map((id) => [id, {
+    presence_status: installed ? 'installed' : 'unverified', ...(installed ? { installed_version: installed } : {}), checks: [],
+  }])) };
+  const result = await finalizeToolchainReport(report, { expectedReportId: 'report-one', toolchainLedgerPath });
+  return result.products['claude-code'].checks.at(-1);
+}
+
+test('最新版を確認できなかった回は導入に触れていないので、failにせず未確認として残す', async (t) => {
+  assert.deepEqual(await lastUpdate(t, { reason: 'registry_unavailable', after: '1.0.0', installed: '1.0.0' }),
+    { check_id: 'last_update', status: 'unverified', reason_code: 'registry_unavailable' });
+  assert.deepEqual(await lastUpdate(t, { reason: 'check_failed', after: null, installed: '1.0.0' }),
+    { check_id: 'last_update', status: 'unverified', reason_code: 'check_failed' });
+});
+
+test('入替に失敗してもCLIを起動できる回はwarn、起動を確かめられない回はhighにする', async (t) => {
+  const usable = await lastUpdate(t, { reason: 'install_failed', after: '1.0.0', installed: '1.0.0' });
+  assert.equal(usable.status, 'fail');
+  assert.equal(usable.severity, 'warn');
+  const broken = await lastUpdate(t, { reason: 'install_failed', after: null, installed: null });
+  assert.equal(broken.severity, 'high');
+  // 同じ失敗は重大度が変わっても同じissueのまま（fingerprintは理由コードまでで決まる）。
+  assert.equal(usable.fingerprint, broken.fingerprint);
+  assert.equal((await lastUpdate(t, { reason: 'update_failed', after: null, installed: '1.0.0' })).severity, 'warn');
+});
+
+test('通信の乱れでも、CLIを起動できない影響が残る回はhighのまま隠さない', async (t) => {
+  const missing = await lastUpdate(t, { reason: 'registry_unavailable', after: null, installed: null });
+  assert.equal(missing.status, 'fail');
+  assert.equal(missing.severity, 'high');
+});
+
+test('通信と関係しない失敗の理由は、これまでどおりhighで報告する', async (t) => {
+  for (const reason of ['npm_unavailable', 'downgrade_refused', 'post_version_unavailable', 'version_mismatch']) {
+    const item = await lastUpdate(t, { reason, after: '1.0.0', installed: '1.0.0' });
+    assert.equal(item.status, 'fail', reason);
+    assert.equal(item.severity, 'high', reason);
+  }
+});

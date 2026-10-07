@@ -178,6 +178,10 @@ cat > "$TEST_HOME/base-bin/factory-reporter-schedule-runner" <<'EOF'
 printf '%s:%s\n' "${RUN_ID:-default}" "$*" >> "$HOME/reporter-calls.log"
 printf 'reporter:%s\n' "$*" >> "$HOME/update-events.log"
 if [ "${REPORT_FAIL:-0}" -ne 0 ]; then exit 1; fi
+if [ "${REPORT_UNREACHABLE:-0}" -ne 0 ]; then
+  echo '{"ok":false,"command":"flush","reporting_enabled":true,"sent":0,"retained":1,"dead_lettered":0,"deferred":0,"ack_failed":0,"unreachable":1,"count":1,"bytes":10}'
+  exit 1
+fi
 case "$*" in
   *--post-update) echo '{"ok":true,"post_gate_status":"success","report_id":"fixture-report"}' ;;
   *'--finalize-update --report-id fixture-report')
@@ -698,6 +702,33 @@ node -e '
   if(Object.values(v.records).some((r)=>r.status!=="resolved")||Object.keys(v.records).sort().join()!=="factory-report,jev")process.exit(1)
 ' "$FAILURE_STATE/dotagents/update-failures.json" \
   || fail '次の回で成功した手順を解決済みにしていない'
+
+# BugHubへ届かなかっただけの回は、reportが送信待ちに残り次の毎時の実行が送り直す。手順の失敗にも成功にも数えない。
+DEFERRED_STATE="$TEST_HOME/deferred-state"
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=report-defect REPORT_FAIL=1 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/report-defect.out" 2>&1; then
+  fail 'reportの準備の失敗を成功扱いした'
+fi
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=report-unreachable REPORT_UNREACHABLE=1 \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/report-unreachable.out" 2>&1; then
+  fail 'BugHubへ届かなかった回を成功扱いした'
+fi
+grep -q '^agents-update result: update=success report=failed$' "$TEST_HOME/report-unreachable.out" \
+  || fail 'BugHubへ届かなかった事を更新の結果へ残していない'
+grep -q '"failed_steps":\[\],"open_steps":\["factory-report"\]' "$TEST_HOME/report-unreachable.out" \
+  || fail 'BugHubへ届かなかっただけの回を、手順の失敗として数えた、または未解決の記録を解決済みにした'
+node -e '
+  const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));
+  const r=v.records["factory-report"];
+  if(Object.keys(v.records).join()!=="factory-report"||r.status!=="open"||r.occurrence_count!==1||r.severity!=="warn")process.exit(1)
+' "$DEFERRED_STATE/dotagents/update-failures.json" \
+  || fail 'BugHubへ届かなかっただけの回が、reportの準備の失敗の記録を書き換えた'
 
 # 記録の道具が失敗しても、更新の結果は変えない。
 if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \

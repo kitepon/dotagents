@@ -113,6 +113,17 @@ record_toolchain() {
 # ここでは、動いた手順と失敗した手順の名前だけを集める。製品が返したエラーの中身は集めない。
 # claude-code・codex-cli・grok-buildの更新結果は台帳がreportへ運ぶので、ここでは数えない。
 step_ran() { ran_steps+=("$1"); }
+# reporterのflushが「BugHubへ届かなかった保留だけ」で終わった回かを、その出力から読む。
+# BugHubが応答して断った保留、隔離、ackの失敗が混じる回は、届かなかっただけの回に数えない。
+report_delivery_deferred() {
+  printf '%s\n' "$1" | node -e '
+    const lines=require("fs").readFileSync(0,"utf8").trim().split(/\r?\n/).reverse();
+    for(const line of lines){let v;try{v=JSON.parse(line)}catch{continue}
+      if(!v||v.command!=="flush")continue;
+      process.exit(v.ok===false&&v.retained>0&&v.unreachable===v.retained&&v.dead_lettered===0&&v.deferred===0&&v.ack_failed===0?0:1)}
+    process.exit(1);
+  '
+}
 step_failed() { update_failed=1; failed_steps+=("$1"); }
 package_step() {
   local name="$1"
@@ -371,16 +382,18 @@ fi
   fi
 
   printf -- '--- factory-reporter:prepare-update-report ---\n'
-  step_ran factory-report
+  # report_defectは、BugHubへ届かなかった事以外の理由でreportの準備・送信が失敗した回に立てる。
+  report_defect=0
+  post_update_ok=0
   # 更新周期とは別に、最新の障害観測を毎時届ける。送信形式はconfigから解決する。
   if ! node "$SCRIPT_DIR/factory-reporter-scheduler.mjs" install --apply --config "$FACTORY_REPORTER_CONFIG"; then
     printf 'FAILED: factory reporterの定期実行を登録できません\n'
-    report_failed=1
+    report_failed=1; report_defect=1
   fi
   post_report_id=''
   if [[ ! -x "$FACTORY_REPORTER_RUNNER" ]]; then
     printf 'FAILED: factory reporter runner が実行できない: %s\n' "$FACTORY_REPORTER_RUNNER"
-    report_failed=1
+    report_failed=1; report_defect=1
   else
     reporter_output="$($FACTORY_REPORTER_RUNNER --config "$FACTORY_REPORTER_CONFIG" --post-update 2>&1)"
     reporter_rc=$?
@@ -399,6 +412,9 @@ fi
       printf 'FAILED: factory reporter の更新報告準備\n'
       post_gate=failed
       report_failed=1
+      report_delivery_deferred "$reporter_output" || report_defect=1
+    else
+      post_update_ok=1
     fi
   fi
 
@@ -411,10 +427,12 @@ fi
   # 更新結果を台帳へ確定した後に、最終bytesを再投影して送る。pending状態はBugHubへ送らない。
   if [[ "$final_record_failed" -ne 0 ]]; then
     printf 'FAILED: factory reporter の最終台帳を確定できないため送信しません\n'
-    report_failed=1
+    report_failed=1; report_defect=1
   elif [[ -z "$post_report_id" ]]; then
     printf 'FAILED: 今回の診断reportが確定していないため送信しません\n'
     report_failed=1
+    # 更新報告準備が失敗した回は、その理由が上で決まっている。準備が通ったのにreport_idが無い回は別の欠陥。
+    [[ "$post_update_ok" -eq 1 ]] && report_defect=1
   elif [[ -x "$FACTORY_REPORTER_RUNNER" ]]; then
     final_output="$($FACTORY_REPORTER_RUNNER --config "$FACTORY_REPORTER_CONFIG" --finalize-update --report-id "$post_report_id" 2>&1)"
     final_rc=$?
@@ -422,12 +440,22 @@ fi
     if [[ "$final_rc" -ne 0 ]]; then
       printf 'FAILED: factory reporter の最終update observation\n'
       report_failed=1
+      report_delivery_deferred "$final_output" || report_defect=1
     fi
   fi
 
   # 動いた手順と失敗した手順を記録し、送信を有効にした端末ではBugHubへ報告する。
   # 記録や送信ができなくても、更新の結果は変えない。届かなかった分は次の回に送る。
-  [[ "$report_failed" -ne 0 ]] && failed_steps+=(factory-report)
+  # BugHubへ届かなかっただけの回は、reportが送信待ちに残り、次の毎時の実行が送り直す。
+  # 手順の失敗にも成功にも数えず、未解決の記録にも触れない。経過はこのlogと更新の終了値に残る。
+  if [[ "$report_failed" -eq 0 ]]; then
+    step_ran factory-report
+  elif [[ "$report_defect" -ne 0 ]]; then
+    step_ran factory-report
+    failed_steps+=(factory-report)
+  else
+    printf 'DEFERRED: factory reportはBugHubへ届かず、送信待ちに残した（手順の失敗には数えない）\n'
+  fi
   update_failure_args=()
   for step in "${ran_steps[@]}"; do update_failure_args+=(--ran "$step"); done
   for step in ${failed_steps[@]+"${failed_steps[@]}"}; do update_failure_args+=(--failed "$step"); done
