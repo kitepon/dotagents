@@ -5,8 +5,8 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
-  applyRun, buildReport, emptyState, markAccepted, markFailed, readCredential, readSettings, readState, sendReport,
-  updateFailurePaths, validStep, versionFromRevision, writeSettings, writeState,
+  applyRun, buildReport, emptyState, markAccepted, markFailed, readCredential, readRunReport, readSettings, readState, sendReport,
+  stoppedSteps, updateFailurePaths, validStep, versionFromRevision, writeSettings, writeState,
 } from '../lib/factory/update-failure-report.mjs';
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -19,15 +19,18 @@ function installedVersion() {
 function parseSteps(argv) {
   const ran = [];
   const failed = [];
+  let report = null;
   if (argv.length % 2 !== 0) throw new Error('arguments_invalid');
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
     const step = argv[index + 1];
+    // --report は、この回にagents-updateが作った工場のreport。重大度の根拠にだけ使う。
+    if (key === '--report' && report === null && step && !/[\0\r\n]/u.test(step)) { report = step; continue; }
     if (!['--ran', '--failed'].includes(key) || !validStep(step)) throw new Error('arguments_invalid');
     (key === '--ran' ? ran : failed).push(step);
   }
   // 失敗した手順は、動いた手順でもある。
-  return { ran: [...new Set([...ran, ...failed])], failed: [...new Set(failed)] };
+  return { ran: [...new Set([...ran, ...failed])], failed: [...new Set(failed)], report };
 }
 
 async function reportingStatus(paths) {
@@ -57,9 +60,11 @@ try {
   const [command, ...rest] = process.argv.slice(2);
   const paths = updateFailurePaths();
   if (command === 'record') {
-    const steps = parseSteps(rest);
+    const { report, ...steps } = parseSteps(rest);
     const before = await readState(paths.state);
-    const recorded = applyRun(before, { ...steps, now: new Date().toISOString(), version: installedVersion() });
+    const nowMs = Date.now();
+    const stopped = steps.failed.length > 0 && report ? stoppedSteps(await readRunReport(report, nowMs), steps.failed) : [];
+    const recorded = applyRun(before, { ...steps, stopped, now: new Date(nowMs).toISOString(), version: installedVersion() });
     if (JSON.stringify(recorded) !== JSON.stringify(before)) await writeState(paths.state, recorded);
     const { state, reporting, outcome } = await deliver(paths, recorded);
     print({ ok: true, command, failed_steps: steps.failed, open_steps: openSteps(state), reporting, outcome });

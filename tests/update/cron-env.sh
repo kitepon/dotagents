@@ -183,7 +183,9 @@ if [ "${REPORT_UNREACHABLE:-0}" -ne 0 ]; then
   exit 1
 fi
 case "$*" in
-  *--post-update) echo '{"ok":true,"post_gate_status":"success","report_id":"fixture-report"}' ;;
+  *--post-update)
+    [ -z "${REPORT_OUTPUT:-}" ] || printf '{"ok":true,"report_id":"fixture-report","output":"%s"}\n' "$REPORT_OUTPUT"
+    echo '{"ok":true,"post_gate_status":"success","report_id":"fixture-report"}' ;;
   *'--finalize-update --report-id fixture-report')
     node -e 'const v=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));if(Object.values(v.products).some((r)=>r.post_gate_status==="pending"))process.exit(1)' "$HOME/.local/state/agents-update/toolchain-ledger.json" || exit 25
     echo '{"ok":true,"finalized":true}' ;;
@@ -750,6 +752,30 @@ node -e '
   if(Object.keys(v.records).join()!=="factory-report"||r.status!=="open"||r.occurrence_count!==1||r.severity!=="warn")process.exit(1)
 ' "$DEFERRED_STATE/dotagents/update-failures.json" \
   || fail 'BugHubへ届かなかっただけの回が、reportの準備の失敗の記録を書き換えた'
+
+# 失敗が続いた事だけではhighにしない。再試行でも直らず、その手順が担う製品の停止をこの回のreportで確かめた時だけhighにする。
+STOPPED_STATE="$TEST_HOME/stopped-state"
+STOPPED_REPORT="$TEST_HOME/stopped-report.json"
+severity_of_jev() {
+  node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).records.jev;process.stdout.write([r.status,r.severity,r.occurrence_count].join(":"))' \
+    "$STOPPED_STATE/dotagents/update-failures.json"
+}
+run_jev_failure() {
+  env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$STOPPED_STATE" \
+    AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+    FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+    RUN_ID="$1" JEV_SETUP_FAIL=1 REPORT_OUTPUT="$2" \
+    /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/$1.out" 2>&1
+}
+node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({observed_at:new Date().toISOString(),products:{"jev-ultrafast":{presence_status:"installed",installed_version:"1.0.0",checks:[{check_id:"installation",status:"pass"}]}}}))' "$STOPPED_REPORT"
+if run_jev_failure jev-working-1 "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
+if run_jev_failure jev-working-2 "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
+[ "$(severity_of_jev)" = 'open:warn:2' ] || fail '製品が動いているのに、失敗が続いた事だけで重大度を上げた'
+node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({observed_at:new Date().toISOString(),products:{"jev-ultrafast":{presence_status:"missing",checks:[{check_id:"installation",status:"unverified",reason_code:"version_unavailable"}]}}}))' "$STOPPED_REPORT"
+if run_jev_failure jev-stopped "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
+[ "$(severity_of_jev)" = 'open:high:3' ] || fail '再試行でも直らず製品が止まっている事を確かめた回を、highにしていない'
+if run_jev_failure jev-no-report ''; then fail '手順の失敗を成功扱いした'; fi
+[ "$(severity_of_jev)" = 'open:warn:4' ] || fail 'この回のreportが無いのに、製品の停止を確かめた扱いにした'
 
 # 記録の道具が失敗しても、更新の結果は変えない。
 if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \

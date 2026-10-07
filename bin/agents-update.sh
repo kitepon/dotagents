@@ -394,6 +394,7 @@ fi
     report_failed=1; report_defect=1
   fi
   post_report_id=''
+  post_report_path=''
   if [[ ! -x "$FACTORY_REPORTER_RUNNER" ]]; then
     printf 'FAILED: factory reporter runner が実行できない: %s\n' "$FACTORY_REPORTER_RUNNER"
     report_failed=1; report_defect=1
@@ -411,6 +412,12 @@ fi
         for(const line of lines){try{const value=JSON.parse(line);if(value&&["success","failed"].includes(value.post_gate_status)&&typeof value.report_id==="string"){process.stdout.write(value.report_id);process.exit(0)}}catch{}}
         process.exit(1);
       ' || true)"
+    # この回のscanが書いたreportの場所。失敗した手順の重大度を、製品の状態で確かめるために記録の道具へ渡す。
+    post_report_path="$(printf '%s\n' "$reporter_output" | node -e '
+        const id=process.argv[1];const lines=require("fs").readFileSync(0,"utf8").trim().split(/\r?\n/).reverse();
+        for(const line of lines){try{const value=JSON.parse(line);if(value&&id&&value.report_id===id&&typeof value.output==="string"&&value.output){process.stdout.write(value.output);process.exit(0)}}catch{}}
+        process.exit(1);
+      ' "$post_report_id" || true)"
     if [[ "$reporter_rc" -ne 0 || "$post_gate" != success ]]; then
       printf 'FAILED: factory reporter の更新報告準備\n'
       post_gate=failed
@@ -462,6 +469,7 @@ fi
   update_failure_args=()
   for step in "${ran_steps[@]}"; do update_failure_args+=(--ran "$step"); done
   for step in ${failed_steps[@]+"${failed_steps[@]}"}; do update_failure_args+=(--failed "$step"); done
+  [[ -n "$post_report_path" ]] && update_failure_args+=(--report "$post_report_path")
   printf -- '--- update-failure-report ---\n'
   if ! node "$UPDATE_FAILURE_REPORT_HELPER" record "${update_failure_args[@]}"; then
     printf 'WARN: 定期更新の失敗を記録または報告できない\n'

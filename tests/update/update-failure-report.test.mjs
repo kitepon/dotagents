@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import test from 'node:test';
 import {
   applyRun, buildReport, emptyState, markAccepted, messageTemplate, requestSignature, responseSignature,
-  stepFingerprint, updateFailurePaths, versionFromRevision,
+  stepFingerprint, stoppedSteps, updateFailurePaths, versionFromRevision,
 } from '../../lib/factory/update-failure-report.mjs';
 
 const CLI = resolve('bin/factory-update-failure-report.mjs');
@@ -89,7 +89,7 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
       error_code: 'UPDATE_STEP_FAILED',
       component: 'setup.gpt-connector',
       message_template: 'dotagents update step failed: setup.gpt-connector',
-      severity: 'high',
+      severity: 'warn',
       status: 'open',
       occurrence_count: 2,
       first_seen: '2026-10-01T17:00:30.000Z',
@@ -121,23 +121,69 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
   assert.equal(reopened.records['setup.gpt-connector'].first_seen, '2026-10-01T17:00:30.000Z');
 });
 
-test('重大度は、次の定期更新の再試行で直ったかで決める', () => {
+test('重大度は、失敗が続いた事だけでは上げず、製品が止まった事を確かめた時だけhighにする', () => {
   const severity = (state) => buildReport(state, { observedAt: '2026-10-09T00:00:00.000Z', version: VERSION }).runtime_errors[0].severity;
-  // 1回目は原因が未確定で、次の回が再試行する。修理が要ると決めずにwarnで載せる。
-  const first = applyRun(emptyState(), { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-01T17:00:30.000Z', version: VERSION });
+  const run = (state, now, stopped = []) => applyRun(state, { ran: ['markitdown'], failed: ['markitdown'], stopped, now, version: VERSION });
+  // 1回目は、製品が止まっていても次の回が再試行する。製品の停止は工場のreportが製品の名前で運ぶ。
+  const first = run(emptyState(), '2026-10-01T17:00:30.000Z', ['markitdown']);
   assert.equal(severity(first), 'warn');
-  // 動かなかった回は再試行に数えない。
-  assert.equal(severity(applyRun(first, { ran: ['typesafe'], failed: [], now: '2026-10-02T17:00:30.000Z', version: VERSION })), 'warn');
-  // 再試行でも直らなければ、人の手が要る。
-  const second = applyRun(first, { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-02T17:00:30.000Z', version: VERSION });
-  assert.equal(severity(second), 'high');
-  // 解決を届ける記録は、解決した時の重大度のまま載せる。
-  const recovered = applyRun(second, { ran: ['markitdown'], failed: [], now: '2026-10-03T17:00:30.000Z', version: VERSION });
+  // 再試行も失敗した、というだけでは実害の根拠にならない。
+  const repeated = run(first, '2026-10-02T17:00:30.000Z');
+  assert.equal(severity(repeated), 'warn');
+  assert.equal(repeated.records.markitdown.occurrence_count, 2);
+  // 再試行でも直らず、その手順が担う製品が止まっている事をこの回のreportで確かめた時はhigh。
+  const stopped = run(repeated, '2026-10-03T17:00:30.000Z', ['markitdown']);
+  assert.equal(severity(stopped), 'high');
+  // 動かなかった回は記録に触れない。
+  assert.equal(severity(applyRun(stopped, { ran: ['typesafe'], failed: [], now: '2026-10-04T17:00:30.000Z', version: VERSION })), 'high');
+  // 失敗は続いているが製品が動いている回は、確かめた事実に合わせて戻す。
+  assert.equal(severity(run(stopped, '2026-10-04T17:00:30.000Z')), 'warn');
+  // 解決を届ける記録は、解決した時の重大度のまま載せる。直ったあとの失敗は新しい1回目。
+  const recovered = applyRun(stopped, { ran: ['markitdown'], failed: [], now: '2026-10-05T17:00:30.000Z', version: VERSION });
   assert.equal(severity(recovered), 'high');
-  // 直ったあとの失敗は、新しい1回目として数える。回数は累計のまま。
-  const reopened = applyRun(recovered, { ran: ['markitdown'], failed: ['markitdown'], now: '2026-10-04T17:00:30.000Z', version: VERSION });
+  const reopened = run(recovered, '2026-10-06T17:00:30.000Z', ['markitdown']);
   assert.equal(severity(reopened), 'warn');
-  assert.equal(reopened.records.markitdown.occurrence_count, 3);
+  assert.equal(reopened.records.markitdown.occurrence_count, 4);
+});
+
+test('製品の停止は、この回のreportの製品の欄だけから読む', () => {
+  const product = (extra) => ({ presence_status: 'installed', installed_version: '1.0.0', compatibility_status: 'compatible', checks: [{ check_id: 'native_diagnostics', status: 'pass' }], ...extra });
+  const report = { products: {
+    caveat: product({ checks: [{ check_id: 'native_diagnostics', status: 'fail', severity: 'high' }] }),
+    markitdown: product({ presence_status: 'missing', checks: [] }),
+    lattice: product({}),
+    // 利用者のログイン待ちは、製品の契約でfailにならない（skipped）。停止の根拠にしない。
+    'gpt-connector': product({ compatibility_status: 'incompatible', checks: [{ check_id: 'auth', status: 'skipped', reason_code: 'auth_required' }] }),
+    throughline: product({ checks: [{ check_id: 'handoff', status: 'unverified' }] }),
+    'jev-ultrafast': product({}),
+    'agent-desktop': product({ presence_status: 'missing', checks: [] }),
+  } };
+  const failed = ['setup.caveat', 'package.caveat-cli', 'markitdown', 'setup.lattice', 'setup.gpt-connector', 'package.throughline', 'jev', 'typesafe', 'npm', 'factory-report', 'package.pnpm'];
+  assert.deepEqual(stoppedSteps(report, failed), ['setup.caveat', 'package.caveat-cli', 'markitdown', 'jev']);
+  // reportを読めない回は、何も確かめられていない。
+  assert.deepEqual(stoppedSteps(null, failed), []);
+  assert.deepEqual(stoppedSteps({ products: 'broken' }, failed), []);
+});
+
+test('recordは、渡されたこの回のreportだけを根拠に使い、古いreportや読めないreportでは上げない', async (t) => {
+  const { env, paths, home } = await workspace(t);
+  const reportPath = join(home, 'latest-report.json');
+  const write = (observedAt) => writeFile(reportPath, JSON.stringify({ observed_at: observedAt, products: { 'jev-ultrafast': { presence_status: 'missing', checks: [] } } }));
+  const severity = async () => JSON.parse(await readFile(paths.state, 'utf8')).records.jev.severity;
+  await write(new Date().toISOString());
+  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
+  assert.equal(await severity(), 'warn');
+  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
+  assert.equal(await severity(), 'high');
+  // 古い観測は、この回の根拠にしない。
+  await write('2026-10-01T00:00:00.000Z');
+  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
+  assert.equal(await severity(), 'warn');
+  // reportを読めなくても、記録は続ける。
+  const missing = await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', join(home, 'none.json')]);
+  assert.equal(missing.code, 0, missing.stderr);
+  assert.equal(await severity(), 'warn');
+  assert.equal(JSON.parse(await readFile(paths.state, 'utf8')).records.jev.occurrence_count, 4);
 });
 
 test('重大度を持たない以前の記録は読めて、送っていた重大度を変えない', async (t) => {
