@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import test from 'node:test';
 import {
   applyRun, buildReport, emptyState, markAccepted, messageTemplate, requestSignature, responseSignature,
-  stepFingerprint, stoppedSteps, updateFailurePaths, versionFromRevision,
+  runEvidence, stepFingerprint, updateFailurePaths, versionFromRevision,
 } from '../../lib/factory/update-failure-report.mjs';
 
 const CLI = resolve('bin/factory-update-failure-report.mjs');
@@ -121,69 +121,123 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
   assert.equal(reopened.records['setup.gpt-connector'].first_seen, '2026-10-01T17:00:30.000Z');
 });
 
-test('重大度は、失敗が続いた事だけでは上げず、製品が止まった事を確かめた時だけhighにする', () => {
+const OBSERVED = '2026-10-03T17:00:00.000Z';
+const missing = (...products) => ({ state: 'stopped', products, failed_checks: [], observed_at: OBSERVED });
+const launchable = (products, failedChecks = []) => ({ state: 'launchable', products, failed_checks: failedChecks, observed_at: OBSERVED });
+
+test('重大度は、失敗が続いた事だけでは上げず、製品を起動できない事を確かめた時だけhighにする', () => {
   const severity = (state) => buildReport(state, { observedAt: '2026-10-09T00:00:00.000Z', version: VERSION }).runtime_errors[0].severity;
-  const run = (state, now, stopped = []) => applyRun(state, { ran: ['markitdown'], failed: ['markitdown'], stopped, now, version: VERSION });
-  // 1回目は、製品が止まっていても次の回が再試行する。製品の停止は工場のreportが製品の名前で運ぶ。
-  const first = run(emptyState(), '2026-10-01T17:00:30.000Z', ['markitdown']);
+  const run = (state, now, evidence) => applyRun(state, { ran: ['markitdown'], failed: ['markitdown'], evidence: evidence ? { markitdown: evidence } : {}, now, version: VERSION });
+  // 1回目は、製品を起動できなくても次の回が再試行する。起動できない事は工場のreportが製品の名前で運ぶ。
+  const first = run(emptyState(), '2026-10-01T17:00:30.000Z', missing('markitdown'));
   assert.equal(severity(first), 'warn');
   // 再試行も失敗した、というだけでは実害の根拠にならない。
   const repeated = run(first, '2026-10-02T17:00:30.000Z');
   assert.equal(severity(repeated), 'warn');
   assert.equal(repeated.records.markitdown.occurrence_count, 2);
-  // 再試行でも直らず、その手順が担う製品が止まっている事をこの回のreportで確かめた時はhigh。
-  const stopped = run(repeated, '2026-10-03T17:00:30.000Z', ['markitdown']);
+  // 再試行でも直らず、その手順が担う製品を起動できない事をこの回のreportで確かめた時はhigh。根拠も端末の記録に残す。
+  const stopped = run(repeated, '2026-10-03T17:00:30.000Z', missing('markitdown'));
   assert.equal(severity(stopped), 'high');
+  assert.deepEqual(stopped.records.markitdown.evidence, missing('markitdown'));
   // 動かなかった回は記録に触れない。
   assert.equal(severity(applyRun(stopped, { ran: ['typesafe'], failed: [], now: '2026-10-04T17:00:30.000Z', version: VERSION })), 'high');
-  // 失敗は続いているが製品が動いている回は、確かめた事実に合わせて戻す。
-  assert.equal(severity(run(stopped, '2026-10-04T17:00:30.000Z')), 'warn');
-  // 解決を届ける記録は、解決した時の重大度のまま載せる。直ったあとの失敗は新しい1回目。
+  // 新しい観測が無い回（reportを読めない・古い・製品の状態が未確認）は、確かめた重大影響を保持する。根拠も前の観測のまま。
+  const unobserved = run(stopped, '2026-10-04T17:00:30.000Z');
+  assert.equal(severity(unobserved), 'high');
+  assert.deepEqual(unobserved.records.markitdown.evidence, missing('markitdown'));
+  assert.equal(unobserved.records.markitdown.occurrence_count, 4);
+  // 起動できる事を正に観測した回だけ、根拠を付けて評価し直す。checkのfailが残っていても、全体の利用不能とは扱わない。
+  const relaunched = run(unobserved, '2026-10-05T17:00:30.000Z', launchable(['markitdown'], ['markitdown:local_fixture']));
+  assert.equal(severity(relaunched), 'warn');
+  assert.deepEqual(relaunched.records.markitdown.evidence, launchable(['markitdown'], ['markitdown:local_fixture']));
+  // 解決を届ける記録は、解決した時の重大度のまま載せる。直ったあとの失敗は新しい1回目で、前の根拠を引き継がない。
   const recovered = applyRun(stopped, { ran: ['markitdown'], failed: [], now: '2026-10-05T17:00:30.000Z', version: VERSION });
   assert.equal(severity(recovered), 'high');
-  const reopened = run(recovered, '2026-10-06T17:00:30.000Z', ['markitdown']);
+  const reopened = run(recovered, '2026-10-06T17:00:30.000Z');
   assert.equal(severity(reopened), 'warn');
+  assert.equal(reopened.records.markitdown.evidence, undefined);
   assert.equal(reopened.records.markitdown.occurrence_count, 4);
 });
 
-test('製品の停止は、この回のreportの製品の欄だけから読む', () => {
-  const product = (extra) => ({ presence_status: 'installed', installed_version: '1.0.0', compatibility_status: 'compatible', checks: [{ check_id: 'native_diagnostics', status: 'pass' }], ...extra });
-  const report = { products: {
-    caveat: product({ checks: [{ check_id: 'native_diagnostics', status: 'fail', severity: 'high' }] }),
-    markitdown: product({ presence_status: 'missing', checks: [] }),
-    lattice: product({}),
-    // 利用者のログイン待ちは、製品の契約でfailにならない（skipped）。停止の根拠にしない。
-    'gpt-connector': product({ compatibility_status: 'incompatible', checks: [{ check_id: 'auth', status: 'skipped', reason_code: 'auth_required' }] }),
-    throughline: product({ checks: [{ check_id: 'handoff', status: 'unverified' }] }),
-    'jev-ultrafast': product({}),
-    'agent-desktop': product({ presence_status: 'missing', checks: [] }),
-  } };
-  const failed = ['setup.caveat', 'package.caveat-cli', 'markitdown', 'setup.lattice', 'setup.gpt-connector', 'package.throughline', 'jev', 'typesafe', 'npm', 'factory-report', 'package.pnpm'];
-  assert.deepEqual(stoppedSteps(report, failed), ['setup.caveat', 'package.caveat-cli', 'markitdown', 'jev']);
-  // reportを読めない回は、何も確かめられていない。
-  assert.deepEqual(stoppedSteps(null, failed), []);
-  assert.deepEqual(stoppedSteps({ products: 'broken' }, failed), []);
+test('評価していない以前のhighは、新しい観測が無い失敗では保持し、起動できる事を確かめた回だけ評価し直す', () => {
+  const legacy = { occurrence_count: 2, first_seen: '2026-10-01T17:00:30.000Z', last_seen: '2026-10-02T17:00:30.000Z', status: 'open', resolved_at: null, resolution_unsent: false, product_version: VERSION };
+  const state = { ...emptyState(), records: { markitdown: legacy } };
+  const severity = (next) => buildReport(next, { observedAt: '2026-10-09T00:00:00.000Z', version: VERSION }).runtime_errors[0].severity;
+  const run = (evidence) => applyRun(state, { ran: ['markitdown'], failed: ['markitdown'], evidence, now: '2026-10-03T17:00:30.000Z', version: VERSION });
+  assert.equal(severity(run({})), 'high');
+  assert.equal(severity(run({ markitdown: missing('markitdown') })), 'high');
+  assert.equal(severity(run({ markitdown: launchable(['markitdown']) })), 'warn');
 });
 
-test('recordは、渡されたこの回のreportだけを根拠に使い、古いreportや読めないreportでは上げない', async (t) => {
+test('根拠は、この回のreportで製品を起動できたかどうかだけから読む', () => {
+  const product = (extra) => ({ presence_status: 'installed', installed_version: '1.0.0', compatibility_status: 'compatible', checks: [{ check_id: 'native_diagnostics', status: 'pass' }], ...extra });
+  const report = { observed_at: OBSERVED, products: {
+    // 起動できるがcheckがfailの製品: 版照会・期待値検査・診断の失敗は、全体の利用不能の根拠にしない。failしたcheckは根拠として残す。
+    caveat: product({ compatibility_status: 'incompatible', checks: [{ check_id: 'native_diagnostics', status: 'fail', severity: 'high' }] }),
+    unai: product({ compatibility_status: 'incompatible', checks: [{ check_id: 'manifest', status: 'pass' }, { check_id: 'skill_projection_cursor', status: 'fail', severity: 'high' }] }),
+    markitdown: product({ presence_status: 'missing', installed_version: undefined, checks: [{ check_id: 'version', status: 'unverified', reason_code: 'cli_unavailable' }] }),
+    lattice: product({}),
+    // 版を読めなかった製品は、起動できるとも、できないとも確かめていない。
+    throughline: { presence_status: 'unverified', checks: [{ check_id: 'native_diagnostics', status: 'unverified', reason_code: 'cli_timeout' }] },
+    'jev-ultrafast': product({ compatibility_status: 'unverified', checks: [{ check_id: 'installation', status: 'pass' }] }),
+    'agent-desktop': { presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [{ check_id: 'platform', status: 'skipped', reason_code: 'upstream_unsupported' }] },
+  } };
+  const failed = ['setup.caveat', 'unai', 'markitdown', 'setup.lattice', 'package.throughline', 'jev', 'setup.gpt-connector', 'typesafe', 'npm', 'factory-report', 'package.pnpm'];
+  assert.deepEqual(runEvidence(report, failed), {
+    'setup.caveat': launchable(['caveat'], ['caveat:native_diagnostics']),
+    unai: launchable(['unai'], ['unai:skill_projection_cursor']),
+    markitdown: missing('markitdown'),
+    'setup.lattice': launchable(['lattice']),
+    // 対象外の製品（このOSのagent-desktop）は数えない。
+    jev: launchable(['jev-ultrafast']),
+  });
+  // 起動できない製品が1つでもあれば、その手順は「起動できない」。
+  const partial = structuredClone(report); partial.products['agent-desktop'] = { presence_status: 'missing', checks: [] };
+  assert.deepEqual(runEvidence(partial, ['jev']), { jev: missing('agent-desktop') });
+  // reportを読めない回、観測時刻の無いreportは、何も確かめられていない。
+  assert.deepEqual(runEvidence(null, failed), {});
+  assert.deepEqual(runEvidence({ products: report.products }, failed), {});
+  assert.deepEqual(runEvidence({ observed_at: OBSERVED, products: 'broken' }, failed), {});
+});
+
+test('recordは、この回のreportを根拠に使い、古いreportや読めないreportでは上げも下げもしない', async (t) => {
   const { env, paths, home } = await workspace(t);
   const reportPath = join(home, 'latest-report.json');
-  const write = (observedAt) => writeFile(reportPath, JSON.stringify({ observed_at: observedAt, products: { 'jev-ultrafast': { presence_status: 'missing', checks: [] } } }));
-  const severity = async () => JSON.parse(await readFile(paths.state, 'utf8')).records.jev.severity;
-  await write(new Date().toISOString());
-  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
-  assert.equal(await severity(), 'warn');
-  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
-  assert.equal(await severity(), 'high');
-  // 古い観測は、この回の根拠にしない。
-  await write('2026-10-01T00:00:00.000Z');
-  assert.equal((await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', reportPath])).code, 0);
-  assert.equal(await severity(), 'warn');
-  // reportを読めなくても、記録は続ける。
-  const missing = await run(env, ['record', '--ran', 'jev', '--failed', 'jev', '--report', join(home, 'none.json')]);
-  assert.equal(missing.code, 0, missing.stderr);
-  assert.equal(await severity(), 'warn');
-  assert.equal(JSON.parse(await readFile(paths.state, 'utf8')).records.jev.occurrence_count, 4);
+  // 本物のreportは全製品の欄を持つ。このOSで対象外のagent-desktopは数えない。
+  const write = (observedAt, product) => writeFile(reportPath, JSON.stringify({ observed_at: observedAt, products: { 'jev-ultrafast': product, 'agent-desktop': { presence_status: 'not_applicable', checks: [] } } }));
+  const gone = { presence_status: 'missing', checks: [] };
+  const record = async () => JSON.parse(await readFile(paths.state, 'utf8')).records.jev;
+  const fail = async (...extra) => { const result = await run(env, ['record', '--ran', 'jev', '--failed', 'jev', ...extra]); assert.equal(result.code, 0, result.stderr); return result; };
+  await write(new Date().toISOString(), gone);
+  await fail('--report', reportPath);
+  assert.equal((await record()).severity, 'warn');
+  await fail('--report', reportPath);
+  assert.equal((await record()).severity, 'high');
+  assert.equal((await record()).evidence.state, 'stopped');
+  // 古い観測・読めないreport・reportを渡さない回は、新しい観測が無い。確かめたhighを保持する。
+  await write('2026-10-01T00:00:00.000Z', { presence_status: 'installed', installed_version: '1.0.0', checks: [{ check_id: 'installation', status: 'pass' }] });
+  await fail('--report', reportPath);
+  assert.equal((await record()).severity, 'high');
+  await fail('--report', join(home, 'none.json'));
+  assert.equal((await record()).severity, 'high');
+  await fail();
+  assert.equal((await record()).severity, 'high');
+  // 製品の状態が未確認のreportも、停止の解除を確かめていない。
+  await write(new Date().toISOString(), { presence_status: 'unverified', checks: [{ check_id: 'installation', status: 'unverified', reason_code: 'cli_timeout' }] });
+  await fail('--report', reportPath);
+  assert.equal((await record()).severity, 'high');
+  assert.equal((await record()).occurrence_count, 6);
+  // statusは、未解決の記録の重大度と根拠を返す。
+  const status = await run(env, ['status']);
+  assert.equal(status.json.open_records.length, 1);
+  assert.equal(status.json.open_records[0].step, 'jev');
+  assert.equal(status.json.open_records[0].severity, 'high');
+  assert.deepEqual(status.json.open_records[0].evidence.products, ['jev-ultrafast']);
+  // 起動できる事を正に観測した回で、根拠を付けて評価し直す。
+  await write(new Date().toISOString(), { presence_status: 'installed', installed_version: '1.0.0', checks: [{ check_id: 'installation', status: 'pass' }] });
+  await fail('--report', reportPath);
+  assert.equal((await record()).severity, 'warn');
+  assert.equal((await record()).evidence.state, 'launchable');
 });
 
 test('重大度を持たない以前の記録は読めて、送っていた重大度を変えない', async (t) => {

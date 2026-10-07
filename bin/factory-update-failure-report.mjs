@@ -5,8 +5,8 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import {
-  applyRun, buildReport, emptyState, markAccepted, markFailed, readCredential, readRunReport, readSettings, readState, sendReport,
-  stoppedSteps, updateFailurePaths, validStep, versionFromRevision, writeSettings, writeState,
+  applyRun, buildReport, emptyState, markAccepted, markFailed, readCredential, readRunReport, readSettings, readState, runEvidence,
+  sendReport, updateFailurePaths, validStep, versionFromRevision, writeSettings, writeState,
 } from '../lib/factory/update-failure-report.mjs';
 
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -63,8 +63,8 @@ try {
     const { report, ...steps } = parseSteps(rest);
     const before = await readState(paths.state);
     const nowMs = Date.now();
-    const stopped = steps.failed.length > 0 && report ? stoppedSteps(await readRunReport(report, nowMs), steps.failed) : [];
-    const recorded = applyRun(before, { ...steps, stopped, now: new Date(nowMs).toISOString(), version: installedVersion() });
+    const evidence = steps.failed.length > 0 && report ? runEvidence(await readRunReport(report, nowMs), steps.failed) : {};
+    const recorded = applyRun(before, { ...steps, evidence, now: new Date(nowMs).toISOString(), version: installedVersion() });
     if (JSON.stringify(recorded) !== JSON.stringify(before)) await writeState(paths.state, recorded);
     const { state, reporting, outcome } = await deliver(paths, recorded);
     print({ ok: true, command, failed_steps: steps.failed, open_steps: openSteps(state), reporting, outcome });
@@ -78,6 +78,13 @@ try {
       schema: 'dotagents.update_failure_report_status.v1',
       reporting,
       open_steps: openSteps(state),
+      // 重大度の根拠は端末の記録にだけ持つ。BugHubへ送る形には載らない。
+      open_records: openSteps(state).map((step) => ({
+        step,
+        severity: state.records[step].severity ?? 'high',
+        occurrence_count: state.records[step].occurrence_count,
+        evidence: state.records[step].evidence ?? null,
+      })),
       unsent: state.unsent,
       last_attempt_at: state.last_attempt_at,
       last_outcome: state.last_outcome,

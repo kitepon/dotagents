@@ -96,10 +96,14 @@ test('通信の乱れでも、CLIを起動できない影響が残る回はhigh�
   assert.equal(missing.severity, 'high');
 });
 
-test('通信と関係しない失敗の理由は、これまでどおりhighで報告する', async (t) => {
-  for (const reason of ['npm_unavailable', 'downgrade_refused', 'post_version_unavailable', 'version_mismatch']) {
-    const item = await lastUpdate(t, { reason, after: '1.0.0', installed: '1.0.0' });
-    assert.equal(item.status, 'fail', reason);
-    assert.equal(item.severity, 'high', reason);
+test('更新・版の照合・期待値の検査の失敗だけで、起動できるCLIをhighにしない', async (t) => {
+  for (const reason of ['npm_unavailable', 'downgrade_refused', 'post_version_unavailable', 'version_mismatch', 'check_schema_invalid', 'post_contract_failed', 'not_observed']) {
+    const usable = await lastUpdate(t, { reason, after: '1.0.0', installed: '1.0.0' });
+    assert.equal(usable.status, 'fail', reason);
+    assert.equal(usable.severity, 'warn', reason);
+    // 更新の直後にも今回のscanにも版を読めない時は、起動を確かめられない影響としてhighのまま。
+    const broken = await lastUpdate(t, { reason, after: null, installed: null });
+    assert.equal(broken.severity, 'high', reason);
+    assert.equal(usable.fingerprint, broken.fingerprint, reason);
   }
 });

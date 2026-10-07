@@ -753,7 +753,8 @@ node -e '
 ' "$DEFERRED_STATE/dotagents/update-failures.json" \
   || fail 'BugHubへ届かなかっただけの回が、reportの準備の失敗の記録を書き換えた'
 
-# 失敗が続いた事だけではhighにしない。再試行でも直らず、その手順が担う製品の停止をこの回のreportで確かめた時だけhighにする。
+# 失敗が続いた事だけではhighにしない。再試行でも直らず、その手順が担う製品を起動できない事をこの回のreportで確かめた時だけhighにする。
+# 確かめたhighは、新しい観測が無い回では保持し、起動できる事を正に観測した回だけ評価し直す。
 STOPPED_STATE="$TEST_HOME/stopped-state"
 STOPPED_REPORT="$TEST_HOME/stopped-report.json"
 severity_of_jev() {
@@ -767,15 +768,23 @@ run_jev_failure() {
     RUN_ID="$1" JEV_SETUP_FAIL=1 REPORT_OUTPUT="$2" \
     /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/$1.out" 2>&1
 }
-node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({observed_at:new Date().toISOString(),products:{"jev-ultrafast":{presence_status:"installed",installed_version:"1.0.0",checks:[{check_id:"installation",status:"pass"}]}}}))' "$STOPPED_REPORT"
+write_jev_report() {
+  node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({observed_at:new Date().toISOString(),products:{"jev-ultrafast":JSON.parse(process.argv[2]),"agent-desktop":{presence_status:"not_applicable",checks:[]}}}))' "$STOPPED_REPORT" "$1"
+}
+JEV_LAUNCHABLE='{"presence_status":"installed","installed_version":"1.0.0","checks":[{"check_id":"installation","status":"pass"}]}'
+JEV_MISSING='{"presence_status":"missing","checks":[{"check_id":"installation","status":"unverified","reason_code":"version_unavailable"}]}'
+write_jev_report "$JEV_LAUNCHABLE"
 if run_jev_failure jev-working-1 "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
 if run_jev_failure jev-working-2 "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
-[ "$(severity_of_jev)" = 'open:warn:2' ] || fail '製品が動いているのに、失敗が続いた事だけで重大度を上げた'
-node -e 'require("fs").writeFileSync(process.argv[1],JSON.stringify({observed_at:new Date().toISOString(),products:{"jev-ultrafast":{presence_status:"missing",checks:[{check_id:"installation",status:"unverified",reason_code:"version_unavailable"}]}}}))' "$STOPPED_REPORT"
+[ "$(severity_of_jev)" = 'open:warn:2' ] || fail '製品を起動できるのに、失敗が続いた事だけで重大度を上げた'
+write_jev_report "$JEV_MISSING"
 if run_jev_failure jev-stopped "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
-[ "$(severity_of_jev)" = 'open:high:3' ] || fail '再試行でも直らず製品が止まっている事を確かめた回を、highにしていない'
+[ "$(severity_of_jev)" = 'open:high:3' ] || fail '再試行でも直らず製品を起動できない事を確かめた回を、highにしていない'
 if run_jev_failure jev-no-report ''; then fail '手順の失敗を成功扱いした'; fi
-[ "$(severity_of_jev)" = 'open:warn:4' ] || fail 'この回のreportが無いのに、製品の停止を確かめた扱いにした'
+[ "$(severity_of_jev)" = 'open:high:4' ] || fail '確かめたhighを、この回のreportが無いだけで下げた'
+write_jev_report "$JEV_LAUNCHABLE"
+if run_jev_failure jev-relaunched "$STOPPED_REPORT"; then fail '手順の失敗を成功扱いした'; fi
+[ "$(severity_of_jev)" = 'open:warn:5' ] || fail '製品を起動できる事を確かめた回に、評価し直していない'
 
 # 記録の道具が失敗しても、更新の結果は変えない。
 if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \

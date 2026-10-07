@@ -69,13 +69,30 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 - **境界**: 報告するのは「この端末の定期更新で、この手順が失敗した」ことだけ。製品が返したエラーの中身は載せず、製品の不具合を工場が引き取ることもしない。届け先は1つで、製品ごとに振り分けない。修理へ繋ぐのはBugHubを見た人で、dotagentsは製品の担当へ届ける仕組みを持たない。
 - **手順の名前**: `setup.<製品>`（公開入口の導入手順）、`package.<npm package>`、`npm`、`markitdown`、`unai`、`typesafe`、`jev`、`spotter-install`、`toolchain-ledger`、`factory-report`。`claude-code`・`codex-cli`・`grok-build`の更新結果は台帳がreportへ運ぶので、ここでは数えない。
-- **重大度**: 手順の名前や回数では決めず、確かめた実害で決める。手順の失敗で確かなのは「この回の更新がその手順で止まった」ことだけで、原因（通信・製品・端末）は未確定なので、`warn`で載せる。失敗が続いた事だけでは上げない。`high`にするのは、前の回も失敗していて（次の定期更新の再試行でも直らず）、その手順が導入・設定する製品が止まっている事を、この回の工場のreportで確かめた時だけ。停止の根拠は、製品が無い（`missing`）か、製品のcheckが`fail`である事。製品の契約で`fail`にならない状態（利用者のログイン待ちの`skipped`、`unverified`）は根拠にしない。この時の影響は「この端末でその製品が使えず、直す道である定期更新も通らない」で、復帰には、その手順が通るか人の手が要る。重大度は失敗のたびに決め直し、製品が動いている回や、この回のreportを読めない回は`warn`に戻す。`warn`は実害を確かめていない事を表し、無害の証明ではない。工場自身の手順（`npm`・`toolchain-ledger`・`factory-report`）と、製品を持たない手順（`typesafe`・library）は止まる製品を持たないので`warn`のまま。npmが無い端末の影響は、`claude-code`・`codex-cli`の`last_update`（`npm_unavailable`）が運ぶ。重大度を持たない以前の記録は評価していないので、送っていた`high`のまま扱う。
+- **重大度**: 手順の名前や回数では決めず、確かめた実害で決める。規則は下の「重大度と根拠」。
 - **届かなかっただけの回**: reportの準備・送信が、BugHubから応答を受け取れなかった保留だけで終わった回は、`factory-report`の失敗にも成功にも数えず、未解決の記録にも触れない。reportは送信待ちに残り、次の毎時の実行が送り直す。更新のlogには`DEFERRED:`の行が残り、更新の終了値は非0のまま。BugHubが応答して断った保留、隔離、ackの失敗、reportの生成や予約の失敗は、これまでどおり手順の失敗に数える。
 - **記録**: `agents-update.sh`が最後に`bin/factory-update-failure-report.mjs record`へ、動いた手順と失敗した手順の名前を渡す。失敗した手順は回数を累計し、次の回で成功した手順は解決済みにする。今回動かなかった手順には触れない。記録や送信ができなくても、更新の結果は変えない。
 - **置き場**: 記録は`~/.local/state/dotagents/update-failures.json`、送信の設定は`~/.config/dotagents/update-failure-reporting.json`（Windowsはどちらも`%LOCALAPPDATA%\dotagents\`）。合鍵はBugHubの持ち主が置く`~/.config/bughub/product-credentials/dotagents.json`（Windowsは`%LOCALAPPDATA%\bughub\product-credentials\dotagents.json`）で、dotagentsは読むだけで作らない。
 - **送信**: 既定では送らない。端末で`factory-update-failure-report.mjs enable`を実行し、合鍵が本人だけの通常のファイル（0600、リンクでない）である時だけ送る。送る形はBugHubの製品報告の契約（`bughub/PRODUCT_REPORTING.md`）で、`error_code`は`UPDATE_STEP_FAILED`、`component`は手順の名前、版は`0.0.0+<revision>`。受領済みにするのは、200・`accepted`・同じ`report_id`・応答の署名がそろった時だけ。
 - **確認と停止**: `factory-update-failure-report.mjs status`が、送信の状態・未解決の手順・最後の結果を返す。`verify`は、記録に触れずに中身が空の報告を1回送り、合鍵・宛先・応答の署名を確かめる（BugHubにissueは出来ない）。届かなかった分は次の更新で送る。待たずに送る時は`flush`。止める時は`disable`。
 - **限界**: 更新が動かなかったこと（端末が止まっていた、予定が外れていた）は検出しない。WindowsはACLを確かめず、合鍵が通常のファイルでリンクでないことだけを見る。
+
+### 重大度と根拠
+
+手順の失敗で確かなのは「この回の更新がその手順で止まった」ことだけで、原因（通信・製品・端末）は未確定なので、`warn`で載せる。失敗が続いた事だけでは上げない。根拠は、この回の工場のreportで、その手順が導入・設定する製品を起動できたか（版を読めたか）だけから読み、次の3つに分ける。
+
+| この回の根拠 | 1回目の失敗 | 前の回も失敗している時 |
+|---|---|---|
+| 起動できない（製品が`missing`） | `warn`（次の回が再試行する） | `high` |
+| 起動できる（対象の製品すべてが`installed`） | `warn` | `warn`へ評価し直す |
+| 観測なし（reportを読めない・6時間より古い・製品の状態が未確認・止まる製品を持たない手順） | `warn` | 前の評価を保持する |
+
+- `high`の時に止まっている機能は製品の起動、影響はこの端末のその製品、復帰はその手順が通るか人の手による導入。
+- 起動できる製品のcheckが`fail`でも、版照会・期待値検査・診断の失敗だけで全体の利用不能とは扱わない。どのcheckが`fail`かは根拠（`製品ID:check_id`）に残し、何が止まりどう復帰するかは、製品のcheckが製品の名前と製品の重大度で運ぶ。
+- 観測なしの回は、確かめた`high`も、評価していない以前の`high`（重大度を持たない記録）も下げない。`warn`は実害を確かめていない事を表し、無害の証明ではない。
+- 重大度と根拠（製品、failしたcheck、観測時刻）は端末の記録に残り、`factory-update-failure-report.mjs status`の`open_records`で読める。BugHubへ送る形には足していない。
+- 工場自身の手順（`npm`・`toolchain-ledger`・`factory-report`）と、製品を持たない手順（`typesafe`・library）は止まる製品を持たない。npmが無い端末の影響は、`claude-code`・`codex-cli`の`last_update`（`npm_unavailable`）が運ぶ。
+- 手順と製品の対応は`lib/factory/update-failure-report.mjs`の`STEP_PRODUCTS`が持つ。手順や製品を足す時は、ここへ対応を足す。
 
 ## 通信失敗の報告
 
@@ -88,8 +105,7 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 | 台帳の理由 | CLIを起動できる | 起動を確かめられない |
 |---|---|---|
 | `registry_unavailable`・`check_failed`（最新版の確認が失敗。導入に触れていない） | `unverified`（理由はそのまま） | `fail`・`high` |
-| `install_failed`・`update_failed`（入替が失敗。原因は台帳に無い） | `fail`・`warn` | `fail`・`high` |
-| 上記以外の失敗 | `fail`・`high` | `fail`・`high` |
+| 上記以外の失敗（入替、版の照合、期待値の検査。原因は台帳に無い） | `fail`・`warn` | `fail`・`high` |
 
 - **限界**: 入替の失敗の原因（通信・ファイルのlock・権限）は台帳に無く、端末の更新logにだけ残る。grok-buildはscanが`grok update --check --json`でしか版を読まないので、確認や更新が失敗した回は`agents-update`が`grok --version`で起動を確かめ、読めた版を台帳の`after_version`へ残す。
 
