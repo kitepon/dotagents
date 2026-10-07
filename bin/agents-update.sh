@@ -302,6 +302,8 @@ fi
       update_failed=1
       grok_check=''
       grok_operation=failed; grok_reason=check_failed
+      # 確認だけが失敗した回は導入に触れていない。起動できた版を台帳へ残し、reportが重大度の根拠に使う。
+      grok_after="$(grok --version 2>/dev/null | extract_semver || true)"; grok_after="${grok_after:-none}"
     }
     grok_valid=''
     if [[ -n "$grok_check" ]] && ! grok_valid="$(printf '%s' "$grok_check" | node "$TOOLCHAIN_CONTRACT_HELPER" grok-check 2>&1)"; then
@@ -322,6 +324,7 @@ fi
       if ! grok update --stable; then
         printf 'FAILED: grok-build stable update\n'
         update_failed=1
+        grok_after="$(grok --version 2>/dev/null | extract_semver || true)"; grok_after="${grok_after:-none}"
       elif ! grok --version >/dev/null; then
         printf 'FAILED: grok-build version after stable update\n'
         update_failed=1

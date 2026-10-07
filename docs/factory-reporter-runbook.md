@@ -91,7 +91,7 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 | `install_failed`・`update_failed`（入替が失敗。原因は台帳に無い） | `fail`・`warn` | `fail`・`high` |
 | 上記以外の失敗 | `fail`・`high` | `fail`・`high` |
 
-- **限界**: 入替の失敗の原因（通信・ファイルのlock・権限）は台帳に無く、端末の更新logにだけ残る。grok-buildはscanが`grok update --check --json`でしか版を読まないので、通信が切れている間は起動を確かめられず、`check_failed`が`high`のまま残る。
+- **限界**: 入替の失敗の原因（通信・ファイルのlock・権限）は台帳に無く、端末の更新logにだけ残る。grok-buildはscanが`grok update --check --json`でしか版を読まないので、確認や更新が失敗した回は`agents-update`が`grok --version`で起動を確かめ、読めた版を台帳の`after_version`へ残す。
 
 ## 停止・失敗
 

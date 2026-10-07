@@ -195,6 +195,7 @@ cat > "$TEST_HOME/.nvm/fake-bin/grok" <<'EOF'
 printf '%s:grok:%s\n' "${RUN_ID:-default}" "$*" >> "$HOME/update-events.log"
 case "$*" in
   'update --check --json')
+    [ "${GROK_CHECK_FAIL:-0}" -ne 1 ] || exit 1
     if [ -n "${GROK_CHECK_JSON+x}" ]; then printf '%s\n' "$GROK_CHECK_JSON"; elif [ -f "$HOME/grok-updated" ]; then echo '{"currentVersion":"0.2.1","latestVersion":"0.2.1","updateAvailable":false,"installer":"internal","channel":"stable","autoUpdate":null,"error":null}'; else echo '{"currentVersion":"0.2.0","latestVersion":"0.2.1","updateAvailable":true,"installer":"internal","channel":"stable","autoUpdate":null,"error":null}'; fi ;;
   'update --stable') : > "$HOME/grok-updated" ;;
   --version) [ "${GROK_VERSION_MISSING:-0}" -ne 1 ] || exit 127; echo '0.2.1' ;;
@@ -455,6 +456,26 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
 fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["grok-build"];if(r.reason_code!=="post_version_unavailable"||r.operation_status!=="failed")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'Grok更新後CLI消失を台帳へ保存しない'
+
+# 最新版の確認だけが失敗した回は、起動できるかを台帳へ残す（reportが重大度の根拠に使う）。
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  GROK_CHECK_FAIL=1 RUN_ID=grok-check-failed \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/grok-check-failed.out" 2>&1; then
+  fail 'Grokの確認失敗を成功扱いした'
+fi
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["grok-build"];if(r.reason_code!=="check_failed"||r.operation_status!=="failed"||r.after_version!=="0.2.1")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'Grokの確認失敗の回に、起動できた版を台帳へ残していない'
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  GROK_CHECK_FAIL=1 GROK_VERSION_MISSING=1 RUN_ID=grok-check-failed-missing \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/grok-check-failed-missing.out" 2>&1; then
+  fail '起動できないGrokの確認失敗を成功扱いした'
+fi
+node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["grok-build"];if(r.reason_code!=="check_failed"||r.after_version!==null)process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '起動できないGrokへ、起動できた版を記録した'
 
 if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
