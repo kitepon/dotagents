@@ -76,7 +76,7 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/setup-macos-factory.sh
 
 test-update: ## cron 最小 PATH で NVM 配下の npm を解決できることを検証
-	node --test tests/update/product-setup.test.mjs tests/update/finalize-report.test.mjs tests/update/typesafe-setup.test.mjs tests/update/jev-setup.test.mjs tests/update/update-failure-report.test.mjs
+	node --test tests/update/product-setup.test.mjs tests/update/npm-retired.test.mjs tests/update/finalize-report.test.mjs tests/update/typesafe-setup.test.mjs tests/update/jev-setup.test.mjs tests/update/update-failure-report.test.mjs
 	bash tests/update/throughline-bootstrap.sh
 	bash tests/update/cron-env.sh
 

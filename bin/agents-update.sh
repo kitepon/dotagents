@@ -77,6 +77,7 @@ TOOLCHAIN_CONTRACT_HELPER="${TOOLCHAIN_CONTRACT_HELPER:-$SCRIPT_DIR/factory-tool
 DEPLOYMENT_CONTRACT_HELPER="${DEPLOYMENT_CONTRACT_HELPER:-$SCRIPT_DIR/factory-deployment-contract.mjs}"
 TOOLCHAIN_LEDGER_FILE="${TOOLCHAIN_LEDGER_FILE:-$LOG_DIR/toolchain-ledger.json}"
 UPDATE_FAILURE_REPORT_HELPER="${UPDATE_FAILURE_REPORT_HELPER:-$SCRIPT_DIR/factory-update-failure-report.mjs}"
+NPM_RETIRED_HELPER="${NPM_RETIRED_HELPER:-$SCRIPT_DIR/factory-npm-retired.mjs}"
 
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
@@ -149,6 +150,21 @@ npm_install_global() {
   esac
 }
 
+# npmが入替の時に残した退避フォルダ（`.<名前>-<hash>`）を片付ける。Windowsでは稼働中のexeを消せずに残り、
+# 次の入替がEBUSYで落ちて、巻き戻しで古いexeが元の場所へ戻る。消せないexeは工場の置き場へ移す。
+clear_npm_retired() {
+  local name="$1"
+  [[ -n "$npm_global_root" ]] || return 0
+  case "$name" in @*/*@*|[!@]*@*) name="${name%@*}" ;; esac
+  node "$NPM_RETIRED_HELPER" clear --root "$npm_global_root" --package "$name" --park "$LOG_DIR/retired-executables"
+  case "$?" in
+    0) return 0 ;;
+    20) return 1 ;;
+    # 片付けを試せなかった回は、入替を止めない（npmの結果がそのまま記録になる）。
+    *) printf 'WARN: %s の退避フォルダを確認できない\n' "$name"; return 0 ;;
+  esac
+}
+
 update_throughline() {
   if command -v throughline >/dev/null 2>&1; then
     throughline self-update --json
@@ -189,12 +205,16 @@ fi
     claude_reason=npm_unavailable; codex_reason=npm_unavailable
   else
     npm_global_bin=''
+    npm_global_root=''
     step_ran npm
     if ! npm_global_bin="$(resolve_npm_global_bin)"; then
       printf 'FAILED: npm global prefix/bin が不正または利用不能\n'
       step_failed npm
     else
       PATH="$npm_global_bin:$PATH"
+      npm_global_root="$(npm root -g 2>/dev/null)" || npm_global_root=''
+      npm_global_root="${npm_global_root%$'\r'}"
+      [[ "$npm_global_root" != *$'\n'* ]] || npm_global_root=''
     fi
     for pkg in "${PACKAGES[@]}"; do
       printf -- '--- %s ---\n' "$pkg"
@@ -237,10 +257,19 @@ fi
       fi
       install_spec="$(npm_install_spec "$pkg")"
       [[ -n "$product" ]] || step_ran "$(package_step "$pkg")"
-      if [[ "$skip_install" -eq 0 ]] && ! npm_install_global "$pkg" "$install_spec"; then
-        printf 'FAILED: %s\n' "$pkg"
+      # 残った退避フォルダを片付けられない時は入替えない。入替えると落ちて、古いexeへ戻る。
+      if [[ "$skip_install" -eq 0 ]] && ! clear_npm_retired "$pkg"; then
+        printf 'FAILED: %s の退避フォルダを片付けられない（入替を見送る）\n' "$pkg"
         if [[ -n "$product" ]]; then update_failed=1; else step_failed "$(package_step "$pkg")"; fi
-        operation=failed; reason=install_failed
+        after="$before"; operation=failed; reason=install_failed; skip_install=1
+      elif [[ "$skip_install" -eq 0 ]]; then
+        if ! npm_install_global "$pkg" "$install_spec"; then
+          printf 'FAILED: %s\n' "$pkg"
+          if [[ -n "$product" ]]; then update_failed=1; else step_failed "$(package_step "$pkg")"; fi
+          operation=failed; reason=install_failed
+        fi
+        # 今の入替で残った退避フォルダを、次の回まで持ち越さない。
+        clear_npm_retired "$pkg" || printf 'WARN: %s の退避フォルダが残った（次の回の前に片付ける）\n' "$pkg"
       fi
       if [[ -n "$product" ]]; then
         if [[ "$skip_install" -eq 0 && -n "$npm_global_bin" ]]; then

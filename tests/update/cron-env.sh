@@ -74,6 +74,7 @@ cat > "$TEST_HOME/.nvm/fake-bin/npm" <<'EOF'
 #!/bin/sh
 case "$*" in
   'prefix -g') printf '%s\n' "${NPM_PREFIX:-$HOME/npm-global}"; exit 0 ;;
+  'root -g') printf '%s\n' "${NPM_PREFIX:-$HOME/npm-global}/lib/node_modules"; exit 0 ;;
   'view @anthropic-ai/claude-code version --json')
     if [ -n "${NPM_CLAUDE_LATEST_JSON+x}" ]; then printf '%s\n' "$NPM_CLAUDE_LATEST_JSON"; else echo '"2.1.207"'; fi
     exit 0 ;;
@@ -81,6 +82,8 @@ case "$*" in
 esac
 printf '%s:%s\n' "${RUN_ID:-default}" "$*" >> "$HOME/npm-calls.log"
 printf 'npm:%s\n' "$*" >> "$HOME/update-events.log"
+# 実物のnpmは、消せない退避フォルダが残ったまま入替えると落ちる。
+if [ -n "${NPM_FAIL_WHILE_EXISTS:-}" ] && [ -e "$NPM_FAIL_WHILE_EXISTS" ]; then exit 24; fi
 case "${NPM_FAIL_PACKAGE:-}" in
   '') exit 0 ;;
 esac
@@ -281,6 +284,60 @@ grep -q '^toolchain-update:install -g @openai/codex@latest$' "$TEST_HOME/npm-cal
   || fail '古いCodexを更新しない'
 node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products;const c=p["claude-code"],x=p["codex-cli"];if(c.operation_status!=="success"||c.reason_code!=="updated"||c.before_version!=="2.1.206"||c.after_version!=="2.1.207"||x.operation_status!=="success"||x.before_version!=="0.144.2"||x.after_version!=="0.144.3")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '古いClaude Code・Codexの更新前後を台帳へ保存しない'
+# npmが前の回に残した退避フォルダは、入替の前に片付ける（残ったままだと入替が落ちる）。
+retired_codex="$TEST_HOME/npm-global/lib/node_modules/@openai/.codex-3WgO6fmv"
+mkdir -p "$retired_codex/bin" "$TEST_HOME/npm-global/lib/node_modules/@openai/codex"
+printf 'old' > "$retired_codex/bin/codex.exe"
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  NPM_FAIL_WHILE_EXISTS="$retired_codex" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-clear \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/retired-clear.out" 2>&1; then
+  cat "$TEST_HOME/retired-clear.out" >&2
+  fail '退避フォルダが残っている回の更新が失敗した'
+fi
+[ ! -e "$retired_codex" ] || fail '残った退避フォルダを入替の前に片付けていない'
+[ -d "$TEST_HOME/npm-global/lib/node_modules/@openai/codex" ] || fail '導入済みのpackageを消した'
+grep -q '^retired-clear:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls.log" \
+  || fail '退避フォルダを片付けた後に入替えていない'
+grep -Fq '"package":"@openai/codex","retired":[".codex-3WgO6fmv"],"parked":[],"remaining":[]' "$TEST_HOME/retired-clear.out" \
+  || fail '片付けた退避フォルダをlogへ残していない'
+node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["codex-cli"];if(x.operation_status!=="success"||x.reason_code!=="updated"||x.before_version!=="0.144.2"||x.after_version!=="0.144.3")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '退避フォルダを片付けた回の更新を台帳へ保存しない'
+
+# 片付けられない退避フォルダが残る回は入替えない（入替えると落ちて、巻き戻しで古いexeへ戻る）。
+printf 'process.exit(process.argv.includes("@openai/codex") ? 20 : 0);\n' > "$TEST_HOME/retired-stuck.mjs"
+if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  NPM_RETIRED_HELPER="$TEST_HOME/retired-stuck.mjs" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-stuck \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/retired-stuck.out" 2>&1; then
+  fail '退避フォルダを片付けられない回を成功扱いした'
+fi
+if grep -q '^retired-stuck:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls.log"; then
+  fail '退避フォルダを片付けられないまま入替えた'
+fi
+grep -Fxq 'FAILED: @openai/codex の退避フォルダを片付けられない（入替を見送る）' "$TEST_HOME/retired-stuck.out" \
+  || fail '入替を見送った理由をlogへ残していない'
+grep -q '^retired-stuck:install -g gpt-connector@latest$' "$TEST_HOME/npm-calls.log" \
+  || fail '入替を見送った後に独立したpackageの更新を継続しなかった'
+node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["codex-cli"];if(x.operation_status!=="failed"||x.reason_code!=="install_failed"||x.before_version!=="0.144.2"||x.after_version!=="0.144.2")process.exit(1)' \
+  "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '入替を見送った回を、版を変えずに失敗として台帳へ保存しない'
+
+# 片付けを試せなかった回（helperの異常終了）は入替を止めず、npmの結果を記録にする。
+if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  NPM_RETIRED_HELPER="$TEST_HOME/retired-helper-missing.mjs" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-unchecked \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/retired-unchecked.out" 2>&1; then
+  cat "$TEST_HOME/retired-unchecked.out" >&2
+  fail '片付けを試せない回に更新を止めた'
+fi
+grep -q '^retired-unchecked:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls.log" \
+  || fail '片付けを試せない回にCodexを更新しない'
+grep -Fxq 'WARN: @openai/codex の退避フォルダを確認できない' "$TEST_HOME/retired-unchecked.out" \
+  || fail '片付けを試せなかった事をlogへ残していない'
+
 grep -q '^normal:install -g --allow-scripts=claude-spotter claude-spotter@latest$' \
   "$TEST_HOME/npm-calls.log" || fail 'Spotter lifecycle scriptをpackage限定で許可しない'
 if grep -q '@colbymchenry/codegraph' "$TEST_HOME/npm-calls.log"; then

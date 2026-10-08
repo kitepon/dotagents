@@ -63,6 +63,20 @@ legacy v6互換を検証する時は`factory-reporter-scheduler install --wire-m
 
 導入の結果は各製品の公式入口が返す。製品が`partial`や`action_required`（利用者の対応待ち）と答えた時は、その値のまま記録し、工場の更新の失敗には数えない。現行runnerの`--post-update`は最終台帳を反映する前のreport準備であり、製品の診断を追加の導入gateにしない。公開された失敗・未対応・未検証は報告へ保持し、工場自身のreport生成・台帳確定・配送の成否と区別する。互換上残る`post_gate_status`はこの工場処理の状態を表す。
 
+## npmの退避フォルダ
+
+npmは入替の前に、古いpackageを隣の`.<名前>-<hash>`へ退避し、成功した後で消す。Windowsでは稼働中のexeを消せないので、agentが動いている間の入替は退避フォルダを残す。次の入替はそこへ上書きできず`EBUSY`で落ち、巻き戻しで退避側の古いexeが元の場所へ戻る（2026-10-07 claude-code、2026-10-08 codex-cli。codexは0.160.1から0.160.0へ戻った）。
+
+`agents-update`は、npmへ渡すpackageごとに、入替の前と後で`bin/factory-npm-retired.mjs clear`を呼ぶ。
+
+- **消せる物は消す**。消せないファイルだけを`<更新logの場所>/retired-executables/<時刻>-<退避フォルダ名>/`へ、同じvolumeのrenameで移す。複製はしない。稼働中のプロセスは止めない。
+- **置き場のexe**は、掴んでいたプロセスが終わった後の回で消える。
+- **片付けられない時**（別volumeなどでrenameも通らない）は、そのpackageを入替えない。logへ`FAILED: <package> の退避フォルダを片付けられない（入替を見送る）`を残し、台帳は`failed`／`install_failed`、`after_version`は入替前の版のまま。
+- **片付けを試せなかった時**（helperの異常終了）は入替を止めず、logへ`WARN: <package> の退避フォルダを確認できない`を残す。
+- 退避フォルダがあった回だけ、片付けた名前と移した先を1行のJSONで更新logへ残す。
+
+退避先の名前はnpmの実装（`@npmcli/arborist`の`retire-path.js`）に合わせている。npmが名前の付け方を変えた時は片付けの対象が見つからなくなり、挙動は片付けを入れる前と同じに戻る。
+
 ## 定期更新の失敗の報告
 
 `agents-update`が失敗で終わった時、どの手順が失敗したかをdotagentsが自分の名前（`dotagents`）でBugHubへ報告する（オーナー裁定K-DNC248・K-N4QYA4、2026-10-03）。それまで更新の結果は端末のlogにしか残らず、失敗が続いても誰にも見えなかった。
