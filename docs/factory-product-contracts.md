@@ -21,7 +21,7 @@
 
 | ID / repo | version・公開diagnostics | 工場projection | 製品側の正本 |
 |---|---|---|---|
-| `caveat` / `kitepon/Caveat` | `caveat --version`; `caveat factory-diagnostics --json --require-connector cursor` (`caveat.native_factory_diagnostics.v1`) | native overall、version。CLI不在は`missing`、内部DB/hook推測は禁止 | [Caveat docs](https://github.com/kitepon/Caveat/tree/main/docs) |
+| `caveat` / `kitepon/Caveat` | `caveat --version`; `caveat factory-diagnostics --json --require-connector cursor --require-connector grok` (`caveat.native_factory_diagnostics.v1`) | native overall、version、部品ごとの`status`と`reason_code`（[runbook「製品診断の細目と登録条件」](factory-reporter-runbook.md#製品診断の細目と登録条件)）。合否と集約はCaveatが所有し、工場は写すだけ。CLI不在は`missing`、内部DB/hook推測は禁止 | [Caveat docs](https://github.com/kitepon/Caveat/tree/main/docs) |
 | `throughline` / `kitepon/Throughline` | `throughline --version`; `throughline factory-diagnostics --json` (`throughline.native_factory_diagnostics.v1`) | native overall、version。session本文・DB直接読解は禁止 | [Throughline docs](https://github.com/kitepon/Throughline/tree/main/docs) |
 | `spotter` / `kitepon/Spotter` | `spotter --version`; `spotter diagnostics factory` (schema `1.1`) | `compatibility_status`と製品の終了コードを使う。詳細checkから互換性を再集約せず、tool DBを直接読解しない | [Spotter docs](https://github.com/kitepon/Spotter/tree/main/docs) |
 | `lattice` / `kitepon/Lattice` | `lattice --version`; `lattice status --json` (`lattice.project_status.v1`); `lattice factory-diagnostics --json` (`lattice.native_factory_diagnostics.v1`) | typed project status、native overall、sensor/readiness。工程案内は`lattice session-context --json`の公開契約に従い、表示する既知項目だけ型と長さを検査する。内包TODOの版・未使用項目を固定しない | [Lattice product contract](https://github.com/kitepon/Lattice/blob/main/docs/00_product-contract.md) |

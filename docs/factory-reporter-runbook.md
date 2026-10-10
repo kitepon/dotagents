@@ -108,6 +108,24 @@ npmは入替の前に、古いpackageを隣の`.<名前>-<hash>`へ退避し、�
 - 工場自身の手順（`npm`・`toolchain-ledger`・`factory-report`）と、製品を持たない手順（`typesafe`・library）は止まる製品を持たない。npmが無い端末の影響は、`claude-code`・`codex-cli`の`last_update`（`npm_unavailable`）が運ぶ。
 - 手順と製品の対応は`lib/factory/update-failure-report.mjs`の`STEP_PRODUCTS`が持つ。手順や製品を足す時は、ここへ対応を足す。
 
+## 製品診断の細目と登録条件
+
+製品の診断が部品ごとに`status`と`reason_code`を返す時、工場は全体の合否1個へ丸めず、部品ごとのcheckで運ぶ（2026-10-10、オーナー裁定 K-3WADM6）。今の対象はCaveatだけで、ほかの製品へ広げる時は、製品の担当の同意とオーナーの裁定を先に取る。
+
+- **呼び出し**: `caveat factory-diagnostics --json --require-connector cursor --require-connector grok`。macOS・Linux・Windowsで同じ引数を渡し、Claude Code・Codex・Cursor・Grokの4つを製品の合否へ入れる。overallと終了値は製品へ委ね、工場は集約し直さない。
+- **部品（15個）**: `database`、`sync`、`claude_mcp`、`claude_hook_{user_prompt_submit,post_tool_use,post_tool_use_failure,stop}`、`codex_hook_{user_prompt_submit,post_tool_use,stop}`、`cursor_hook_{before_submit_prompt,post_tool_use,post_tool_use_failure,stop}`、`grok_mcp`。一覧は`lib/factory/caveat-diagnostics.mjs`の`CAVEAT_COMPONENTS`が持つ。
+  CaveatのGrok対応はMCP登録だけで、専用のhookは製品に無い。CodexとCursorのMCP診断もv1に無い。無い部品を`pass`にも不足にもしない。出力に無い部品（古い版）はcheckを作らない。
+- **合否**: 製品の`status`を写す。`ready`は`pass`、`not_ready`は`fail`、`unverified`は`unverified`。
+- **重大度**: 製品が答えた回の`not_ready`は`warn`。実害を確かめていない事を表し、無害の証明ではない。理由の名前・回数・時刻から`high`や原因の責任を推論しない。v1は影響・重大度・復帰を宣言しないので、工場は無い欄を仮定しない。
+  実害（検索できない、入力が消えるなど）は製品自身のruntime記録が製品の重大度で運ぶ。その記録が空でも、実害なしとは扱わない。
+- **identity**: fingerprintは「製品＋check_id」から作り、理由・版・重大度・時刻を入れない。同じ部品で理由が変わっても（`behind`から`remote_mismatch`など）同じissueのままで、理由は`reason_code`と生のreportの履歴に残る。
+- **秘密**: `reason_code`は`^[a-z][a-z0-9_]{0,63}$`に合い、path・token・鍵の形を含まない物だけ運ぶ。外れた部品は`unverified`／`detail_schema_invalid`にし、外れた値や診断の生の出力をreportにも報告文にも写さない。path・設定の中身・remoteのURLは読まない。
+- **旧check `native_diagnostics`**: 製品のoverallが`ready`の回だけ`pass`を出す。BugHubは、同じcheck_idの`pass`でしかissueを閉じない（checkが消えた・`unverified`になっただけでは閉じない）ので、以前のissueはこの`pass`で閉じる。
+  overallが`not_ready`で部品の`fail`がある回は出さない。部品の`fail`が1つも無い回（工場が知らない部品が増えた時など）は、`native_diagnostics`を`fail`／`warn`／`native_not_ready_unattributed`で残す。以前の`native_not_ready`とは別のfingerprintになり、以前の記録へ新しい重大度は載らない。
+  overallが`unverified`で、未確認の部品が1つも無い回は`native_diagnostics`を`unverified`／`native_unverified`で残す。出力がschemaから外れた回は、以前と同じ`native_diagnostics`／`unverified`。
+- **復帰の読み方**: 後のreportで同じcheckが`pass`になった事は、その部品の診断の状態が戻った事を表す。検索・書込み・ログイン・実際のMCP接続が動く事の確認とは分けて扱う。`grok_mcp`の`pass`が示すのは、登録が有効で正規の実行先を指す事まで。明示的な無効化（`disabled`）は自動で解除せず、そのまま運ぶ。
+- **変えていない物**: ほかの製品の診断（Throughline・Aiterm・Spotter・gpt-connector・Lattice・unai）の重大度と、harnessの安全hook・設定検査（`required_hooks`・`config_parser`・`native_routing`）、`last_update`。旧wire（v2と初代）のCaveatの読み方も変えていない。
+
 ## 通信失敗の報告
 
 登録の条件と重大度は[BugHubの通信失敗の契約](https://github.com/kitepon/ServerManager/blob/main/bughub/NETWORK_REPORTING.md)に従う（2026-10-07、オーナー指示）。工場は、通信の診断の記録と、修理が要る登録を分ける。理由コードや回数だけで`fail`や`high`にしない。
