@@ -187,6 +187,11 @@ class SetupTests(unittest.TestCase):
         self.assertNotIn(secret, str(error.exception))
         self.assertIn("exit 1", str(error.exception))
 
+    def test_python3が古い端末では版付きの3_11以上を選ぶ(self):
+        present = {"python3.12": "/opt/homebrew/bin/python3.12", "python3.11": "/usr/bin/python3.11"}
+        self.assertEqual(setup.newer_python(which=present.get), "/opt/homebrew/bin/python3.12")
+        self.assertIsNone(setup.newer_python(which={"python3": "/usr/bin/python3"}.get))
+
     @unittest.skipUnless(setup.sys.platform == "win32", "Windows nativeの正規入口はWindowsで実行する")
     def test_Windows正規入口からPythonのヘルプへ到達する(self):
         process = setup.subprocess.run(["pwsh", "-NoProfile", "-File", str(ROOT / "bin/setup-1password.ps1"), "--help"],

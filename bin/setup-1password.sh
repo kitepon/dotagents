@@ -17,7 +17,11 @@ import tarfile
 import tempfile
 import threading
 import time
-import tomllib
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10以下。入口で3.11以上へ切り替える。
+    tomllib = None
 
 
 for stream in (sys.stdin, sys.stdout, sys.stderr):
@@ -30,6 +34,15 @@ SERVER_ID = "onepassword"
 
 class SetupError(RuntimeError):
     pass
+
+
+def newer_python(which=shutil.which):
+    # Homebrewは既定以外の版を python3 として公開しない。版付きの名前から3.11以上を探す。
+    for name in ("python3.14", "python3.13", "python3.12", "python3.11"):
+        found = which(name)
+        if found:
+            return found
+    return None
 
 
 def run(argv, *, input=None, timeout=120, sensitive=False):
@@ -429,6 +442,13 @@ def main():
 
 
 if __name__ == "__main__":
+    if tomllib is None:
+        python = newer_python()
+        if python is None:
+            print(json.dumps({"ok": False, "error": "Python 3.11以上が必要です（python3が古く、python3.11〜3.14も見つかりません）"},
+                             ensure_ascii=False), file=sys.stderr)
+            raise SystemExit(2)
+        os.execv(python, [python, *sys.argv])
     try:
         raise SystemExit(main())
     except (SetupError, OSError, ValueError, subprocess.TimeoutExpired) as error:

@@ -14,7 +14,8 @@ else
 ifeq ($(OS),Windows_NT)
 PYTHON := python
 else
-PYTHON := python3
+# Homebrewは既定以外の版を python3 として公開しない。tomllib（3.11以上）を持つ最初の版を使う。
+PYTHON := $(shell for p in python3 python3.14 python3.13 python3.12 python3.11; do if "$$p" -c 'import tomllib' >/dev/null 2>&1; then echo "$$p"; exit 0; fi; done; echo python3)
 endif
 endif
 
