@@ -24,6 +24,7 @@
 
 - 現役runner名とhost labelの対応は[工場の現行状態](../../docs/factory-current-state.md)が正。通常のfull CIは、そこで`full CI`としたrunnerだけを使い、main-server runnerは運用workflow専用にする。
 - WSL2 runnerと`wsl2` labelは退役済み。Organizationへ再登録せず、workflowの実行対象にも戻さない。Windows CIは`windows-native` runnerだけを使い、PowerShell 7とGit for Windowsで閉じる。
+- `windows-native`席は所有者が対話で使うPCである。runnerのjob開始hook（`bin/windows-factory-runner-job-started.ps1`）で、jobのprocessを先頭8個を除いた論理CPUと優先度`BelowNormal`で動かす。製品は並列数を`os.availableParallelism()`から決め、論理CPUの総数を固定値や`NUMBER_OF_PROCESSORS`から取らない。hookは端末の`C:\ProgramData\dotagents\factory-runner\job-started.ps1`へ管理者とSYSTEMだけが書ける形で置き、runnerの`.env`の`ACTIONS_RUNNER_HOOK_JOB_STARTED`で指す。hookの失敗はjobを落とさず、jobの注記に出る。
 - runnerは個人用PATHや対話sessionを前提にしない。runnerやtoolchainの障害を別環境への迂回で隠さない。
 - OS再導入で同名runnerを置き換える時は、旧登録を削除してから現行hostを同じ正規名で登録する。登録tokenと確認codeを文書・log・shell履歴へ残さない。
 - dotagentsの`.github/workflows/factory-full-ci.yml`はdotagents自身のCIと参照実装だけに使い、製品repoから参照しない。

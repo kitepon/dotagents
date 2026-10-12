@@ -126,6 +126,7 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、公開結果の記録とreportの配送を実行 |
 | bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各製品の公式入口の実行と工場の配置・報告配送を行う。Windows入口はmain-serverへの恒久SSHの専用鍵・設定・接続確認も所有する。main-serverへの公開鍵の登録は所有しない |
 | GitHub Actions | `ci.yml` / `factory-full-ci.yml` | [工場の現行状態](docs/factory-current-state.md)で`full CI`としたrunnerだけに、論理CPU数をjob数とする同じ`make ci`を実行する。main-server runnerは運用workflow専用。運用契約は[Factory CI runbook](shared/runbooks/factory-ci.md) |
+| bin | `windows-factory-runner-job-started.ps1` | `windows-native`席のrunnerのjob開始hook。jobのprocessの論理CPUの割り当てと優先度を下げ、所有者が対話で使うPCを使い切らない。契約は[Factory CI runbook](shared/runbooks/factory-ci.md) |
 | bin | `bughub-external-probe.mjs` | server profileからloopback `/readyz`とdeploy revision manifestを照合し、安全な固定checkへ投影 |
 | bin | `factory-reporter.mjs` | 明示opt-inされた工場reportを検証・outbox保存・BugHubへ冪等送信 |
 | bin | `factory-external-event.mjs` | 旧経路の道具。Pi5等の外部監視結果をmain-serverの所有者限定stateへ記録し、工場のreportが運んでいた。2026-10-03からServerManagerが自分でBugHubへ上げるため、現行wireのscanは読まない |
