@@ -124,9 +124,8 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | bin | `apply-cursor-config` | Cursor の工場hookを `~/.cursor/hooks.json` へ dry-run / backup / 冪等適用する（`--apply` は端末承認後。正典はdocs/08）。`cli-config.json` は触らない |
 | Codex サブエージェント | `shared/runbooks/02_models.md` | 役割と任務からmodel×effortを選び、呼出しごとに指定 |
 | bin | `agents-update.sh` | deployment contractのhost別CLI／SDK集合を`@latest`へ更新し、公開結果の記録とreportの配送を実行 |
-| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各製品の公式入口の実行と工場の配置・報告配送を行う。Windows入口はmain-serverへの恒久SSHも所有する |
+| bin | `setup-macos-factory.sh` / `setup-linux-factory.sh` / `setup-linux-workstation-factory.sh` / `setup-windows-native-factory.ps1` | host別の工場一撃展開。Linux 2席は共通本体を使いながらserver/workstationの役割を分離し、各製品の公式入口の実行と工場の配置・報告配送を行う。Windows入口はmain-serverへの恒久SSHの専用鍵・設定・接続確認も所有する。main-serverへの公開鍵の登録は所有しない |
 | GitHub Actions | `ci.yml` / `factory-full-ci.yml` | [工場の現行状態](docs/factory-current-state.md)で`full CI`としたrunnerだけに、論理CPU数をjob数とする同じ`make ci`を実行する。main-server runnerは運用workflow専用。運用契約は[Factory CI runbook](shared/runbooks/factory-ci.md) |
-| GitHub Actions | `enroll-windows-main-server-ssh.yml` | Windows専用公開鍵をmain-server runner自身が`authorized_keys`へ冪等登録する。秘密鍵はWindowsから出さない |
 | bin | `bughub-external-probe.mjs` | server profileからloopback `/readyz`とdeploy revision manifestを照合し、安全な固定checkへ投影 |
 | bin | `factory-reporter.mjs` | 明示opt-inされた工場reportを検証・outbox保存・BugHubへ冪等送信 |
 | bin | `factory-external-event.mjs` | 旧経路の道具。Pi5等の外部監視結果をmain-serverの所有者限定stateへ記録し、工場のreportが運んでいた。2026-10-03からServerManagerが自分でBugHubへ上げるため、現行wireのscanは読まない |
@@ -277,7 +276,7 @@ macOSではAIShell（Apple Silicon／macOS 15+）も配備する。main-server�
 profile、ServerManager所有、peertable役割、credential、scheduler、delivery receiptを共有しない。Windows native入口は`wsl.exe`を呼ばず、
 WSL distroの有無や状態を成功条件にしない。
 
-Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`を3回と`ssh -o BatchMode=yes kite@192.168.1.2`を1回成功させること。通常の`ssh kite@192.168.1.2`で旧`id_ed25519`のpassphraseを聞かれる状態は不合格である。登録workflowが使う`MAIN_SERVER_WINDOWS_PUBLIC_KEY`は公開鍵だけであり、再適用可能な修復入口として保持してよい。
+Windows nativeのmain-server SSH受入は、`ssh -o BatchMode=yes main-server`を3回と`ssh -o BatchMode=yes kite@192.168.1.2`を1回成功させること。通常の`ssh kite@192.168.1.2`で旧`id_ed25519`のpassphraseを聞かれる状態は不合格である。setupはmain-serverへ公開鍵を登録しない。設定ファイルを読まずに専用鍵だけを明示した接続で受け付けを確かめ、受け付けられない時は公開鍵の指紋を出して止まる。登録・交換はSSH整備の担当へ依頼し、登録の後にsetupを再実行する。到達不能とhost keyの不一致は、鍵の未登録と区別して原因を出す。
 
 個別に適用・切り分ける場合は、以下の正規入口を順に使う。
 

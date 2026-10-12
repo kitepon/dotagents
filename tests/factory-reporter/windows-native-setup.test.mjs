@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import { readFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -61,12 +62,16 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
   assert.match(source, /\$GitSsh = .*Git\\usr\\bin\\ssh\.exe.*\$GitSshKeygen = .*function Ensure-WindowsPrerequisites.*\$GitSsh, \$GitSshKeygen.*Git\.Git/su);
-  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*\$GitSshKeygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Invoke-MainServerKeyEnrollment.*three reconnects passed/su);
+  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*\$GitSshKeygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Assert-MainServerDedicatedKeyAccepted -PrivateKey \$privateKey.*three reconnects passed/su);
   assert.doesNotMatch(source, /ssh-keyscan/u);
   assert.doesNotMatch(source, /& ssh(?:-keygen)? /u);
   assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*pinned host key readback/su);
   assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*\$managed`n`n.*\$GitSsh -G.*direct-IP/su);
-  assert.match(source, /function Invoke-MainServerKeyEnrollment.*enroll-windows-main-server-ssh\.yml.*priorIds.*MAIN_SERVER_WINDOWS_PUBLIC_KEY.*gh run view.*did not complete within 20 minutes/su);
+  assert.match(source, /function Invoke-MainServerDedicatedKeyProbe.*'-F', 'none', '-i', \$PrivateKey.*IdentitiesOnly=yes.*IdentityAgent=none.*StrictHostKeyChecking=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-key-ok/su);
+  assert.match(source, /function Get-MainServerSshFailureKind.*Host key verification failed.*'host-key'.*Permission denied.*'key-not-accepted'.*Connection timed out.*'unreachable'.*'unclassified'/su);
+  assert.match(source, /function Assert-MainServerDedicatedKeyAccepted.*'key-not-accepted' \{.*\$GitSshKeygen -lf \$PublicKeyPath.*このsetupは鍵を登録しません.*SSH整備の担当.*did not accept the dedicated key.*'host-key' \{.*enrollment state was not checked.*'unreachable' \{.*enrollment state was not checked/su);
+  assert.doesNotMatch(source, /enroll-windows-main-server-ssh|MAIN_SERVER_WINDOWS_PUBLIC_KEY|gh secret set|gh workflow run|authorized_keys/u);
+  assert.equal(existsSync(join(ROOT, '.github', 'workflows', 'enroll-windows-main-server-ssh.yml')), false);
   assert.match(source, /\$GitSsh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);

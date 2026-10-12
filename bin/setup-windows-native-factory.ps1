@@ -289,45 +289,70 @@ function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) 
   }
 }
 
-function Invoke-MainServerKeyEnrollment([string]$PublicKey) {
-  Write-Step 'main-server-ssh: enroll permanent public key'
-  $workflow = 'enroll-windows-main-server-ssh.yml'
-  $repo = 'kitepon/dotagents'
-  $prior = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 10 --json databaseId 2>$null | ConvertFrom-Json
-  if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the main-server SSH enrollment workflow' }
-  $priorIds = @($prior | ForEach-Object { [string]$_.databaseId })
-  & gh secret set MAIN_SERVER_WINDOWS_PUBLIC_KEY --repo $repo --body $PublicKey
-  if ($LASTEXITCODE -ne 0) { throw 'Cannot set MAIN_SERVER_WINDOWS_PUBLIC_KEY for permanent enrollment' }
-  & gh workflow run $workflow --repo $repo --ref main
-  if ($LASTEXITCODE -ne 0) { throw 'Cannot dispatch the main-server SSH enrollment workflow' }
+function Invoke-MainServerDedicatedKeyProbe([string]$PrivateKey) {
+  # 設定ファイルを読まずに専用鍵だけを明示する。別の鍵で入れた成功を、専用鍵の登録済みと読み違えないため。
+  $arguments = @(
+    '-F', 'none', '-i', $PrivateKey.Replace('\', '/'),
+    '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
+    '-o', 'IdentitiesOnly=yes', '-o', 'IdentityAgent=none',
+    '-o', 'PreferredAuthentications=publickey', '-o', 'StrictHostKeyChecking=yes',
+    "$MainServerUser@$MainServerHost", "printf 'dotagents-main-server-key-ok'"
+  )
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $all = @(& $GitSsh @arguments 2>&1)
+    $code = $LASTEXITCODE
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  $stderr = @($all | Where-Object { $_ -is [Management.Automation.ErrorRecord] } | ForEach-Object { $_.ToString() }) -join "`n"
+  $stdout = @($all | Where-Object { $_ -isnot [Management.Automation.ErrorRecord] }) -join "`n"
+  return [pscustomobject]@{
+    Accepted = ($code -eq 0 -and $stdout -eq 'dotagents-main-server-key-ok')
+    Code = $code
+    Stderr = $stderr
+  }
+}
 
-  $runId = $null
-  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(2)
-  do {
-    Start-Sleep -Seconds 2
-    $runs = & gh run list --repo $repo --workflow $workflow --event workflow_dispatch --limit 5 --json databaseId 2>$null | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot locate the dispatched main-server SSH enrollment run' }
-    $candidate = @($runs | Where-Object { [string]$_.databaseId -notin $priorIds } | Select-Object -First 1)
-    if ($candidate.Count -gt 0) { $runId = [string]$candidate[0].databaseId }
-  } until ($null -ne $runId -or [DateTimeOffset]::UtcNow -ge $deadline)
-  if ($null -eq $runId) { throw 'The dispatched main-server SSH enrollment run was not found' }
+function Get-MainServerSshFailureKind([string]$Stderr) {
+  # 鍵を受け付けない事と、届かない事・host keyが合わない事を分ける。後の2つは鍵の登録の有無を確かめられていない。
+  if ($Stderr -match 'Host key verification failed|HOST IDENTIFICATION HAS CHANGED|No \S+ host key is known') { return 'host-key' }
+  if ($Stderr -match 'UNPROTECTED PRIVATE KEY FILE|bad permissions|invalid format|No such file or directory') { return 'local-key' }
+  if ($Stderr -match 'Permission denied \(') { return 'key-not-accepted' }
+  if ($Stderr -match 'Connection timed out|Connection refused|No route to host|Network is unreachable|Could not resolve hostname|Connection closed by|Connection reset by|kex_exchange_identification') { return 'unreachable' }
+  return 'unclassified'
+}
 
-  $deadline = [DateTimeOffset]::UtcNow.AddMinutes(20)
-  $lastStatus = ''
-  do {
-    $run = & gh run view $runId --repo $repo --json status,conclusion,url 2>$null | ConvertFrom-Json
-    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect main-server SSH enrollment run $runId" }
-    if ($run.status -ne $lastStatus) {
-      Write-Step "main-server-ssh: enrollment $($run.status) $($run.url)"
-      $lastStatus = $run.status
+function Assert-MainServerDedicatedKeyAccepted([string]$PrivateKey, [string]$PublicKeyPath) {
+  $probe = Invoke-MainServerDedicatedKeyProbe -PrivateKey $PrivateKey
+  if ($probe.Accepted) { return }
+  $detail = "ssh exit=$($probe.Code): $($probe.Stderr)"
+  switch (Get-MainServerSshFailureKind -Stderr $probe.Stderr) {
+    'key-not-accepted' {
+      $fingerprint = ((& $GitSshKeygen -lf $PublicKeyPath 2>$null) -join ' ').Trim()
+      # main-serverの鍵の一覧を書き換える道をsetupに持たせない。登録と交換は、ホスト側の担当が裁定を取って行う。
+      Write-Host '[windows-native-factory] main-server-ssh: main-serverが専用鍵を受け付けませんでした（未登録か、登録の内容が違います）。このsetupは鍵を登録しません。'
+      Write-Host "[windows-native-factory]   公開鍵: $PublicKeyPath"
+      Write-Host "[windows-native-factory]   指紋: $fingerprint"
+      Write-Host '[windows-native-factory]   main-serverへの公開鍵の登録・交換は、SSH整備の担当へ依頼してください。'
+      Write-Host "[windows-native-factory]   伝える事: 利用元（$env:COMPUTERNAME）、接続先と利用者（$MainServerUser@$MainServerHost）、用途、追加か交換か、交換なら旧鍵の呼称、上の指紋。"
+      Write-Host '[windows-native-factory]   公開鍵はファイルで渡し、秘密鍵は送らないでください。登録の後に、このsetupをもう一度実行してください。'
+      throw "main-server did not accept the dedicated key; request enrollment from the SSH maintenance owner. $detail"
     }
-    if ($run.status -eq 'completed') {
-      if ($run.conclusion -ne 'success') { throw "main-server SSH enrollment failed: $($run.url) conclusion=$($run.conclusion)" }
-      return
+    'host-key' {
+      throw "main-server host key verification failed (pinned $MainServerHostKeyFingerprint); the key enrollment state was not checked. $detail"
     }
-    Start-Sleep -Seconds 5
-  } until ([DateTimeOffset]::UtcNow -ge $deadline)
-  throw "main-server SSH enrollment did not complete within 20 minutes: $($run.url)"
+    'unreachable' {
+      throw "main-server is unreachable at ${MainServerHost}; the key enrollment state was not checked. $detail"
+    }
+    'local-key' {
+      throw "The dedicated main-server key could not be loaded on this host; the key enrollment state was not checked. $detail"
+    }
+    default {
+      throw "The dedicated-key probe to main-server failed for an unclassified reason; the key enrollment state was not checked. $detail"
+    }
+  }
 }
 
 function Ensure-MainServerSsh {
@@ -356,9 +381,7 @@ function Ensure-MainServerSsh {
 
   Ensure-MainServerKnownHost -SshDirectory $sshDirectory
   Ensure-MainServerSshConfig -SshDirectory $sshDirectory -PrivateKey $privateKey
-  if (-not (Test-MainServerSsh)) {
-    Invoke-MainServerKeyEnrollment -PublicKey $publicKey
-  }
+  Assert-MainServerDedicatedKeyAccepted -PrivateKey $privateKey -PublicKeyPath $publicKeyPath
   foreach ($attempt in 1..3) {
     if (-not (Test-MainServerSsh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
   }
