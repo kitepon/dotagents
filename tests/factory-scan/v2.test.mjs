@@ -231,6 +231,7 @@ test('Grokのalphaや文字列推測、CLI registry失敗をpassへ丸めない'
 
 test('Grokの旧snake_case JSONはstableでも契約違反として拒否する', { concurrency: false }, async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-v2-grok-snake-')); const bin = join(root, 'bin'); await mkdir(bin); t.after(() => rm(root, { recursive: true, force: true }));
+  for (const command of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'codegraph', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm']) await writeCommandFixture(bin, command, 'exit 1');
   await writeCommandFixture(bin, 'grok', "echo '{\"channel\":\"stable\",\"current_version\":\"0.2.0\",\"latest_version\":\"0.2.0\",\"update_available\":false}'");
   const previous = process.env.PATH; process.env.PATH = `${bin}${delimiter}${previous}`; t.after(() => { process.env.PATH = previous; });
   const report = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform });
@@ -282,6 +283,7 @@ test('collection有効時のgpt runtime snapshot失敗をdisabledへ丸めない
   const root = await mkdtemp(join(tmpdir(), 'factory-v2-gpt-runtime-')); const bin = join(root, 'bin'); await mkdir(bin); t.after(() => rm(root, { recursive: true, force: true }));
   const ids = ['version', 'state_schema', 'job_schema', 'migration', 'cdp', 'official_origin', 'auth', 'runtime_bridge', 'mcp_contract'];
   const diagnostic = { schema: 'gpt-connector.factory-diagnostics.v1', package_version: '0.2.0', overall: 'ready', diagnostic_schema: 'gpt-connector.diagnostics.v1', state: { schema: '1.0', migration: 'current' }, job: { schema: '1.0', migration: 'current' }, checks: ids.map((id) => ({ id, status: 'ready', reason: 'ready' })) };
+  for (const command of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'codegraph', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await writeCommandFixture(bin, command, 'exit 1');
   await writeCommandFixture(bin, 'gpt-connector', `if [ "$1" = factory-diagnostics ]; then echo '${JSON.stringify(diagnostic)}'; else exit 1; fi`);
   const previous = process.env.PATH; process.env.PATH = `${bin}${delimiter}${previous}`; t.after(() => { process.env.PATH = previous; });
   const report = await scanV2({ host: { id: 'test-host', profile: process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'wsl' }, cwd: root, arch: 'x64', platform: process.platform, collectionEnabled: true });
