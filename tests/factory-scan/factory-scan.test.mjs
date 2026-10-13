@@ -518,7 +518,8 @@ child.stdout.once('data', () => {
     await box.script('late', `sleep 60 & child=$!; echo "$child" > '${childPidFile}'; while :; do echo x; done`);
   }
 
-  const noisy = await runCommand('noisy', [], { env, maxOutputBytes: 128, timeoutMs: 1000 });
+  // Windowsではpwshの探索・pwsh・cmd・node・shの5段が同じ期限を分け合う。遅い端末でも出力上限が先に来る長さにする。
+  const noisy = await runCommand('noisy', [], { env, maxOutputBytes: 128, timeoutMs: 20_000 });
   assert.deepEqual({ reason: noisy.reason, stdout: noisy.stdout, stderr: noisy.stderr }, {
     reason: 'output_limit', stdout: '', stderr: '',
   });
