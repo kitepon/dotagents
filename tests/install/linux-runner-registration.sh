@@ -39,4 +39,18 @@ grep -Fq 'HTTP 403' "$fixture/error"
 if grep -Eq 'TypeError|SyntaxError' "$fixture/error"; then
   cat "$fixture/error" >&2; exit 1
 fi
-echo 'linux-runner-registration: OK（再設定条件・API失敗）'
+
+# serverのsetupは停止済みのrunnerへ触れない（登録・起動・online確認をしない）。
+awk '/^ensure_github_actions_runner\(\)/ { capture=1 } /^linux_root_prerequisites_ready\(\)/ { capture=0 } capture' \
+  "$ROOT/bin/setup-linux-common.sh" >"$fixture/ensure.sh"
+# shellcheck disable=SC1091 # 検査対象の実関数。
+source "$fixture/ensure.sh"
+gh() { printf 'gh %s\n' "$*" >>"$fixture/server-calls"; }
+sudo() { printf 'sudo %s\n' "$*" >>"$fixture/server-calls"; }
+(
+  unset ACTIONS_RUNNER_ROOT ACTIONS_RUNNER_NAME ACTIONS_RUNNER_LABEL DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER
+  HOST_PROFILE=server
+  ensure_github_actions_runner
+) || { echo 'FAIL: server setupのrunner工程が失敗した' >&2; exit 1; }
+[ ! -e "$fixture/server-calls" ] || { echo 'FAIL: server setupが停止済みのrunnerを操作した' >&2; cat "$fixture/server-calls" >&2; exit 1; }
+echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作）'

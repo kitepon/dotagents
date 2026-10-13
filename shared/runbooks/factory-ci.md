@@ -23,6 +23,7 @@
 ## 工場runner
 
 - 現役runner名とhost labelの対応は[工場の現行状態](../../docs/factory-current-state.md)が正。通常のfull CIは、そこで`full CI`としたrunnerだけを使い、main-server runnerは運用workflow専用にする。
+- main-server runnerは停止している（サービスを止めて無効にした状態）。Linuxの工場setupは、`server` profileではrunnerを登録・起動せず、`linux` profileからもmain-server runnerのlabelとonlineを確かめない。
 - WSL2 runnerと`wsl2` labelは退役済み。Organizationへ再登録せず、workflowの実行対象にも戻さない。Windows CIは`windows-native` runnerだけを使い、PowerShell 7とGit for Windowsで閉じる。
 - `windows-native`席は所有者が対話で使うPCである。runnerのjob開始hook（`bin/windows-factory-runner-job-started.ps1`）で、jobのprocessを先頭8個を除いた論理CPUと優先度`BelowNormal`で動かす。製品は並列数を`os.availableParallelism()`から決め、論理CPUの総数を固定値や`NUMBER_OF_PROCESSORS`から取らない。hookは端末の`C:\ProgramData\dotagents\factory-runner\job-started.ps1`へ管理者とSYSTEMだけが書ける形で置き、runnerの`.env`の`ACTIONS_RUNNER_HOOK_JOB_STARTED`で指す。hookの失敗はjobを落とさず、jobの注記に出る。
 - 所有者の側が重い仕事（ビルドや試験）の間だけ置く鍵のファイルがある端末では、その場所をrunnerの`.env`の`FACTORY_RUNNER_BUSY_MARKER`で指す。同じhookが、鍵が在る間はjobの開始を待つ（5秒おきに見直し、最大5分。更新が15分より古い鍵は待たない）。hookは鍵を読むだけで、作らず消さない。上限を過ぎた時はjobを始め、jobの注記に出す。所有者の側は、`Runner.Worker.exe`が在る間を「工場のjobが走っている」と読める。未設定の端末では待たない。

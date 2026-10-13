@@ -15,9 +15,6 @@ case "$SETUP_VARIANT" in
     HOST_PROFILE=server
     SETUP_COMMAND=setup-linux-factory
     CRON_MARKER='# dotagents-agents-update-linux'
-    ACTIONS_RUNNER_ROOT="$HOME/actions-runner-kitepon"
-    ACTIONS_RUNNER_NAME='factory-linux-main'
-    ACTIONS_RUNNER_LABEL='linux-server'
     ;;
   linux)
     HOST_PROFILE=linux
@@ -87,6 +84,8 @@ verify_org_runner_online() {
 
 ensure_github_actions_runner() {
   [ "${DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER:-0}" != 1 ] || return 0
+  # main-serverの共通runnerは停止済み。serverのsetupは登録・起動・online確認をしない。
+  [ "$HOST_PROFILE" != server ] || return 0
   local runner_name='' service_file="$ACTIONS_RUNNER_ROOT/.service"
   local runtime_arch asset_name asset_url asset_digest expected_sha metadata
   local download_dir staged_dir registration_token
@@ -151,11 +150,6 @@ ensure_github_actions_runner() {
 
   set_org_runner_labels "$ACTIONS_RUNNER_NAME" "$ACTIONS_RUNNER_LABEL"
   verify_org_runner_online "$ACTIONS_RUNNER_NAME" "$ACTIONS_RUNNER_LABEL"
-  if [ "$HOST_PROFILE" = linux ]; then
-    # WSL2廃止時の旧linux-native labelを、rabbit初回展開からmain-server側も移行する。
-    set_org_runner_labels factory-linux-main linux-server
-    verify_org_runner_online factory-linux-main linux-server
-  fi
 }
 
 linux_root_prerequisites_ready() {

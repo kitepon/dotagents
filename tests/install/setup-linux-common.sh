@@ -331,15 +331,17 @@ grep -Fq 'npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai
   "$ROOT/bin/setup-linux-common.sh" || fail 'Claude Code公式lifecycle scriptを限定許可しない'
 grep -Fq 'env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'factory batchへ対話中Codex thread identityを混入させる'
-grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-server'"'" "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'main-server runner labelを役割別に定義しない'
+if grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-server'"'" "$ROOT/bin/setup-linux-common.sh"; then
+  fail '停止済みのmain-server runnerをserver setupが定義している'
+fi
 grep -Fq 'ACTIONS_RUNNER_LABEL='"'"'linux-workstation'"'" "$ROOT/bin/setup-linux-common.sh" \
   || fail 'rabbit runner labelを役割別に定義しない'
 # shellcheck disable=SC2016 # setup側のliteral変数参照を検査するため展開させない。
 grep -Fq -- '--labels "factory,$ACTIONS_RUNNER_LABEL"' "$ROOT/bin/setup-linux-common.sh" \
   || fail 'host別labelでrunnerを登録しない'
-grep -Fq 'set_org_runner_labels factory-linux-main linux-server' "$ROOT/bin/setup-linux-common.sh" \
-  || fail 'rabbit一撃展開からmain-serverの旧Linux labelを移行しない'
+if grep -Fq 'factory-linux-main' "$ROOT/bin/setup-linux-common.sh"; then
+  fail 'rabbit一撃展開が停止済みのmain-server runnerを操作・確認する'
+fi
 # shellcheck disable=SC2016 # setup側のliteral変数参照を検査するため展開させない。
 grep -Fq 'cd "$ACTIONS_RUNNER_ROOT"' "$ROOT/bin/setup-linux-common.sh" \
   || fail '公式runner serviceをrunner root内から操作しない'
