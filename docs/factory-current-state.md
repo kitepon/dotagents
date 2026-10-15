@@ -29,7 +29,7 @@
 |---|---|---|
 | `factory-macos-m5` | `macos-native` | full CI |
 | `factory-linux-main` | `linux-server` | 運用workflow |
-| `factory-linux-rabbit` | `linux-workstation` | full CI |
+| `factory-linux-rabbit-u` | `linux-workstation` | full CI |
 | `factory-windows-fox` | `windows-native` | full CI |
 
 full CIは`full CI`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと`wsl2` labelは現役集合へ含めない。

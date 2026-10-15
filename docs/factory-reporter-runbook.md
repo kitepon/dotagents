@@ -155,6 +155,21 @@ setupは専用serviceの実利用者・NoNewPrivileges・稼働と公開runner�
 専用runnerが不調でも、旧利用者のrunnerを自動で作り直さない。
 設定が存在しない未移行端末の登録手順と、停止済みserverの非操作は維持する。
 
+Windowsの専用runnerには、承認済みの切替窓で
+`windows-factory-runner-job-started-dedicated.ps1`を
+`C:\ProgramData\dotagents\factory-runner\job-started-dedicated.ps1`として設置する。
+同じディレクトリの`job-started.ps1`には既存のCPU/優先度hookを保持する。
+新hookはCPU制限を呼び、`FACTORY_RUNNER_BUSY_MARKER`が無いことを確認してから終了0を返す。
+古いmarkerも保持中として扱い、待ち上限または読取/設定不備では終了1となり製品stepを開始しない。
+markerの中身を読まず、作成・変更・削除しない。既存hookのadvisory既定は変更しない。
+
+共有markerは`C:\ProgramData\OpenLogicool\build.lock`の1本とし、
+writerのCreateNew・保持handle・自己ファイルの解放、対象dir/markerの専用runner RXを整えてから使う。
+旧新readerと全writerを同じ窓で切り替え、旧readerが旧envを保持する間はdispatch labelをdrainする。
+markerを読むだけのrunnerが共通mutexを取得したことにはならないため、
+実Worker確認、ビルド担当への予告と3分以上の待機、開始窓の調整も維持する。
+電源断で残ったmarkerはrunnerが削除せず、担当が実状態を確認して対処する。
+
 - client送信停止は`reporting.enabled=false`。既存outboxを保持する。
 - credential漏洩はServerManager側で対象credentialをrevokeし、host側fileを置換する。
 - scan非0はenqueueしない。reporter非0はstdoutのtyped codeに従い、acceptedでないoutboxを保持する。
