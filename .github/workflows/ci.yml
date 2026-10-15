@@ -1,43 +1,80 @@
-name: CI
-
+name: SEC-002 Aiterm isolated baseline
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    # 週1回の健康診断だけ3環境の全検査を回す（月曜 03:30 JST）。
-    - cron: "30 18 * * 0"
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 実行する環境
-        type: choice
-        default: all
-        options:
-          - all
-          - macos-native
-          - linux-workstation
-          - windows-native
-      comparison_base:
-        description: "文書不変性を比較する既存commit/ref（例: origin/main~1）"
-        required: true
-        type: string
-
 permissions:
   contents: read
-
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
+  group: sec002-aiterm-baseline
+  cancel-in-progress: false
 jobs:
-  full:
-    uses: ./.github/workflows/factory-full-ci.yml
-    with:
-      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
-      comparison_base: ${{ github.event_name == 'workflow_dispatch' && inputs.comparison_base || '' }}
-      dependency-command: npm ci --ignore-scripts
-      documentation-command: make lint-md lint-current-docs lint-constitution lint-skills test-constitution test-current-docs
-      full-command: >-
-        node --version && npm --version && shellcheck --version && rg --version && codex --version && make --jobs="$FACTORY_CI_JOBS" ci
+  legacy:
+    runs-on: [self-hosted, Linux, X64, sec002-draining]
+    timeout-minutes: 30
+    env:
+      PRODUCT_CI_TEST_SCOPE: full
+      PRODUCT_CI_TEST_FILES: '[]'
+    steps:
+      - name: verify runner identity
+        shell: bash
+        run: |
+          test "$RUNNER_NAME" = factory-linux-rabbit
+          test "$(id -un)" = kite
+          id
+      - name: checkout the identical pinned product commit
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0, identical to product CI
+        with:
+          repository: kitepon/aiterm-mcp
+          ref: 8164deadeb2067dbde527b1a82364bd0682bf6d8
+          fetch-depth: 0
+      - name: verify product source and select parallelism
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = 8164deadeb2067dbde527b1a82364bd0682bf6d8
+          printf 'FACTORY_CI_JOBS=%s\n' "$(node -p 'require("node:os").availableParallelism()')" >> "$GITHUB_ENV"
+          printf 'product-source=%s scope=full\n' "$(git rev-parse HEAD)"
+      - name: dependency install identical to the product workflow
+        shell: bash
+        run: npm ci
+      - name: product full test identical to the product workflow
+        shell: bash
+        run: node --version && npm --version && node scripts/run-product-ci-tests.mjs
+  dedicated:
+    needs: legacy
+    runs-on: [self-hosted, Linux, X64, linux-workstation]
+    timeout-minutes: 30
+    env:
+      PRODUCT_CI_TEST_SCOPE: full
+      PRODUCT_CI_TEST_FILES: '[]'
+    steps:
+      - name: verify runner identity
+        shell: bash
+        run: |
+          test "$RUNNER_NAME" = factory-linux-rabbit-u
+          test "$(id -un)" = factory-runner
+          id
+          test "$(id -nG)" = factory-runner
+          test ! -r /home/kite
+          test ! -x /home/kite
+          test ! -r /home/kite/.ssh
+          test ! -r /var/run/docker.sock
+          awk '/^NoNewPrivs:|^CapEff:|^CapPrm:|^CapBnd:/' /proc/self/status
+          test "$(awk '/^NoNewPrivs:/{print $2}' /proc/self/status)" = 1
+          test "$(awk '/^CapBnd:/{print $2}' /proc/self/status)" = 0000000000000000
+      - name: checkout the identical pinned product commit
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0, identical to product CI
+        with:
+          repository: kitepon/aiterm-mcp
+          ref: 8164deadeb2067dbde527b1a82364bd0682bf6d8
+          fetch-depth: 0
+      - name: verify product source and select parallelism
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = 8164deadeb2067dbde527b1a82364bd0682bf6d8
+          printf 'FACTORY_CI_JOBS=%s\n' "$(node -p 'require("node:os").availableParallelism()')" >> "$GITHUB_ENV"
+          printf 'product-source=%s scope=full\n' "$(git rev-parse HEAD)"
+      - name: dependency install identical to the product workflow
+        shell: bash
+        run: npm ci
+      - name: product full test identical to the product workflow
+        shell: bash
+        run: node --version && npm --version && node scripts/run-product-ci-tests.mjs
