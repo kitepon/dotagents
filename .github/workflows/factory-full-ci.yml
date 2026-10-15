@@ -75,8 +75,24 @@ jobs:
       matrix:
         environment: ${{ fromJSON(needs.classify.outputs.environments) }}
     timeout-minutes: 30
-    runs-on: [self-hosted, factory, "${{ matrix.environment }}"]
+    runs-on: [self-hosted, factory, "${{ matrix.environment }}-trial"]
     steps:
+      - name: dedicated Windows identity and privileges
+        if: matrix.environment == 'windows-native'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+          $sid=([Security.Principal.NTAccount]::new($env:COMPUTERNAME,'factory-runner')).Translate([Security.Principal.SecurityIdentifier]).Value
+          $principal=[Security.Principal.WindowsPrincipal]::new($identity)
+          if ($identity.User.Value -ne $sid -or $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) -or $env:RUNNER_NAME -ne 'factory-windows-fox-u') {throw 'Dedicated identity differs'}
+          $listed=$false
+          try {[void][IO.Directory]::GetFileSystemEntries('C:\Users\kite_');$listed=$true} catch [UnauthorizedAccessException] {}
+          if ($listed) {throw 'Old home is readable'}
+          $privileges=& "$env:SystemRoot\System32\whoami.exe" /priv
+          if ($LASTEXITCODE -ne 0 -or ($privileges -join "`n") -match 'Se(Impersonate|AssignPrimaryToken|Debug|Tcb|Backup|Restore|TakeOwnership|LoadDriver)Privilege') {throw 'Unexpected privileged token'}
+          "runner=$env:RUNNER_NAME sid=$sid"
+          $privileges
       - name: checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
