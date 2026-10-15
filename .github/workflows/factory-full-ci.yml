@@ -75,8 +75,21 @@ jobs:
       matrix:
         environment: ${{ fromJSON(needs.classify.outputs.environments) }}
     timeout-minutes: 30
-    runs-on: [self-hosted, factory, "${{ matrix.environment }}"]
+    runs-on: [self-hosted, factory, "${{ matrix.environment }}-trial"]
     steps:
+      - name: dedicated Linux identity and privileges
+        if: matrix.environment == 'linux-workstation'
+        shell: bash
+        run: |
+          id
+          test "$(id -un)" = factory-runner
+          test "$(id -nG)" = factory-runner
+          test ! -r /home/kite
+          test ! -r /home/kite/.ssh
+          test ! -r /var/run/docker.sock
+          awk '/^NoNewPrivs:|^CapEff:|^CapPrm:|^CapBnd:/' /proc/self/status
+          test "$(awk '/^NoNewPrivs:/{print $2}' /proc/self/status)" = 1
+          test "$(awk '/^CapBnd:/{print $2}' /proc/self/status)" = 0000000000000000
       - name: checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
