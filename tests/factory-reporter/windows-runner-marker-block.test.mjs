@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-test('専用Windows runnerは古い/保持中markerを無視せず、所有handle解放後だけ進む', { skip: process.platform !== 'win32' }, async () => {
+test('専用Windows runnerは保持中markerや旧環境変数でCIを直列化しない', { skip: process.platform !== 'win32' }, async () => {
   const [guard, fixture] = await Promise.all([
     readFile(new URL('../../bin/windows-factory-runner-job-started-dedicated.ps1', import.meta.url), 'utf8'),
     readFile(new URL('./fixtures/windows-runner-marker-block.ps1', import.meta.url), 'utf8'),
