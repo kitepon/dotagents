@@ -1,43 +1,50 @@
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    # 週1回の健康診断だけ3環境の全検査を回す（月曜 03:30 JST）。
-    - cron: "30 18 * * 0"
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: 実行する環境
-        type: choice
-        default: all
-        options:
-          - all
-          - macos-native
-          - linux-workstation
-          - windows-native
-      comparison_base:
-        description: "文書不変性を比較する既存commit/ref（例: origin/main~1）"
-        required: true
-        type: string
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
-jobs:
-  full:
-    uses: ./.github/workflows/factory-full-ci.yml
-    with:
-      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
-      comparison_base: ${{ github.event_name == 'workflow_dispatch' && inputs.comparison_base || '' }}
-      dependency-command: npm ci --ignore-scripts
-      documentation-command: make lint-md lint-current-docs lint-constitution lint-skills test-constitution test-current-docs
-      full-command: >-
-        node --version && npm --version && shellcheck --version && rg --version && codex --version && make --jobs="$FACTORY_CI_JOBS" ci
+{
+  "name": "SEC-002 Windows ACL isolated diagnostic",
+  "on": {
+    "workflow_dispatch": {
+      "inputs": {
+        "environment": {
+          "type": "choice",
+          "default": "windows-native",
+          "options": [
+            "windows-native"
+          ]
+        }
+      }
+    }
+  },
+  "permissions": {
+    "contents": "read"
+  },
+  "jobs": {
+    "acl-probe": {
+      "runs-on": [
+        "self-hosted",
+        "factory",
+        "windows-native"
+      ],
+      "timeout-minutes": 5,
+      "steps": [
+        {
+          "name": "dedicated identity guard",
+          "shell": "pwsh",
+          "run": "$ErrorActionPreference='Stop'\n$identity=[Security.Principal.WindowsIdentity]::GetCurrent()\n$principal=[Security.Principal.WindowsPrincipal]::new($identity)\n$sid=([Security.Principal.NTAccount]::new($env:COMPUTERNAME,'factory-runner')).Translate([Security.Principal.SecurityIdentifier]).Value\nif ($identity.User.Value -ne $sid -or $env:RUNNER_NAME -ne 'factory-windows-fox-u' -or !$env:RUNNER_WORKSPACE.StartsWith('C:\\actions-runner-dotagents-u\\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Dedicated identity/root differs'}\nif ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {throw 'Dedicated runner is administrator'}\n$listed=$false\ntry {[void][IO.Directory]::GetFileSystemEntries('C:\\Users\\kite_');$listed=$true} catch [UnauthorizedAccessException] {}\nif ($listed) {throw 'Old home is readable'}\n$privileges=& \"$env:SystemRoot\\System32\\whoami.exe\" /priv\nif ($LASTEXITCODE -ne 0 -or ($privileges -join \"`n\") -match 'Se(Impersonate|AssignPrimaryToken|Debug|Tcb|Backup|Restore|TakeOwnership|LoadDriver)Privilege') {throw 'Unexpected privileged token'}\n$privileges\n\"runner=$env:RUNNER_NAME sid=$($identity.User.Value)\"\n"
+        },
+        {
+          "name": "checkout pinned public Spotter helper",
+          "uses": "actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
+          "with": {
+            "repository": "kitepon/Spotter",
+            "ref": "adbf7dfd8d94be917ff09db9459cb4767ce58c4b",
+            "path": "spotter"
+          }
+        },
+        {
+          "name": "owner temp first and repeated ACL apply with safe diagnostics",
+          "shell": "pwsh",
+          "run": "$ErrorActionPreference='Stop'\n$PSNativeCommandUseErrorActionPreference=$false\nSet-Location (Join-Path $env:GITHUB_WORKSPACE 'spotter')\n$temp=(& node -p \"require('node:os').tmpdir()\").Trim()\nif ($LASTEXITCODE -ne 0) {throw 'tmpdir query failed'}\n$root=Join-Path $temp ('sec002-acl-probe-'+[Guid]::NewGuid().ToString('N'))\nNew-Item -ItemType Directory -Path $root -ErrorAction Stop|Out-Null\n$rows=@();$cleaned=$false\ntry {\n  $version=(& pwsh.exe -NoProfile -NonInteractive -Command '$PSVersionTable.PSVersion.ToString()'|Out-String).Trim()\n  $tempAcl=Get-Acl -LiteralPath $temp\n  $context=[ordered]@{kind='diagnostic-only-not-product-acceptance';observedUtc=[DateTimeOffset]::UtcNow.ToString('o');runner=$env:RUNNER_NAME;sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value;pwsh=(Get-Command pwsh.exe).Source;pwshVersion=$version;temp=$temp;tempSddl=$tempAcl.Sddl}\n  $context|ConvertTo-Json -Compress\n  foreach($directory in @($false,$true)) {\n    $target=Join-Path $root $(if($directory){'directory'}else{'file.txt'})\n    if($directory){New-Item -ItemType Directory -Path $target|Out-Null}else{[IO.File]::WriteAllText($target,'owned fixture')}\n    $env:SPOTTER_ACL_PATH=$target\n    $builder=\"import {buildWindowsAclPowerShell as b} from './src/core/runtime-error-store.mjs';console.log(Buffer.from(b({directory:process.argv[1]==='true'}),'utf16le').toString('base64'));\"\n    $encoded=(& node --input-type=module -e $builder $directory.ToString().ToLowerInvariant()|Out-String).Trim()\n    if($LASTEXITCODE -ne 0 -or !$encoded){throw 'Pinned product ACL builder failed'}\n    foreach($iteration in @(1,2)) {\n      $before=(Get-Acl -LiteralPath $target).Sddl\n      $clock=[Diagnostics.Stopwatch]::StartNew()\n      $output=@(& pwsh.exe -NoProfile -NonInteractive -EncodedCommand $encoded 2>&1|ForEach-Object {$_.ToString()})\n      $code=$LASTEXITCODE;$clock.Stop()\n      $rows+=[ordered]@{directory=$directory;iteration=$iteration;exitCode=$code;durationMs=$clock.ElapsedMilliseconds;beforeSddl=$before;afterSddl=(Get-Acl -LiteralPath $target).Sddl;diagnostic=(($output -join \"`n\") -replace '\\x1b\\[[0-9;]*[A-Za-z]','')}\n    }\n  }\n} finally {\n  Remove-Item Env:SPOTTER_ACL_PATH -ErrorAction SilentlyContinue\n  Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction Stop\n  $cleaned=!(Test-Path -LiteralPath $root)\n  [ordered]@{kind='diagnostic-only-not-product-acceptance';results=$rows;ownTempRemoved=$cleaned;productSettingsChanged=$false;runnerSettingsChanged=$false}|ConvertTo-Json -Depth 7 -Compress\n}\n"
+        }
+      ]
+    }
+  }
+}
