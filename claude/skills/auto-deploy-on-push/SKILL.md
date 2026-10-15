@@ -135,7 +135,7 @@ gh run watch --repo <owner>/<repo>
 ## 変種（事前条件 NG 時のフォールバック）
 
 - **SSH を WAN に開けたくない**: GitHub Webhook → サーバ上の薄い HTTP receiver（`webhook` daemon や自作 expressエンドポイント）が `git pull && docker compose up` を実行する形。SSH より攻撃面は小さくできる
-- **動的 IP しか無い**: dynv6 / DuckDNS などの DDNS で hostname 化する。GitHub Actions は hostname で SSH するので動的 IP でも問題なし
+- **動的 IP しか無い**: DuckDNS などの DDNS で hostname 化する。GitHub Actions は hostname で SSH するので動的 IP でも問題なし
 - **NAT で port forwarding が組めない**: Tailscale / Cloudflare Tunnel で穴を開けず VPN 経由。Tailscale の場合は GitHub Actions から `tailscale/github-action` で同じ tailnet に入って ssh
 - **イメージレジストリ経由がいい**: GitHub Container Registry に push → サーバ側 Watchtower が pull して再起動。SSH 不要だが image registry 運用が増える
 - **Cron で十分**: push 直後でなくていいなら、サーバ側 cron で `git pull && docker compose up -d --build || true` を 5 分おきに実行する（雑だが SSH も Webhook も不要）
