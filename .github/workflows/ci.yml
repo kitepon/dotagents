@@ -11,7 +11,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, sec002-draining]
     timeout-minutes: 30
     env:
-      PRODUCT_CI_TEST_SCOPE: full
+      PRODUCT_CI_TEST_SCOPE: all
       PRODUCT_CI_TEST_FILES: '[]'
     steps:
       - name: verify runner identity
@@ -31,7 +31,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = 8164deadeb2067dbde527b1a82364bd0682bf6d8
           printf 'FACTORY_CI_JOBS=%s\n' "$(node -p 'require("node:os").availableParallelism()')" >> "$GITHUB_ENV"
-          printf 'product-source=%s scope=full\n' "$(git rev-parse HEAD)"
+          printf 'product-source=%s scope=all\n' "$(git rev-parse HEAD)"
       - name: dependency install identical to the product workflow
         shell: bash
         run: npm ci
@@ -43,7 +43,7 @@ jobs:
     runs-on: [self-hosted, Linux, X64, linux-workstation]
     timeout-minutes: 30
     env:
-      PRODUCT_CI_TEST_SCOPE: full
+      PRODUCT_CI_TEST_SCOPE: all
       PRODUCT_CI_TEST_FILES: '[]'
     steps:
       - name: verify runner identity
@@ -71,7 +71,7 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = 8164deadeb2067dbde527b1a82364bd0682bf6d8
           printf 'FACTORY_CI_JOBS=%s\n' "$(node -p 'require("node:os").availableParallelism()')" >> "$GITHUB_ENV"
-          printf 'product-source=%s scope=full\n' "$(git rev-parse HEAD)"
+          printf 'product-source=%s scope=all\n' "$(git rev-parse HEAD)"
       - name: dependency install identical to the product workflow
         shell: bash
         run: npm ci
