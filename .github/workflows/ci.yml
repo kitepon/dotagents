@@ -1,43 +1,64 @@
-name: CI
-
+name: SEC-002 Aiterm Windows isolated comparison
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-  schedule:
-    # 週1回の健康診断だけ3環境の全検査を回す（月曜 03:30 JST）。
-    - cron: "30 18 * * 0"
   workflow_dispatch:
     inputs:
-      environment:
-        description: 実行する環境
+      runner_mode:
+        description: Existing SYSTEM baseline or dedicated trial
         type: choice
-        default: all
-        options:
-          - all
-          - macos-native
-          - linux-workstation
-          - windows-native
-      comparison_base:
-        description: "文書不変性を比較する既存commit/ref（例: origin/main~1）"
-        required: true
-        type: string
-
+        default: legacy
+        options: [legacy, dedicated]
 permissions:
   contents: read
-
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
+  group: sec002-aiterm-windows-comparison
+  cancel-in-progress: false
 jobs:
-  full:
-    uses: ./.github/workflows/factory-full-ci.yml
-    with:
-      environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'all' }}
-      comparison_base: ${{ github.event_name == 'workflow_dispatch' && inputs.comparison_base || '' }}
-      dependency-command: npm ci --ignore-scripts
-      documentation-command: make lint-md lint-current-docs lint-constitution lint-skills test-constitution test-current-docs
-      full-command: >-
-        node --version && npm --version && shellcheck --version && rg --version && codex --version && make --jobs="$FACTORY_CI_JOBS" ci
+  windows-full:
+    runs-on: [self-hosted, Windows, X64, "${{ inputs.runner_mode == 'legacy' && 'windows-native' || 'windows-native-trial' }}"]
+    timeout-minutes: 30
+    env:
+      PRODUCT_CI_TEST_SCOPE: all
+      PRODUCT_CI_TEST_FILES: '[]'
+      SEC002_RUNNER_MODE: ${{ inputs.runner_mode }}
+    steps:
+      - name: verify actual runner identity
+        shell: pwsh
+        run: |
+          $ErrorActionPreference='Stop'
+          $identity=[Security.Principal.WindowsIdentity]::GetCurrent()
+          $principal=[Security.Principal.WindowsPrincipal]::new($identity)
+          if ($env:SEC002_RUNNER_MODE -eq 'legacy') {
+            if ($identity.User.Value -ne 'S-1-5-18' -or $env:RUNNER_NAME -ne 'factory-windows-fox' -or !$env:RUNNER_WORKSPACE.StartsWith('C:\actions-runner-dotagents\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Unexpected legacy identity/root'}
+          } else {
+            $sid=([Security.Principal.NTAccount]::new($env:COMPUTERNAME,'factory-runner')).Translate([Security.Principal.SecurityIdentifier]).Value
+            if ($identity.User.Value -ne $sid -or $env:RUNNER_NAME -ne 'factory-windows-fox-u' -or !$env:RUNNER_WORKSPACE.StartsWith('C:\actions-runner-dotagents-u\',[StringComparison]::OrdinalIgnoreCase)) {throw 'Unexpected dedicated identity/root'}
+            if ($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {throw 'Dedicated runner is administrator'}
+            $listed=$false
+            try {[void][IO.Directory]::GetFileSystemEntries('C:\Users\kite_');$listed=$true} catch [UnauthorizedAccessException] {}
+            if ($listed) {throw 'Old home is readable'}
+            $privileges=& "$env:SystemRoot\System32\whoami.exe" /priv
+            if ($LASTEXITCODE -ne 0 -or ($privileges -join "`n") -match 'Se(Impersonate|AssignPrimaryToken|Debug|Tcb|Backup|Restore|TakeOwnership|LoadDriver)Privilege') {throw 'Unexpected privileged token'}
+            $privileges
+          }
+          "runner=$env:RUNNER_NAME sid=$($identity.User.Value) mode=$env:SEC002_RUNNER_MODE"
+      - name: checkout identical pinned product source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0, same as product CI
+        with:
+          repository: kitepon/aiterm-mcp
+          ref: 8164deadeb2067dbde527b1a82364bd0682bf6d8
+          fetch-depth: 0
+      - name: verify pinned source and choose product parallelism
+        shell: pwsh
+        run: |
+          $head=git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0 -or $head -ne '8164deadeb2067dbde527b1a82364bd0682bf6d8') {throw 'Product source differs'}
+          $jobs=node -p "require('node:os').availableParallelism()"
+          if ($LASTEXITCODE -ne 0) {throw 'Parallelism unavailable'}
+          "FACTORY_CI_JOBS=$jobs" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "product-source=$head scope=all"
+      - name: dependency install identical to product workflow
+        shell: pwsh
+        run: npm ci
+      - name: product full test identical to product workflow
+        shell: pwsh
+        run: node --version && npm --version && node scripts/run-product-ci-tests.mjs
