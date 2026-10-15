@@ -82,10 +82,36 @@ verify_org_runner_online() {
   die "GitHub Actions runnerのonline/label readbackに失敗: $runner_name"
 }
 
+dedicated_runner_profile() {
+  node "$ROOT/bin/factory-runner-profile.mjs"
+}
+
 ensure_github_actions_runner() {
   [ "${DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER:-0}" != 1 ] || return 0
   # main-serverの共通runnerは停止済み。serverのsetupは登録・起動・online確認をしない。
   [ "$HOST_PROFILE" != server ] || return 0
+  local profile profile_mode profile_name profile_service profile_user actual_user actual_group actual_nnp actual_capabilities
+  profile="$(dedicated_runner_profile)" || die '専用runnerの管理設定が不正。旧runnerを自動で起動しない'
+  profile_mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$profile")"
+  if [ "$profile_mode" = dedicated ]; then
+    profile_name="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).name)' "$profile")"
+    profile_service="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).service)' "$profile")"
+    profile_user="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).user)' "$profile")"
+    actual_user="$(systemctl show "$profile_service" --property=User --value)" \
+      || die '専用runnerの実行利用者を読めない'
+    [ "$actual_user" = "$profile_user" ] || die '専用runnerの実行利用者が不一致'
+    actual_group="$(systemctl show "$profile_service" --property=Group --value)" || die '専用runnerの実行群を読めない'
+    [ "$actual_group" = "$profile_user" ] || die '専用runnerの実行群が不一致'
+    [ "$(id -nG "$profile_user")" = "$profile_user" ] || die '専用runnerに余分な所属群がある'
+    actual_nnp="$(systemctl show "$profile_service" --property=NoNewPrivileges --value)" || die '専用runnerのNoNewPrivilegesを読めない'
+    [ "$actual_nnp" = yes ] || die '専用runnerのNoNewPrivilegesが無効'
+    actual_capabilities="$(systemctl show "$profile_service" --property=CapabilityBoundingSet --value)" || die '専用runnerのcapabilityを読めない'
+    [ -z "$actual_capabilities" ] || die '専用runnerにcapabilityが残っている'
+    systemctl is-active --quiet "$profile_service" || die '専用runnerは停止中。setupでは起動しない'
+    verify_org_runner_online "$profile_name" "$ACTIONS_RUNNER_LABEL"
+    echo "INFO: 専用runnerは外部管理。setupは登録・起動・label更新を行わない"
+    return 0
+  fi
   local runner_name='' service_file="$ACTIONS_RUNNER_ROOT/.service"
   local runtime_arch asset_name asset_url asset_digest expected_sha metadata
   local download_dir staged_dir registration_token

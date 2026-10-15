@@ -29,6 +29,9 @@ CALLS="$FIXTURE/calls.log"
 CRONTAB="$FIXTURE/crontab"
 NODE_BIN="$(command -v node)"
 trap 'rm -rf "$FIXTURE"' EXIT
+export GIT_CONFIG_GLOBAL="$FIXTURE/gitconfig"
+export GIT_CONFIG_SYSTEM=/dev/null
+unset GIT_CONFIG_COUNT
 mkdir -p "$HOME_DIR" "$FIXTURE_ROOT/bin" "$FIXTURE_ROOT/lib/factory" "$STUB_BIN"
 cp "$ROOT/bin/setup-linux-common.sh" "$FIXTURE_ROOT/bin/setup-linux-common.sh"
 cp "$SOURCE" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"
@@ -253,7 +256,10 @@ cat >"$STUB_BIN/throughline" <<'EOF'
 printf 'throughline %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 EOF
 chmod +x "$STUB_BIN/throughline"
-chmod +x "$STUB_BIN/"*
+# nodeは既存の本体へのsymlink。fixtureから本体の権限を変更しない。
+for stub in "$STUB_BIN/"*; do
+  if [ -f "$stub" ] && [ ! -L "$stub" ]; then chmod +x "$stub"; fi
+done
 
 mkdir -p "$HOME_DIR/.config/dotagents"
 printf '%s\n' '.fixture-user-ignore' >"$HOME_DIR/.gitignore_global"
@@ -286,6 +292,9 @@ if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('"$ROOT/bin/
 NODE
 
 export HOME="$HOME_DIR"
+export XDG_CONFIG_HOME="$HOME_DIR/.config"
+export XDG_STATE_HOME="$HOME_DIR/.local/state"
+unset FACTORY_REPORTER_CONFIG FACTORY_CREDENTIAL_FILE
 export PATH="$STUB_BIN:/usr/bin:/bin"
 unset XAI_API_KEY
 export DOTAGENTS_SETUP_LINUX_FORCE=1

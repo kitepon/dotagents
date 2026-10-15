@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # runnerの公開応答だけを置き換え、GitHubへ書き込まず再設定条件を検証する。
-# shellcheck disable=SC2329,SC2034 # sourceする製品関数がfixtureを消費する。
+# shellcheck disable=SC2329,SC2317,SC2034 # sourceする製品関数がfixtureを消費する。SC2317は旧shellcheck用。
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
@@ -53,4 +53,51 @@ sudo() { printf 'sudo %s\n' "$*" >>"$fixture/server-calls"; }
   ensure_github_actions_runner
 ) || { echo 'FAIL: server setupのrunner工程が失敗した' >&2; exit 1; }
 [ ! -e "$fixture/server-calls" ] || { echo 'FAIL: server setupが停止済みのrunnerを操作した' >&2; cat "$fixture/server-calls" >&2; exit 1; }
-echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作）'
+
+# 移行済みのworkstationでsetupを再実行しても、旧利用者のrunnerを起こさない。
+dedicated_runner_profile() {
+  printf '{"mode":"dedicated","name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service","user":"factory-runner"}\n'
+}
+verify_org_runner_online() { printf 'verify %s\n' "$*" >>"$fixture/dedicated-calls"; }
+id() { printf '%s\n' "${fixture_groups:-factory-runner}"; }
+systemctl() {
+  printf 'systemctl %s\n' "$*" >>"$fixture/dedicated-calls"
+  case "$*" in
+    *--property=User*) printf '%s\n' "${fixture_service_user:-factory-runner}" ;;
+    *--property=Group*) printf '%s\n' factory-runner ;;
+    *--property=NoNewPrivileges*) printf '%s\n' yes ;;
+    *--property=CapabilityBoundingSet*)
+      [ "${fixture_cap_read_error:-0}" != 1 ] || return 1
+      printf '%s' "${fixture_capabilities:-}" ;;
+    is-active*) [ "${fixture_service_stopped:-0}" != 1 ] ;;
+    *) echo 'FAIL: 専用runnerへの変更命令' >&2; return 1 ;;
+  esac
+}
+(
+  HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation
+  unset ACTIONS_RUNNER_ROOT ACTIONS_RUNNER_NAME DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER
+  ensure_github_actions_runner
+)
+grep -Fq 'verify factory-linux-rabbit-u linux-workstation' "$fixture/dedicated-calls"
+[ ! -e "$fixture/server-calls" ] || { echo 'FAIL: 専用runnerの確認でgh/sudoによる変更を行った' >&2; exit 1; }
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_service_user=kite ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 旧利用者のserviceを許容した' >&2; exit 1
+fi
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_service_stopped=1 ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 停止中の専用runnerを許容した' >&2; exit 1
+fi
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_groups='factory-runner sudo' ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 管理者の群に属する専用runnerを許容した' >&2; exit 1
+fi
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_capabilities=cap_sys_admin ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: capabilityの残る専用runnerを許容した' >&2; exit 1
+fi
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_cap_read_error=1 ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: capabilityを読めないのに許容した' >&2; exit 1
+fi
+dedicated_runner_profile() { return 1; }
+if (HOST_PROFILE=linux ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 不正な専用profileから旧runnerへ戻した' >&2; exit 1
+fi
+[ ! -e "$fixture/server-calls" ] || { echo 'FAIL: 不正なprofileから旧runnerを操作した' >&2; exit 1; }
+echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作・専用runnerの再作成防止）'

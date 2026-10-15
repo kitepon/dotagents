@@ -143,6 +143,18 @@ npmは入替の前に、古いpackageを隣の`.<名前>-<hash>`へ退避し、�
 
 ## 停止・失敗
 
+Linux workstationのrunnerを専用利用者へ移した後は、管理者が
+`/etc/dotagents/factory-runner-profile.json`（root所有の通常ファイル、group/other書込不可）を置く。
+`schema: dotagents.runner-profile.v1`、`mode: dedicated`、`state: active`、
+`name: factory-linux-rabbit-u`、`user: factory-runner`、
+`service: actions.runner.kitepon.factory-linux-rabbit-u.service`、
+`root: /home/factory-runner/actions-runner`、`label: linux-workstation` を使う。
+切替前にこの設定を設置し、旧runnerへ戻す時は旧側の状態を確認してから取り除く。
+setupは専用serviceの実利用者・NoNewPrivileges・稼働と公開runnerのonline/labelを読み、
+登録・起動・labelの更新は行わない。設定が不正、serviceが停止中、実利用者が違う時は失敗する。
+専用runnerが不調でも、旧利用者のrunnerを自動で作り直さない。
+設定が存在しない未移行端末の登録手順と、停止済みserverの非操作は維持する。
+
 - client送信停止は`reporting.enabled=false`。既存outboxを保持する。
 - credential漏洩はServerManager側で対象credentialをrevokeし、host側fileを置換する。
 - scan非0はenqueueしない。reporter非0はstdoutのtyped codeに従い、acceptedでないoutboxを保持する。
