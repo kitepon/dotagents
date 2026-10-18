@@ -1,0 +1,25 @@
+{
+  "owner": "Caveat / Noah",
+  "source_head": "42d283d25ff08aaa363d623ee1a0796b972a2d9d",
+  "schema_fixture_manifest_sha256": "4db87b037eaeeeaeb115fdb4cb144f5e7c418f54acae3e7225efdd38e86dbd65",
+  "synthetic_only": true,
+  "production_schema_discovery": false,
+  "files": {
+    "capability.v1.schema.json": {
+      "sha256": "4c14d69fc981925d99af2b0f57717f4ed417a89876eacde503fb0fb7e3c9beba",
+      "source": "/srv/bellteam/bots/bot-2094dc6d/work/caveat-registration-improvement-20261018/pure-implementation/source/apps/cli/src/contracts/factory-private-evidence/capability.v1.schema.json"
+    },
+    "private-frame.v1.schema.json": {
+      "sha256": "13e2d06bc01162b6e6a627c7a2557df3f98b7db2ab4ffece7343ab4fab3ad530",
+      "source": "/srv/bellteam/bots/bot-2094dc6d/work/caveat-registration-improvement-20261018/pure-implementation/source/apps/cli/src/contracts/factory-private-evidence/private-frame.v1.schema.json"
+    },
+    "windows-channel.v1.schema.json": {
+      "sha256": "af69ed033debd1eff6fef4b5e9c357108635ff9f21daa4ca4e4734184016bab8",
+      "source": "/srv/bellteam/bots/bot-2094dc6d/work/caveat-registration-improvement-20261018/pure-implementation/source/apps/cli/src/contracts/factory-private-evidence/windows-channel.v1.schema.json"
+    },
+    "contract.v1.json": {
+      "sha256": "63b10c47d6fc7b5fbc5c4c07ca4393bc2e34fd993782c20d57a478f871de1d2c",
+      "source": "/srv/bellteam/bots/bot-2094dc6d/work/caveat-registration-improvement-20261018/pure-implementation/source/apps/cli/tests/fixtures/private-evidence/contract.v1.json"
+    }
+  }
+}
