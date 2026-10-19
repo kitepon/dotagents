@@ -14,7 +14,7 @@
 | 現役wire | v9（schema `9.0`、17製品） |
 | 本番BugHub endpoint | `/api/factory/v9/reports` |
 | host別rollback先 | wire v8 |
-| self-hosted runner | 4席 |
+| self-hosted runner | 3席 |
 | full CI環境 | 3環境 |
 
 ## 製品集合
@@ -28,7 +28,6 @@
 | runner | host label | 利用面 |
 |---|---|---|
 | `factory-macos-m5` | `macos-native` | full CI |
-| `factory-linux-main` | `linux-server` | 運用workflow |
 | `factory-linux-rabbit-u` | `linux-workstation` | full CI |
 | `factory-windows-fox-u` | `windows-native` | full CI |
 
