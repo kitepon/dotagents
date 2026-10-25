@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import socket
 import struct
+import sys
 import unittest
 import tempfile
 from types import SimpleNamespace
@@ -141,6 +142,7 @@ class AdapterTests(unittest.TestCase):
         with self.assertRaises(trust.AuthorityError): verify(frame + b' ', gate, policy)
         self.assertEqual(originals()['binding']['control_sha256'], trust.digest(args.core_control_json.encode()))
 
+    @unittest.skipUnless(sys.platform == 'linux', 'Linux authority/store scope')
     def test_existing_private_store_readback_and_nonreplacement(self):
         spec = importlib.util.spec_from_file_location('authority_fixture_store', ROOT / 'bin/factory-update-context-observer.py')
         store = importlib.util.module_from_spec(spec)

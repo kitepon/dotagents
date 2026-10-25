@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 import time
+import sys
 from types import SimpleNamespace
 import unittest
 
@@ -26,6 +27,7 @@ trust = load('phase_trust', 'lib/factory/update_context_trust.py')
 fixtures = load('phase_subject_fixtures', 'tests/update/context_trust_adapter_test.py')
 
 
+@unittest.skipUnless(sys.platform == 'linux', 'Linux authority/store scope')
 class PhaseCompositionTests(unittest.TestCase):
     def run_pair(self, change=None):
         frame = b'{"fixture":"phase composition only"}\n'
