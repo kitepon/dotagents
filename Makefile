@@ -19,7 +19,7 @@ PYTHON := $(shell for p in python3 python3.14 python3.13 python3.12 python3.11; 
 endif
 endif
 
-.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
+.PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-core-authority test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
 
 lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks ## 静的 lint + skill/hook smoke
 
@@ -82,6 +82,13 @@ test-update: ## cron 最小 PATH で NVM 配下の npm を解決できること�
 	bash tests/update/throughline-bootstrap.sh
 	bash tests/update/cron-env.sh
 
+test-core-authority: ## GPT core authority channel の新source条件（実issuer・host有効化なし）
+	$(PYTHON) tests/update/context_trust_adapter_test.py -v
+	$(PYTHON) tests/update/context_authority_phase_test.py -v
+	$(PYTHON) tests/update/context_bootstrap_broker_test.py -v
+	$(PYTHON) tests/update/context_original_node_test.py -v
+	node --test tests/update/core-authority-sources.test.mjs
+
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
 	bash tests/oracle/wrappers.sh
 
@@ -102,7 +109,7 @@ test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽
 	node --test tests/lattice-cutover/*.test.mjs
 	node bin/lattice-todo-inventory.mjs --verify-cutover
 
-ci: lint test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ## ローカル/CI 共通の全ゲート
+ci: lint test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-core-authority test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ## ローカル/CI 共通の全ゲート
 
 help: ## タスク一覧
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
