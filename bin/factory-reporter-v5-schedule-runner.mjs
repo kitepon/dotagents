@@ -48,13 +48,16 @@ $rule = [Security.AccessControl.FileSystemAccessRule]::new($sid, [Security.Acces
   if (result.status !== 0) throw new Error('Windows owner-only ACL設定に失敗しました (acl_apply_failed)');
 }
 function parseArgs(argv) {
+  const managedEntry = argv.filter((arg) => arg === '--caveat-managed-entry').length;
+  if (managedEntry > 1 || (managedEntry && WIRE_MAJOR !== 'v9')) throw new Error('--caveat-managed-entryはv9だけで一度指定できます');
+  argv = argv.filter((arg) => arg !== '--caveat-managed-entry');
   const mode = argv[2] || null;
   const reuse = argv.length === 5 && mode === '--finalize-update' && argv[3] === '--report-id' && Boolean(argv[4]);
   if ((!reuse && ![2, 3].includes(argv.length)) || argv[0] !== '--config' || !argv[1]
     || /[\0\r\n]/u.test(argv[1]) || (mode !== null && !['--post-update', '--finalize-update'].includes(mode))) {
     throw new Error(`使い方: factory-reporter-${WIRE_MAJOR}-schedule-runner --config <file> [--post-update|--finalize-update [--report-id <id>]]`);
   }
-  return { configPath: argv[1], postUpdate: mode === '--post-update', finalizeUpdate: mode === '--finalize-update', expectedReportId: reuse ? argv[4] : null };
+  return { configPath: argv[1], postUpdate: mode === '--post-update', finalizeUpdate: mode === '--finalize-update', expectedReportId: reuse ? argv[4] : null, managedEntry: managedEntry === 1 };
 }
 async function privateState(state) { try { const info = await lstat(state); if (info.isSymbolicLink() || !info.isDirectory()) throw new Error('state pathはsymlinkでないdirectoryでなければなりません'); } catch (error) { if (error?.code !== 'ENOENT') throw error; await mkdir(state, { recursive: true, mode: 0o700 }); } if (platform() !== 'win32') await chmod(state, 0o700); else ownerOnlyAcl(state); }
 function parseLockOwner(raw) {
@@ -150,7 +153,7 @@ async function writeStateJson(state, name, value) {
   try { await writeFile(temporary, `${JSON.stringify(value)}\n`, { flag: 'wx', mode: 0o600 }); if (platform() !== 'win32') await chmod(temporary, 0o600); else ownerOnlyAcl(temporary); await rename(temporary, target); if (platform() !== 'win32') await chmod(target, 0o600); else ownerOnlyAcl(target); } finally { await rm(temporary, { force: true }); }
 }
 try {
-  const { configPath, postUpdate, finalizeUpdate, expectedReportId } = parseArgs(process.argv.slice(2));
+  const { configPath, postUpdate, finalizeUpdate, expectedReportId, managedEntry } = parseArgs(process.argv.slice(2));
   const config = await readConfig(configPath);
   if (config.source !== 'file') throw new Error('schedulerは設定ファイルなしでは実行しません');
   if (!platformMatches(config.host.profile)) throw new Error(`host.profile=${config.host.profile}は実行中platformと一致しません`);
@@ -164,7 +167,7 @@ try {
       const acks = join(state, 'latest-acks.json');
       let latestReport = null;
       if (config.collection.enabled || postUpdate || finalizeUpdate) {
-        if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT]);
+        if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT, ...(managedEntry ? ['--caveat-managed-entry'] : [])]);
         let report = JSON.parse(await readFile(reportPath, 'utf8'));
         if (expectedReportId) {
           report = await finalizeToolchainReport(report, { expectedReportId });

@@ -41,6 +41,7 @@ function parseArgs(argv) {
   const options = {};
   for (let index = 0; index < rest.length; index++) {
     const key = rest[index];
+    if (key === '--caveat-managed-entry' && !options.managedEntry) { options.managedEntry = true; continue; }
     if (key === '--dry-run' || key === '--apply') { const mode = key.slice(2); if (options.mode) throw new Error('--dry-runと--applyは併用または重複できません'); options.mode = mode; continue; }
     if (!['--config', '--platform', '--wire-major'].includes(key) || !rest[index + 1] || options[key]) throw new Error('引数が不正です');
     options[key] = rest[++index];
@@ -50,7 +51,7 @@ function parseArgs(argv) {
   const wireMajor = options['--wire-major'] || null;
   if (wireMajor && !['v1', 'v2', 'v4', 'v5', 'v6', 'v7', 'v8', 'v9'].includes(wireMajor)) throw new Error('--wire-majorはv1、v2、v4、v5、v6、v7、v8、v9のいずれかです');
   if (options.mode === 'apply' && target !== hostPlatform()) throw new Error('--applyは実行中OSと異なる--platformを指定できません');
-  return { command, target, config: options['--config'] && safePath(options['--config'], '--config'), wireMajor, dryRun: options.mode !== 'apply' };
+  return { command, target, config: options['--config'] && safePath(options['--config'], '--config'), wireMajor, dryRun: options.mode !== 'apply', managedEntry: options.managedEntry === true };
 }
 
 function platformMatches(profile, target) { return (target === 'darwin' && profile === 'mac') || (target === 'linux' && ['server', 'linux', 'wsl'].includes(profile)) || (target === 'win32' && profile === 'windows-native'); }
@@ -63,22 +64,22 @@ export function stableNodePath(target, executable = process.execPath, exists = e
   if (!exists(stable)) throw new Error(`Homebrew stable Node入口がありません: ${stable}`);
   return stable;
 }
-function artifact(target, config, location, wireMajor) {
+function artifact(target, config, location, wireMajor, managedEntry = false) {
   const runnerName = wireMajor === 'v1' ? 'factory-reporter-schedule-runner' : `factory-reporter-${wireMajor}-schedule-runner`;
   const node = stableNodePath(target); const runner = join(location.home, '.local', 'bin', runnerName); const log = join(location.state, 'scheduler.log');
   [runner, log, config, location.state].forEach((value) => safePath(value, 'scheduler path'));
   if (target === 'darwin') {
     const file = join(location.home, 'Library', 'LaunchAgents', `${LABEL}.plist`);
-    const content = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>${xml(LABEL)}</string><key>ProgramArguments</key><array><string>${xml(node)}</string><string>${xml(runner)}</string><string>--config</string><string>${xml(config)}</string></array><key>StartCalendarInterval</key><dict><key>Minute</key><integer>17</integer></dict><key>StandardOutPath</key><string>${xml(log)}</string><key>StandardErrorPath</key><string>${xml(log)}</string></dict></plist>\n`;
+    const content = `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>${xml(LABEL)}</string><key>ProgramArguments</key><array><string>${xml(node)}</string><string>${xml(runner)}</string><string>--config</string><string>${xml(config)}</string>${managedEntry ? '<string>--caveat-managed-entry</string>' : ''}</array><key>StartCalendarInterval</key><dict><key>Minute</key><integer>17</integer></dict><key>StandardOutPath</key><string>${xml(log)}</string><key>StandardErrorPath</key><string>${xml(log)}</string></dict></plist>\n`;
     const domain = `gui/${process.getuid?.() ?? '<uid>'}`; return { file, content, runner, commands: [['launchctl', 'bootstrap', domain, file]], uninstall: [['launchctl', 'bootout', `${domain}/${LABEL}`]], acl: [] };
   }
   if (target === 'linux') {
     const file = join(location.control, 'scheduler', 'factory-reporter.cron');
-    const content = `17 * * * * ${cronQuote(node)} ${cronQuote(runner)} --config ${cronQuote(config)} >> ${cronQuote(log)} 2>&1 ${CRON_MARKER}\n`;
+    const content = `17 * * * * ${cronQuote(node)} ${cronQuote(runner)} --config ${cronQuote(config)}${managedEntry ? ' --caveat-managed-entry' : ''} >> ${cronQuote(log)} 2>&1 ${CRON_MARKER}\n`;
     return { file, content, runner, commands: [['crontab', '<managed-crontab-with-entry>']], uninstall: [['crontab', '<managed-crontab-without-entry>']], acl: [] };
   }
   const file = join(location.control, 'scheduler', `${TASK_NAME}.xml`);
-  const argumentsText = `${windowsQuote(runner)} --config ${windowsQuote(config)}`;
+  const argumentsText = `${windowsQuote(runner)} --config ${windowsQuote(config)}${managedEntry ? ' --caveat-managed-entry' : ''}`;
   const content = `<?xml version="1.0" encoding="UTF-16"?><Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Triggers><CalendarTrigger><StartBoundary>2026-01-01T00:17:00</StartBoundary><Repetition><Interval>PT1H</Interval><Duration>P1D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger></Triggers><Principals><Principal id="Author"><RunLevel>LeastPrivilege</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><StartWhenAvailable>true</StartWhenAvailable></Settings><Actions Context="Author"><Exec><Command>${xml(node)}</Command><Arguments>${argumentsText}</Arguments><WorkingDirectory>${xml(location.home)}</WorkingDirectory></Exec></Actions></Task>`;
   const script = windowsOwnerOnlyAclScript();
   const powershell = hostPlatform() === 'win32'
@@ -139,8 +140,9 @@ async function main() {
     assertReportingEndpoint(config, request.wireMajor);
   }
   request.wireMajor ||= 'v4';
+  if (request.managedEntry && request.wireMajor !== 'v9') throw new Error('--caveat-managed-entryはv9だけで指定できます');
   const location = locations(request.target, request.wireMajor);
-  const spec = artifact(request.target, configPath, location, request.wireMajor);
+  const spec = artifact(request.target, configPath, location, request.wireMajor, request.managedEntry);
   // --applyは、schedulerが指すrunnerが実際に起動可能であることを登録前に検証する。
   // 配布symlink（install.sh）が未実行だと、登録は成功するのに実行時にCannot find moduleで落ちる
   // fail-openになる（2026-08-10実被弾: wire v7 canary cutover）。dry-runはartifact確認用のため検証しない。

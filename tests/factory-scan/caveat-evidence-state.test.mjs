@@ -178,7 +178,7 @@ test('existing v9 scan with a fake runner retains its Caveat failure and seriali
   const result = await simulateEvidenceCollection(options);
   const check = result.publicReport.products.caveat.checks.find((c) => c.check_id === 'sync');
   assert.equal(check.status, 'fail'); assert.equal(check.reason_code, 'remote_mismatch'); assert.equal(check.severity, 'warn');
-  assert.equal(check.message_template, 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。');
+  assert.equal(check.message_template, 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=共有先HEADと端末HEADが一致すること。');
   assert.equal(calls.filter((c) => c.command === 'caveat').length, 1);
   assert.equal(calls.filter((c) => c.args.some((a) => ['sync', 'report', 'runtime-errors'].includes(a))).length, 0);
   const snapshot = Buffer.from(result.body);
