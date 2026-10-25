@@ -14,6 +14,14 @@ case "${1:-}" in
   *) printf '使い方: agents-update.sh [--setup]\n' >&2; exit 2 ;;
 esac
 
+if [[ "${DOTAGENTS_UPDATE_CONTEXT_OBSERVER:-0}" == 1 && -n "${DOTAGENTS_UPDATE_CONTEXT_SOURCE_ROOT:-}" ]]; then
+  # shellcheck disable=SC1091
+  if . "$DOTAGENTS_UPDATE_CONTEXT_SOURCE_ROOT/bin/factory-update-context-observer.sh"; then
+    dotagents_observe_context writer_input "${BASH_SOURCE[0]}"
+  else
+    printf 'WARN: update-context-observer helper unavailable; observation unknown, ordinary update continues\n' >&2
+  fi
+fi
 # launchd / cron は最小 PATH で起動する（npm が /opt/homebrew 等にあると見つからず静かに失敗する）。
 PATH="${AGENTS_UPDATE_PATH_PREFIX:-$HOME/.local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/snap/bin:/usr/local/bin}:$PATH"
 # 端末別forkのagent-desktopはcargoで導入する。rustupの置き場は最小 PATH に無い。
@@ -26,6 +34,9 @@ if [[ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]]; then
   export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
   # shellcheck disable=SC1090,SC1091
   . "$NVM_DIR/nvm.sh"
+fi
+if [[ "${DOTAGENTS_UPDATE_CONTEXT_OBSERVER:-0}" == 1 && -n "${DOTAGENTS_UPDATE_CONTEXT_SOURCE_ROOT:-}" ]] && declare -F dotagents_observe_context >/dev/null; then
+  dotagents_observe_context writer_after_nvm "${BASH_SOURCE[0]}"
 fi
 
 runtime_os="${OS:-}"
