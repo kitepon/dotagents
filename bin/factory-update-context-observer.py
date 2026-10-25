@@ -12,7 +12,7 @@ import time
 PHASES = {'launcher_input', 'wrapper_before_nvm', 'wrapper_after_nvm',
           'writer_input', 'writer_after_nvm', 'prefix_before', 'prefix_result',
           'global_bin_after', 'root_before', 'root_result',
-          'public_setup_before', 'public_setup_after', 'core_begin', 'core_result'}
+          'public_setup_before', 'public_setup_after', 'core_begin', 'core_result', 'core_authority_prepare'}
 OPERATION_PHASES = {'prefix_before', 'prefix_result', 'global_bin_after',
                     'root_before', 'root_result', 'public_setup_before', 'public_setup_after'}
 INPUTS = {'HOME', 'PATH', 'PWD', 'SHELL', 'NVM_DIR', 'AGENTS_UPDATE_PATH_PREFIX',
@@ -301,8 +301,8 @@ def collect(args):
         if len(body) > 131072:
             raise ObservationError('observation_original_too_large')
         # Legacy publication keeps its existing pending filename contract.
-        saved = publish_original(directory, args.phase + '.json', body)
-        return {'ok': True, 'phase': args.phase, 'file': saved['ref'], 'sha256': saved['sha256']}
+        saved = publish_original(directory, args.phase + '.json', body, readback=args.phase in {'public_setup_before', 'public_setup_after'})
+        return {'ok': True, 'phase': args.phase, 'file': saved['ref'], 'sha256': saved['sha256'], 'bytes': saved['bytes']}
     finally:
         os.close(directory)
 
@@ -334,7 +334,7 @@ def main():
             raise ObservationError('observer_deadline')
         signal.signal(signal.SIGALRM, deadline)
         signal.alarm(2)
-        if args.phase in {'core_begin', 'core_result'}:
+        if args.phase in {'core_begin', 'core_result', 'core_authority_prepare'}:
             import importlib.util
             from pathlib import Path
             from types import SimpleNamespace
@@ -345,6 +345,12 @@ def main():
             shared = SimpleNamespace(process_identity=process_identity, token=token,
                                      read_original=read_private_original, publish=publish_original,
                                      error=ObservationError)
+            if args.phase == 'core_authority_prepare':
+                prepare_spec = importlib.util.spec_from_file_location('dotagents_fixed_prepare', source.with_name('update_context_prepare.py'))
+                prepare = importlib.util.module_from_spec(prepare_spec)
+                prepare_spec.loader.exec_module(prepare)
+                core.write_reply(prepare.prepare(args, shared))
+                return 0
             # Production provenance/field-admission adapters have a separate gate.
             # No caller JSON/expected SHA is promoted into a verifier here.
             activate, admit = None, None

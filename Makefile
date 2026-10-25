@@ -87,6 +87,7 @@ test-core-authority: ## GPT core authority channel の新source条件（実issue
 	$(PYTHON) tests/update/context_authority_phase_test.py -v
 	$(PYTHON) tests/update/context_bootstrap_broker_test.py -v
 	$(PYTHON) tests/update/context_original_node_test.py -v
+	$(PYTHON) tests/update/context_public_registration_test.py -v
 	node --test tests/update/core-authority-sources.test.mjs
 
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
