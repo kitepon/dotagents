@@ -10,7 +10,11 @@ import sys
 import time
 
 PHASES = {'launcher_input', 'wrapper_before_nvm', 'wrapper_after_nvm',
-          'writer_input', 'writer_after_nvm'}
+          'writer_input', 'writer_after_nvm', 'prefix_before', 'prefix_result',
+          'global_bin_after', 'root_before', 'root_result',
+          'public_setup_before', 'public_setup_after'}
+OPERATION_PHASES = {'prefix_before', 'prefix_result', 'global_bin_after',
+                    'root_before', 'root_result', 'public_setup_before', 'public_setup_after'}
 INPUTS = {'HOME', 'PATH', 'PWD', 'SHELL', 'NVM_DIR', 'AGENTS_UPDATE_PATH_PREFIX',
           'XDG_STATE_HOME', 'XDG_CONFIG_HOME', 'BASH_ENV', 'ENV',
           'NVM_SYMLINK_CURRENT', 'NVM_CD_FLAGS', 'MANPATH'}
@@ -151,6 +155,112 @@ def collect(args):
                    'nvm_branch_execution': 'not_inferred_from_boundary',
                    'reporting_allowed': False, 'resource_read_authorized': False,
                    'observer_invoked_node_npm_or_nvm': False}
+        if args.phase in OPERATION_PHASES:
+            payload['kind'] = 'observed_writer_operation'
+            resolutions = {}
+            for name, kind, encoded in args.resolution:
+                if name not in {'node', 'npm'} or name in resolutions or not encoded.startswith('v:'):
+                    raise ObservationError('resolution_shape_invalid')
+                value = encoded[2:]
+                if kind not in {'file', 'function', 'builtin', 'alias', 'keyword', 'missing'}:
+                    raise ObservationError('resolution_kind_invalid')
+                valid = kind == 'file' and os.path.isabs(value) and '\n' not in value and '\r' not in value
+                metadata = None
+                if valid:
+                    realpath = os.path.realpath(value)
+                    try:
+                        info = os.stat(realpath)
+                        metadata = {'realpath': realpath, 'exists_as_regular_file': stat.S_ISREG(info.st_mode),
+                                    'device': info.st_dev, 'inode': info.st_ino, 'mtime_ns': info.st_mtime_ns,
+                                    'uid': info.st_uid, 'mode': stat.S_IMODE(info.st_mode)}
+                    except OSError as error:
+                        metadata = {'realpath': realpath, 'read_error': type(error).__name__}
+                resolutions[name] = {'kind': kind, 'resolved_path': value if valid else None,
+                                     'file_metadata': metadata, 'actual_runtime_or_version': 'unknown'}
+            if set(resolutions) != {'node', 'npm'}:
+                raise ObservationError('resolution_incomplete')
+            payload['command_resolution'] = resolutions
+            original = {'exit': args.operation_exit, 'started_at_utc_us': None,
+                        'ended_at_utc_us': None, 'clock_status': 'unknown',
+                        'value': None, 'value_sha256': None, 'value_status': 'not_captured',
+                        'value_semantics': 'existing Bash command-substitution value, trailing LF already removed'}
+            if args.operation_exit is not None and not 0 <= args.operation_exit <= 255:
+                raise ObservationError('operation_exit_invalid')
+            if args.operation_start and args.operation_end:
+                try:
+                    def micros(text):
+                        seconds, fraction = text.split('.')
+                        if not seconds.isdecimal() or not fraction.isdecimal() or len(fraction) != 6:
+                            raise ValueError('clock')
+                        return int(seconds) * 1000000 + int(fraction)
+                    start, end = micros(args.operation_start), micros(args.operation_end)
+                    if 0 < start <= end <= time.time_ns() // 1000 + 1000000:
+                        original.update(started_at_utc_us=start, ended_at_utc_us=end, clock_status='shell_epochrealtime')
+                except ValueError:
+                    pass
+            if args.operation_value is not None:
+                if not args.operation_value.startswith('v:'):
+                    raise ObservationError('operation_value_encoding_invalid')
+                value = args.operation_value[2:]
+                original.update(value_sha256=hashlib.sha256(value.encode()).hexdigest(),
+                                value_bytes=len(value.encode()), value_status='invalid_path')
+                if args.operation_exit == 0 and os.path.isabs(value) and '\n' not in value and '\r' not in value and len(value) <= 32768:
+                    original.update(value=value, value_status='absolute_single_path')
+            payload['operation_original'] = original
+            if args.global_bin is not None:
+                if not os.path.isabs(args.global_bin):
+                    raise ObservationError('global_bin_not_absolute')
+                payload['global_bin_metadata'] = {'path': args.global_bin,
+                    'exists_as_directory': os.path.isdir(args.global_bin),
+                    'realpath': os.path.realpath(args.global_bin), 'method': 'filesystem metadata only'}
+            if args.runtime_exec_path is not None or args.runtime_version is not None:
+                import re
+                if args.phase not in {'public_setup_before', 'public_setup_after'} or not args.runtime_exec_path or not args.runtime_version or not re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:[-+][0-9A-Za-z.-]+)?', args.runtime_version):
+                    raise ObservationError('runtime_metadata_invalid')
+                actual_exe = os.readlink(f'/proc/{args.parent_pid}/exe')
+                if os.path.realpath(args.runtime_exec_path) != actual_exe:
+                    raise ObservationError('runtime_process_executable_mismatch')
+                payload['factory_bridge_runtime'] = {'exec_path': args.runtime_exec_path,
+                    'kernel_executable': actual_exe, 'process_version': args.runtime_version,
+                    'scope': 'this factory JS process only; product child/core runtime unknown'}
+            if args.result_sha256 is not None:
+                import re
+                if args.phase != 'public_setup_after' or not re.fullmatch('[0-9a-f]{64}', args.result_sha256):
+                    raise ObservationError('result_digest_invalid')
+                payload['public_setup_stdout_sha256'] = args.result_sha256
+            # Prior exact source packets are linked by bytes, never reconstructed from plan.
+            predecessors = {
+                'prefix_before': ['writer_after_nvm'], 'prefix_result': ['prefix_before'],
+                'global_bin_after': ['prefix_result'], 'root_before': ['global_bin_after'],
+                'root_result': ['root_before'], 'public_setup_before': ['root_result'],
+                'public_setup_after': ['public_setup_before'],
+            }
+            refs = []
+            for phase in predecessors[args.phase]:
+                fd = os.open(phase + '.json', os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
+                try:
+                    info = os.fstat(fd)
+                    if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > 131072:
+                        raise ObservationError('predecessor_not_private')
+                    with os.fdopen(fd, 'rb', closefd=False) as handle:
+                        packet = handle.read(131073)
+                    previous = json.loads(packet)
+                    if previous['launcher_identity'] != root_identity or previous.get('phase') != phase:
+                        raise ObservationError('predecessor_launcher_mismatch')
+                    prior_identity = previous['process_identity']
+                    if args.phase in {'prefix_result', 'root_result', 'public_setup_after'}:
+                        if prior_identity != identity:
+                            raise ObservationError('operation_process_changed')
+                    elif args.phase == 'global_bin_after':
+                        if identity not in [prior_identity] + [item['identity'] for item in previous['parent_chain']]:
+                            raise ObservationError('operation_writer_parent_mismatch')
+                    elif prior_identity not in [identity] + [item['identity'] for item in ancestry]:
+                        raise ObservationError('predecessor_process_not_ancestor')
+                    refs.append({'phase': phase, 'sha256': hashlib.sha256(packet).hexdigest()})
+                finally:
+                    os.close(fd)
+            payload['predecessor_originals'] = refs
+            payload['public_core_actual_run'] = 'unknown_requires_product_owned_original'
         body = (json.dumps(payload, ensure_ascii=False, sort_keys=True) + '\n').encode()
         if len(body) > 131072:
             raise ObservationError('observation_original_too_large')
@@ -186,6 +296,15 @@ def main():
     parser.add_argument('--output-dir', required=True)
     parser.add_argument('--expires-at', type=int, required=True)
     parser.add_argument('--input', action='append', nargs=4, default=[])
+    parser.add_argument('--resolution', action='append', nargs=3, default=[])
+    parser.add_argument('--operation-exit', type=int)
+    parser.add_argument('--operation-start')
+    parser.add_argument('--operation-end')
+    parser.add_argument('--operation-value')
+    parser.add_argument('--global-bin')
+    parser.add_argument('--runtime-exec-path')
+    parser.add_argument('--runtime-version')
+    parser.add_argument('--result-sha256')
     args = parser.parse_args()
     try:
         if sys.platform != 'linux':

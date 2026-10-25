@@ -93,8 +93,18 @@ NPM_RETIRED_HELPER="${NPM_RETIRED_HELPER:-$SCRIPT_DIR/factory-npm-retired.mjs}"
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
 resolve_npm_global_bin() {
-  local prefix bin
-  prefix="$(npm prefix -g)" || return 1
+  local prefix bin prefix_rc prefix_started prefix_ended
+  if declare -F dotagents_observe_operation >/dev/null; then
+    dotagents_observe_operation prefix_before "${BASH_SOURCE[0]}"
+  fi
+  prefix_started="${EPOCHREALTIME:-}"
+  if prefix="$(npm prefix -g)"; then prefix_rc=0; else prefix_rc=$?; fi
+  prefix_ended="${EPOCHREALTIME:-}"
+  if declare -F dotagents_observe_operation >/dev/null && [[ ${#prefix} -le 32768 ]]; then
+    dotagents_observe_operation prefix_result "${BASH_SOURCE[0]}" --operation-exit "$prefix_rc" \
+      --operation-start "$prefix_started" --operation-end "$prefix_ended" --operation-value "v:$prefix"
+  fi
+  [[ "$prefix_rc" -eq 0 ]] || return 1
   [[ -n "$prefix" && "$prefix" != *$'\n'* && "$prefix" != *$'\r'* ]] || return 1
   case "$runtime_os" in
     MINGW*|MSYS*|Windows_NT)
@@ -223,7 +233,18 @@ fi
       step_failed npm
     else
       PATH="$npm_global_bin:$PATH"
-      npm_global_root="$(npm root -g 2>/dev/null)" || npm_global_root=''
+      if declare -F dotagents_observe_operation >/dev/null; then
+        dotagents_observe_operation global_bin_after "${BASH_SOURCE[0]}" --global-bin "$npm_global_bin"
+        dotagents_observe_operation root_before "${BASH_SOURCE[0]}"
+      fi
+      root_started="${EPOCHREALTIME:-}"
+      if npm_global_root="$(npm root -g 2>/dev/null)"; then root_rc=0; else root_rc=$?; fi
+      root_ended="${EPOCHREALTIME:-}"
+      if declare -F dotagents_observe_operation >/dev/null && [[ ${#npm_global_root} -le 32768 ]]; then
+        dotagents_observe_operation root_result "${BASH_SOURCE[0]}" --operation-exit "$root_rc" \
+          --operation-start "$root_started" --operation-end "$root_ended" --operation-value "v:$npm_global_root"
+      fi
+      [[ "$root_rc" -eq 0 ]] || npm_global_root=''
       npm_global_root="${npm_global_root%$'\r'}"
       [[ "$npm_global_root" != *$'\n'* ]] || npm_global_root=''
     fi
