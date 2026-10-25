@@ -29,3 +29,11 @@ projectSameReportGptObservationは同reportのcheckにある完全で一致す�
 | Windows | 共通parser source対象、実経路未確認 | 同左 | 同左 | 同左 |
 
 この表はreport parserの適用範囲を示し、ハーネスの実認証や利用可能性を保証しない。今回は隔離Linux上のpure結果だけである。工場source通常統合・中央通常release・製品opt-in・実一回reportの正規受入は未成立として次工程へ残す。
+
+## 明示CLIと通常入口の次差分
+
+製品CLI 8cedd75のfactory専用boolean --include-observation-contextと責任境界を合意した。gpt-observation-entry.mjsは同一closureに一回native argv・projector option・report reader/validatorをまとめる。中央通常release、validator採用、製品CLI採用、工場entry採用の四つの具体ref付きsource事実が揃う時だけ三引数argvを選ぶ。欠測/未採用なら元二引数argvと既default projector/v9を維持する。このselectorは採用refそのものを検証する実装ではなく、source所有者が既受入原本から供給する事実を選ぶ口である。report/user config/環境から事実を入力する入口は作らない。
+
+通常scanner-v9はこの閉じたDEFAULT entryを渡し、出力保存前に同entryのvalidatorを使う。通常reporter-v9は同entryでreport読取・enqueue前・outbox decode/send前を検査する。現在DEFAULTにreadiness原本は無く、非空groupを保存・送信する条件は成立していない。古いmajorのscannerは常にLEGACY entryを使い、将来v9を開ける変更でも巻き込まない。sendやoutboxの処理自体は追加実行していない。
+
+新しい四条件で、どれか一つでも欠測なら元argvが一回、完全なfixture事実の時だけopt-in argvが一回、同report/status不変、通常readerが非空groupをoutbox前に拒否、source gateの固定を確認した。中央releaseの実原本が届くまで通常入口のDEFAULTを開けない。旧7/5/4host成功群は再走しない。

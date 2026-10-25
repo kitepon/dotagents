@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { DEFAULT_GPT_OBSERVATION_ENTRY } from '../lib/factory/gpt-observation-entry.mjs';
 // v5/v6はtransport実装だけを共有し、endpoint・state・outbox schemaをmajor別に分離する。
 // runtime error acknowledgementのpayload契約はv4以降で同一のため、その実装を共有する。
 import { randomUUID } from 'node:crypto';
@@ -45,8 +46,8 @@ const WIRE = IS_V9
       endpoint: '/api/factory/v9/reports',
       state: 'factory-reporter-v9',
       outboxSchema: 'dotagents.factory-outbox.v9',
-      readReport: readAndValidateReportV9,
-      validateReport: validateReportV9,
+      readReport: DEFAULT_GPT_OBSERVATION_ENTRY.readReport,
+      validateReport: DEFAULT_GPT_OBSERVATION_ENTRY.validateReport,
       validateAcknowledgements: validateAcknowledgementBundleV9,
       acknowledgeRuntimeErrors: acknowledgeRuntimeErrorsV9,
     }
