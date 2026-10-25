@@ -1,0 +1,46 @@
+{
+  "schema": "dotagents.rabbit-observation-scope.v1",
+  "host_id": "rabbit",
+  "product_id": "dotagents-rabbit",
+  "owner": {
+    "system": "bellteam",
+    "id": "bot-62c62f61"
+  },
+  "principal": {
+    "user": "kite",
+    "uid": 1000,
+    "value_kind": "historical_expected_readback_required"
+  },
+  "package": {
+    "version": "0.16.5",
+    "main": "88b3541f402cf71d8300eb6916d0e4d74ec59662",
+    "tarball_sha256": "f8049d24ba21dbea60dbcf8551d56c373c7df307b4af8ece0cd6af7e04e6e355"
+  },
+  "central_revision": "4035eadf61779308b9d3c50d952b06a5d5e74353",
+  "factory_base_revision": "0dbb892caa8d784466eb16779b5b7153a89592f0",
+  "report_id": "5efde8ae-4cff-4041-bc5f-9f77bf0c3216",
+  "window": {
+    "start": "2026-10-25T20:15:00.000Z",
+    "end": "2026-10-25T20:25:00.000Z",
+    "scheduled_capture": "2026-10-25T20:17:00.000Z"
+  },
+  "state_directory": "/home/kite/.local/state/dotagents/factory-reporter-v9/gpt-observation-once-20261025T2017Z",
+  "max_opt_in_calls": 1,
+  "max_send_attempts": 1,
+  "max_report_bytes": 1048576,
+  "package_window": {
+    "start": "2026-10-25T19:45:00.000Z",
+    "install_complete_by": "2026-10-25T20:05:00.000Z",
+    "rollback_complete_by": "2026-10-25T20:10:00.000Z",
+    "receipt_confirmed_before": "2026-10-25T20:15:00.000Z"
+  },
+  "package_storage": {
+    "stage": "/home/kite/.local/state/dotagents/factory-reporter-v9/gpt-observation-once-20261025T2017Z/package-supply/stage",
+    "before": "/home/kite/.local/state/dotagents/factory-reporter-v9/gpt-observation-once-20261025T2017Z/package-supply/before",
+    "receipts": "/home/kite/.local/state/dotagents/factory-reporter-v9/gpt-observation-once-20261025T2017Z/package-supply/receipts"
+  },
+  "factory_checkout": {
+    "path": "/home/kite/Developer/dotagents",
+    "value_kind": "historical_expected_readback_required"
+  }
+}
