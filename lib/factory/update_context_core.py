@@ -210,37 +210,42 @@ def handle_core(args, shared, *, verify_activation=None, verify_frame=None,
             raise CoreError('frame_admission_shape_invalid')
         admission_matches = (admission['frame_sha256'] == completion['serialized_result_sha256']
                              and admission['frame_bytes'] == completion['serialized_result_bytes'])
-        if frame_input is None:
-            raise CoreError('frame_input_missing')
-        frame = frame_input.read(MAX_FRAME + 1)
-        complete_bytes = len(frame) <= MAX_FRAME
-        digest = hashlib.sha256(frame).hexdigest() if complete_bytes else None
-        exact = complete_bytes and len(frame) == completion['serialized_result_bytes'] and digest == completion['serialized_result_sha256']
-        reason, gate = 'frame_unconfirmed', None
-        if complete_bytes:
-            try:
-                frame.decode('utf-8', errors='strict')
-                if not frame.endswith(b'\n'):
-                    reason = 'frame_termination_invalid'
-                elif not exact:
-                    reason = 'frame_digest_or_size_mismatch'
-                elif not admission_matches:
-                    reason = 'admission_digest_or_size_mismatch'
-                elif admission['decision'] != 'full_frame' or admission['reason'] != 'accepted':
-                    reason = 'product_admission_unknown'
-                elif completion['stdout_write'] != 'callback_completed':
-                    reason = 'output_unconfirmed'
-                elif verify_frame is None:
-                    reason = 'product_admission_unavailable'
-                else:
-                    # Product owns its existing parse and nested schema. This
-                    # port verifies the same-byte admission; no second parser.
-                    gate = verify_frame(frame, admission, policy)
-                    reason = 'product_admission_unknown'
-            except UnicodeError:
-                reason = 'frame_utf8_invalid'
+        frame, complete_bytes, digest, exact, gate = None, False, None, False, None
+        # The product deliberately sends no body for metadata-only admission
+        # or an unconfirmed ordinary write. Do not classify that as bad UTF8,
+        # termination, or a false digest of an empty original.
+        if not admission_matches:
+            reason = 'admission_digest_or_size_mismatch'
+        elif admission['decision'] != 'full_frame' or admission['reason'] != 'accepted':
+            reason = 'product_admission_unknown'
+        elif completion['stdout_write'] != 'callback_completed':
+            reason = 'output_unconfirmed'
         else:
-            reason = 'frame_too_large'
+            if frame_input is None:
+                raise CoreError('frame_input_missing')
+            frame = frame_input.read(MAX_FRAME + 1)
+            complete_bytes = len(frame) <= MAX_FRAME
+            digest = hashlib.sha256(frame).hexdigest() if complete_bytes else None
+            exact = complete_bytes and len(frame) == completion['serialized_result_bytes'] and digest == completion['serialized_result_sha256']
+            reason = 'frame_unconfirmed'
+            if complete_bytes:
+                try:
+                    frame.decode('utf-8', errors='strict')
+                    if not frame.endswith(b'\n'):
+                        reason = 'frame_termination_invalid'
+                    elif not exact:
+                        reason = 'frame_digest_or_size_mismatch'
+                    elif verify_frame is None:
+                        reason = 'product_admission_unavailable'
+                    else:
+                        # Product owns its one parse/nested gate; verify only
+                        # the same-byte admission through the adopted port.
+                        gate = verify_frame(frame, admission, policy)
+                        reason = 'product_admission_unknown'
+                except UnicodeError:
+                    reason = 'frame_utf8_invalid'
+            else:
+                reason = 'frame_too_large'
         allowed = (exact and completion['stdout_write'] == 'callback_completed'
                    and isinstance(gate, dict) and gate.get('status') == 'allowed_full')
         frame_ref = None
@@ -251,6 +256,7 @@ def handle_core(args, shared, *, verify_activation=None, verify_frame=None,
         record = {**common, 'phase': 'core_result', 'core_started_original': original_ref('core_begin.json', begin_raw),
                   'completion': completion, 'result_original': frame_ref,
                   'input_frame_sha256': digest, 'input_frame_bytes': len(frame) if complete_bytes else None,
+                  'frame_body_supplied': frame is not None,
                   'metadata_only': not allowed, 'reason': None if allowed else reason,
                   'validated_product_metadata': safe_metadata(gate)}
         body = (json.dumps(record, sort_keys=True) + '\n').encode()

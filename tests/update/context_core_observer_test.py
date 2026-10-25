@@ -48,14 +48,16 @@ const start=invoke('core_begin',startControl,Buffer.alloc(0),cfg.case==='live_no
 let result=null,second=null;
 if(start.reply?.status==='recorded_raw'){
  const frame=fs.readFileSync(cfg.frame_file), digest=crypto.createHash('sha256').update(frame).digest('hex');
- const control={...base,core_started_original:{...start.reply.original},completion:{completed_at_utc_ms:Date.now(),exit_code:2,serialized_result_sha256:digest,serialized_result_bytes:frame.length,stdout_write:cfg.case==='write_failed'?'failed':'callback_completed',frame_admission:{schema:'gpt-connector.core-frame-admission.v1',policy:'setup_v1_private_metadata_v1',decision:cfg.case==='denied_frame'?'metadata_only':'full_frame',frame_sha256:digest,frame_bytes:frame.length,reason:cfg.case==='denied_frame'?'unsupported_fields':'accepted'}}};
+ const control={...base,core_started_original:{...start.reply.original},completion:{completed_at_utc_ms:Date.now(),exit_code:2,serialized_result_sha256:digest,serialized_result_bytes:frame.length,stdout_write:cfg.case==='write_failed'?'failed':'callback_completed',frame_admission:{schema:'gpt-connector.core-frame-admission.v1',policy:'setup_v1_private_metadata_v1',decision:['denied_frame','bad_metadata_digest'].includes(cfg.case)?'metadata_only':'full_frame',frame_sha256:digest,frame_bytes:frame.length,reason:['denied_frame','bad_metadata_digest'].includes(cfg.case)?'unsupported_fields':'accepted'}}};
+ if(cfg.case==='bad_metadata_digest')control.completion.frame_admission.frame_sha256='0'.repeat(64);
  if(cfg.case==='wrong_admission')control.completion.frame_admission.frame_sha256='0'.repeat(64);
  if(cfg.case==='wrong_admission_length')control.completion.frame_admission.frame_bytes++;
  if(cfg.case==='wrong_policy')control.completion.frame_admission.policy='unadopted_policy';
  if(cfg.case==='wrong_run')control.run_id='different-run';
  if(cfg.case==='wrong_ref')control.core_started_original.ref='/outside/must-not-read';
  if(cfg.case==='wrong_digest')control.completion.serialized_result_sha256='0'.repeat(64);
- result=invoke('core_result',control,frame);
+ const permitted=control.completion.frame_admission.decision==='full_frame'&&control.completion.stdout_write==='callback_completed';
+ result=invoke('core_result',control,permitted?frame:Buffer.alloc(0));
  if(cfg.case==='duplicate'||cfg.case==='crash_after_frame')second=invoke('core_result',control,frame);
 }
 fs.writeFileSync(cfg.directory+'/result.json',JSON.stringify({start,result,second}));
