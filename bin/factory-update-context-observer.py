@@ -12,7 +12,7 @@ import time
 PHASES = {'launcher_input', 'wrapper_before_nvm', 'wrapper_after_nvm',
           'writer_input', 'writer_after_nvm', 'prefix_before', 'prefix_result',
           'global_bin_after', 'root_before', 'root_result',
-          'public_setup_before', 'public_setup_after'}
+          'public_setup_before', 'public_setup_after', 'core_begin', 'core_result'}
 OPERATION_PHASES = {'prefix_before', 'prefix_result', 'global_bin_after',
                     'root_before', 'root_result', 'public_setup_before', 'public_setup_after'}
 INPUTS = {'HOME', 'PATH', 'PWD', 'SHELL', 'NVM_DIR', 'AGENTS_UPDATE_PATH_PREFIX',
@@ -51,16 +51,52 @@ def token(boot_id, process):
     return f'{boot_id}:{process["pid"]}:{process["start_ticks"]}'
 
 
-def read_anchor(directory):
-    fd = os.open('launcher_input.json', os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory)
+def read_private_original(directory, name, maximum=131072):
+    if '/' in name or name in {'.', '..'}:
+        raise ObservationError('original_name_invalid')
+    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
     try:
         info = os.fstat(fd)
-        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > 131072:
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o600 or info.st_size > maximum:
             raise ObservationError('input_original_not_private')
-        with os.fdopen(fd, 'r', encoding='utf-8', closefd=False) as handle:
-            return json.load(handle)
+        with os.fdopen(fd, 'rb', closefd=False) as handle:
+            data = handle.read(maximum + 1)
+        if len(data) > maximum:
+            raise ObservationError('input_original_too_large')
+        return data
     finally:
         os.close(fd)
+
+
+def read_anchor(directory):
+    return json.loads(read_private_original(directory, 'launcher_input.json'))
+
+
+def publish_original(directory, final, body, *, readback=False):
+    if '/' in final or final in {'.', '..'}:
+        raise ObservationError('original_name_invalid')
+    pending = final[:-5] + '.pending' if final.endswith('.json') else final + '.pending'
+    fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
+    try:
+        info = os.fstat(fd)
+        if info.st_uid != os.geteuid() or stat.S_IMODE(info.st_mode) != 0o600:
+            raise ObservationError('observation_file_permission_mismatch')
+        view = memoryview(body)
+        while view:
+            written = os.write(fd, view)
+            if written <= 0:
+                raise ObservationError('observation_short_write')
+            view = view[written:]
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+    os.link(pending, final, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
+    os.unlink(pending, dir_fd=directory)
+    os.fsync(directory)
+    actual = read_private_original(directory, final) if readback else body
+    if actual != body:
+        raise ObservationError('original_readback_mismatch')
+    return {'ref': final, 'bytes': len(actual), 'sha256': hashlib.sha256(actual).hexdigest()}
 
 
 def collect(args):
@@ -264,26 +300,9 @@ def collect(args):
         body = (json.dumps(payload, ensure_ascii=False, sort_keys=True) + '\n').encode()
         if len(body) > 131072:
             raise ObservationError('observation_original_too_large')
-        pending, final = args.phase + '.pending', args.phase + '.json'
-        fd = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=directory)
-        try:
-            file_info = os.fstat(fd)
-            if file_info.st_uid != os.geteuid() or stat.S_IMODE(file_info.st_mode) != 0o600:
-                raise ObservationError('observation_file_permission_mismatch')
-            view = memoryview(body)
-            while view:
-                written = os.write(fd, view)
-                if written <= 0:
-                    raise ObservationError('observation_short_write')
-                view = view[written:]
-            os.fsync(fd)
-        finally:
-            os.close(fd)
-        # link is an exclusive publication, never replacement of a prior job.
-        os.link(pending, final, src_dir_fd=directory, dst_dir_fd=directory, follow_symlinks=False)
-        os.unlink(pending, dir_fd=directory)
-        os.fsync(directory)
-        return {'ok': True, 'phase': args.phase, 'file': final, 'sha256': hashlib.sha256(body).hexdigest()}
+        # Legacy publication keeps its existing pending filename contract.
+        saved = publish_original(directory, args.phase + '.json', body)
+        return {'ok': True, 'phase': args.phase, 'file': saved['ref'], 'sha256': saved['sha256']}
     finally:
         os.close(directory)
 
@@ -305,6 +324,7 @@ def main():
     parser.add_argument('--runtime-exec-path')
     parser.add_argument('--runtime-version')
     parser.add_argument('--result-sha256')
+    parser.add_argument('--core-control-json')
     args = parser.parse_args()
     try:
         if sys.platform != 'linux':
@@ -313,6 +333,26 @@ def main():
             raise ObservationError('observer_deadline')
         signal.signal(signal.SIGALRM, deadline)
         signal.alarm(2)
+        if args.phase in {'core_begin', 'core_result'}:
+            import importlib.util
+            from pathlib import Path
+            from types import SimpleNamespace
+            source = Path(__file__).resolve().parents[1] / 'lib/factory/update_context_core.py'
+            spec = importlib.util.spec_from_file_location('dotagents_core_observer', source)
+            core = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(core)
+            shared = SimpleNamespace(process_identity=process_identity, token=token,
+                                     read_original=read_private_original, publish=publish_original,
+                                     error=ObservationError)
+            # Production provenance/field-admission adapters have a separate gate.
+            # No caller JSON/expected SHA is promoted into a verifier here.
+            reply = core.handle_core(args, shared, verify_activation=None, verify_frame=None)
+            try:
+                core.write_reply(reply)
+            except (core.CoreError, OSError):
+                print(json.dumps({'component': 'update-context-observer', 'phase': args.phase, 'reason': 'core_reply_unconfirmed'}), file=sys.stderr)
+                return 1
+            return 0
         result = collect(args)
         result['component'] = 'update-context-observer'
         print(json.dumps(result), file=sys.stderr)
