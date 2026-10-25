@@ -167,7 +167,7 @@ try {
       const acks = join(state, 'latest-acks.json');
       let latestReport = null;
       if (config.collection.enabled || postUpdate || finalizeUpdate) {
-        if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT, ...(managedEntry ? ['--caveat-managed-entry'] : [])]);
+        if (!expectedReportId) await run(`factory-scan-${WIRE_MAJOR}.mjs`, ['--config', configPath, '--output', reportPath, '--ack-output', acks, '--cwd', ROOT, ...(managedEntry ? ['--caveat-managed-entry'] : []), ...(WIRE_MAJOR === 'v9' && !postUpdate && !finalizeUpdate && config.collection.enabled ? ['--rabbit-observation-once'] : [])]);
         let report = JSON.parse(await readFile(reportPath, 'utf8'));
         if (expectedReportId) {
           report = await finalizeToolchainReport(report, { expectedReportId });
