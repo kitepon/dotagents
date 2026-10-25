@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import test from 'node:test';
-import { CAVEAT_COMPONENTS, parseCaveatComponents } from '../../lib/factory/caveat-diagnostics.mjs';
+import { CAVEAT_COMPONENTS, caveatFailureMessage, parseCaveatComponents } from '../../lib/factory/caveat-diagnostics.mjs';
 import { validateReportV9 } from '../../lib/factory/contract.mjs';
 import { caveatChecks } from '../../lib/factory/v5.mjs';
 import { V9_PRODUCT_IDS } from '../../lib/factory/v9.mjs';
@@ -88,7 +88,7 @@ test('どの部品の不足も、製品の理由のままwarnで運び、旧chec
     const found = byId(checks);
     assert.deepEqual(checks.map((item) => item.check_id), IDS, id);
     assert.deepEqual(found[id], {
-      check_id: id, status: 'fail', severity: 'warn', fingerprint: fingerprint(id), message_template: `caveat ${id} failed`,
+      check_id: id, status: 'fail', severity: 'warn', fingerprint: fingerprint(id), message_template: caveatFailureMessage(id, 'not_installed'),
       occurrence_count: 1, first_seen: NOW, last_seen: NOW, reason_code: 'not_installed',
     });
     assert.ok(checks.filter((item) => item.check_id !== id).every((item) => item.status === 'pass'), id);
@@ -146,7 +146,7 @@ test('overallの不足・未確認を部品へ帰せない回は、旧checkで�
   assert.deepEqual(unattributed[0], {
     check_id: 'native_diagnostics', status: 'fail', severity: 'warn',
     fingerprint: createHash('sha256').update('caveat\0native_diagnostics\0native_not_ready_unattributed').digest('hex'),
-    message_template: 'caveat native_diagnostics failed', occurrence_count: 1, first_seen: NOW, last_seen: NOW,
+    message_template: caveatFailureMessage('native_diagnostics', 'native_not_ready_unattributed'), occurrence_count: 1, first_seen: NOW, last_seen: NOW,
     reason_code: 'native_not_ready_unattributed',
   });
   assert.notEqual(unattributed[0].fingerprint, LEGACY_FINGERPRINT);

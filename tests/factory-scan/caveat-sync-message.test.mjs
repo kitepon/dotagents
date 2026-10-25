@@ -7,6 +7,7 @@ import test from 'node:test';
 import {
   validateReportV5, validateReportV6, validateReportV7, validateReportV8, validateReportV9,
 } from '../../lib/factory/contract.mjs';
+import { caveatFailureMessage } from '../../lib/factory/caveat-diagnostics.mjs';
 import { caveatChecks, scanV5 } from '../../lib/factory/v5.mjs';
 import { scanV6 } from '../../lib/factory/v6.mjs';
 import { scanV7 } from '../../lib/factory/v7.mjs';
@@ -14,7 +15,7 @@ import { scanV8 } from '../../lib/factory/v8.mjs';
 import { scanV9 } from '../../lib/factory/v9.mjs';
 
 const NOW = '2026-10-18T06:00:00.000Z';
-const MESSAGE = 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。';
+const MESSAGE = 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=共有先HEADと端末HEADが一致すること。';
 const fingerprint = (id) => createHash('sha256').update(`caveat\0${id}`).digest('hex');
 const find = (checks, id = 'sync') => checks.find((item) => item.check_id === id);
 
@@ -30,7 +31,7 @@ function diagnostic(status = 'not_ready', reason = 'remote_mismatch') {
 function expectedFailure(id, reason, now = NOW) {
   return {
     check_id: id, status: 'fail', severity: 'warn', fingerprint: fingerprint(id),
-    message_template: id === 'sync' && reason === 'remote_mismatch' ? MESSAGE : `caveat ${id} failed`,
+    message_template: caveatFailureMessage(id, reason),
     occurrence_count: 1, first_seen: now, last_seen: now, reason_code: reason,
   };
 }
@@ -46,7 +47,7 @@ test('Caveat sync remote_mismatchの文面だけを変え、check全項目と入
   const { message_template, reason_code, ...identityAndState } = find(checks);
   const { message_template: oldMessage, reason_code: oldReason, ...oldIdentityAndState } = otherReason;
   assert.deepEqual(identityAndState, oldIdentityAndState);
-  assert.equal(oldMessage, 'caveat sync failed');
+  assert.match(oldMessage, /理由=behind（知識repoの端末履歴が追跡先より遅れている）/u);
   assert.equal(oldReason, 'behind');
   assert.equal(message_template, MESSAGE);
   assert.equal(reason_code, 'remote_mismatch');
@@ -75,7 +76,7 @@ test('別理由・別部品・ready/unverified・不正部品・旧native_diagno
   assert.deepEqual(caveatChecks({}, 'not_ready', NOW), [{
     check_id: 'native_diagnostics', status: 'fail', severity: 'warn',
     fingerprint: createHash('sha256').update('caveat\0native_diagnostics\0native_not_ready_unattributed').digest('hex'),
-    message_template: 'caveat native_diagnostics failed', occurrence_count: 1,
+    message_template: caveatFailureMessage('native_diagnostics', 'native_not_ready_unattributed'), occurrence_count: 1,
     first_seen: NOW, last_seen: NOW, reason_code: 'native_not_ready_unattributed',
   }]);
 });
