@@ -81,6 +81,9 @@ os.execve(sys.argv[3],[sys.argv[3],'--import',sys.argv[4],sys.argv[5]],dict(os.e
                 if reader>=0:os.close(reader)
                 if writer>=0:os.close(writer)
                 left.close();right.close()
+                if 'child' in locals() and child.poll() is None:
+                    try:child.wait(timeout=2)
+                    except subprocess.TimeoutExpired:child.kill();child.wait(timeout=2)
 
     def test_fixed_preload_shares_exact_cli_registration_identity_and_preserves_argv_and_exit(self):
         self.assertEqual(self.preload()['registered'],1)
