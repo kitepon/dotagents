@@ -33,7 +33,7 @@ def sha(raw):
 
 class CoreAuthorityBroker:
     def __init__(self, endpoint, *, product_pid, product_entry, activation, expires_at, before_ref, shared,
-                 verify_subjects=None, evidence_kind='observed'):
+                 verify_subjects=None, evidence_kind='observed', factory_sender_pid=None):
         if (endpoint.family != socket.AF_UNIX
                 or endpoint.getsockopt(socket.SOL_SOCKET, socket.SO_TYPE) != socket.SOCK_SEQPACKET
                 or evidence_kind not in {'fixture', 'observed'}):
@@ -47,7 +47,10 @@ class CoreAuthorityBroker:
         self.next_phase, self.run, self.challenges = 'core_begin', None, set()
         with open('/proc/sys/kernel/random/boot_id', encoding='ascii') as stream:
             self.boot = stream.read().strip()
-        self.sender = copy.deepcopy(shared.process_identity(os.getpid()))
+        sender_pid = os.getpid() if factory_sender_pid is None else factory_sender_pid
+        if sender_pid not in {os.getpid(), os.getppid()}:
+            raise BrokerError('broker_factory_sender_not_parent')
+        self.sender = copy.deepcopy(shared.process_identity(sender_pid))
         self.sender_identity = shared.token(self.boot, self.sender)
         endpoint.setsockopt(socket.SOL_SOCKET, socket.SO_PASSCRED, 1)
         endpoint.settimeout(3.0)
@@ -79,7 +82,7 @@ class CoreAuthorityBroker:
             raise BrokerError('broker_process_changed')
         return helper, product, argv, kernel, {'path': self.product_entry, 'sha256': sha(entry_raw)}
 
-    def _authorize(self, request, credentials):
+    def _authorize(self, request, credentials, *, kernel_only=False):
         pid, uid, gid = credentials
         if (uid, gid) != (os.geteuid(), os.getegid()):
             raise BrokerError('broker_sender_principal_mismatch')
@@ -107,17 +110,40 @@ class CoreAuthorityBroker:
             raise BrokerError('broker_run_binding_mismatch')
         self.run = (control['run_id'], control['mode'])
         self.next_phase = 'core_result' if self.next_phase == 'core_begin' else None
+        if kernel_only:
+            return {'status': 'kernel_bound', 'binding': expected,
+                    'sender': copy.deepcopy(self.sender), 'helper': helper, 'product': product}
         if self.verify is None:
             raise BrokerError('broker_verifier_unavailable')
         subjects = copy.deepcopy(self.verify(copy.deepcopy(expected)))
         if not isinstance(subjects, dict) or set(subjects) != {'factory', 'product'}:
             raise BrokerError('broker_subjects_unconfirmed')
         if (helper != self.shared.process_identity(pid) or product != self.shared.process_identity(product['pid'])
-                or self.sender != self.shared.process_identity(os.getpid())):
+                or self.sender != self.shared.process_identity(self.sender['pid'])):
             raise BrokerError('broker_process_changed')
         return {'status': 'verified', 'kind': self.kind, 'binding': expected, 'subjects': subjects}
 
+    def receive_for_original_node(self):
+        # Fixed child receiver returns kernel evidence only. It never writes an
+        # authority response and never verifies/labels source subjects.
+        if self.sender['pid'] != os.getppid():
+            raise BrokerError('broker_original_node_not_parent')
+        raw, ancillary, flags, _address = self.endpoint.recvmsg(MAX_REQUEST + 1, socket.CMSG_SPACE(12))
+        credentials = [struct.unpack('3i', value) for level, kind, value in ancillary
+                       if level == socket.SOL_SOCKET and kind == socket.SCM_CREDENTIALS and len(value) == 12]
+        if flags & (socket.MSG_TRUNC | socket.MSG_CTRUNC) or len(raw) > MAX_REQUEST or len(credentials) != 1:
+            raise BrokerError('broker_request_incomplete')
+        request = json.loads(raw)
+        if (not isinstance(request, dict) or request.get('schema') != 'dotagents.core-authority-request.v1'
+                or not isinstance(request.get('challenge'), str) or not re.fullmatch('[0-9a-f]{64}', request['challenge'])):
+            raise BrokerError('broker_request_invalid')
+        result = self._authorize(request, credentials[0], kernel_only=True)
+        return {'schema': 'dotagents.core-kernel-receipt.v1', 'request_sha256': sha(raw),
+                'challenge': request['challenge'], **result}
+
     def serve_once(self):
+        if self.sender['pid'] != os.getpid():
+            raise BrokerError('broker_receiver_cannot_replace_sender')
         raw, ancillary, flags, _address = self.endpoint.recvmsg(MAX_REQUEST + 1, socket.CMSG_SPACE(12))
         credentials = [struct.unpack('3i', value) for level, kind, value in ancillary
                        if level == socket.SOL_SOCKET and kind == socket.SCM_CREDENTIALS and len(value) == 12]

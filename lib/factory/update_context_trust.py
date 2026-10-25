@@ -20,7 +20,9 @@ AUTHORITY_FD = 4
 REPLY_FD = 3
 MAX_AUTHORITY = 131072
 FACTORY_ROLES = {'helper', 'core_protocol', 'trust_adapter', 'trusted_loader',
-                 'authority_broker', 'launcher', 'wrapper', 'writer', 'public_bridge'}
+                 'authority_broker', 'launcher', 'wrapper', 'writer', 'public_bridge',
+                 'node_authority_broker', 'kernel_receiver', 'channel_provisioner',
+                 'subject_sources', 'product_bootstrap'}
 PRODUCT_ROLES = {'core', 'formatter', 'serializer', 'admission'}
 
 
