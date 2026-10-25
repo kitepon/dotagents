@@ -27,7 +27,7 @@ fd4は通常stdin/fd3の代用ではない。送信元の検証はSO_PASSCRED/SC
 
 brokerは逆方向でも実送信helperをkernel credentialsで照合し、同product parent/entry、activation、run、controlSHAと元before refを確認してから答える必要がある。今回sourceはhelper受信とbinding検証を実装した。brokerの逆方向照合・既verifier呼出し・固定bootstrap・製品spawnは未実装であり、authenticated loader全体の完成とはしない。
 
-responseは131072B以下、制御requestは16384B以下。authority受信1秒、既helper全体2500ms、元frame65536B、reply16384Bを維持する。verified subjectの原本はbase64/元SHA/元bytesを揃える。helperは同一private activationへ既publish/readbackを使い`core_begin.authority.json`又は`core_result.authority.json`を非置換保存する。保存・読戻しが成立するまでframeを認可しない。既metadataのprovenance_refはその所在とSHAを指す。
+responseは131072B以下、制御requestは16384B以下。authority受信1秒、既helper全体2500ms、元frame65536B、reply16384Bを維持する。verified subjectの原本はbase64/元SHA/元bytesを揃える。helperは同一private activationへ既publish/readbackを使い`core_begin.authority.json`又は`core_result.authority.json`を非置換保存する。保存・読戻しが成立するまでframeを認可しない。phase別metadataのauthority_originalはその所在・SHA・bytesを持ち、既storeで再読戻ししてから記録する。run共通のactivation_provenance_refはdotagents.core-activation-subject.v1のSHAを指す。このsubjectは同run/mode・activation/期限・kernel process・factory identity・before ref・entry・固定portと、二subjectのsource/receipt元bytesのSHA/bytes・issuer/trust_refを含む。phase/controlSHA及び各回の検証完了時刻・検証proof bytesは各phaseのauthority原本へ保持する。共通subjectを各phase原本内にも保存するため、参照先から復元できる。begin/resultでsource/receipt/trust又はrun bindingが変われば、既handle_coreの同run照合で拒否する。
 
 `verify_frame`は同adapterの私有policyとcontrol completion、元bodySHA/bytes、元write結果が一致する一回だけallowed_fullを返す。nested product JSONをparseせず、製品gateが発行したadmissionと元completionの対応を認証経路で確認する。metadata-onlyやwrite未完の分類は既96908dが所有し、通常出力の再実行をしない。normal_job_binding unknown、reporting/resource falseを維持する。
 
@@ -48,3 +48,7 @@ responseは131072B以下、制御requestは16384B以下。authority受信1秒、
 | Windows | 対象外（今回Linux kernel channel） | 対象外（同左） | 対象外（同左） | 対象外（同左） |
 
 新しいfixture条件とkernel socketpair/fork条件、既private storeの非置換読戻しを11条件で独立実行し、pass11/fail0/skip0を確認した。AST2件とdiffcheckも成功。make test-core-authorityを通常CIの依存に追加した。通常CI自体は次の統合工程で行う。fixture検証元を実artifact・実issuer受入へ拡張しない。既13/14/26・native/NVM等は再走しない。
+
+## GPT-CORE-AUTH-PHASE-1の原因修理
+
+c39393fはphase別authority保存refをrun共通のactivation_provenance_refに使ったため、同runでもbegin/resultの照合に失敗した。共通検証subjectとphase原本refの責務を分ける最小整理を行った。元同run検査は削除せず、phase別原本の非置換保持とcontrolSHA bindingも維持する。元begin/result反例と、phase proofだけ変化する正常対照、subject又はrunが変わる拒否対照を対象に確認する。旧13/14/26等は再走しない。

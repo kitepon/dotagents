@@ -145,6 +145,30 @@ def verified_subject(value, kind, entry):
     return copy.deepcopy(value)
 
 
+def activation_subject(request, subjects, kind):
+    """Run-common verified identity, distinct from each phase's authority proof.
+
+    Rechecking current authority can yield new timestamps/proof bytes. Retain
+    those exact phase originals, but compare the same accepted source/receipt,
+    issuer/trust and run binding across begin/result. Never drop a run field.
+    """
+    keys = ('run_id', 'mode', 'activation', 'expires_at', 'process_identity',
+            'kernel_identity', 'factory_identity', 'public_setup_before',
+            'entry', 'helper_entry', 'authority_fd', 'reply_fd')
+    accepted = {}
+    for name in ('factory', 'product'):
+        value = subjects[name]
+        _raw, checks = original(value['verification_original'])
+        accepted[name] = {
+            'source_original': {key: value['source_original'][key] for key in ('sha256', 'bytes')},
+            'receipt_original': {key: value['receipt_original'][key] for key in ('sha256', 'bytes')},
+            'issuer': checks['issuer'], 'trust_ref': checks['trust_ref'],
+        }
+    return {'schema': 'dotagents.core-activation-subject.v1', 'kind': kind,
+            'binding': {key: copy.deepcopy(request[key]) for key in keys},
+            'subjects': accepted}
+
+
 def retain_authority(args, shared, body):
     """Use the existing private, nonreplacement store; never another root."""
     if len(body) > MAX_AUTHORITY:
@@ -198,15 +222,18 @@ def create_core_ports(channel, *, sender_identity, retain_original):
         product = verified_subject(subjects['product'], 'product', request['entry'])
         # These exact original packets are available to the existing metadata
         # store as one private provenance reference. They are not stdout data.
-        provenance = {'factory': factory, 'product': product, 'binding': request}
-        policy = {'kind': response['kind'], 'provenance_ref': 'authority-sha256:' + digest(encoded(provenance)),
+        activation = activation_subject(request, {'factory': factory, 'product': product}, response['kind'])
+        provenance = {'factory': factory, 'product': product, 'binding': request,
+                      'activation_subject': activation}
+        policy = {'kind': response['kind'],
+                  'provenance_ref': 'authority-activation-sha256:' + digest(encoded(activation)),
                   'whole_source_pins_verified': True}
         retained = retain_original(args, encoded(provenance))
         if (not isinstance(retained, dict) or retained.get('sha256') != digest(encoded(provenance))
                 or retained.get('bytes') != len(encoded(provenance))
                 or retained.get('ref') != args.phase + '.authority.json'):
             raise AuthorityError('authority_retention_unconfirmed')
-        policy['provenance_ref'] = retained['ref'] + ':' + retained['sha256']
+        policy['authority_original'] = copy.deepcopy(retained)
         owned.update(policy=policy, completion=copy.deepcopy(control.get('completion')), frame_used=False,
                      originals=copy.deepcopy(provenance))
         return policy

@@ -165,6 +165,19 @@ def handle_core(args, shared, *, verify_activation=None, verify_frame=None,
         # deployment/activation provenance. Mere caller SHA maps are not used.
         if policy.get('whole_source_pins_verified') is not True:
             raise CoreError('whole_source_pins_unconfirmed')
+        # This optional phase proof is separate from the run-common activation
+        # subject. Keep exact per-phase refs without weakening run equality.
+        authority = policy.get('authority_original')
+        if authority is not None:
+            if (not isinstance(authority, dict) or set(authority) != {'ref', 'sha256', 'bytes'}
+                    or authority['ref'] != args.phase + '.authority.json'
+                    or not integer(authority['bytes']) or authority['bytes'] > MAX_PACKET
+                    or not isinstance(authority['sha256'], str)
+                    or not re.fullmatch('[0-9a-f]{64}', authority['sha256'])):
+                raise CoreError('authority_original_invalid')
+            authority_raw = shared.read_original(directory, authority['ref'])
+            if authority != original_ref(authority['ref'], authority_raw):
+                raise CoreError('authority_original_readback_mismatch')
         kind = 'fixture_core' if policy['kind'] == 'fixture' else 'observed_core'
         common = {'schema': 'dotagents.product-core-observation.v1', 'kind': kind,
                   'mode': control['mode'], 'run_id': control['run_id'],
@@ -175,6 +188,8 @@ def handle_core(args, shared, *, verify_activation=None, verify_frame=None,
                   'observed_at_utc_ms': now, 'capture_expires_at_utc_ms': args.expires_at,
                   'normal_job_binding': 'unknown_until_dispatcher_source_correlation',
                   'reporting_allowed': False, 'resource_read_authorized': False}
+        if authority is not None:
+            common['authority_original'] = authority
         if args.phase == 'core_begin':
             if set(control) != required or 'core_begin.json' in names:
                 raise CoreError('core_begin_already_present_or_invalid')
