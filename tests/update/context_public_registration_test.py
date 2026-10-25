@@ -40,7 +40,7 @@ class PublicRegistrationTests(unittest.TestCase):
             self.assertFalse(value['reporting_allowed'])
             self.assertFalse(value['resource_read_authorized'])
 
-    def preload(self, invalid=False):
+    def preload(self, invalid=False, fault=None):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory); activation = root / 'private'; activation.mkdir(mode=0o700)
             (root / 'package.json').write_text('{"type":"module"}')
@@ -66,12 +66,16 @@ os.execve(sys.argv[3],[sys.argv[3],'--import',sys.argv[4],sys.argv[5]],dict(os.e
             try:
                 child = subprocess.Popen(['/usr/bin/python3','-I','-S','-c',code,str(right.fileno()),str(reader),shutil.which('node'),str(PRELOAD),str(entry)], pass_fds=(right.fileno(),reader),stdout=subprocess.PIPE,stderr=subprocess.PIPE)
                 os.close(reader);reader=-1
-                os.write(writer,(json.dumps(record)+'\n').encode());os.close(writer);writer=-1
+                wire=(json.dumps(record)+'\n').encode()
+                if fault=='utf8':wire=b'\xff'
+                if fault=='partial':wire=wire[:-3]
+                os.write(writer,wire)
+                if fault!='no_eof':os.close(writer);writer=-1
                 out, err = child.communicate(timeout=6)
                 self.assertEqual(child.returncode,2,err.decode());self.assertEqual(err,b'')
-                retain('preload-reject' if invalid else 'preload-register', root, out, err)
+                retain('preload-'+fault if fault else 'preload-reject' if invalid else 'preload-register', root, out, err)
                 if ARTIFACTS:
-                    path=Path(ARTIFACTS)/('preload-reject' if invalid else 'preload-register')/'record.original.json';path.write_text(json.dumps(record)+'\n');path.chmod(0o600)
+                    path=Path(ARTIFACTS)/('preload-'+fault if fault else 'preload-reject' if invalid else 'preload-register')/'record.original.json';path.write_text(json.dumps(record)+'\n');path.chmod(0o600)
                 result=json.loads(out);self.assertEqual(result['entry'],str(entry));return result
             finally:
                 if reader>=0:os.close(reader)
@@ -83,6 +87,10 @@ os.execve(sys.argv[3],[sys.argv[3],'--import',sys.argv[4],sys.argv[5]],dict(os.e
 
     def test_changed_module_bytes_never_register_and_do_not_replace_ordinary_exit(self):
         self.assertEqual(self.preload(invalid=True)['registered'],0)
+
+    def test_invalid_utf8_partial_json_or_absent_eof_never_registers(self):
+        for fault in ['utf8','partial','no_eof']:
+            self.assertEqual(self.preload(fault=fault)['registered'],0)
 
 
 if __name__ == '__main__': unittest.main()
