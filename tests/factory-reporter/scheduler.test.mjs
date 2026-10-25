@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { delimiter, join, resolve } from 'node:path';
 import { after, test } from 'node:test';
 import { nextCron, removeLegacyArtifacts, stableNodePath } from '../../bin/factory-reporter-scheduler.mjs';
+import { runFixtureChild as run } from './fixtures/child-process.mjs';
 import { postUpdateFailures } from '../../lib/factory/deployment-contract.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
@@ -15,7 +16,6 @@ const V8_RUNNER = join(ROOT, 'bin', 'factory-reporter-v8-schedule-runner.mjs');
 const roots = [];
 const CURRENT_PROFILE = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'linux';
 async function sandbox(profile = 'mac', collection = false, reporting = false) { const root = await mkdtemp(join(tmpdir(), 'factory-reporter-scheduler-test-')); roots.push(root); const config = join(root, 'config.json'); const credential = join(root, 'credential'); await writeFile(credential, 'unit-test-token\n', { mode: 0o600 }); await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'test-host', profile }, collection: { enabled: collection }, reporting: reporting ? { enabled: true, endpoint: 'http://127.0.0.1:1/api/factory/v4/reports', credential_file: credential } : { enabled: false } })); const stateRoot = process.platform === 'win32' ? join(root, 'local-app-data', 'dotagents') : join(root, 'state-home', 'dotagents'); return { root, config, credential, state: join(stateRoot, 'factory-reporter-v4'), stateRoot }; }
-function run(script, args, box, extraEnv = {}) { return new Promise((resolveRun) => { const env = { ...process.env, HOME: box.root, USERPROFILE: box.root, LOCALAPPDATA: join(box.root, 'local-app-data'), XDG_CONFIG_HOME: join(box.root, 'config-home'), XDG_STATE_HOME: join(box.root, 'state-home'), ...extraEnv }; if (process.platform === 'win32' && extraEnv.PATH) env.PATH = `${extraEnv.PATH}${delimiter}${process.env.PATH}`; const child = spawn(process.execPath, [script, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] }); let stdout = ''; let stderr = ''; child.stdout.on('data', (chunk) => { stdout += chunk; }); child.stderr.on('data', (chunk) => { stderr += chunk; }); child.on('close', (code) => { let json = null; for (const line of stdout.trim().split(/\r?\n/u).reverse()) { try { json = JSON.parse(line); break; } catch {} } resolveRun({ code, stderr, json }); }); }); }
 async function fixtureCommand(directory, name, body) {
   const file = join(directory, name);
   await writeFile(file, `#!/bin/sh\n${body}\n`);
@@ -35,7 +35,7 @@ process.exit(result.status ?? 1);
 async function writeRunnerLock(box, pid, nonce = '00000000-0000-4000-8000-000000000001') { await mkdir(box.state, { recursive: true }); const path = join(box.state, `schedule.lock.${nonce}.owner`); await writeFile(path, `${JSON.stringify({ schema_version: 'dotagents.factory-scheduler-lock.v1', nonce, pid, acquired_at: new Date().toISOString() })}\n`, { mode: 0o600 }); return path; }
 async function v7FixtureBin(box) {
   const bin = join(box.root, 'v7-bin'); await mkdir(bin);
-  for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok']) await fixtureCommand(bin, name, 'exit 1');
+  for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown', 'aiterm-mcp', 'claude', 'codex', 'npm', 'grok', 'peertable', 'unai', 'aishell-mcp']) await fixtureCommand(bin, name, 'exit 1');
   await fixtureCommand(bin, 'git', 'echo 1234567');
   return bin;
 }
