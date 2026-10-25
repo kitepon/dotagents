@@ -118,3 +118,12 @@ private adapterは入力/getter/外部処理前に実行を予約し、args/opti
 新pure2条件で欠測fallback/一回予約/getter再入/元例外を確認。追加専有wire4条件は元factory Node→元runProductSetup/command.run→固定preload→da025864の実compiled登録/observer/d1→実helper/fd4/fd7で、正常/解放失敗/起動後issuer喪失/起動前issuer欠測を確認した。前2件は元pretty JSON本文/exit2とprivate frameが一致、後2件はfull原本無しで通常partial/exit2を保持。resolverによる親envのfixture変更も子の元envを置換しない。SH/issuer/subject/fixture entryとsetup返却はsyntheticで、実公開CLI setupや実artifact採用ではない。282compiled filesを元indexへ照合し、新npm実行は無い。
 
 初期wire入力にはTOML依存の不足とlauncher anchor時刻の欠落があった。元guardを緩めず、既installed依存を正確にstageし、元形のfixture anchorに修正した。失敗log/原本は保持し、旧成功群の専有再走はしない。通常PRCIの事前連絡はBellTeam側のClaude起動前認証拒否が既logで確定し、Trony既復旧工程へ接続済み。配送実復帰前に追加CIを起動せず、実trust/全writer/実npm/最終wholepins/Emma方式は別未成立を維持する。
+
+
+## GPT-CORE-PRELAUNCH-RELEASE-1
+
+起動前issuer拒否と両SH解放失敗が重なる場合、元readerがcleanup例外をblockedへ畳んでもexecutorがstatusを捨て、通常fallbackをSH保持中に起動する原因を修理した。新しい組合せ負条件はbefore1fail/対照1pass、after2passで、旧2+4/専有成功群は再走していない。
+
+SH入場を試みる前の不成立は元通常入口一回を維持する。入場を試みた後の起動前declineはcallback内のprivate no-launch sentinelとして返し、既withCoreAuthoritySources/readDeployment両wrapperがその同一sentinelを肯定的completedで戻した場合だけfallbackする。blocked/例外/unknownを解放済みへ昇格しない。cleanup不確定なら元execute/childlaunchとも0、固定unknown errorで停止する。既canonical reader、同run/role検査、元lease protocolは変更していない。
+
+一度normalが予約された後は、元result/元例外を一回返し、fallbackへ再実行しない。起動後のbody/exit/frame/write保持はそのまま。実cleanup proofの成功既定口は作らず、実runtime/installed global-root整合/issuer/store/native resource全writer/実artifact/最終wholepins/Emma/通常CI通知復旧は従来の別gateを保つ。
