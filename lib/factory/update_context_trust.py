@@ -22,7 +22,8 @@ MAX_AUTHORITY = 131072
 FACTORY_ROLES = {'helper', 'core_protocol', 'trust_adapter', 'trusted_loader',
                  'authority_broker', 'launcher', 'wrapper', 'writer', 'public_bridge',
                  'node_authority_broker', 'kernel_receiver', 'channel_provisioner',
-                 'subject_sources', 'product_bootstrap', 'public_preload', 'preload_record', 'bootstrap_record'}
+                 'subject_sources', 'product_bootstrap', 'public_preload', 'preload_record', 'bootstrap_record',
+                 'public_executor', 'command_executor'}
 PRODUCT_ROLES = {'core', 'formatter', 'serializer', 'admission', 'core_registration'}
 
 
