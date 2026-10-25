@@ -85,6 +85,7 @@ test-update: ## cron 最小 PATH で NVM 配下の npm を解決できること�
 test-core-authority: ## GPT core authority channel の新source条件（実issuer・host有効化なし）
 	$(PYTHON) tests/update/context_trust_adapter_test.py -v
 	$(PYTHON) tests/update/context_authority_phase_test.py -v
+	$(PYTHON) tests/update/context_bootstrap_broker_test.py -v
 
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
 	bash tests/oracle/wrappers.sh

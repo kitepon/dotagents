@@ -325,6 +325,7 @@ def main():
     parser.add_argument('--runtime-version')
     parser.add_argument('--result-sha256')
     parser.add_argument('--core-control-json')
+    parser.add_argument('--core-authority', action='store_true')
     args = parser.parse_args()
     try:
         if sys.platform != 'linux':
@@ -346,7 +347,19 @@ def main():
                                      error=ObservationError)
             # Production provenance/field-admission adapters have a separate gate.
             # No caller JSON/expected SHA is promoted into a verifier here.
-            reply = core.handle_core(args, shared, verify_activation=None, verify_frame=None)
+            activate, admit = None, None
+            if args.core_authority:
+                fixed_source = source.with_name('update_context_bootstrap.py')
+                fixed_spec = importlib.util.spec_from_file_location('dotagents_fixed_bootstrap', fixed_source)
+                fixed = importlib.util.module_from_spec(fixed_spec)
+                fixed_spec.loader.exec_module(fixed)
+                try:
+                    activate, admit = fixed.create_ports(args, shared)
+                except (OSError, ValueError, TypeError, KeyError, ObservationError):
+                    core.write_reply(core.unknown('authority_bootstrap_unconfirmed'))
+                    return 0
+            reply = core.handle_core(args, shared, verify_activation=activate, verify_frame=admit,
+                                     frame_input=sys.stdin.buffer if args.core_authority else None)
             try:
                 core.write_reply(reply)
             except (core.CoreError, OSError):
