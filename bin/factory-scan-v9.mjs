@@ -1,9 +1,10 @@
 #!/usr/bin/env node
+import { DEFAULT_GPT_OBSERVATION_ENTRY } from '../lib/factory/gpt-observation-entry.mjs';
 import { rename, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { arch, platform } from 'node:os';
 import process from 'node:process';
-import { assertConfigIdentity, readConfig, validateReportV9 } from '../lib/factory/contract.mjs';
+import { assertConfigIdentity, readConfig } from '../lib/factory/contract.mjs';
 import { scanV9WithAcknowledgements } from '../lib/factory/v9.mjs';
 import { createCaveatDiagnosticPort } from '../lib/factory/caveat-entry.mjs';
 
@@ -25,8 +26,8 @@ try {
   const config = await readConfig(options['--config']);
   const port = options['--caveat-managed-entry'] ? createCaveatDiagnosticPort() : undefined;
   const { report, acknowledgements } = await scanV9WithAcknowledgements({ host: config.host, collectionEnabled: config.collection.enabled,
-    cwd: options['--cwd'] || process.cwd(), arch: arch(), platform: platform(), caveatDiagnosticPort: port });
-  validateReportV9(report); assertConfigIdentity(config, report);
+    cwd: options['--cwd'] || process.cwd(), arch: arch(), platform: platform(), caveatDiagnosticPort: port, gptObservationEntry: DEFAULT_GPT_OBSERVATION_ENTRY });
+  DEFAULT_GPT_OBSERVATION_ENTRY.validateReport(report); assertConfigIdentity(config, report);
   const output = await atomic(options['--output'], report);
   const acknowledgementOutput = options['--ack-output'] ? await atomic(options['--ack-output'], acknowledgements) : null;
   let bindingEvidenceStatus = null;
