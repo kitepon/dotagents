@@ -3,11 +3,12 @@ import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { delimiter, dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { validateReportV9 } from '../../lib/factory/contract.mjs';
+import { resolveWindowsPowerShell7 } from '../../lib/factory/windows-powershell.mjs';
 
 const execute = promisify(execFile);
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -24,8 +25,12 @@ async function sandbox(t) {
   const config = join(root, 'config.json');
   await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'fixture', profile: process.platform === 'darwin' ? 'mac' : 'linux' },
     collection: { enabled: true }, reporting: { enabled: false } }), { mode: 0o600 });
+  // Windows schedulerの通常のPS7検証に必要なOS道具だけを残す。
+  // 製品CLIは先頭の専有fakeで固定し、利用者のPATH全体を混ぜない。
+  const path = process.platform === 'win32'
+    ? [bin, join(process.env.SystemRoot, 'System32'), dirname(resolveWindowsPowerShell7())].join(delimiter) : bin;
   return { root, config, env: { ...process.env, HOME: root, USERPROFILE: root, LOCALAPPDATA: join(root, 'local'),
-    XDG_CONFIG_HOME: join(root, 'config'), XDG_STATE_HOME: join(root, 'state'), PATH: bin } };
+    XDG_CONFIG_HOME: join(root, 'config'), XDG_STATE_HOME: join(root, 'state'), PATH: path } };
 }
 test('明示managed入口のv9 CLIは元wireと私有scan証拠を保存し、設定欠測を成功にしない', { skip: process.platform === 'win32' }, async (t) => {
   const box = await sandbox(t), output = join(box.root, 'report.json');

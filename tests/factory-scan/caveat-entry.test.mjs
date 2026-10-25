@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { createCaveatDiagnosticPort } from '../../lib/factory/caveat-entry.mjs';
 import { validateReportV9 } from '../../lib/factory/contract.mjs';
@@ -51,9 +52,10 @@ test('実行前後のfresh選択と実JSON版を照合し、exit1のresultをそ
 });
 test('通常collector adapterは毎回新しく製品collectorを呼び、設定本文を工場で解釈しない', async () => {
   const port = createCaveatDiagnosticPort({ node: '/fixture/node' }), calls = [];
+  const collector = fileURLToPath(new URL('../../lib/factory/caveat-product/read-host.cjs', import.meta.url));
   const observed = await port({ cwd: '/fixture', runCommand: async (command, args, options) => {
     calls.push({ command, args, options });
-    if (args.length === 1 && args[0].endsWith('caveat-product/read-host.cjs')) {
+    if (args.length === 1 && args[0] === collector) {
       return { ok: true, stdout: JSON.stringify(inventory()), stderr: '' };
     }
     return result();
