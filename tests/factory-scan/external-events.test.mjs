@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { chmod, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import fs, { chmod, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
@@ -129,4 +129,35 @@ test('bounded retentionは未ack eventを捨てず、ack済みだけをpruneす�
   while ((await snapshot()).events.length > 0) await ack((await snapshot()).cursor.next);
   await mutate('open', 'availability', 'unreachable', C);
   assert.ok(JSON.parse(await readFile(state.state)).events.length <= 256);
+});
+
+
+test('Windowsの一時的な置換拒否は同じbytesのrenameだけを再試行する', { skip: process.platform !== 'win32' }, async (t) => {
+  await box(t);
+  await mutate('open', 'availability', 'unreachable', A);
+  const realRename = fs.rename;
+  let attempts = 0;
+  t.mock.method(fs, 'rename', async (...args) => {
+    if (++attempts < 3) throw Object.assign(new Error('sharing violation'), { code: 'EPERM' });
+    return realRename(...args);
+  });
+  await mutate('resolve', 'availability', 'unreachable', B);
+  assert.equal(attempts, 3);
+  assert.equal((await status()).high_watermark, 2);
+});
+
+test('置換の恒久失敗は旧台帳を保ち、非Windowsでは再試行しない', async (t) => {
+  const state = await box(t);
+  await mutate('open', 'availability', 'unreachable', A);
+  const before = await readFile(state.state);
+  let attempts = 0;
+  const mock = t.mock.method(fs, 'rename', async () => {
+    attempts++;
+    throw Object.assign(new Error('access denied'), { code: 'EPERM' });
+  });
+  await assert.rejects(mutate('resolve', 'availability', 'unreachable', B), { code: 'EPERM' });
+  mock.mock.restore();
+  assert.equal(attempts, process.platform === 'win32' ? 5 : 1);
+  assert.deepEqual(await readFile(state.state), before);
+  assert.deepEqual((await readdir(state.dir)).sort(), ['external-events.json']);
 });

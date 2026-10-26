@@ -440,27 +440,6 @@ function Restore-ScheduledReporterConfigFromCodexCache {
   Write-Step 'factory-reporter-config: restored from Codex AppContainer cache'
 }
 
-function Restore-ScheduledGitHubCliConfigFromCodexCache {
-  if (-not $ScheduledRun -or (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) { return }
-  $packages = Join-Path $env:LOCALAPPDATA 'Packages'
-  if (-not (Test-Path -LiteralPath $packages -PathType Container)) { throw 'GitHub CLI is not authenticated for the scheduled task' }
-  $candidates = @(Get-ChildItem -LiteralPath $packages -Directory -Filter 'OpenAI.Codex_*' | ForEach-Object {
-    $candidate = Join-Path $_.FullName 'LocalCache\Roaming\GitHub CLI\hosts.yml'
-    if (Test-Path -LiteralPath $candidate -PathType Leaf) { Get-Item -LiteralPath $candidate }
-  })
-  if ($candidates.Count -ne 1) { throw 'A unique Codex AppContainer GitHub CLI config was not found' }
-  $destinationDirectory = Join-Path $env:APPDATA 'GitHub CLI'
-  $destination = Join-Path $destinationDirectory 'hosts.yml'
-  New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
-  Copy-Item -LiteralPath $candidates[0].FullName -Destination $destination -Force
-  Set-OwnerOnlyAcl $destinationDirectory
-  Set-OwnerOnlyAcl $destination
-  if (-not (Test-External -File 'gh' -Arguments @('auth', 'status', '--hostname', 'github.com'))) {
-    throw 'GitHub CLI authentication was not restored for the scheduled task'
-  }
-  Write-Step 'github-cli-config: restored from Codex AppContainer cache'
-}
-
 function Normalize-WindowsReporterConfig {
   Write-Step 'factory-reporter-config: UTF-8 without BOM'
   Restore-ScheduledReporterConfigFromCodexCache
@@ -819,8 +798,9 @@ try {
   } finally {
     $env:HOME = $previousCursorHome
   }
-  Restore-ScheduledGitHubCliConfigFromCodexCache
+  Write-Step 'manual setup: switch GitHub account to quolu; this changes the shared active account'
   Invoke-Checked -File 'gh' -Arguments @('auth', 'switch', '--hostname', 'github.com', '--user', 'quolu') -Label 'github-auth-switch'
+  Write-Step 'manual setup: gh auth setup-git changes the Git credential helper'
   Invoke-Checked -File 'gh' -Arguments @('auth', 'setup-git') -Label 'github-auth-setup-git'
   Ensure-MainServerSsh
   Invoke-Checked -File 'node' -Arguments @($dailyScheduler, 'install', '--apply') -Label 'daily-0200-task'
