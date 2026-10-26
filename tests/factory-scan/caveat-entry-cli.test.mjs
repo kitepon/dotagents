@@ -17,11 +17,15 @@ async function sandbox(t) {
   t.after(() => rm(root, { recursive: true, force: true }));
   const bin = join(root, 'bin'); await mkdir(bin);
   // runnerがPATHへNode prefixを補っても実製品へ到達しない。
+  // 不在CLIのstubごとにNodeを起こすと、並列CIではscan自体より起動待ちが長くなる。
+  const missingCli = process.platform === 'win32'
+    ? `#!${process.execPath}\nprocess.exit(1);\n` : '#!/bin/sh\nexit 1\n';
   for (const name of ['caveat', 'throughline', 'spotter', 'codex-sidecar', 'gpt-connector', 'lattice', 'markitdown',
     'aiterm-mcp', 'claude', 'codex', 'npm', 'grok', 'unai', 'peertable', 'aishell-mcp', 'uv', 'agent-desktop', 'browser-harness']) {
-    await writeFile(join(bin, name), `#!${process.execPath}\nprocess.exit(1);\n`, { mode: 0o700 });
+    await writeFile(join(bin, name), missingCli, { mode: 0o700 });
   }
-  await writeFile(join(bin, 'git'), `#!${process.execPath}\nconsole.log('abc1234');\n`, { mode: 0o700 });
+  await writeFile(join(bin, 'git'), process.platform === 'win32'
+    ? `#!${process.execPath}\nconsole.log('abc1234');\n` : "#!/bin/sh\nprintf 'abc1234\\n'\n", { mode: 0o700 });
   const config = join(root, 'config.json');
   await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'fixture', profile: process.platform === 'darwin' ? 'mac' : 'linux' },
     collection: { enabled: true }, reporting: { enabled: false } }), { mode: 0o600 });

@@ -217,6 +217,10 @@ fi
   codex_before=none; codex_latest=none; codex_operation=failed; codex_after=none; codex_reason=not_observed
   grok_before=none; grok_latest=none; grok_operation=skipped; grok_after=none; grok_reason=optional_missing
   printf '\n=== agents-update start: %s ===\n' "$(date -Iseconds)"
+  caveat_update_owner="$(node "$DEPLOYMENT_CONTRACT_HELPER" caveat-update-owner)" || caveat_update_owner=unknown:lookup-failed
+  if [[ "$caveat_update_owner" != factory ]]; then
+    printf 'SKIPPED: Caveat npm install/init (update owner: %s)\n' "$caveat_update_owner"
+  fi
   if ! command -v npm >/dev/null 2>&1; then
     printf 'FAILED: npm が PATH にない（NVM 利用時は %s/nvm.sh と default Node を確認）\n' "${NVM_DIR:-$HOME/.nvm}"
     step_ran npm
@@ -249,6 +253,7 @@ fi
       [[ "$npm_global_root" != *$'\n'* ]] || npm_global_root=''
     fi
     for pkg in "${PACKAGES[@]}"; do
+      if [[ "$pkg" = caveat-cli && "$caveat_update_owner" != factory ]]; then continue; fi
       printf -- '--- %s ---\n' "$pkg"
       if [[ "$pkg" = throughline ]]; then
         # package更新・host配線・DB migration・結果確認はThroughline製品入口が連続実行する。
@@ -419,6 +424,7 @@ fi
 
   # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
   for setup_product in aiterm caveat gpt-connector lattice peertable; do
+    if [[ "$setup_product" = caveat && "$caveat_update_owner" != factory ]]; then continue; fi
     step_ran "setup.$setup_product"
     if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then
       step_failed "setup.$setup_product"

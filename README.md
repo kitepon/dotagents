@@ -178,7 +178,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 
 ### 0. 前提（未充足ならここで導入。所要時間は状態次第）
 
-- **git**: 鍵設定済み・`gh auth status` OK・**identity 設定**（未設定だと hostname 由来の偽メールで履歴が汚れる）:
+- **git**: 鍵設定済み・`node bin/factory-gh-auth-status.mjs` OK・**identity 設定**（未設定だと hostname 由来の偽メールで履歴が汚れる）:
   ```bash
   git config --global user.name "quolu"
   git config --global user.email "226230081+quolu@users.noreply.github.com"
@@ -349,6 +349,8 @@ Latticeの登録と製品hookは`lattice setup --host all --json`へ委譲する
 
 更新が失敗で終わった時は、失敗した手順の名前をdotagentsが自分の名前でBugHubへ報告する。送信は端末で有効にした時だけで、製品が返したエラーの中身は載せない（[運用](docs/factory-reporter-runbook.md#定期更新の失敗の報告)）。
 
+Caveatを本人homeの`.caveat-deploy/managed-v1`で配布しているhostでは、packageと設定の更新はその配布担当が所有する。`agents-update`はCaveatのnpm installと`init`を省き、理由をログへ残す。版やpointerの完全性は除外条件にしない。symlink、不正な親path、読取拒否など所有判定が不明な時もCaveatを更新せず、rootの不在を確認できた時だけ従来のnpm/initを使う。WindowsのhomeはNodeが返す本人USERPROFILEを使う。他製品と通常の診断・報告は継続する。
+
 常設schedulerの生成・旧schedulerの整理・読み戻しは、上記host別一撃展開スクリプトだけが所有する。
 手書きのplist／crontab／Task XMLを第二の正本にしない。
 
@@ -403,3 +405,5 @@ report／outbox／credentialを削除しない。
 
 - checkoutの正規名はrepoと同じ`dotagents`である。POSIXの旧clone path `~/projects/dotagents` と誤名`~/Developer/dotagent`（sなし）は廃止済みで、古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。Windows nativeの正規checkoutも`C:\Users\kite_\Developer\dotagents`とする。
 - Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。
+
+GitHub CLIの状態照会はhelpで対応を確認し、対応版では`--no-refresh`を使用します。非対応の旧版だけ通常のstatusを使い、helpを読めなければ中止します。login・アカウント切替・setup-gitは手動full setup内だけで、作用を表示してから行います。日次更新は認証setupや資格コピーを行いません。

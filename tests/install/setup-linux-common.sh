@@ -35,6 +35,7 @@ unset GIT_CONFIG_COUNT
 mkdir -p "$HOME_DIR" "$FIXTURE_ROOT/bin" "$FIXTURE_ROOT/lib/factory" "$STUB_BIN"
 cp "$ROOT/bin/setup-linux-common.sh" "$FIXTURE_ROOT/bin/setup-linux-common.sh"
 cp "$SOURCE" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"
+cp "$ROOT/bin/factory-gh-auth-status.mjs" "$FIXTURE_ROOT/bin/factory-gh-auth-status.mjs"
 cp "$ROOT/lib/factory/delivery-receipt.mjs" "$FIXTURE_ROOT/lib/factory/delivery-receipt.mjs"
 cp "$ROOT/lib/factory/deployment-contract.mjs" "$FIXTURE_ROOT/lib/factory/deployment-contract.mjs"
 chmod +x "$FIXTURE_ROOT/bin/setup-linux-common.sh" "$FIXTURE_ROOT/bin/$SETUP_COMMAND.sh"

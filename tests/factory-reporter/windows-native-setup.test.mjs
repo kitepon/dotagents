@@ -36,7 +36,7 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /Stop-ScheduledTask.*factory-reporter-scheduler\.mjs.*uninstall.*Remove-LegacyCron.*install\.sh/su);
   assert.match(source, /function Normalize-WindowsReporterConfig.*UTF-8 without BOM.*factory-reporter-config.*\.bak.*UTF8Encoding.*\$false.*still has a UTF-8 BOM/su);
   assert.match(source, /function Restore-ScheduledReporterConfigFromCodexCache.*ScheduledRun.*OpenAI\.Codex_\*.*LocalCache\\Local\\dotagents\\factory-reporter\\config\.json.*credential path is not canonical.*Set-OwnerOnlyAcl \$destinationCredential.*Restore-ScheduledReporterConfigFromCodexCache.*Assert-ReporterConfig/su);
-  assert.match(source, /function Restore-ScheduledGitHubCliConfigFromCodexCache.*gh.*auth.*status.*OpenAI\.Codex_\*.*LocalCache\\Roaming\\GitHub CLI\\hosts\.yml.*Set-OwnerOnlyAcl \$destination.*authentication was not restored.*Restore-ScheduledGitHubCliConfigFromCodexCache.*github-auth-switch/su);
+  assert.doesNotMatch(source, /Restore-ScheduledGitHubCliConfigFromCodexCache|LocalCache\\Roaming\\GitHub CLI\\hosts\.yml/u);
   assert.match(source, /-File 'python' -Arguments @\(\$applyCodex, '--apply'\)/u);
   assert.match(source, /-File 'python' -Arguments @\(\$applyClaude, '--apply'\)/u);
   assert.match(source, /\.grok\\auth\.json/u);

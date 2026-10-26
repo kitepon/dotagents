@@ -858,4 +858,28 @@ grep -q '^WARN: 定期更新の失敗を記録または報告できない$' "$TE
 grep -q '^agents-update result: update=success report=success$' "$TEST_HOME/helper-fail.out" \
   || fail '記録の道具の失敗で更新の結果が変わった'
 
+# managed-v1が存在すれば、破損pointerでもCaveatのnpm/initを呼ばず他製品を更新する。
+mkdir -p "$TEST_HOME/.caveat-deploy/managed-v1"
+printf 'broken pointer\n' > "$TEST_HOME/.caveat-deploy/managed-v1/active.json"
+env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+  AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
+  FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
+  RUN_ID=caveat-managed \
+  /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/caveat-managed.out" 2>&1 \
+  || fail 'managed Caveatを除いた通常更新が失敗した'
+if grep -Fq 'caveat-managed:install -g caveat-cli@latest' "$TEST_HOME/npm-calls.log" \
+  || grep -Fq 'caveat-managed:setup:caveat:' "$TEST_HOME/update-events.log"; then
+  fail 'managed Caveatのnpm install/initを実行した'
+fi
+grep -Fq 'normal:install -g caveat-cli@latest' "$TEST_HOME/npm-calls.log" \
+  || fail 'root不在のCaveat npm導入を省いた'
+grep -Fq 'normal:setup:caveat:init --sync --yes' "$TEST_HOME/update-events.log" \
+  || fail 'root不在のCaveat initを省いた'
+grep -Fq 'caveat-managed:install -g peertable@latest' "$TEST_HOME/npm-calls.log" \
+  || fail '他製品のnpm更新を省いた'
+grep -Fq 'caveat-managed:setup:gpt-connector:setup' "$TEST_HOME/update-events.log" \
+  || fail '他製品の公開setupを省いた'
+grep -Fq 'SKIPPED: Caveat npm install/init (update owner: managed-v1)' "$TEST_HOME/caveat-managed.out" \
+  || fail 'Caveat除外の理由を記録していない'
+
 echo 'agents-update cron env: OK'

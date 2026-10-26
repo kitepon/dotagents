@@ -264,11 +264,15 @@ ensure_linux_prerequisites() {
 }
 
 ensure_github_auth() {
-  if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-    echo 'INFO: GitHub認証を一撃入口内で開始します。表示されるdevice flowを完了してください'
+  local auth_status=0
+  node "$ROOT/bin/factory-gh-auth-status.mjs" --hostname github.com || auth_status=$?
+  case "$auth_status" in 0|3) ;; *) die 'GitHub CLIの読取り確認に失敗。認証を変更しません' ;; esac
+  if [ "$auth_status" -eq 3 ]; then
+    echo 'INFO: 手動setupのためGitHubへloginし、共有の認証情報を保存します。表示されるdevice flowを完了してください'
     printf 'y\n' | gh auth login --hostname github.com --git-protocol https --web
   fi
-  gh auth status --hostname github.com >/dev/null 2>&1 || die 'GitHub CLI認証を確認できない'
+  node "$ROOT/bin/factory-gh-auth-status.mjs" --hostname github.com || die 'GitHub CLI認証を確認できない'
+  echo 'INFO: 手動setupのためgh auth setup-gitでGitのcredential helperを設定します'
   gh auth setup-git
 }
 
