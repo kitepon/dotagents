@@ -81,7 +81,6 @@ whole-source manifestの必須roleへnode_authority_broker/kernel_receiver/chann
 
 このsource fixtureのSH/issuer/before/subjectはsyntheticであり、native実resource leaseや実npm artifactの採用ではない。通常factory public bridgeの既実runへこれらのportを登録する実方式、既issuer/全writer coverage、正確な最終wholepinsと実投入原本、通常PRCI/main、Emmaの同principal-env/private保存先/48h一回解除は別の未成立として残す。safe_context0.16.5の公開・採用を台帳d1 artifactの採用へ代入しない。実host/通常CLI/cronを有効化していない。
 
-
 ## 通常source統合の候補（2026-10-25）
 
 fc100採用済みsourceを通常main95781d1からの別branchへ合成した。core/runtime関係32pathは元featureのGit blobを保持し、Rabbit safe_context/caveatのmain差分を巻き戻さない。通常PR CIは統合の必須suiteとして一回実行する。旧成功群の追加専有再試験はしない。
@@ -91,7 +90,6 @@ fc100採用済みsourceを通常main95781d1からの別branchへ合成した。c
 既539896のnative helper/Node adapterは専有fixture制約のまま再利用できるが、実resource集合/全writer参加/実store/既issuer採用原本を補完しない。d1実artifact・最終wholepins・Emma実投入は別gateを維持する。この通常source統合も実trust/CLI有効化/host反映を表さない。
 
 Rabbit一台の別申請が固定main95781d1を参照している間は、この台帳branchをmainへmergeしてその固定条件を変えない。申請/一回窓が閉じた後に通常統合する。
-
 
 ## public before・固定preload・fd7の新source
 
@@ -103,9 +101,7 @@ factory wholepinsはpublic_preload/preload_record/bootstrap_record、product who
 
 新4専有条件は実元Node before→既helper metadata保存/原本不変/clone拒否、固定preload→同ESM登録identity/実argv1/元exit2、module hash不一致及び不正UTF8/途切れたJSON/EOF未到達→未登録/元exit2を確認した。product module/issuer/subjectsはsyntheticで実setup/実trustではない。既native13や旧成功群は専有再走していない。
 
-
 EOF未到達の初回負条件は、fs.createReadStreamのblocking readがdestroy後もprocessを保持する失敗になった。fd7の読取をlibuvのSocket/pipe handleへ変更し、1500msのdestroyで未完読取も閉じるよう修理した。同じ不正UTF8/途切れJSON/EOF未到達を含む最終新4groupはpass4/fail0。初回failure logとafter raw/private原本を別に保持し、元exit2を成功へ置き換えていない。
-
 
 ## 元parent executorへの接続
 
@@ -118,7 +114,6 @@ private adapterは入力/getter/外部処理前に実行を予約し、args/opti
 新pure2条件で欠測fallback/一回予約/getter再入/元例外を確認。追加専有wire4条件は元factory Node→元runProductSetup/command.run→固定preload→da025864の実compiled登録/observer/d1→実helper/fd4/fd7で、正常/解放失敗/起動後issuer喪失/起動前issuer欠測を確認した。前2件は元pretty JSON本文/exit2とprivate frameが一致、後2件はfull原本無しで通常partial/exit2を保持。resolverによる親envのfixture変更も子の元envを置換しない。SH/issuer/subject/fixture entryとsetup返却はsyntheticで、実公開CLI setupや実artifact採用ではない。282compiled filesを元indexへ照合し、新npm実行は無い。
 
 初期wire入力にはTOML依存の不足とlauncher anchor時刻の欠落があった。元guardを緩めず、既installed依存を正確にstageし、元形のfixture anchorに修正した。失敗log/原本は保持し、旧成功群の専有再走はしない。通常PRCIの事前連絡はBellTeam側のClaude起動前認証拒否が既logで確定し、Trony既復旧工程へ接続済み。配送実復帰前に追加CIを起動せず、実trust/全writer/実npm/最終wholepins/Emma方式は別未成立を維持する。
-
 
 ## GPT-CORE-PRELAUNCH-RELEASE-1
 
