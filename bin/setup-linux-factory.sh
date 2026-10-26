@@ -10,5 +10,14 @@ while [ -L "$script_source" ]; do
 done
 ROOT="$(cd "$(dirname "$script_source")/.." && pwd)"
 
+if [[ "${DOTAGENTS_UPDATE_CONTEXT_OBSERVER:-0}" == 1 && "$#" -eq 1 && "$1" == --scheduled-update ]]; then
+  export DOTAGENTS_UPDATE_CONTEXT_SOURCE_ROOT="$ROOT"
+  # shellcheck disable=SC1091
+  if . "$ROOT/bin/factory-update-context-observer.sh"; then
+    dotagents_observe_context launcher_input "${BASH_SOURCE[0]}"
+  else
+    printf 'WARN: update-context-observer helper unavailable; observation unknown, ordinary update continues\n' >&2
+  fi
+fi
 export DOTAGENTS_SETUP_VARIANT=server
 exec "$ROOT/bin/setup-linux-common.sh" "$@"

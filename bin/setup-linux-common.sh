@@ -543,11 +543,23 @@ NODE
 }
 
 run_scheduled_update() {
+  if [[ "$SETUP_VARIANT" == server && "$#" -eq 0 && "${DOTAGENTS_UPDATE_CONTEXT_OBSERVER:-0}" == 1 ]]; then
+    export DOTAGENTS_UPDATE_CONTEXT_SOURCE_ROOT="$ROOT"
+    # shellcheck disable=SC1091
+    if . "$ROOT/bin/factory-update-context-observer.sh"; then
+      dotagents_observe_context wrapper_before_nvm "${BASH_SOURCE[0]}"
+    else
+      printf 'WARN: update-context-observer helper unavailable; observation unknown, ordinary update continues\n' >&2
+    fi
+  fi
   export PATH="$HOME/.local/bin:$PATH"
   if [ -s "${NVM_DIR:-$HOME/.nvm}/nvm.sh" ]; then
     export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
     # shellcheck disable=SC1090,SC1091
     . "$NVM_DIR/nvm.sh"
+  fi
+  if [[ "$SETUP_VARIANT" == server && "$#" -eq 0 && "${DOTAGENTS_UPDATE_CONTEXT_OBSERVER:-0}" == 1 ]] && declare -F dotagents_observe_context >/dev/null; then
+    dotagents_observe_context wrapper_after_nvm "${BASH_SOURCE[0]}"
   fi
   need node
   need python3

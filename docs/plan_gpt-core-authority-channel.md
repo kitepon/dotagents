@@ -1,0 +1,124 @@
+# GPT core原本の検証経路を接続するsource案
+
+担当ドロシー。2026-10-25。寿命はtrusted loader・brokerの接続と通常統合が完了するまで。本書のsourceは通常CLIへ未接続。実issuer、npm artifact、通常PRCI/main、実配布、自然jobへの有効化は未成立である。
+
+## 接続する位置と二つの検証元
+
+製品の既存`CoreHelperBridge.exchange`を保つ。元controlをUTF8化したSHA/bytes、同run/mode、activation/期限、kernel process identity、前段public_setup_before原本ref、実entry path/SHAを一つのrequestへ束縛する。completionのWeakMap/tokenは製品process内に保持し、serializeしない。本文は既存stdin、結果は既存fd3を使う。
+
+`lib/factory/update_context_trust.py`は専用authority channelと、既存`handle_core`へ渡す`verify_activation`/`verify_frame`を提供する。通常entryは`bin/factory-update-context-observer.py`である。現在このentryは両portをNoneとしてunknownを返す。未接続を成功へ変える変更は今回含まない。
+
+工場が所有する固定bootstrapは、採用・配置済みのsourceにあるこのadapterを直接importし、`create_core_ports(channel, sender_identity=..., retain_original=...)`へ渡す。任意module名やportをcontrol/環境で選ぶ設定は作らない。bootstrap/authority brokerそのものも工場whole-source manifestへ含める。これらの実装と通常entryへの接続は次の差分であり、今回sourceから存在を推論しない。
+
+| subject | 供給元・元検証の工程 | 保持する原本 |
+| --- | --- | --- |
+| factory | 通常Git sourceの最終採用・PRCI/mainと実配置。既writerの元provenance/adoption検証、source bundle、SH下verifyCurrentで実配置を照合 | 工場source bundleの元bytes、元receipt bytes、元provenance/adoption返却全体・current検証完了の私有記録 |
+| product | 実npm artifactとsource/tree/manifest/adoption対応。既writerのverifyProvenance/verifyAdoption、source bundle、SH下verifyCurrentと既issuer信頼を使う | 製品source bundleの元bytes、元receipt bytes、同artifact bytes/tree digest、元provenance/adoption返却全体・current検証完了の私有記録 |
+
+`factory.deployment-sources.v1`は既writerの返却subjectを追加fieldごと保持する。`verification_original`は新しい輸送用記録であり、既verifyCurrentの返却型を変更しない。verifyCurrentは成功時voidの既契約を維持し、固定brokerが実際にawaitした後で元receiptのSHAと実検証完了を記録する。前回の成功、callbackへ届いた事実、true、入力の期待SHAだけでは記録を発行しない。source bundle/receipt/manifestの元bytesと同じdigestを記録し、元provenance/adoption返却全体も保持する。既issuerと検証元が未接続ならbrokerはstatus unknownを返す。
+
+このmoduleはissuerの再実装をしない。認証された既信頼brokerの出力について原本digest・subject・whole-source範囲・entry・runを確認する。任意に注入したfixture callbackやchannelを実trustの根拠へ昇格させない。
+
+## 固定channelと権限の伝達
+
+authorityは固定fd4のAF_UNIX/SOCK_SEQPACKET endpointで渡す案とする。工場processが対向endpointを保持し、製品/helperへ工場用endpointを渡さない。各helper呼出しは一要求でendpointを閉じる。製品は親側のdescriptorを保持してbegin/resultの子へ継承する。各要求はhelperのrandom challengeを含み、responseはrequest元bytes全体のSHAを返す。replayや並列混線は失敗とする。
+
+fd4は通常stdin/fd3の代用ではない。送信元の検証はSO_PASSCRED/SCM_CREDENTIALSの各messageに付く実pid/uid/gidを使う。SO_PEERCREDはsocket作成時のprocessを示すため、継承後の実送信者を保証する根拠にしない。元factoryのkernel pid/start_ticksと一致し、そのidentityがpublic_setup_beforeと製品の祖先にあることを確認する。固定bootstrapが持つ採用済みprocess identityを使い、製品controlから期待送信者を選ばせない。
+
+brokerは逆方向でも実送信helperをkernel credentialsで照合し、同product parent/entry、activation、run、controlSHAと元before refを確認してから答える必要がある。今回sourceはhelper受信とbinding検証を実装した。brokerの逆方向照合・既verifier呼出し・固定bootstrap・製品spawnは未実装であり、authenticated loader全体の完成とはしない。
+
+responseは131072B以下、制御requestは16384B以下。authority受信1秒、既helper全体2500ms、元frame65536B、reply16384Bを維持する。verified subjectの原本はbase64/元SHA/元bytesを揃える。helperは同一private activationへ既publish/readbackを使い`core_begin.authority.json`又は`core_result.authority.json`を非置換保存する。保存・読戻しが成立するまでframeを認可しない。phase別metadataのauthority_originalはその所在・SHA・bytesを持ち、既storeで再読戻ししてから記録する。run共通のactivation_provenance_refはdotagents.core-activation-subject.v1のSHAを指す。このsubjectは同run/mode・activation/期限・kernel process・factory identity・before ref・entry・固定portと、二subjectのsource/receipt元bytesのSHA/bytes・issuer/trust_refを含む。phase/controlSHA及び各回の検証完了時刻・検証proof bytesは各phaseのauthority原本へ保持する。共通subjectを各phase原本内にも保存するため、参照先から復元できる。begin/resultでsource/receipt/trust又はrun bindingが変われば、既handle_coreの同run照合で拒否する。
+
+`verify_frame`は同adapterの私有policyとcontrol completion、元bodySHA/bytes、元write結果が一致する一回だけallowed_fullを返す。nested product JSONをparseせず、製品gateが発行したadmissionと元completionの対応を認証経路で確認する。metadata-onlyやwrite未完の分類は既96908dが所有し、通常出力の再実行をしない。normal_job_binding unknown、reporting/resource falseを維持する。
+
+## 紅蓮への受渡しと次の実装
+
+既CoreHelperBridgeへの適合判断は、(1)元controlのbytes化を一度に固定できるか、(2)固定entryとstdin/fd3にfd4を追加して同runのまま渡せるか、(3)私有completion/元frame/元write結果を再構成せず供給できるか、を対象にする。既serializer/alias/旧成功群の再走は求めない。必要な新製品差分だけ紅蓮が所有する。
+
+当席の次工程は固定brokerの逆方向kernel照合と既writer原本の実検証口の合成、固定bootstrapでのentry配線、必要な専有process照合、通常PRCI/mainの統合である。live検証口が不足してもfactory rawmetadataはobserved_launcher/binding unknownとして分離できる。Fr二重source採否や将来deployment receiptの発行待ちを前段観測の待ち条件にしない。
+
+実投入はEmmaの通常dispatcher/同principal-env・私有保存先・最大48h一回解除と実投入source wholepins・必要承認を一組にする別gate。Caveatの反映許可は流用しない。実host、cron、保存dir作成、NVM/Node/npm/resource採取、HTTP/ref/通常CLI有効化は実行していない。
+
+## 適用範囲と今回の確認
+
+| OS | Claude Code | Codex | Grok | Cursor |
+| --- | --- | --- | --- | --- |
+| Linux | source対象、通常経路未確認 | source対象、通常経路未確認 | source対象、通常経路未確認 | source対象、通常経路未確認 |
+| macOS | 対象外（今回Linux kernel channel） | 対象外（同左） | 対象外（同左） | 対象外（同左） |
+| Windows | 対象外（今回Linux kernel channel） | 対象外（同左） | 対象外（同左） | 対象外（同左） |
+
+新しいfixture条件とkernel socketpair/fork条件、既private storeの非置換読戻しを11条件で独立実行し、pass11/fail0/skip0を確認した。AST2件とdiffcheckも成功。make test-core-authorityを通常CIの依存に追加した。通常CI自体は次の統合工程で行う。fixture検証元を実artifact・実issuer受入へ拡張しない。既13/14/26・native/NVM等は再走しない。
+
+## GPT-CORE-AUTH-PHASE-1の原因修理
+
+c39393fはphase別authority保存refをrun共通のactivation_provenance_refに使ったため、同runでもbegin/resultの照合に失敗した。共通検証subjectとphase原本refの責務を分ける最小整理を行った。元同run検査は削除せず、phase別原本の非置換保持とcontrolSHA bindingも維持する。元begin/result反例と、phase proofだけ変化する正常対照、subject又はrunが変わる拒否対照を対象に確認する。旧13/14/26等は再走しない。
+
+## 固定bootstrapと逆方向kernelの次source
+
+`update-context-core-bootstrap.mjs`が採用済み製品d1f581aのFixedCoreHelperBootstrap.startを実装する。元fd4を継承し、固定Python/固定helper・実product parent/entry・固定activation/期限と元controlJsonを渡す。元controlを再parse/serializeしない。固定--core-authority指定時だけhelperが同repo内のupdate_context_bootstrap.pyをimportし、同private activationのcore_authority_bootstrap.jsonと元before/kernel identityを確認する。引数だけでは信頼を作らず、元brokerの認証応答が必要である。指定無しの通常CLIは従来None/unknownを保つ。
+
+update_context_broker.pyは、工場主体自身が保持するAF_UNIX/SOCK_SEQPACKET endpointで逆方向SCM_CREDENTIALSを受ける。元factoryが作ったproduct pid、実helperの親・principal・実Python executable・固定argv、実productのkernel identity/cwd/executable/entrySHA、元control bytes、before ref、activation/run/phaseを照合する。元argvのcontrolJsonをhashし直し、JSON canonical化はしない。単一runでbegin→resultの順だけを予約し、実検証portの返却後も両process identityを再確認して、元factory process自身が応答する。検証port不在・例外・shape不成立は値をechoせずunknownにする。
+
+新brokerのverify_subjectsは既検証元を合成する明示source portであり、その実実装はまだ無い。任意callbackの成功を本番trustへ採用していない。通常入口には既定portを登録していない。二subjectのissuer/wholepins/npm artifactは引き続き未成立である。
+
+重要な残接続は、現行public bridgeがNode processである点である。今回Python brokerをNodeの子として動かすとauthority senderが元beforeのNode pidから変わるため、その方式では採用できない。次工程ではNode主体が保持する元socketへの受信kernel情報だけを固定readerへ委ね、応答はNode主体自身から返すsourceと、既JS writer verifierの合成を作る。sender照合を緩めたり、別processを元factoryと見なしたりしない。socketpairを元factoryへ投入する固定loader側のdescriptor供給も同工程に含む。SO_PASSCREDは最初のproduct/helper送信より前に元endpointへ設定する。
+
+今回の実process条件は、Python工場主体の専有fixture→Node product→固定helperの実kernel/fd4経路である。初回の新3条件に加え、採用済みd1f581aの元TS sourceを直接importした新4条件を確認した。元frame/exit2/write/readback/同runとfixture_coreを保持し、別product pid・検証元欠測・検証例外はunknownでfull保存0。fixtureのauthority subjects/before原本はsyntheticであり、実issuer/artifact/通常Node工場の受入へ拡張しない。製品parse/serializerの複製、旧11/13/14/26/nativeの再走、実host操作は0。
+
+## 元Node sender・socket供給・元lease合成
+
+次sourceで元Node主体の経路を実装した。update_context_socketpair.pyのexec_original_factoryは採用済みdispatcherからだけ呼ぶ明示portで、元Node executable/元factory entry/元argv/envを保ち、AF_UNIX/SOCK_SEQPACKETの元endpointをfd5/6へ渡して同pidでexecする。SO_PASSCREDをproduct起動前に設定し、既存fd5/6が使用中なら拒否する。新しい環境ONやproduct側のentry選択口は作らない。
+
+update-context-node-broker.mjsは元Nodeのfd5を所有する。固定factory-core-authority-receiver.pyはNodeの直接の子として元fd5を自分のfd4で受け、逆SCM_CREDENTIALS/固定helper argv/product kernel等を検査してkernel_bound原本だけを返す。readerはauthorityを発行せず、socketへ応答を書かない。元Nodeはreaderの固定構造・元sender pid、helper/productの実kernel identityを検証後、既検証portを呼び、await後も両process/entryを再確認して自分自身でfd5へwriteする。helperが受けるSCM_CREDENTIALSは元Node pidのままであり、Python子senderの代用はしていない。productは元fd6を自分のfd4へ継承し、元Nodeは子起動後にfd6を閉じる。
+
+core-authority-sources.mjsは既採用436a2deのdeployment-writer.mjsを同じ正規path/同Git blobで再利用する。verifyProvenance/verifyAdoptionは既writerがEX下で発行した正確な返却subjectをsource bundleへ保持している。readerで再度writer/setupを動かさず、既readDeploymentの元SH callbackを二subject分保持し、verifyCurrentで原本と現配置を独立検証してその正確なbundle/receipt/元返却を運ぶ。readSourceEvidenceとresolveTrustedIssuerも同じ元lease下の明示portであり、既issuer解決実装は未供給ならunknown。source wire bytesは既writerが定義するfactory canonical JSONで、storeファイルの空白やOS元bytesの採取とは主張しない。
+
+input/writer/port関数は外部処理前に私有snapshotへ保持する。私有verifierはcallback終了後に拒否し、未awaitの処理もsettleするまで両元SHを解放しない。実leaseやissuerの成功関数を既定で追加していない。原本にない期待SHA mapやBearerでissuerを補完しない。
+
+whole-source manifestの必須roleへnode_authority_broker/kernel_receiver/channel_provisioner/subject_sources/product_bootstrapを追加した。新moduleの欠測を元9roleだけで通さず、scopeを広げた正確なfinal factory wholepinsが必要である。
+
+新実processは、専有fixtureの元Node factory→製品d1f581a元TSのbyte/pipe bridge→実固定helper、元Nodeの固定reader・元socketpairと元SH reader sourceを合成した。新4条件（正常、別product拒否、既issuer解決欠測unknown、whole-source reader role欠測unknown）と新3pure条件（exact元返却保持/終了後verifier拒否、外部alias不変、detached I/O settle前SH解放0）が成功。最終private原本は当席original-node-source/final-observationsへ保存し、元factory pid・同run・元exit2/write/bodyを保持した。以前の成功群は再走しない。
+
+このsource fixtureのSH/issuer/before/subjectはsyntheticであり、native実resource leaseや実npm artifactの採用ではない。通常factory public bridgeの既実runへこれらのportを登録する実方式、既issuer/全writer coverage、正確な最終wholepinsと実投入原本、通常PRCI/main、Emmaの同principal-env/private保存先/48h一回解除は別の未成立として残す。safe_context0.16.5の公開・採用を台帳d1 artifactの採用へ代入しない。実host/通常CLI/cronを有効化していない。
+
+## 通常source統合の候補（2026-10-25）
+
+fc100採用済みsourceを通常main95781d1からの別branchへ合成した。core/runtime関係32pathは元featureのGit blobを保持し、Rabbit safe_context/caveatのmain差分を巻き戻さない。通常PR CIは統合の必須suiteとして一回実行する。旧成功群の追加専有再試験はしない。
+
+実public core登録のsource口は次工程である。現product setup CLIはinstallSetupPackage→setup→元writeで、d1/bootstrap observerの登録口は未接続。工場のbefore receiptをJSへ返し、実製品CLI entryを維持する固定preloadと製品内一回registrationへ同fd4/元activationを渡す案を製品所有者へ渡した。工場によるproduct parser/tokenの複製は行わない。
+
+既539896のnative helper/Node adapterは専有fixture制約のまま再利用できるが、実resource集合/全writer参加/実store/既issuer採用原本を補完しない。d1実artifact・最終wholepins・Emma実投入は別gateを維持する。この通常source統合も実trust/CLI有効化/host反映を表さない。
+
+Rabbit一台の別申請が固定main95781d1を参照している間は、この台帳branchをmainへmergeしてその固定条件を変えない。申請/一回窓が閉じた後に通常統合する。
+
+## public before・固定preload・fd7の新source
+
+observePublicSetupは既helperが一回保存/readbackしたpublic_setup_beforeの元ref/sha/bytesを返す。返却objectは私有WeakMapで所有し、clone/caller JSONからpreparePublicCoreBootstrapを呼んでもunknownとなる。元helperのcore_authority_prepare phaseは同parent Node/同entry/同before原本/既private0700 root/期限を確認し、core_authority_bootstrap.jsonを非置換publish/readbackする。これはsender metadataでありissuerの発行ではない。元setup output/stdout/exitを再実行・置換しない。
+
+固定update-context-product-preload.mjsは明示Node --importの時だけfd7から16KiB以下/厳格UTF8/JSON/EOF/1500msのDTOを読む。実argv1/同packageの固定update-ledger-core-registration.js/固定preload自身の元bytesとSHA、privateactivation/期限/元before ref形を照合し、既固定bootstrapを製品登録口へ一回渡す。ESM file URLをCLIの相対importと一致させ、別コピーmoduleを登録しない。既定CLI/環境ONや製品のpath/module選択口は作らない。失敗では登録をせず通常body/exitを置き換えない。DTO/tokenをauthority/installed証明へ昇格しない。
+
+factory wholepinsはpublic_preload/preload_record/bootstrap_record、product wholepinsはcore_registrationを新必須roleとする。元14role/4roleだけで新経路を通さず、全pin/subjectの原本不足ならunknown。before receiptの所有objectから固定metadataは作れるが、通常parent executorへのfd7/実製品entry spawn登録・両SHと新製品hookの結合は次段階である。Gurenが製品のregisterCoreHelperBootstrap/元setup-write接続を所有し実装中。元製品hookの採用snapshotを受けて必要結合条件だけ確認する。
+
+新4専有条件は実元Node before→既helper metadata保存/原本不変/clone拒否、固定preload→同ESM登録identity/実argv1/元exit2、module hash不一致及び不正UTF8/途切れたJSON/EOF未到達→未登録/元exit2を確認した。product module/issuer/subjectsはsyntheticで実setup/実trustではない。既native13や旧成功群は専有再走していない。
+
+EOF未到達の初回負条件は、fs.createReadStreamのblocking readがdestroy後もprocessを保持する失敗になった。fd7の読取をlibuvのSocket/pipe handleへ変更し、1500msのdestroyで未完読取も閉じるよう修理した。同じ不正UTF8/途切れJSON/EOF未到達を含む最終新4groupはpass4/fail0。初回failure logとafter raw/private原本を別に保持し、元exit2を成功へ置き換えていない。
+
+## 元parent executorへの接続
+
+製品da025864の一回registration/CLI hookをsource限定採用した。新update-context-public-executor.mjsはrunProductSetupの明示gptCoreExecute source portを実装する。既command.runのstdout/stderr/timeout/kill/close結果を保持し、そのsource-only spawnChild口だけへ固定Node/採用installed entry/--import preload/元fd6→製品fd4/一回fd7 EOFを供給する。既定portは無く、通常CLI/環境による有効化はしない。
+
+元beforeの後、既withCoreAuthoritySourcesの両SH内で既verifyCurrent/元bundle/issuerを再確認し、source所有resolveInstalledLaunchが元installed Node/entryを選択する。resolverは元runtime/導入原本と全resource参加に結ぶ実portで、ここに成功する既定実装は無い。役割core/core_registration/public_preloadの実file SHAを原manifestへ照合し、既prepareから作る一回DTOを渡す。公開rootや任意module/envを製品に選ばせない。実shared Node管理を引き受けない。
+
+private adapterは入力/getter/外部処理前に実行を予約し、args/options/元envをsnapshotする。元executeもPromiseを予約して一回だけ呼ぶ。broker/pipe失敗はspawn済みの元子を置き去りにしたり再実行したりせず、既executorで元closeまで待つ。broker settle/元callback完了まで両SHを保持し、元SHの解放失敗でも通常resultを置換しない。信頼成立前の不足は両SHの解放後に元通常execute一回へ戻る。新factory role public_executor/command_executorも必須である。
+
+新pure2条件で欠測fallback/一回予約/getter再入/元例外を確認。追加専有wire4条件は元factory Node→元runProductSetup/command.run→固定preload→da025864の実compiled登録/observer/d1→実helper/fd4/fd7で、正常/解放失敗/起動後issuer喪失/起動前issuer欠測を確認した。前2件は元pretty JSON本文/exit2とprivate frameが一致、後2件はfull原本無しで通常partial/exit2を保持。resolverによる親envのfixture変更も子の元envを置換しない。SH/issuer/subject/fixture entryとsetup返却はsyntheticで、実公開CLI setupや実artifact採用ではない。282compiled filesを元indexへ照合し、新npm実行は無い。
+
+初期wire入力にはTOML依存の不足とlauncher anchor時刻の欠落があった。元guardを緩めず、既installed依存を正確にstageし、元形のfixture anchorに修正した。失敗log/原本は保持し、旧成功群の専有再走はしない。通常PRCIの事前連絡はBellTeam側のClaude起動前認証拒否が既logで確定し、Trony既復旧工程へ接続済み。配送実復帰前に追加CIを起動せず、実trust/全writer/実npm/最終wholepins/Emma方式は別未成立を維持する。
+
+## GPT-CORE-PRELAUNCH-RELEASE-1
+
+起動前issuer拒否と両SH解放失敗が重なる場合、元readerがcleanup例外をblockedへ畳んでもexecutorがstatusを捨て、通常fallbackをSH保持中に起動する原因を修理した。新しい組合せ負条件はbefore1fail/対照1pass、after2passで、旧2+4/専有成功群は再走していない。
+
+SH入場を試みる前の不成立は元通常入口一回を維持する。入場を試みた後の起動前declineはcallback内のprivate no-launch sentinelとして返し、既withCoreAuthoritySources/readDeployment両wrapperがその同一sentinelを肯定的completedで戻した場合だけfallbackする。blocked/例外/unknownを解放済みへ昇格しない。cleanup不確定なら元execute/childlaunchとも0、固定unknown errorで停止する。既canonical reader、同run/role検査、元lease protocolは変更していない。
+
+一度normalが予約された後は、元result/元例外を一回返し、fallbackへ再実行しない。起動後のbody/exit/frame/write保持はそのまま。実cleanup proofの成功既定口は作らず、実runtime/installed global-root整合/issuer/store/native resource全writer/実artifact/最終wholepins/Emma/通常CI通知復旧は従来の別gateを保つ。
