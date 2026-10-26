@@ -254,7 +254,7 @@ run_setup() {
   [ "$node_major" -ge 24 ] || die 'Node.js 24以上が必要'
   python3 -c 'print(1)' >/dev/null || die 'python3を実行できない'
   docker info >/dev/null 2>&1 || die 'docker daemonへ接続できない'
-  gh auth status >/dev/null 2>&1 || die 'GitHub CLIが未認証'
+  node "$ROOT/bin/factory-gh-auth-status.mjs" || die 'GitHub CLIの認証を資格更新なしで確認できない'
   macos_major >/dev/null
 
   backup_managed_config

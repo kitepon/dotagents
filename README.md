@@ -178,7 +178,7 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 
 ### 0. 前提（未充足ならここで導入。所要時間は状態次第）
 
-- **git**: 鍵設定済み・`gh auth status` OK・**identity 設定**（未設定だと hostname 由来の偽メールで履歴が汚れる）:
+- **git**: 鍵設定済み・`node bin/factory-gh-auth-status.mjs` OK・**identity 設定**（未設定だと hostname 由来の偽メールで履歴が汚れる）:
   ```bash
   git config --global user.name "quolu"
   git config --global user.email "226230081+quolu@users.noreply.github.com"
@@ -405,3 +405,5 @@ report／outbox／credentialを削除しない。
 
 - checkoutの正規名はrepoと同じ`dotagents`である。POSIXの旧clone path `~/projects/dotagents` と誤名`~/Developer/dotagent`（sなし）は廃止済みで、古いsymlinkが残る端末は `./install.sh` を再実行して `~/Developer/dotagents` へ貼り直す。Windows nativeの正規checkoutも`C:\Users\kite_\Developer\dotagents`とする。
 - Codex skill面は `$HOME/.agents/skills` と `~/.codex/skills` を同居させない。通常はofficial profile、旧入口だけlegacyを明示し、重複FAILを解消してから新規sessionを開く。
+
+GitHub CLIの状態照会はhelpで対応を確認し、対応版では`--no-refresh`を使用します。非対応の旧版だけ通常のstatusを使い、helpを読めなければ中止します。login・アカウント切替・setup-gitは手動full setup内だけで、作用を表示してから行います。日次更新は認証setupや資格コピーを行いません。
