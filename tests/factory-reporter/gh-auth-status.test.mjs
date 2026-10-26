@@ -43,7 +43,7 @@ test('help取得失敗や起動不能は通常statusへfallbackせず確認不�
 test('Linuxの手動認証は確認不能なら書かず、loginとsetup-gitの前に作用を表示する', () => {
   const source = readFileSync(resolve(ROOT, 'bin/setup-linux-common.sh'), 'utf8');
   const body = source.slice(source.indexOf('ensure_github_auth() {'), source.indexOf('ensure_main_server_ssh() {'));
-  for (const status of [0, 1, 2]) {
+  for (const status of [0, 3, 2, 1, 127]) {
     const result = spawnSync('bash', ['-c', `
 ROOT=unused
 auth_result=${status}
@@ -53,13 +53,13 @@ gh() { echo "CALL gh $*"; }
 ${body}
 ensure_github_auth
 `], { encoding: 'utf8' });
-    if (status === 2) {
+    if (![0, 3].includes(status)) {
       assert.notEqual(result.status, 0);
       assert.doesNotMatch(result.stdout, /CALL gh/u);
     } else {
       assert.equal(result.status, 0, result.stderr);
       assert.match(result.stdout, /INFO: 手動setup.*setup-git.*\nCALL gh auth setup-git/u);
-      if (status === 1) assert.match(result.stdout, /INFO: 手動setup.*login.*\nCALL gh auth login/u);
+      if (status === 3) assert.match(result.stdout, /INFO: 手動setup.*login.*\nCALL gh auth login/u);
       else assert.doesNotMatch(result.stdout, /CALL gh auth login/u);
     }
   }

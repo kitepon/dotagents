@@ -68,7 +68,7 @@ gh secret set DEPLOY_HOST --repo <owner>/<repo> --body "<host or IP>"
 gh secret set DEPLOY_USER --repo <owner>/<repo> --body "<user>"
 ```
 
-GH CLI 必須（`gh auth status` で認証確認）。
+GH CLI 必須（`factory-gh-auth-status` で、共有資格をrefreshせず認証確認）。
 
 登録後は **ローカルの秘密鍵を即削除**:
 ```bash

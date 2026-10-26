@@ -23,6 +23,7 @@ NODE_BIN="$(command -v node)"
 trap 'rm -rf "$FIXTURE"' EXIT
 mkdir -p "$HOME_DIR" "$FIXTURE_ROOT/bin" "$FIXTURE_ROOT/lib/factory" "$STUB_BIN"
 cp "$SOURCE" "$FIXTURE_ROOT/bin/setup-macos-factory.sh"
+cp "$ROOT/bin/factory-gh-auth-status.mjs" "$FIXTURE_ROOT/bin/factory-gh-auth-status.mjs"
 cp "$ROOT/lib/factory/delivery-receipt.mjs" "$FIXTURE_ROOT/lib/factory/delivery-receipt.mjs"
 cp "$ROOT/lib/factory/deployment-contract.mjs" "$FIXTURE_ROOT/lib/factory/deployment-contract.mjs"
 chmod +x "$FIXTURE_ROOT/bin/setup-macos-factory.sh"
@@ -262,7 +263,9 @@ cat >"$STUB_BIN/throughline" <<'EOF'
 #!/usr/bin/env bash
 printf 'throughline %s\n' "$*" >>"$DOTAGENTS_SETUP_TEST_CALLS"
 EOF
-chmod +x "$STUB_BIN/"*
+for stub in "$STUB_BIN/"*; do
+  [ -L "$stub" ] || chmod +x "$stub"
+done
 
 mkdir -p "$HOME_DIR/.config/dotagents" "$HOME_DIR/Library/LaunchAgents"
 printf '%s\n' '.fixture-user-ignore' >"$HOME_DIR/.gitignore_global"
@@ -272,6 +275,9 @@ printf 'legacy launch agent\n' >"$HOME_DIR/Library/LaunchAgents/com.kite.agents-
 printf 'loaded\n' >"$LAUNCH_STATE"
 
 export HOME="$HOME_DIR"
+export XDG_CONFIG_HOME="$HOME_DIR/.config"
+export XDG_STATE_HOME="$HOME_DIR/.local/state"
+export FACTORY_REPORTER_CONFIG="$XDG_CONFIG_HOME/dotagents/factory-reporter.json"
 export PATH="$STUB_BIN:/usr/bin:/bin"
 unset XAI_API_KEY
 export DOTAGENTS_SETUP_MACOS_FORCE=1

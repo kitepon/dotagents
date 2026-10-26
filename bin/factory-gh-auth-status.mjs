@@ -14,6 +14,8 @@ export function githubAuthStatus(args = [], run = spawnSync) {
 }
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  process.exitCode = githubAuthStatus(process.argv.slice(2));
+  const status = githubAuthStatus(process.argv.slice(2));
+  // Reserve 3 for an actual unauthenticated result; Node loader failures use 1.
+  process.exitCode = status === 1 ? 3 : status;
   if (process.exitCode === 2) console.error('FAIL: GitHub CLIの状態を資格更新なしで確認できない');
 }

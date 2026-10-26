@@ -266,8 +266,8 @@ ensure_linux_prerequisites() {
 ensure_github_auth() {
   local auth_status=0
   node "$ROOT/bin/factory-gh-auth-status.mjs" --hostname github.com || auth_status=$?
-  [ "$auth_status" -ne 2 ] || die 'GitHub CLIの読取り確認に失敗。認証を変更しません'
-  if [ "$auth_status" -ne 0 ]; then
+  case "$auth_status" in 0|3) ;; *) die 'GitHub CLIの読取り確認に失敗。認証を変更しません' ;; esac
+  if [ "$auth_status" -eq 3 ]; then
     echo 'INFO: 手動setupのためGitHubへloginし、共有の認証情報を保存します。表示されるdevice flowを完了してください'
     printf 'y\n' | gh auth login --hostname github.com --git-protocol https --web
   fi
