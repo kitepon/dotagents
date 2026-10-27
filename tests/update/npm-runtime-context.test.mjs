@@ -51,7 +51,7 @@ printf 'prefix\\n'
 printf '%s\\n' 'npm verbose cli C:\\Program Files\\nodejs\\node.exe C:\\Program Files\\npm\\npm-cli.js' 'npm info using node@v26.12.1' >&2
 printf '"2.3.4"\\n'
 `, { mode: 0o700 });
-    const result = f.run('before="$(run_npm prefix -g)"\nPATH="$AFTER_BIN:$PATH"\nafter="$(run_npm view package version --json 2>/dev/null)"\nprintf "%s|%s" "$before" "$after"', { AFTER_BIN: after.replaceAll('\\', '/') });
+    const result = f.run('before="$(run_npm prefix -g)"\nif [[ "$AFTER_BIN" =~ ^[A-Za-z]:/ ]]; then AFTER_BIN="$(cygpath -u "$AFTER_BIN")" || exit 98; fi\nPATH="$AFTER_BIN:$PATH"\nafter="$(run_npm view package version --json 2>/dev/null)"\nprintf "%s|%s" "$before" "$after"', { AFTER_BIN: after.replaceAll('\\', '/') });
     assert.equal(result.status, 0); assert.equal(result.stdout, 'prefix|"2.3.4"');
     const text = f.text(); assert.match(text, /\/initial\/node/u);
     assert.ok(text.includes('C:\\Program Files\\nodejs\\node.exe')); assert.match(text, /node@v26\.12\.1/u);
