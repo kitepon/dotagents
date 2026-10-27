@@ -4,11 +4,12 @@ import { RABBIT_OBSERVATION_ONCE } from '../lib/factory/rabbit-observation-once.
 // runtime error acknowledgementのpayload契約はv4以降で同一のため、その実装を共有する。
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { chmod, lstat, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, open, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { homedir, platform } from 'node:os';
 import { basename, join } from 'node:path';
 import process from 'node:process';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
+import { createFragmentManifest, sendReportFragments, validateFragmentManifest } from '../lib/factory/report-fragments.mjs';
 import {
   readAndValidateReportV5,
   readAndValidateReportV6,
@@ -96,7 +97,8 @@ const WIRE = IS_V9
     };
 
 const MAX_QUEUE_ITEMS = 128;
-const MAX_QUEUE_BYTES = 2 * 1024 * 1024;
+// v9の128MiB原本はACK envelopeのbase64分も含めて保持できる容量にする。
+const MAX_QUEUE_BYTES = (IS_V9 ? 256 : 2) * 1024 * 1024;
 const MAX_QUEUE_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 10_000;
 const RETRY_BASE_MS = 100;
@@ -145,7 +147,8 @@ async function ensureState(loc) { for (const directory of [loc.stateDir, loc.out
 async function entries(loc) { await ensureState(loc); const names = (await readdir(loc.outbox)).filter((name) => name.endsWith('.json')).sort(); const result = []; for (const name of names) { const file = join(loc.outbox, name); try { const info = await stat(file); result.push({ name, file, size: info.size, mtimeMs: info.mtimeMs }); } catch {} } return result; }
 async function stats(loc) { const value = await entries(loc); return { count: value.length, bytes: value.reduce((sum, item) => sum + item.size, 0) }; }
 async function moveDead(loc, entry, reason) { await rename(entry.file, join(loc.dead, `${entry.name}.${Date.now()}-${randomUUID().slice(0, 8)}-${reason}`)); await rm(join(loc.retry, entry.name), { force: true }); }
-async function expire(loc) { for (const entry of await entries(loc)) if (Date.now() - entry.mtimeMs > MAX_QUEUE_AGE_MS) await moveDead(loc, entry, 'expired'); }
+// v9の未受理原本は、期限で再送対象から外さず受理まで保持する。
+async function expire(loc) { if (IS_V9) return; for (const entry of await entries(loc)) if (Date.now() - entry.mtimeMs > MAX_QUEUE_AGE_MS) await moveDead(loc, entry, 'expired'); }
 function envelope(bytes, acknowledgements) { return acknowledgements ? Buffer.from(JSON.stringify({ schema_version: WIRE.outboxSchema, report_id: acknowledgements.report_id, report_base64: bytes.toString('base64'), acknowledgements })) : bytes; }
 function decode(stored) { let parsed; try { parsed = JSON.parse(UTF8.decode(stored)); } catch { throw new Error('malformed'); } if (parsed?.schema_version !== WIRE.outboxSchema) { WIRE.validateReport(parsed, stored); return { bytes: stored, report: parsed, acknowledgements: null }; } exact(parsed, ['schema_version', 'report_id', 'report_base64', 'acknowledgements'], 'outbox envelope'); if (typeof parsed.report_base64 !== 'string') throw new Error('malformed'); const bytes = Buffer.from(parsed.report_base64, 'base64'); if (bytes.toString('base64') !== parsed.report_base64) throw new Error('malformed'); let report; try { report = JSON.parse(UTF8.decode(bytes)); } catch { throw new Error('malformed'); } WIRE.validateReport(report, bytes); if (report.report_id !== parsed.report_id) throw new Error('malformed'); return { bytes, report, acknowledgements: WIRE.validateAcknowledgements(parsed.acknowledgements, parsed.report_id) }; }
 async function enqueue(loc, bytes, id, acknowledgements) { await ensureState(loc); await expire(loc); const name = `${id}.json`; const target = join(loc.outbox, name); const stored = envelope(bytes, acknowledgements); try { const existing = await readFile(target); if (Buffer.compare(existing, stored) === 0) return { duplicate: true }; throw new Error('report_id collision: 既存outbox本文と一致しません（既存は保持）'); } catch (error) { if (error?.code !== 'ENOENT') throw error; } const current = await stats(loc); if (current.count >= MAX_QUEUE_ITEMS || current.bytes + stored.length > MAX_QUEUE_BYTES) throw new Error('outbox上限超過: 既存queueを保持したまま新規reportを拒否しました'); const temporary = join(loc.outbox, `.${name}.${randomUUID()}.tmp`); try { await writeFile(temporary, stored, { flag: 'wx', mode: 0o600 }); ownerOnlyAcl(temporary); await rename(temporary, target); ownerOnlyAcl(target); } finally { await rm(temporary, { force: true }); } return { duplicate: false }; }
@@ -153,6 +156,25 @@ async function retryInfo(loc, name) { try { const value = JSON.parse(await readF
 async function postpone(loc, name, prior) { const attempt = Math.min((prior?.attempt || 0) + 1, 16); const next_retry_at = Date.now() + Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS); const path = join(loc.retry, name); await writeFile(path, JSON.stringify({ attempt, next_retry_at }), { mode: 0o600 }); ownerOnlyAcl(path); }
 async function withLock(loc, fn) { try { await mkdir(loc.lock); } catch (error) { if (error?.code !== 'EEXIST') throw error; let stale = false; try { const pid = Number((await readFile(join(loc.lock, 'pid'), 'utf8')).trim()); try { process.kill(pid, 0); } catch (probe) { stale = probe?.code === 'ESRCH'; } } catch {} if (!stale) throw new Error('送信処理はすでに実行中です'); await rm(loc.lock, { recursive: true, force: true }); await mkdir(loc.lock); } ownerOnlyAcl(loc.lock); const pid = join(loc.lock, 'pid'); await writeFile(pid, String(process.pid), { mode: 0o600 }); ownerOnlyAcl(pid); try { return await fn(); } finally { await rm(loc.lock, { recursive: true, force: true }); } }
 async function credential(config) { let token; try { token = (await readFile(config.reporting.credential_file, 'utf8')).trim(); } catch (error) { throw new Error(`credential fileを読めません (${error.code || error.message})`); } if (!token) throw new Error('credential fileが空です'); return token; }
+function fragmentManifestPath(loc, entry) { return join(loc.retry, `${entry.name}.fragments`); }
+async function readFragmentManifest(loc, entry, decoded) {
+  const path = fragmentManifestPath(loc, entry);
+  try {
+    const info = await lstat(path);
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 16_384) throw new Error('fragment_manifest_invalid');
+    return validateFragmentManifest(decoded.report, decoded.bytes, JSON.parse(await readFile(path, 'utf8')));
+  } catch (error) { if (error?.code === 'ENOENT') return null; throw new Error('fragment_manifest_invalid'); }
+}
+async function writeFragmentManifest(loc, entry, manifest) {
+  const path = fragmentManifestPath(loc, entry); const temporary = `${path}.${randomUUID()}.tmp`;
+  try {
+    const file = await open(temporary, 'wx', 0o600);
+    try { await file.writeFile(JSON.stringify(manifest)); await file.sync(); } finally { await file.close(); }
+    ownerOnlyAcl(temporary);
+    await rename(temporary, path); ownerOnlyAcl(path);
+    if (platform() !== 'win32') { const directory = await open(loc.retry, 'r'); try { await directory.sync(); } finally { await directory.close(); } }
+  } finally { await rm(temporary, { force: true }); }
+}
 async function postOne(config, token, loc, entry) {
   let decoded;
   try { decoded = decode(await readFile(entry.file)); } catch { return { action: 'dead', reason: 'malformed' }; }
@@ -167,6 +189,22 @@ async function postOne(config, token, loc, entry) {
     RABBIT_OBSERVATION_ONCE.holdOutbox(decoded.report, entry.file);
     return { action: 'hold', reason };
   };
+  const complete = async () => {
+    if (decoded.acknowledgements) { try { await WIRE.acknowledgeRuntimeErrors(decoded.acknowledgements); } catch { return retainFailure('ack-failed'); } }
+    return { action: 'delete' };
+  };
+  const sendFragments = async manifest => {
+    const result = await sendReportFragments(config, token, decoded.report, decoded.bytes, manifest);
+    if (result.accepted) return complete();
+    diagnostic(`分割報告は未受理です (${result.reason})。原reportと固定manifestを保持しました`);
+    return retainFailure(result.reason);
+  };
+  if (IS_V9 && !oneShot) {
+    try {
+      const manifest = await readFragmentManifest(loc, entry, decoded);
+      if (manifest) return sendFragments(manifest);
+    } catch { diagnostic('fragment_manifest_invalid: 原reportとmanifestを保持しました'); return retainFailure('fragment_manifest_invalid'); }
+  }
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(config.reporting.endpoint, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-factory-sent-at': new Date().toISOString() }, body: decoded.bytes, signal: controller.signal, ...(oneShot ? { redirect: 'error' } : {}) });
@@ -174,10 +212,20 @@ async function postOne(config, token, loc, entry) {
     const accepted = response.ok && body?.accepted === true && body.report_id === decoded.report.report_id;
     if (IS_V9) RABBIT_OBSERVATION_ONCE.recordSend(decoded.report, decoded.bytes, { httpStatus: response.status, accepted });
     if (accepted) {
-      if (decoded.acknowledgements) { try { await WIRE.acknowledgeRuntimeErrors(decoded.acknowledgements); } catch { return retainFailure('ack-failed'); } }
-      return { action: 'delete' };
+      return complete();
     }
     if (oneShot) return retainFailure(`http-${response.status}`);
+    if (IS_V9 && response.status === 413) {
+      diagnostic(`report_too_large: ${decoded.bytes.length} bytes。未受理の原reportをoutboxへ保持しました`);
+      if (body?.error === 'report_too_large' && body.split_supported === true && Number.isSafeInteger(body.limit_bytes) && body.limit_bytes > 0) {
+        try {
+          const manifest = createFragmentManifest(decoded.report, decoded.bytes, body.limit_bytes);
+          await writeFragmentManifest(loc, entry, manifest);
+          return sendFragments(manifest);
+        } catch { diagnostic('fragment_limits_invalid: 原reportを保持し分割を保留しました'); }
+      }
+      return { action: 'keep', reason: 'http-413' };
+    }
     if ([409, 413, 422].includes(response.status)) return { action: 'dead', reason: `http-${response.status}` };
     return { action: 'keep', reason: `http-${response.status}` };
   } catch (error) {
@@ -186,5 +234,5 @@ async function postOne(config, token, loc, entry) {
   } finally { clearTimeout(timeout); }
 }
 function parseArgs(argv) { const [command, ...rest] = argv; if (!['preview', 'enqueue', 'flush'].includes(command)) throw new Error(`使い方: factory-reporter-${WIRE.major}.mjs preview|enqueue|flush [--report <file>] [--ack-metadata <file>] [--config <file>]`); const options = {}; for (let i = 0; i < rest.length; i += 1) { if (!['--report', '--ack-metadata', '--config'].includes(rest[i]) || !rest[i + 1] || options[rest[i]]) throw new Error('引数が不正です'); options[rest[i].slice(2)] = rest[++i]; } if ((command === 'preview' || command === 'enqueue') && !options.report) throw new Error('--reportが必要です'); if (command === 'flush' && options.report) throw new Error('flushは--reportを受け取りません'); if (command !== 'enqueue' && options['ack-metadata']) throw new Error('--ack-metadataはenqueue専用です'); return { command, options }; }
-async function main() { const { command, options } = parseArgs(process.argv.slice(2)); const config = await readConfig(options.config || defaultConfigPath()); const loc = locations(defaultStatePath()); if (config.reporting.enabled) wireEndpoint(config); if (command === 'preview') { const { bytes, report } = await WIRE.readReport(options.report); assertIdentity(config, report); emit({ ok: true, command, reporting_enabled: config.reporting.enabled, report_id: report.report_id, body_bytes: bytes.length, report }); return; } if (command === 'enqueue') { const { bytes, report } = await WIRE.readReport(options.report); if (!config.reporting.enabled) { emit({ ok: true, command, reporting_enabled: false, enqueued: false, report_id: report.report_id, ...(await stats(loc)) }); return; } assertIdentity(config, report); let acknowledgements = null; if (options['ack-metadata']) { let value; try { value = JSON.parse(UTF8.decode(await readFile(options['ack-metadata']))); } catch { throw new Error('ack metadataが不正です'); } acknowledgements = WIRE.validateAcknowledgements(value, report.report_id); } const result = await enqueue(loc, bytes, report.report_id, acknowledgements); emit({ ok: true, command, reporting_enabled: true, enqueued: !result.duplicate, report_id: report.report_id, ...(await stats(loc)) }); return; } if (!config.reporting.enabled) { emit({ ok: true, command, reporting_enabled: false, sent: 0, retained: (await stats(loc)).count, dead_lettered: 0, deferred: 0 }); return; } await ensureState(loc); const token = await credential(config); const outcome = await withLock(loc, async () => { await expire(loc); let sent = 0; let retained = 0; let deadLettered = 0; let deferred = 0; let ackFailed = 0; let unreachable = 0; let heldObservationReports = 0; for (const entry of await entries(loc)) { const retry = await retryInfo(loc, entry.name); if (retry && retry.next_retry_at > Date.now()) { deferred += 1; continue; } const result = await postOne(config, token, loc, entry); if (result.action === 'hold') { heldObservationReports += 1; } else if (result.action === 'delete') { await rm(entry.file, { force: true }); await rm(join(loc.retry, entry.name), { force: true }); sent += 1; } else if (result.action === 'dead') { await moveDead(loc, entry, result.reason); deadLettered += 1; } else { await postpone(loc, entry.name, retry); retained += 1; if (result.reason === 'ack-failed') ackFailed += 1; if (UNREACHABLE_REASONS.includes(result.reason)) unreachable += 1; } } return { sent, retained, dead_lettered: deadLettered, deferred, ack_failed: ackFailed, unreachable, ...(heldObservationReports ? { held_observation_reports: heldObservationReports } : {}) }; }); const failed = outcome.retained > 0 || outcome.dead_lettered > 0 || outcome.deferred > 0 || outcome.ack_failed > 0 || (outcome.held_observation_reports ?? 0) > 0; emit({ ok: !failed, command, reporting_enabled: true, ...outcome, ...(await stats(loc)) }); if (failed) { diagnostic(outcome.ack_failed > 0 ? 'BugHub受理後のruntime error acknowledgementに失敗しました' : outcome.dead_lettered > 0 ? 'BugHubに永久拒否されたreportをdead-letterへ隔離しました' : outcome.held_observation_reports > 0 ? '一回reportを私有領域へ保全しました。自動再送はしません' : 'outboxに未送信reportが残っています'); process.exitCode = 1; } }
+async function main() { const { command, options } = parseArgs(process.argv.slice(2)); const config = await readConfig(options.config || defaultConfigPath()); const loc = locations(defaultStatePath()); if (config.reporting.enabled) wireEndpoint(config); if (command === 'preview') { const { bytes, report } = await WIRE.readReport(options.report); assertIdentity(config, report); emit({ ok: true, command, reporting_enabled: config.reporting.enabled, report_id: report.report_id, body_bytes: bytes.length, report }); return; } if (command === 'enqueue') { const { bytes, report } = await WIRE.readReport(options.report); if (!config.reporting.enabled) { emit({ ok: true, command, reporting_enabled: false, enqueued: false, report_id: report.report_id, ...(await stats(loc)) }); return; } assertIdentity(config, report); let acknowledgements = null; if (options['ack-metadata']) { let value; try { value = JSON.parse(UTF8.decode(await readFile(options['ack-metadata']))); } catch { throw new Error('ack metadataが不正です'); } acknowledgements = WIRE.validateAcknowledgements(value, report.report_id); } const result = await enqueue(loc, bytes, report.report_id, acknowledgements); emit({ ok: true, command, reporting_enabled: true, enqueued: !result.duplicate, report_id: report.report_id, ...(await stats(loc)) }); return; } if (!config.reporting.enabled) { emit({ ok: true, command, reporting_enabled: false, sent: 0, retained: (await stats(loc)).count, dead_lettered: 0, deferred: 0 }); return; } await ensureState(loc); const token = await credential(config); const outcome = await withLock(loc, async () => { await expire(loc); let sent = 0; let retained = 0; let deadLettered = 0; let deferred = 0; let ackFailed = 0; let unreachable = 0; let heldObservationReports = 0; for (const entry of await entries(loc)) { const retry = await retryInfo(loc, entry.name); if (retry && retry.next_retry_at > Date.now()) { deferred += 1; continue; } const result = await postOne(config, token, loc, entry); if (result.action === 'hold') { heldObservationReports += 1; } else if (result.action === 'delete') { await rm(entry.file, { force: true }); await rm(join(loc.retry, entry.name), { force: true }); await rm(fragmentManifestPath(loc, entry), { force: true }); sent += 1; } else if (result.action === 'dead') { await moveDead(loc, entry, result.reason); deadLettered += 1; } else { await postpone(loc, entry.name, retry); retained += 1; if (result.reason === 'ack-failed') ackFailed += 1; if (UNREACHABLE_REASONS.includes(result.reason)) unreachable += 1; } } return { sent, retained, dead_lettered: deadLettered, deferred, ack_failed: ackFailed, unreachable, ...(heldObservationReports ? { held_observation_reports: heldObservationReports } : {}) }; }); const failed = outcome.retained > 0 || outcome.dead_lettered > 0 || outcome.deferred > 0 || outcome.ack_failed > 0 || (outcome.held_observation_reports ?? 0) > 0; emit({ ok: !failed, command, reporting_enabled: true, ...outcome, ...(await stats(loc)) }); if (failed) { diagnostic(outcome.ack_failed > 0 ? 'BugHub受理後のruntime error acknowledgementに失敗しました' : outcome.dead_lettered > 0 ? 'BugHubに永久拒否されたreportをdead-letterへ隔離しました' : outcome.held_observation_reports > 0 ? '一回reportを私有領域へ保全しました。自動再送はしません' : 'outboxに未送信reportが残っています'); process.exitCode = 1; } }
 main().catch((error) => fail(`FACTORY_REPORTER_${WIRE.major.toUpperCase()}_ERROR`, error?.message || '失敗'));

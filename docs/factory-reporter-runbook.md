@@ -39,6 +39,14 @@ factory-reporter-v<N> flush --config <config>
 
 `preview`は常にnetworkゼロ。`enqueue`と`flush`は明示ON時だけ送信し、accepted後だけoutboxと公開ACKを進める。個別製品の不在・非対応はreport全体を偽成功へせず、その製品を`missing`／`unsupported`／`unverified`のまま残す。
 
+## v9の受信サイズ超過
+
+v9の413は原full JSON bytesとACK bundleをoutboxに残す。`split_supported=true`と正の整数`limit_bytes`を受け取った時は、[ServerManagerの分割契約](https://github.com/kitepon/ServerManager/blob/main/bughub/FACTORY_INTEGRATION.md)の`/api/factory/v9/report-fragments`へ元bytesをbase64分割する。製品省略・JSONの再生成・元report_idや観測時刻の変更はしない。未知/不正な上限は保持と明示診断にし、元応答本文や資格値をlogへ出さない。
+
+各片は復号1MiB以下、128片/原本128MiB以下かつenvelopeの実bytesも応答上限以下。片UUID・境界・全体SHAを`retry/<report_id>.json.fragments`へ送信前に保存する。途中失敗・stagingの7日失効後は固定manifestの全片を再送し、終端応答の消失は同じ片のduplicate応答で確認する。202は途中受理であり、同じ元report_id/全体SHAを返す200 `accepted=true,complete=true`だけが全ACKとoutbox完了を許す。409/422/503や不正応答は原本とmanifestを保持する。
+
+未受理v9 outboxを年齢で隔離せず、最大128件/256MiBの既存queueを保持する。128MiB原本とACK envelopeのbase64も単体で収まる容量とし、満杯では既存を捨てず新規enqueueを明示拒否する。必要な空き容量を確保して通常runnerから再開する。取消済みの一回観測はこの自動分割の対象にしない。v5〜v8のendpoint/state/期限/容量/拒否分類は維持する。
+
 ## 現役wire、互換、rollback
 
 本番BugHubの入口は[工場の現行状態](factory-current-state.md)だけが正であり、作業前にhost configの`reporting.endpoint`を同ページと照合する。`factory-reporter-scheduler install --dry-run --platform <OS> --wire-major v<N>`で生成物を確認してから`--apply`する。installer/updateはconfigを作らず、送信をONにせず、旧majorのstate/outboxを削除しない。
