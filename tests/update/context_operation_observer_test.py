@@ -9,7 +9,7 @@ SUPPORT = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(SUPPORT)
 ROOT = SUPPORT.ROOT
 WRITER = (ROOT / 'bin/agents-update.sh').read_text()
-PREFIX = WRITER[WRITER.index('resolve_npm_global_bin() {'):WRITER.index('\nrecord_toolchain() {')]
+PREFIX = WRITER[WRITER.index('run_npm() ('):WRITER.index('\nrecord_toolchain() {')]
 START = WRITER.index('      PATH="$npm_global_bin:$PATH"')
 POST = WRITER[START:WRITER.index('\n    fi\n    for pkg', START)]
 
