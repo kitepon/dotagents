@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
@@ -129,4 +129,36 @@ test('schedulerはv9 endpoint・runner・専用stateを同じmajorへ束縛す�
   const result = await run(resolve(import.meta.dirname, '../../bin/factory-reporter-scheduler.mjs'), ['install', '--dry-run', '--platform', 'darwin', '--config', configPath], { HOME: root, XDG_STATE_HOME: join(root, 'state') });
   assert.equal(result.code, 0, result.stderr); assert.equal(result.json.wire_major, 'v9');
   assert.match(result.json.artifact_content, /factory-reporter-v9-schedule-runner/u); assert.match(result.json.state, /factory-reporter-v9$/u);
+});
+
+test('413は期限を過ぎたv9原本もoutboxに保持し、全受理するまで同じbytesを再送する', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'wire-v9-oversized-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const reportPath = join(root, 'report.json'); const configPath = join(root, 'config.json'); const credentialPath = join(root, 'credential');
+  const reporter = resolve(import.meta.dirname, '../../bin/factory-reporter-v9.mjs');
+  const env = { XDG_STATE_HOME: join(root, 'state'), LOCALAPPDATA: join(root, 'state') };
+  const payload = JSON.stringify(reportV9()); const received = [];
+  const server = createServer(async (request, response) => {
+    const chunks = []; for await (const chunk of request) chunks.push(chunk);
+    received.push(Buffer.concat(chunks).toString());
+    response.writeHead(received.length === 1 ? 413 : 200, { 'content-type': 'application/json' });
+    response.end(JSON.stringify(received.length === 1 ? { error: 'report_too_large' } : { accepted: true, report_id: reportV9().report_id }));
+  });
+  await new Promise(done => server.listen(0, '127.0.0.1', done));
+  t.after(() => new Promise(done => server.close(done)));
+  await writeFile(credentialPath, 'unit-test-token\n', { mode: 0o600 });
+  await writeFile(reportPath, payload);
+  await writeFile(configPath, JSON.stringify({ schema_version: '1.0', host: { id: 'mac-kite', profile: 'mac' }, collection: { enabled: true },
+    reporting: { enabled: true, endpoint: `http://127.0.0.1:${server.address().port}/api/factory/v9/reports`, credential_file: credentialPath } }));
+  assert.equal((await run(reporter, ['enqueue', '--report', reportPath, '--config', configPath], env)).code, 0);
+  const state = join(root, 'state', 'dotagents', 'factory-reporter-v9');
+  const queued = join(state, 'outbox', `${reportV9().report_id}.json`);
+  const old = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000); await utimes(queued, old, old);
+  const refused = await run(reporter, ['flush', '--config', configPath], env);
+  assert.equal(refused.code, 1, refused.stderr); assert.equal(refused.json.retained, 1); assert.equal(refused.json.dead_lettered, 0);
+  assert.match(refused.stderr, /report_too_large/u); assert.equal(await readFile(queued, 'utf8'), payload);
+  assert.deepEqual(await readdir(join(state, 'dead-letter')), []);
+  await new Promise(done => setTimeout(done, 300));
+  const accepted = await run(reporter, ['flush', '--config', configPath], env);
+  assert.equal(accepted.code, 0, accepted.stderr); assert.equal(accepted.json.sent, 1); assert.equal(accepted.json.count, 0);
+  assert.deepEqual(received, [payload, payload]);
 });
