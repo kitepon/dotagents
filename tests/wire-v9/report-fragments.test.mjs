@@ -98,7 +98,17 @@ test('大きい原本の413→部分失敗→staging失効→終端消失→固�
     wholeAccepted = true; request.socket.destroy();
   }, 2 * 1024 * 1024 + 1);
   const originalEnvelope = await readFile(box.queued);
-  assert.equal((await box.flush()).code, 1);
+  const first = await box.flush(); assert.equal(first.code, 1);
+  const contexts = first.stderr.split('\n').filter(line => line.startsWith('[dotagents-runtime-context] '))
+    .map(line => JSON.parse(line.slice(line.indexOf('{'))));
+  assert.deepEqual(contexts.map(context => context.consumer), ['reporter', 'reporter-fragments']);
+  for (const context of contexts) {
+    assert.equal(context.report_id, report().report_id); assert.equal(context.exec_path, process.execPath);
+    assert.equal(context.node_version, process.version); assert.equal(context.initial_transport, 'http');
+    assert.equal(context.evidence_scope, 'current_process_configuration_only');
+  }
+  assert.equal(contexts[0].pid, contexts[1].pid);
+  assert.doesNotMatch(first.stderr, /fixture-token/u);
   await assert.rejects(readFile(box.ackLog), { code: 'ENOENT' });
   assert.deepEqual(await readFile(box.queued), originalEnvelope);
   const manifestBytes = await readFile(box.manifestPath); const manifest = JSON.parse(manifestBytes);

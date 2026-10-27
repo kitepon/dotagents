@@ -10,6 +10,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 import { createFragmentManifest, sendReportFragments, validateFragmentManifest } from '../lib/factory/report-fragments.mjs';
+import { logRuntimeContext } from '../lib/factory/runtime-context.mjs';
 import {
   readAndValidateReportV5,
   readAndValidateReportV6,
@@ -207,6 +208,7 @@ async function postOne(config, token, loc, entry) {
   }
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
+    if (IS_V9) logRuntimeContext({ consumer: 'reporter', reportId: decoded.report.report_id, endpoint: config.reporting.endpoint, source: new URL(import.meta.url) });
     const response = await fetch(config.reporting.endpoint, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-factory-sent-at': new Date().toISOString() }, body: decoded.bytes, signal: controller.signal, ...(oneShot ? { redirect: 'error' } : {}) });
     let body = null; try { body = await response.json(); } catch {}
     const accepted = response.ok && body?.accepted === true && body.report_id === decoded.report.report_id;
