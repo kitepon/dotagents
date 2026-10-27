@@ -92,13 +92,50 @@ NPM_RETIRED_HELPER="${NPM_RETIRED_HELPER:-$SCRIPT_DIR/factory-npm-retired.mjs}"
 
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
+run_npm() (
+  local invocation="${BASHPID:-$$}-$RANDOM-$RANDOM" batch=unknown kind record name present line status observed
+  local color_re=$'\033''\[[0-9;]*m' version_re='^npm info using (node@v|npm@)[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.+-]+)?$'
+  batch="${AGENTS_UPDATE_BATCH_TOKEN:-unknown}"
+  [[ "$batch" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || batch=unknown
+  kind="$(type -t npm)" || kind=unknown
+  observed="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || observed=unknown
+  record="[dotagents-npm-context] $invocation start observed_at=$observed batch_token=$batch npm_kind=$kind npmrc_ca=unobserved"
+  for name in NODE_OPTIONS NODE_EXTRA_CA_CERTS NODE_USE_SYSTEM_CA SSL_CERT_FILE SSL_CERT_DIR OPENSSL_CONF NODE_PATH NODE_USE_ENV_PROXY HTTPS_PROXY HTTP_PROXY ALL_PROXY; do
+    present=false; [[ -z "${!name:-}" ]] || present=true
+    record="$record $name=$present"
+  done
+  printf '%s\n' "$record" >>"${LOG:-/dev/null}" || :
+  # npm records its own Node after wrapper/shebang selection; only public startup fields are retained.
+  exec 3>&1
+  npm_config_loglevel=verbose npm_config_color=false npm "$@" 2>&1 1>&3 | {
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      line="${line%$'\r'}"
+      while [[ "$line" =~ $color_re ]]; do line="${line//"${BASH_REMATCH[0]}"/}"; done
+      case "$line" in
+        'npm verbose cli '*|'npm verb cli '*)
+          if [[ ${#line} -le 4096 && "$line" != *$'\033'* ]]; then
+            printf '[dotagents-npm-context] %s %s\n' "$invocation" "$line" >>"${LOG:-/dev/null}" || :
+          fi ;;
+        'npm info using node@'*|'npm info using npm@'*)
+          if [[ "$line" =~ $version_re ]]; then
+            printf '[dotagents-npm-context] %s %s\n' "$invocation" "$line" >>"${LOG:-/dev/null}" || :
+          fi ;;
+        'npm verbose '*|'npm verb '*|'npm info '*|'npm silly '*|'npm sill '*|'npm http '*) : ;;
+        *) printf '%s\n' "$line" >&2 ;;
+      esac
+    done
+  }
+  status=${PIPESTATUS[0]}
+  printf '[dotagents-npm-context] %s end exit=%s\n' "$invocation" "$status" >>"${LOG:-/dev/null}" || :
+  return "$status"
+)
 resolve_npm_global_bin() {
   local prefix bin prefix_rc prefix_started prefix_ended
   if declare -F dotagents_observe_operation >/dev/null; then
     dotagents_observe_operation prefix_before "${BASH_SOURCE[0]}"
   fi
   prefix_started="${EPOCHREALTIME:-}"
-  if prefix="$(npm prefix -g)"; then prefix_rc=0; else prefix_rc=$?; fi
+  if prefix="$(run_npm prefix -g)"; then prefix_rc=0; else prefix_rc=$?; fi
   prefix_ended="${EPOCHREALTIME:-}"
   if declare -F dotagents_observe_operation >/dev/null && [[ ${#prefix} -le 32768 ]]; then
     dotagents_observe_operation prefix_result "${BASH_SOURCE[0]}" --operation-exit "$prefix_rc" \
@@ -165,9 +202,9 @@ npm_install_global() {
   local package_name="$1" install_spec="$2"
   case "$package_name" in
     '@anthropic-ai/claude-code'|claude-spotter)
-      npm install -g "--allow-scripts=$package_name" "$install_spec"
+      run_npm install -g "--allow-scripts=$package_name" "$install_spec"
       ;;
-    *) npm install -g "$install_spec" ;;
+    *) run_npm install -g "$install_spec" ;;
   esac
 }
 
@@ -242,7 +279,7 @@ fi
         dotagents_observe_operation root_before "${BASH_SOURCE[0]}"
       fi
       root_started="${EPOCHREALTIME:-}"
-      if npm_global_root="$(npm root -g 2>/dev/null)"; then root_rc=0; else root_rc=$?; fi
+      if npm_global_root="$(run_npm root -g 2>/dev/null)"; then root_rc=0; else root_rc=$?; fi
       root_ended="${EPOCHREALTIME:-}"
       if declare -F dotagents_observe_operation >/dev/null && [[ ${#npm_global_root} -le 32768 ]]; then
         dotagents_observe_operation root_result "${BASH_SOURCE[0]}" --operation-exit "$root_rc" \
@@ -274,7 +311,7 @@ fi
         if [[ -n "$npm_global_bin" ]]; then
           before="$($cli --version 2>/dev/null | extract_semver || true)"; before="${before:-none}"
         fi
-        registry_json="$(npm view "$pkg" version --json 2>/dev/null)" || registry_json=''
+        registry_json="$(run_npm view "$pkg" version --json 2>/dev/null)" || registry_json=''
         if ! latest="$(printf '%s' "$registry_json" | node "$TOOLCHAIN_CONTRACT_HELPER" npm-latest)"; then
           latest=none; after="$before"; operation=failed; reason=registry_unavailable; skip_install=1; update_failed=1
           printf 'FAILED: %s registry latest contract\n' "$pkg"

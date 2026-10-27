@@ -18,6 +18,8 @@ v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id�
 
 ビルド時の既定CA選択はprocess.config.target_defaults.definesのNODE_OPENSSL_CERT_STOREから分類し、追加CA pathはprocess.config.variables.openssl_system_ca_pathの有無だけを残す。定義一覧やpathの値は出力しない。設定の形が不明ならnullとし、bundled指定へ読み替えない。
 
+普通updaterのnpm呼出は、既agents-update.logへ呼出ID/UTC/既batch token/渡すCA関連環境の有無と、npm自身の公開startupログのcli・Node版・npm版だけを保存する。global-bin PATH追加後のview/installも各実呼出で記録し、prefix時点の親Nodeを代入しない。標準出力・終了コードと通常error/warnは保ち、追加のverbose argv等は保存しない。startup出力が無ければ選択は不明のままとする。npmrcのCA設定は未観測で、npm全通信の実効CAや検証有効の証明にはしない。
+
 ## 設定とcredential
 
 雛形は[`examples/factory-reporter/`](../examples/factory-reporter/)にある。各hostのconfigとcredentialは所有者だけが読めるrepo外pathへ置く。credentialの発行・rotation・revokeはServerManagerの正規管理入口で行い、dotagentsへserver-side commandを複製しない。
