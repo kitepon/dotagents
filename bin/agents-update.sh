@@ -93,13 +93,16 @@ NPM_RETIRED_HELPER="${NPM_RETIRED_HELPER:-$SCRIPT_DIR/factory-npm-retired.mjs}"
 extract_semver() { node -e 'const s=require("fs").readFileSync(0,"utf8");const m=s.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/);if(m)process.stdout.write(m[0]);'; }
 json_semver() { node -e 'let v;try{v=JSON.parse(require("fs").readFileSync(0,"utf8"))}catch{process.exit(1)};const x=v[process.argv[1]];if(typeof x!=="string"||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(x))process.exit(1);process.stdout.write(x)' "$1"; }
 run_npm() (
-  local invocation="${BASHPID:-$$}-$RANDOM-$RANDOM" batch=unknown kind record name present line status observed
+  local invocation="${BASHPID:-$$}-$RANDOM-$RANDOM" batch=unknown kind record name present line status observed operation=unknown validation=default
   local color_re=$'\033''\[[0-9;]*m' version_re='^npm info using (node@v|npm@)[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.+-]+)?$'
   batch="${AGENTS_UPDATE_BATCH_TOKEN:-unknown}"
   [[ "$batch" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]] || batch=unknown
   kind="$(type -t npm)" || kind=unknown
+  case "${1:-}" in prefix|root|view|install) operation="$1" ;; esac
   observed="$(date -u +%Y-%m-%dT%H:%M:%SZ)" || observed=unknown
-  record="[dotagents-npm-context] $invocation start observed_at=$observed batch_token=$batch npm_kind=$kind npmrc_ca=unobserved"
+  if [[ "${NODE_TLS_REJECT_UNAUTHORIZED:-}" == 0 ]]; then validation=disabled
+  elif [[ -n "${NODE_TLS_REJECT_UNAUTHORIZED:-}" ]]; then validation=configured; fi
+  record="[dotagents-npm-context] $invocation start observed_at=$observed batch_token=$batch operation=$operation npm_kind=$kind npmrc_ca=unobserved tls_validation=$validation"
   for name in NODE_OPTIONS NODE_EXTRA_CA_CERTS NODE_USE_SYSTEM_CA SSL_CERT_FILE SSL_CERT_DIR OPENSSL_CONF NODE_PATH NODE_USE_ENV_PROXY HTTPS_PROXY HTTP_PROXY ALL_PROXY; do
     present=false; [[ -z "${!name:-}" ]] || present=true
     record="$record $name=$present"
@@ -108,16 +111,23 @@ run_npm() (
   # npm records its own Node after wrapper/shebang selection; only public startup fields are retained.
   exec 3>&1
   npm_config_loglevel=verbose npm_config_color=false npm "$@" 2>&1 1>&3 | {
+    local cli_seen=false node_seen=false npm_seen=false retain
     while IFS= read -r line || [[ -n "$line" ]]; do
       line="${line%$'\r'}"
       while [[ "$line" =~ $color_re ]]; do line="${line//"${BASH_REMATCH[0]}"/}"; done
       case "$line" in
         'npm verbose cli '*|'npm verb cli '*)
-          if [[ ${#line} -le 4096 && "$line" != *$'\033'* ]]; then
+          if [[ "$cli_seen" == false && ${#line} -le 4096 && "$line" != *$'\033'* ]]; then
             printf '[dotagents-npm-context] %s %s\n' "$invocation" "$line" >>"${LOG:-/dev/null}" || :
-          fi ;;
+          fi
+          cli_seen=true ;;
         'npm info using node@'*|'npm info using npm@'*)
-          if [[ "$line" =~ $version_re ]]; then
+          retain=false
+          case "$line" in
+            'npm info using node@'*) [[ "$node_seen" == true ]] || retain=true; node_seen=true ;;
+            *) [[ "$npm_seen" == true ]] || retain=true; npm_seen=true ;;
+          esac
+          if [[ "$retain" == true && "$line" =~ $version_re ]]; then
             printf '[dotagents-npm-context] %s %s\n' "$invocation" "$line" >>"${LOG:-/dev/null}" || :
           fi ;;
         'npm verbose '*|'npm verb '*|'npm info '*|'npm silly '*|'npm sill '*|'npm http '*) : ;;

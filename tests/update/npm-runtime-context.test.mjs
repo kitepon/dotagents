@@ -24,6 +24,7 @@ const fixture = body => {
 
 test('normal npm stdout, argv and failure survive selective startup logging', () => {
   const f = fixture(`printf '%s\\n' 'npm verbose cli /actual/node /actual/npm-cli.js' 'npm info using npm@11.8.0' 'npm info using node@v24.22.1' 'npm verbose argv secret-token' 'npm error ordinary failure' >&2
+printf '%s\\n' 'npm verbose cli nested-secret-token' 'npm info using node@v99.99.99' >&2
 printf '"1.2.3"\\n'
 [[ "$*" = 'view @example/tool version --json' ]] || exit 99
 exit 37
@@ -34,6 +35,8 @@ exit 37
     assert.equal(result.stderr, 'npm error ordinary failure\n');
     const text = f.text(); assert.match(text, /cli \/actual\/node \/actual\/npm-cli.js/u);
     assert.match(text, /node@v24\.22\.1/u); assert.match(text, /end exit=37/u);
+    assert.match(text, /operation=view/u);
+    assert.ok(!text.includes('node@v99.99.99'));
     assert.equal((text.match(/ start /gu) ?? []).length, 1); assert.ok(!text.includes('secret-token'));
   } finally { f.close(); }
 });
@@ -54,6 +57,7 @@ printf '"2.3.4"\\n'
     assert.ok(text.includes('C:\\Program Files\\nodejs\\node.exe')); assert.match(text, /node@v26\.12\.1/u);
     assert.equal((text.match(/ start /gu) ?? []).length, 2);
     const starts = text.split('\n').filter(line => line.includes(' start '));
+    assert.match(starts[0], /operation=prefix/u); assert.match(starts[1], /operation=view/u);
     assert.notEqual(starts[0].split(' ')[1], starts[1].split(' ')[1]);
   } finally { f.close(); }
 });
@@ -62,10 +66,11 @@ test('only presence is logged for inherited CA settings and invalid batch identi
   const f = fixture('printf done');
   try {
     const result = f.run('run_npm install -g package', { NODE_EXTRA_CA_CERTS: '/secret-token.pem',
-      NODE_OPTIONS: '--require secret-token', AGENTS_UPDATE_BATCH_TOKEN: 'secret-token' });
+      NODE_OPTIONS: '--require secret-token', NODE_TLS_REJECT_UNAUTHORIZED: '0', AGENTS_UPDATE_BATCH_TOKEN: 'secret-token' });
     assert.equal(result.status, 0); assert.equal(result.stdout, 'done');
     const text = f.text(); assert.match(text, /batch_token=unknown/u);
     assert.match(text, /NODE_EXTRA_CA_CERTS=true/u); assert.match(text, /NODE_OPTIONS=true/u);
+    assert.match(text, /tls_validation=disabled/u);
     assert.ok(!text.includes('secret-token')); assert.ok(!text.includes('node@'));
   } finally { f.close(); }
 });
@@ -90,7 +95,7 @@ test('unwritable evidence output never turns an npm failure into success', () =>
 });
 
 test('malformed public version fields are not retained as runtime evidence', () => {
-  const f = fixture(`printf '%s\\n' 'npm info using node@v24.22.1 secret-token' 'npm info using npm@https://secret-token' >&2\n`);
+  const f = fixture(`printf '%s\\n' 'npm info using node@v24.22.1 secret-token' 'npm info using npm@https://secret-token' 'npm info using node@v26.12.1' >&2\n`);
   try {
     const result = f.run('run_npm view package version --json');
     assert.equal(result.status, 0); assert.equal(result.stderr, '');
