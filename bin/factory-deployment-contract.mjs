@@ -2,11 +2,13 @@
 import process from 'node:process';
 import { hostProjection, npmPackagesForHost } from '../lib/factory/deployment-contract.mjs';
 import { caveatUpdateOwner } from '../lib/factory/caveat-update-owner.mjs';
+import { logRuntimeContext } from '../lib/factory/runtime-context.mjs';
 
 function option(argv, name) { const index = argv.indexOf(name); if (index < 0 || !argv[index + 1] || argv.indexOf(name, index + 1) >= 0) throw new Error(`${name}が必要です`); return argv[index + 1]; }
 try {
   const [command, ...argv] = process.argv.slice(2);
   if (command === 'caveat-update-owner') {
+    logRuntimeContext({ consumer: 'updater-node-helper', source: new URL(import.meta.url) });
     process.stdout.write(`${caveatUpdateOwner()}\n`);
   } else if (command === 'npm-packages') {
     process.stdout.write(`${npmPackagesForHost({ os: option(argv, '--os'), arch: option(argv, '--arch') }).join('\n')}\n`);

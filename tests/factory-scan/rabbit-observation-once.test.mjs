@@ -112,28 +112,32 @@ test('ordinary legacy report stays compatible and never consumes the candidate g
 
 // Run the actual private reporter entry with injected transport, never HTTP or
 // credential IO. This checks the new one-shot branch without invoking main().
-async function reporterPost(gate, report, body, entry, fetch) {
+async function reporterPost(gate, report, body, entry, fetch, runtimeContexts) {
   const source = readFileSync(new URL('../../bin/factory-reporter-v5.mjs', import.meta.url), 'utf8');
   const implementation = source.slice(source.indexOf('async function postOne('), source.indexOf('function parseArgs(', source.indexOf('async function postOne(')));
   const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
-  return new AsyncFunction('readFile', 'decode', 'IS_V9', 'RABBIT_OBSERVATION_ONCE', 'REQUEST_TIMEOUT_MS', 'fetch', 'WIRE', 'config', 'entry',
+  return new AsyncFunction('readFile', 'decode', 'IS_V9', 'RABBIT_OBSERVATION_ONCE', 'REQUEST_TIMEOUT_MS', 'fetch', 'WIRE', 'config', 'entry', 'logRuntimeContext', 'SOURCE', 'platform',
     `${implementation}; return postOne(config, 'fixture-token', {}, entry);`)(
     async file => readFileSync(file), stored => { gate.validateReport(report, stored); return { report, bytes: body, acknowledgements: null }; },
-    true, gate, 500, fetch, {}, { host: { id: 'rabbit', profile: 'linux' }, reporting: { endpoint: 'https://fixture.invalid/api/factory/v9/reports' } }, entry);
+    true, gate, 500, fetch, {}, { host: { id: 'rabbit', profile: 'linux' }, reporting: { endpoint: 'https://fixture.invalid/api/factory/v9/reports' } }, entry,
+    context => runtimeContexts.push(context), new URL('../../bin/factory-reporter-v5.mjs', import.meta.url), () => 'linux');
 }
 test('actual reporter transport consumes once and preserves a failed attempt without retry or redirect', linux, async () => {
   const f = fixture();
   try {
     f.writePermit(f.permit); f.gate.begin('rabbit'); const report = f.report(), body = bytes(report); f.gate.finish(report, body);
     const outbox = join(f.directory, 'outbox'); mkdirSync(outbox, { mode: 0o700 }); const file = join(outbox, `${report.report_id}.json`);
-    writeFileSync(file, body, { mode: 0o600 }); let calls = 0;
+    writeFileSync(file, body, { mode: 0o600 }); let calls = 0; const runtimeContexts = [];
     const fetch = async (_url, options) => { calls++; assert.equal(options.redirect, 'error'); assert.deepEqual(options.body, body); throw new Error('fixture-network'); };
-    const result = await reporterPost(f.gate, report, body, { file }, fetch);
+    const result = await reporterPost(f.gate, report, body, { file }, fetch, runtimeContexts);
     assert.equal(result.action, 'hold'); assert.equal(calls, 1); assert.equal(existsSync(file), false);
     assert.deepEqual(readFileSync(join(f.root, 'held-outbox.json')), body);
     writeFileSync(file, body, { mode: 0o600 });
-    const again = await reporterPost(f.gate, report, body, { file }, fetch);
+    const again = await reporterPost(f.gate, report, body, { file }, fetch, runtimeContexts);
     assert.equal(again.action, 'hold'); assert.equal(calls, 1); assert.equal(existsSync(file), false);
+    assert.equal(runtimeContexts.length, 1); assert.equal(runtimeContexts[0].consumer, 'reporter');
+    assert.equal(runtimeContexts[0].reportId, report.report_id);
+    assert.equal(runtimeContexts[0].source.href, new URL('../../bin/factory-reporter-v5.mjs', import.meta.url).href);
     assert.equal(JSON.parse(readFileSync(join(f.root, 'send.result.json'))).http_status, null);
   } finally { f.cleanup(); }
 });
