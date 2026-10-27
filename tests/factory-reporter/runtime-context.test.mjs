@@ -11,7 +11,7 @@ import { runtimeContext, logRuntimeContext } from '../../lib/factory/runtime-con
 const source = new URL(import.meta.url);
 const id = '00000000-0000-4000-8000-000000000001';
 const fake = (platform = 'linux') => ({ pid: 42, execPath: platform === 'win32' ? 'C:\\node\\node.exe' : '/chosen/node',
-  version: 'v24.22.1', platform, execArgv: [], env: {}, config: { variables: { node_use_openssl_ca: false } } });
+  version: 'v24.22.1', platform, execArgv: [], env: {}, config: { target_defaults: { defines: [] }, variables: {} } });
 
 test('the actual consumer configuration joins its report and source, independently of host platform', () => {
   for (const platform of ['linux', 'darwin', 'win32']) {
@@ -24,8 +24,37 @@ test('the actual consumer configuration joins its report and source, independent
     assert.equal(record.ca_selection.environment_present.NODE_OPTIONS, false);
     assert.equal(record.ca_selection.other_exec_arguments_present, false);
     assert.equal(record.ca_selection.build_uses_openssl_ca, false);
+    assert.equal(record.ca_selection.build_extra_ca_path_present, false);
     assert.ok(!JSON.stringify(record).includes('secret'));
   }
+});
+
+test('Node configure defaults distinguish bundled, OpenSSL, extra paths and unavailable metadata', () => {
+  for (const define of ['NODE_OPENSSL_CERT_STORE', 'NODE_OPENSSL_CERT_STORE=1']) {
+    const runtime = fake(); runtime.config.target_defaults.defines = [define, 'PRIVATE=secret-token'];
+    runtime.config.variables.openssl_system_ca_path = '/secret-token.pem';
+    const record = runtimeContext({ consumer: 'reporter', source }, runtime);
+    assert.equal(record.ca_selection.build_uses_openssl_ca, true);
+    assert.equal(record.ca_selection.build_extra_ca_path_present, true);
+    assert.ok(!JSON.stringify(record).includes('secret-token'));
+  }
+  const runtime = fake(); runtime.config.variables.openssl_system_ca_path = '';
+  assert.equal(runtimeContext({ consumer: 'reporter', source }, runtime).ca_selection.build_extra_ca_path_present, false);
+  for (const config of [undefined, {}, { target_defaults: { defines: [42] }, variables: { openssl_system_ca_path: 42 } }]) {
+    const record = runtimeContext({ consumer: 'reporter', source }, { ...fake(), config });
+    assert.equal(record.ca_selection.build_uses_openssl_ca, null);
+    assert.equal(record.ca_selection.build_extra_ca_path_present, null);
+  }
+});
+
+test('the actual Node process exposes configure defines rather than an invented CA variable', () => {
+  assert.ok(Array.isArray(process.config.target_defaults.defines));
+  const record = runtimeContext({ consumer: 'reporter', source });
+  assert.equal(typeof record.ca_selection.build_uses_openssl_ca, 'boolean');
+  assert.equal(record.ca_selection.build_uses_openssl_ca,
+    process.config.target_defaults.defines.some(value => /^NODE_OPENSSL_CERT_STORE(?:=|$)/u.test(value)));
+  assert.equal(record.ca_selection.build_extra_ca_path_present,
+    Boolean(process.config.variables.openssl_system_ca_path));
 });
 
 test('CA overrides, preloads and unknown arguments are classified without exporting their values', () => {

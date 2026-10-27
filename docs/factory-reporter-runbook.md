@@ -16,6 +16,8 @@ v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id�
 
 記録は当該processの設定であり、子のnpm/gh等のruntimeや実効CAを証明しない。初期endpointがHTTPでもredirect/proxyの経路までTLS未使用と判定しない。NODE_OPTIONS、未知argv、追加束/OS束等が関係する経路は別の選択根拠が要る。source_on_disk_sha256は記録時のsourceで、ロード済みbyteの証明ではない。秘密値、raw環境/argv、endpoint全文、CA本文は出力せず、記録不能は成功原本にしない。記録だけでSECの対象外・対応済みを決めない。
 
+ビルド時の既定CA選択はprocess.config.target_defaults.definesのNODE_OPENSSL_CERT_STOREから分類し、追加CA pathはprocess.config.variables.openssl_system_ca_pathの有無だけを残す。定義一覧やpathの値は出力しない。設定の形が不明ならnullとし、bundled指定へ読み替えない。
+
 ## 設定とcredential
 
 雛形は[`examples/factory-reporter/`](../examples/factory-reporter/)にある。各hostのconfigとcredentialは所有者だけが読めるrepo外pathへ置く。credentialの発行・rotation・revokeはServerManagerの正規管理入口で行い、dotagentsへserver-side commandを複製しない。
