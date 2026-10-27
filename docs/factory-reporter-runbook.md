@@ -12,7 +12,7 @@
 
 ## 通常実行のruntime記録
 
-v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id、初期endpointの通信方式、CA関連設定の有無をstderrへ構造化して残す。既scheduler.logがそのまま保存する。updaterでは既存の所有者lookupとrelease lookupの実Node処理だけを同じ形式で記録し、agents-update.logへ残す。wire、受付結果、更新順序、TLS設定は変えない。
+v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id、初期endpointの通信方式、CA関連設定の有無をstderrへ構造化して残す。macOS/Linuxは既scheduler.logがそのまま保存する。Windows Taskには標準出力の保存先がないため、v9送信processが同じscheduler.logへ安全な構造化記録だけを追記し、既stateと同じowner-only ACLを適用する。updaterでは既存の所有者lookupとrelease lookupの実Node処理だけを同じ形式で記録し、agents-update.logへ残す。wire、受付結果、更新順序、TLS設定は変えない。
 
 記録は当該processの設定であり、子のnpm/gh等のruntimeや実効CAを証明しない。初期endpointがHTTPでもredirect/proxyの経路までTLS未使用と判定しない。NODE_OPTIONS、未知argv、追加束/OS束等が関係する経路は別の選択根拠が要る。source_on_disk_sha256は記録時のsourceで、ロード済みbyteの証明ではない。秘密値、raw環境/argv、endpoint全文、CA本文は出力せず、記録不能は成功原本にしない。記録だけでSECの対象外・対応済みを決めない。
 

@@ -37,6 +37,7 @@ import {
   validateAcknowledgementBundleV9,
 } from '../lib/factory/runtime-errors.mjs';
 
+const SOURCE = new URL(import.meta.url);
 const INVOKED = basename(process.argv[1] || '');
 const IS_V6 = INVOKED.includes('factory-reporter-v6');
 const IS_V7 = INVOKED.includes('factory-reporter-v7');
@@ -185,6 +186,7 @@ async function postOne(config, token, loc, entry) {
     return { action: 'hold', reason: 'one_observation_attempt_consumed_or_expired' };
   }
   const oneShot = IS_V9 && RABBIT_OBSERVATION_ONCE.isControlled(decoded.report);
+  const runtimeLog = platform() === 'win32' ? { logFile: join(loc.stateDir, 'scheduler.log'), secureFile: ownerOnlyAcl } : {};
   const retainFailure = reason => {
     if (!oneShot) return { action: 'keep', reason };
     RABBIT_OBSERVATION_ONCE.holdOutbox(decoded.report, entry.file);
@@ -195,7 +197,7 @@ async function postOne(config, token, loc, entry) {
     return { action: 'delete' };
   };
   const sendFragments = async manifest => {
-    const result = await sendReportFragments(config, token, decoded.report, decoded.bytes, manifest);
+    const result = await sendReportFragments(config, token, decoded.report, decoded.bytes, manifest, runtimeLog);
     if (result.accepted) return complete();
     diagnostic(`分割報告は未受理です (${result.reason})。原reportと固定manifestを保持しました`);
     return retainFailure(result.reason);
@@ -208,7 +210,7 @@ async function postOne(config, token, loc, entry) {
   }
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    if (IS_V9) logRuntimeContext({ consumer: 'reporter', reportId: decoded.report.report_id, endpoint: config.reporting.endpoint, source: new URL(import.meta.url) });
+    if (IS_V9) logRuntimeContext({ consumer: 'reporter', reportId: decoded.report.report_id, endpoint: config.reporting.endpoint, source: SOURCE }, runtimeLog);
     const response = await fetch(config.reporting.endpoint, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-factory-sent-at': new Date().toISOString() }, body: decoded.bytes, signal: controller.signal, ...(oneShot ? { redirect: 'error' } : {}) });
     let body = null; try { body = await response.json(); } catch {}
     const accepted = response.ok && body?.accepted === true && body.report_id === decoded.report.report_id;

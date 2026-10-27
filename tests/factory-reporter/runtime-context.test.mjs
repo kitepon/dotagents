@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { readFileSync, mkdtempSync, rmSync, writeFileSync, symlinkSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -66,4 +66,26 @@ test('the existing updater lookup preserves stdout and records only its own actu
     assert.equal(record.node_version, process.version); assert.equal(record.initial_transport, null);
     assert.equal(record.evidence_scope, 'current_process_configuration_only');
   } finally { rmSync(home, { recursive: true, force: true }); }
+});
+
+
+test('a private Windows scheduler log preserves runtime output when Task discards stderr', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'runtime-log-')), path = join(directory, 'scheduler.log');
+  try {
+    writeFileSync(path, 'older\n'); let secured = 0;
+    const record = { consumer: 'reporter', reportId: id, source };
+    const options = { runtime: fake('win32'), output: { write() {} }, logFile: path,
+      secureFile: name => { assert.equal(name, path); assert.equal(readFileSync(path, 'utf8'), 'older\n'); secured++; } };
+    assert.equal(logRuntimeContext(record, options), true); assert.equal(secured, 1);
+    const lines = readFileSync(path, 'utf8').trim().split('\n'); assert.equal(lines[0], 'older');
+    assert.equal(JSON.parse(lines[1].slice(lines[1].indexOf('{'))).report_id, id);
+    const before = readFileSync(path, 'utf8');
+    assert.equal(logRuntimeContext(record, { ...options, secureFile() { throw new Error('ACL denied'); } }), false);
+    assert.equal(readFileSync(path, 'utf8'), before);
+    if (process.platform !== 'win32') {
+      const outside = join(directory, 'outside'); writeFileSync(outside, 'untouched');
+      rmSync(path); symlinkSync(outside, path);
+      assert.equal(logRuntimeContext(record, options), false); assert.equal(readFileSync(outside, 'utf8'), 'untouched');
+    }
+  } finally { rmSync(directory, { recursive: true, force: true }); }
 });
