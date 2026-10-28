@@ -19,6 +19,7 @@ PYTHON := $(shell for p in python3 python3.14 python3.13 python3.12 python3.11; 
 endif
 endif
 
+# Make owns the CPU budget; nested Node suites must not multiply it per gate.
 .PHONY: lint lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-core-authority test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ci help
 
 lint: lint-sh lint-py lint-js lint-md lint-constitution lint-current-docs lint-skills lint-hooks ## 静的 lint + skill/hook smoke
@@ -50,16 +51,16 @@ lint-hooks: ## Claude / Codex / Grok / Cursor hook の空打ち smoke
 	bash tests/hooks/cursor-smoke.sh
 
 test-constitution: ## 共通憲法generatorの冪等性とdrift拒否
-	node --test tests/constitution/generation.test.mjs
+	node --test --test-concurrency=1 tests/constitution/generation.test.mjs
 
 test-current-docs: ## 現行状態ページの生成・drift・link切れ
-	node --test tests/docs/current-docs.test.mjs
+	node --test --test-concurrency=1 tests/docs/current-docs.test.mjs
 
 test-pick-model: ## 子のハーネス×モデル×effort選定（02とJev）
-	node --test tests/pick-model/*.test.mjs
+	node --test --test-concurrency=1 tests/pick-model/*.test.mjs
 
 test-ci-plan: ## 変更分類と最終合否のfail-closed契約
-	node --test tests/ci/*.test.mjs
+	node --test --test-concurrency=1 tests/ci/*.test.mjs
 
 test-install: ## 隔離 HOME の install/profile/config apply 検証
 	$(PYTHON) tests/install/onepassword.test.py
@@ -71,14 +72,14 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/install-unai.sh
 	bash tests/install/linux-prerequisite-packages.sh
 	bash tests/install/linux-runner-registration.sh
-	node --test tests/install/runner-profile.test.mjs
+	node --test --test-concurrency=1 tests/install/runner-profile.test.mjs
 	bash tests/install/clean-home.sh
 	bash tests/install/setup-linux-factory.sh
 	bash tests/install/setup-linux-workstation-factory.sh
 	bash tests/install/setup-macos-factory.sh
 
 test-update: ## cron 最小 PATH で NVM 配下の npm を解決できることを検証
-	node --test tests/update/product-setup.test.mjs tests/update/npm-retired.test.mjs tests/update/npm-runtime-context.test.mjs tests/update/finalize-report.test.mjs tests/update/typesafe-setup.test.mjs tests/update/jev-setup.test.mjs tests/update/update-failure-report.test.mjs
+	node --test --test-concurrency=1 tests/update/product-setup.test.mjs tests/update/npm-retired.test.mjs tests/update/npm-runtime-context.test.mjs tests/update/finalize-report.test.mjs tests/update/typesafe-setup.test.mjs tests/update/jev-setup.test.mjs tests/update/update-failure-report.test.mjs
 	bash tests/update/throughline-bootstrap.sh
 	bash tests/update/cron-env.sh
 
@@ -88,7 +89,7 @@ test-core-authority: ## GPT core authority channel の新source条件（実issue
 	$(PYTHON) tests/update/context_bootstrap_broker_test.py -v
 	$(PYTHON) tests/update/context_original_node_test.py -v
 	$(PYTHON) tests/update/context_public_registration_test.py -v
-	node --test tests/update/core-authority-sources.test.mjs tests/update/public-core-executor.test.mjs tests/update/public-executor-release.test.mjs
+	node --test --test-concurrency=1 tests/update/core-authority-sources.test.mjs tests/update/public-core-executor.test.mjs tests/update/public-executor-release.test.mjs
 
 test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
 	bash tests/oracle/wrappers.sh
@@ -97,17 +98,17 @@ test-factory-core: ## 工場所有の互換入口と退役製品の配置を検�
 	bash tests/factory-core/smoke.sh
 
 test-factory-reporter: ## BugHub factory reporter のprivacy/outbox/retry/scheduler契約を検証
-	node --test tests/factory-reporter/*.test.mjs
+	node --test --test-concurrency=1 tests/factory-reporter/*.test.mjs
 
 test-factory-scan: ## 工場管理製品scanの公開CLI・privacy・platform契約を検証
-	node --test tests/factory-scan/*.test.mjs
+	node --test --test-concurrency=1 tests/factory-scan/*.test.mjs
 
 test-factory-wire: ## 工場wire major別の固定製品集合・client互換契約を検証
-	node --test tests/wire-v*/*.test.mjs
+	node --test --test-concurrency=1 tests/wire-v*/*.test.mjs
 
 
 test-lattice-cutover: ## Lattice wire v4 cutover inventoryの固定blob・GFM抽出契約を検証
-	node --test tests/lattice-cutover/*.test.mjs
+	node --test --test-concurrency=1 tests/lattice-cutover/*.test.mjs
 	node bin/lattice-todo-inventory.mjs --verify-cutover
 
 ci: lint test-constitution test-current-docs test-pick-model test-ci-plan test-install test-update test-core-authority test-oracle test-factory-core test-factory-reporter test-factory-scan test-factory-wire test-lattice-cutover ## ローカル/CI 共通の全ゲート
