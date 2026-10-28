@@ -75,7 +75,7 @@ jobs:
       matrix:
         environment: ${{ fromJSON(needs.classify.outputs.environments) }}
     timeout-minutes: 30
-    runs-on: [self-hosted, factory, "${{ matrix.environment }}"]
+    runs-on: [self-hosted, factory, "${{ matrix.environment == 'macos-native' && 'macos-native-trial' || matrix.environment }}"]
     steps:
       - name: checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
