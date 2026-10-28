@@ -27,7 +27,7 @@
 
 | runner | host label | 利用面 |
 |---|---|---|
-| `factory-macos-m5` | `macos-native` | full CI |
+| `factory-macos-m5-u` | `macos-native` | full CI |
 | `factory-linux-rabbit-u` | `linux-workstation` | full CI |
 | `factory-windows-fox-u` | `windows-native` | full CI |
 
