@@ -84,7 +84,7 @@ done
 case "$script_source" in */*) script_parent=${script_source%/*} ;; *) script_parent=. ;; esac
 SCRIPT_DIR="$(CDPATH='' cd -P -- "$script_parent" && pwd)"
 # exec closes the old script before source files are replaced by git.
-if [[ "${DOTAGENTS_SOURCE_UPDATED:-0}" != 1 && -e "$SCRIPT_DIR/../.git" ]]; then
+if [[ "$setup_project" -eq 0 && "${DOTAGENTS_SOURCE_UPDATED:-0}" != 1 && -e "$SCRIPT_DIR/../.git" ]]; then
   exec node "$SCRIPT_DIR/agents-source-update.mjs" "$SCRIPT_DIR/agents-update.sh" "$LOG" "$BASH" "$@"
 fi
 TOOLCHAIN_LEDGER_HELPER="${TOOLCHAIN_LEDGER_HELPER:-$SCRIPT_DIR/factory-toolchain-ledger.mjs}"
