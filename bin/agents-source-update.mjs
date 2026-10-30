@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
+import { appendFileSync, realpathSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,7 +14,7 @@ export function updateSource(root) {
   };
   let before = null;
   try {
-    if (resolve(git('rev-parse', '--show-toplevel')) !== resolve(root)) throw new Error('checkout_root_mismatch');
+    if (realpathSync(git('rev-parse', '--show-toplevel')) !== realpathSync(root)) throw new Error('checkout_root_mismatch');
     if (git('branch', '--show-current') !== 'main') throw new Error('branch_not_main');
     if (!/^(?:https:\/\/github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)kitepon\/dotagents(?:\.git)?$/u.test(git('config', '--get', 'remote.origin.url'))) throw new Error('unexpected_origin');
     if (git('status', '--porcelain', '--untracked-files=no')) throw new Error('tracked_changes');

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, readFileSync, rmSync, mkdirSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -69,4 +69,13 @@ test('entry runs the new writer once and carries source failure to the existing 
   const failed = run(); assert.equal(failed.status, 0, failed.stderr); assert.equal(failed.stdout, 'new:1:1');
   const logs = readFileSync(join(base, 'log'), 'utf8').trim().split('\n').map(JSON.parse);
   assert.equal(logs[0].reason, 'updated'); assert.equal(logs[1].reason, 'tracked_changes');
+});
+
+test('the same checkout through a directory alias is accepted', (t) => {
+  const { local, base } = fixture(t);
+  const alias = join(base, 'alias');
+  symlinkSync(local, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  const result = updateSource(alias);
+  assert.equal(result.ok, true, result.reason);
+  assert.equal(result.reason, 'already_current');
 });
