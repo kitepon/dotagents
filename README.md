@@ -268,7 +268,7 @@ Cursor親の配布面（`~/.cursor/rules/factory.mdc` / `runbooks` / `skills` / 
 
 | host | 正規入口 | 定期更新 |
 |---|---|---|
-| macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎週月曜04:00 |
+| macOS | `./bin/setup-macos-factory.sh` | LaunchAgent、毎日02:00 |
 | main-server | `./bin/setup-linux-factory.sh` | cron、毎日02:00。native Linuxの`server` profile専用 |
 | rabbit native Linux | `./bin/setup-linux-workstation-factory.sh` | Ubuntu公式前提package、OpenSSH Server、`kite` passwordless sudo、main-serverからの専用鍵SSH、Node.js 24、uv、GitHub認証、main-server SSH／reporter credential、全工場製品を一括導入。cron、毎日02:00。`linux` profile専用 |
 | Windows native | PowerShell 7（`pwsh.exe`）で `& .\bin\setup-windows-native-factory.ps1`。5.1しかない初回は同じscriptをWindows PowerShellから実行すれば、`winget`で公式`Microsoft.PowerShell` MSIをmachine scopeへ導入してPowerShell 7へ再起動する。`winget`も無い場合は公式GitHub releaseの`win-x64.msi`導入commandを明示して停止する（Store/MSIX App Execution Aliasはowner-only工場stateを読めないため不受理）。Git/Node 24/gh/Python/uv/make/ShellCheck/ripgrep/OpenSSHも不足時は正規packageを導入する。さらにmain-server専用鍵・固定host key・SSH config・公開鍵登録workflow・alias／直IPの非対話再接続を一括検証する。`.sh`実行に使う`C:\Program Files\Git\bin\bash.exe`／`sh.exe`はGit for Windowsのnative executableでありWSLではない。WSL2・Docker・Hyper-V・Virtual Machine Platformは不要 | Task Scheduler、毎日02:00。ユーザー権限。5.1／`cmd.exe`／WSLで工場処理を続行するfallbackなし |
@@ -390,7 +390,7 @@ report／outbox／credentialを削除しない。
 
 ## 編集ワークフロー
 
-**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [AGENTS.md](AGENTS.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末（[host matrix](docs/factory-host-product-matrix.md)の4台。main-serverを含む）は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。定期更新はdotagents自身をpullしない。工場設定applierの期待値を変えた時は、各端末で `--dry-run` を見て、端末の承認後に `--apply` する。
+**作業前に必ず `git fetch` → origin/main と照合**（複数端末リポの掟。詳細は [AGENTS.md](AGENTS.md)）。スキル / コマンドは `~/.claude/...` 経由でもリポ実体の直接編集でも同じファイル（symlink）。編集後は `git add -p && git commit && git push` で真実を返す。他端末（[host matrix](docs/factory-host-product-matrix.md)の4台。main-serverを含む）は `git pull` のみで反映（新規エントリ追加時のみ `./install.sh` 再実行）。定期更新は最初にdotagents自身の`origin/main`をfetchし、`main`を早送り更新してから新しい版の更新処理を実行する。追跡ファイルの未コミット変更・履歴の分岐・取得失敗は上書きせず更新失敗として記録し、既存版で製品更新を続ける。新規エントリの配布は引き続き`install.sh`が必要。工場設定applierの期待値を変えた時は、各端末で `--dry-run` を見て、端末の承認後に `--apply` する。
 
 ## 含めないもの
 

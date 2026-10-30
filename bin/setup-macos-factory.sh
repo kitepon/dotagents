@@ -198,7 +198,7 @@ target, update = sys.argv[1:]
 value = {
     'Label': 'com.kite.agents-update',
     'ProgramArguments': ['/bin/bash', update],
-    'StartCalendarInterval': {'Weekday': 1, 'Hour': 4, 'Minute': 0},
+    'StartCalendarInterval': {'Hour': 2, 'Minute': 0},
     'RunAtLoad': False,
 }
 with open(target, 'wb') as handle:

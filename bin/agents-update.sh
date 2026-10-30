@@ -83,6 +83,10 @@ while [ -h "$script_source" ]; do
 done
 case "$script_source" in */*) script_parent=${script_source%/*} ;; *) script_parent=. ;; esac
 SCRIPT_DIR="$(CDPATH='' cd -P -- "$script_parent" && pwd)"
+# exec closes the old script before source files are replaced by git.
+if [[ "${DOTAGENTS_SOURCE_UPDATED:-0}" != 1 && -e "$SCRIPT_DIR/../.git" ]]; then
+  exec node "$SCRIPT_DIR/agents-source-update.mjs" "$SCRIPT_DIR/agents-update.sh" "$LOG" "$BASH" "$@"
+fi
 TOOLCHAIN_LEDGER_HELPER="${TOOLCHAIN_LEDGER_HELPER:-$SCRIPT_DIR/factory-toolchain-ledger.mjs}"
 TOOLCHAIN_CONTRACT_HELPER="${TOOLCHAIN_CONTRACT_HELPER:-$SCRIPT_DIR/factory-toolchain-contract.mjs}"
 DEPLOYMENT_CONTRACT_HELPER="${DEPLOYMENT_CONTRACT_HELPER:-$SCRIPT_DIR/factory-deployment-contract.mjs}"
@@ -258,6 +262,8 @@ fi
   report_failed=0
   ran_steps=()
   failed_steps=()
+  step_ran dotagents-source
+  [[ "${DOTAGENTS_SOURCE_UPDATE_FAILED:-0}" == 0 ]] || step_failed dotagents-source
   step_ran toolchain-ledger
   post_gate=failed
   claude_before=none; claude_latest=none; claude_operation=failed; claude_after=none; claude_reason=not_observed

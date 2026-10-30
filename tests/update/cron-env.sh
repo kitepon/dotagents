@@ -211,7 +211,7 @@ chmod +x "$TEST_HOME/.nvm/fake-bin/grok"
 REPORTER="$TEST_HOME/base-bin/factory-reporter-schedule-runner"
 REPORTER_CONFIG="$TEST_HOME/factory-reporter.json"
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -228,7 +228,7 @@ grep -Fq "normal:scheduler:$ROOT/bin/factory-reporter-scheduler.mjs install --ap
 [ "$(grep -Fc 'normal:typesafe-setup' "$TEST_HOME/update-events.log")" -eq 1 ] \
   || fail '共通更新入口がTypeSafeの導入・認証確認を一回呼んでいない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=typesafe-fail TYPESAFE_SETUP_FAIL=1 \
@@ -239,7 +239,7 @@ fi
 [ "$(grep -Fc 'normal:jev-setup' "$TEST_HOME/update-events.log")" -eq 1 ] || fail 'Jev公式導入が一回呼ばれていない'
 grep -Fxq "normal:jev-cargo:$TEST_HOME/.cargo/bin/cargo" "$TEST_HOME/update-events.log" \
   || fail '最小PATHのJev導入からrustupのcargoを解決できない'
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=jev-fail JEV_SETUP_FAIL=1 \
@@ -270,7 +270,7 @@ grep -Fxq 'SKIPPED: @anthropic-ai/claude-code は最新（2.1.207）' "$TEST_HOM
   || fail '最新のClaude Codeを入れ直さない理由をlogへ残していない'
 grep -Fxq 'SKIPPED: @openai/codex は最新（0.144.3）' "$TEST_HOME/normal.out" \
   || fail '最新のCodexを入れ直さない理由をlogへ残していない'
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   CLAUDE_VERSION=2.1.206 CLAUDE_POST_VERSION=2.1.207 CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=toolchain-update \
@@ -288,7 +288,7 @@ node -e 'const p=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
 retired_codex="$TEST_HOME/npm-global/lib/node_modules/@openai/.codex-3WgO6fmv"
 mkdir -p "$retired_codex/bin" "$TEST_HOME/npm-global/lib/node_modules/@openai/codex"
 printf 'old' > "$retired_codex/bin/codex.exe"
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   NPM_FAIL_WHILE_EXISTS="$retired_codex" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-clear \
@@ -307,7 +307,7 @@ node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
 
 # 片付けられない退避フォルダが残る回は入替えない（入替えると落ちて、巻き戻しで古いexeへ戻る）。
 printf 'process.exit(process.argv.includes("@openai/codex") ? 20 : 0);\n' > "$TEST_HOME/retired-stuck.mjs"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   NPM_RETIRED_HELPER="$TEST_HOME/retired-stuck.mjs" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-stuck \
@@ -325,7 +325,7 @@ node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '入替を見送った回を、版を変えずに失敗として台帳へ保存しない'
 
 # 片付けを試せなかった回（helperの異常終了）は入替を止めず、npmの結果を記録にする。
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   NPM_RETIRED_HELPER="$TEST_HOME/retired-helper-missing.mjs" CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=retired-unchecked \
@@ -380,7 +380,7 @@ node -e '
 ' "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" \
   || fail '3基盤CLIの更新前後・post-gate台帳を保存していない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=scheduler-fail SCHEDULER_FAIL=17 \
@@ -390,7 +390,7 @@ fi
 grep -q '^FAILED: factory reporterの定期実行を登録できません$' "$TEST_HOME/scheduler-fail.out" \
   || fail 'schedulerの登録失敗を記録していない'
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=system-npm-shadow \
@@ -402,7 +402,7 @@ if grep -q '^system-npm:' "$TEST_HOME/update-events.log"; then
   fail 'system npmをNVM npmより優先した'
 fi
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -419,7 +419,7 @@ if grep -q '^path-shadow:shadow-' "$TEST_HOME/cli-calls.log"; then
   fail 'PATH shadowされた旧CLIをversion判定に使った'
 fi
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   NPM_CLAUDE_LATEST_JSON='{"version":"2.1.207"}' CODEX_VERSION=0.144.2 CODEX_POST_VERSION=0.144.3 RUN_ID=registry-drift \
@@ -434,7 +434,7 @@ grep -q '^registry-drift:install -g @openai/codex@latest$' "$TEST_HOME/npm-calls
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="registry_unavailable"||r.operation_status!=="failed")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'registry driftを台帳へfailed記録しない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   NPM_CLAUDE_LATEST_JSON='"unknown"' RUN_ID=registry-unknown \
@@ -447,7 +447,7 @@ fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="registry_unavailable"||r.latest_version!==null)process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'unknown latestを推測せず台帳へ保存しない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   CLAUDE_VERSION=2.2.0 RUN_ID=npm-downgrade \
@@ -460,7 +460,7 @@ fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="downgrade_refused"||r.before_version!=="2.2.0"||r.after_version!=="2.2.0")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'npm downgrade拒否を台帳へ保存しない'
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   CLAUDE_VERSION=2.1.206 CLAUDE_POST_VERSION=2.1.208 RUN_ID=registry-advanced \
@@ -471,7 +471,7 @@ fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.latest_version!=="2.1.207"||r.after_version!=="2.1.208"||r.operation_status!=="success")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '取得時latestと導入後の新版を区別して記録しない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   CLAUDE_VERSION=2.1.205 CLAUDE_POST_VERSION=2.1.206 RUN_ID=post-version-older \
@@ -481,7 +481,7 @@ fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["claude-code"];if(r.reason_code!=="version_mismatch"||r.operation_status!=="failed")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '古い版の導入を失敗として記録しない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   CLAUDE_VERSION=2.1.206 CLAUDE_DISAPPEAR_AFTER_FIRST=1 RUN_ID=post-cli-missing \
@@ -492,7 +492,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '更新後CLI消失を台帳へ保存しない'
 
 rm -f "$TEST_HOME/grok-updated"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   GROK_CHECK_JSON='{"currentVersion":"0.2.2","latestVersion":"0.2.1","updateAvailable":false,"installer":"internal","channel":"stable","autoUpdate":null,"error":null}' \
@@ -506,7 +506,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'Grok downgrade拒否を台帳へ保存しない'
 
 rm -f "$TEST_HOME/grok-updated"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   GROK_VERSION_MISSING=1 RUN_ID=grok-post-missing \
@@ -517,7 +517,7 @@ node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'Grok更新後CLI消失を台帳へ保存しない'
 
 # 最新版の確認だけが失敗した回は、起動できるかを台帳へ残す（reportが重大度の根拠に使う）。
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   GROK_CHECK_FAIL=1 RUN_ID=grok-check-failed \
@@ -526,7 +526,7 @@ if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
 fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["grok-build"];if(r.reason_code!=="check_failed"||r.operation_status!=="failed"||r.after_version!=="0.2.1")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail 'Grokの確認失敗の回に、起動できた版を台帳へ残していない'
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   GROK_CHECK_FAIL=1 GROK_VERSION_MISSING=1 RUN_ID=grok-check-failed-missing \
@@ -536,7 +536,7 @@ fi
 node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["grok-build"];if(r.reason_code!=="check_failed"||r.after_version!==null)process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '起動できないGrokへ、起動できた版を記録した'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/shadow-bin:$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -552,7 +552,7 @@ grep -q '^FAILED: npm global prefix/bin が不正または利用不能$' "$TEST_
 # its command directory exists.  The bootstrap owns creating that directory.
 fresh_prefix="$TEST_HOME/fresh-npm-global"
 rm -rf "$fresh_prefix"
-env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" FACTORY_REPORTER_RUNNER="$REPORTER" \
   TOOLCHAIN_LEDGER_FILE="$TEST_HOME/fresh-prefix-ledger.json" \
@@ -572,7 +572,7 @@ fi
 mkdir -p "$TEST_HOME/distributed-bin"
 ln -s "$ROOT/bin/agents-update.sh" "$TEST_HOME/distributed-bin/agents-update"
 ln -s "$ROOT/bin/factory-toolchain-ledger.mjs" "$TEST_HOME/distributed-bin/factory-toolchain-ledger"
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -588,7 +588,7 @@ if grep -q 'MODULE_NOT_FOUND' "$TEST_HOME/distributed-symlink.out"; then
   fail '配布symlink経由でledger helperを誤った拡張子付きpathへ解決した'
 fi
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -608,7 +608,7 @@ grep -q '^npm-fail:install -g @quolu/lattice@latest$' "$TEST_HOME/npm-calls.log"
 [ "$(grep -c '^npm-fail:' "$TEST_HOME/reporter-calls.log")" -eq 2 ] \
   || fail 'npm 失敗後に factory reporter を実行しなかった'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -622,7 +622,7 @@ grep -q '^FAILED: throughline setup/update$' "$TEST_HOME/throughline-self-update
 [ "$(grep -c '^throughline-self-update-fail:' "$TEST_HOME/reporter-calls.log")" -eq 2 ] \
   || fail 'Throughline self-update失敗後もfactory reporterを実行していない'
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -636,7 +636,7 @@ fi
   || fail 'Throughline self-update出力をopaqueに扱うfixtureが入口を1回だけ呼ばない'
 
 mv "$TEST_HOME/.nvm/fake-bin/uv" "$TEST_HOME/.nvm/fake-bin/uv.off"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -650,7 +650,7 @@ fi
   || fail 'uv 不在時に factory reporter を実行しなかった'
 mv "$TEST_HOME/.nvm/fake-bin/uv.off" "$TEST_HOME/.nvm/fake-bin/uv"
 
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=uv-absent UV_MARKITDOWN_ABSENT=1 \
@@ -661,7 +661,7 @@ fi
 [ "$(grep -c '^uv-absent:tool install --force markitdown$' "$TEST_HOME/uv-calls.log")" -eq 1 ] \
   || fail 'MarkItDown absent時にuv tool install --forceでuv ownershipを収束していない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=uv-list-fail UV_LIST_FAIL=1 \
@@ -675,7 +675,7 @@ if grep -q '^uv-list-fail:tool \(install\|upgrade\) markitdown$' "$TEST_HOME/uv-
   fail 'uv tool list失敗後にMarkItDownを更新している'
 fi
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -691,7 +691,7 @@ fi
 grep -q '^FAILED: MarkItDown uv tool upgrade$' "$TEST_HOME/.local/state/agents-update/agents-update.log" \
   || fail 'uv 失敗した package 名を log に残さない'
 
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -718,7 +718,7 @@ try { count = Number(readFileSync(path, 'utf8')); } catch {}
 count += 1; writeFileSync(path, String(count));
 if (count > 3) process.exit(42);
 EOF
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
@@ -732,7 +732,7 @@ fi
 grep -q '最終台帳を確定できないため送信しません' "$TEST_HOME/ledger-fail.out" \
   || fail '最終台帳record失敗の送信停止理由を名指ししない'
 
-if env -i HOME="$EMPTY_HOME" PATH="$TEST_HOME/base-bin" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$EMPTY_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" \
   FACTORY_REPORTER_CONFIG="$EMPTY_HOME/factory-reporter.json" \
@@ -752,7 +752,7 @@ node -e '
 
 # 定期更新の失敗は、手順の名前だけを記録する。既定では送信しない。次の回で成功した手順は解決済みになる。
 FAILURE_STATE="$TEST_HOME/failure-state"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=step-fail JEV_SETUP_FAIL=1 SCHEDULER_FAIL=17 \
@@ -769,7 +769,7 @@ node -e '
   if(open.join()!=="factory-report,jev"||v.records.jev.occurrence_count!==1)process.exit(1)
 ' "$FAILURE_STATE/dotagents/update-failures.json" \
   || fail '失敗した手順だけを未解決として記録していない'
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=step-recover \
@@ -785,14 +785,14 @@ node -e '
 
 # BugHubへ届かなかっただけの回は、reportが送信待ちに残り次の毎時の実行が送り直す。手順の失敗にも成功にも数えない。
 DEFERRED_STATE="$TEST_HOME/deferred-state"
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=report-defect REPORT_FAIL=1 \
   /bin/bash "$ROOT/bin/agents-update.sh" >"$TEST_HOME/report-defect.out" 2>&1; then
   fail 'reportの準備の失敗を成功扱いした'
 fi
-if env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
+if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$DEFERRED_STATE" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=report-unreachable REPORT_UNREACHABLE=1 \
@@ -819,7 +819,7 @@ severity_of_jev() {
     "$STOPPED_STATE/dotagents/update-failures.json"
 }
 run_jev_failure() {
-  env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$STOPPED_STATE" \
+  env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$STOPPED_STATE" \
     AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
     FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
     RUN_ID="$1" JEV_SETUP_FAIL=1 REPORT_OUTPUT="$2" \
@@ -844,7 +844,7 @@ if run_jev_failure jev-relaunched "$STOPPED_REPORT"; then fail '手順の失敗�
 [ "$(severity_of_jev)" = 'open:warn:5' ] || fail '製品を起動できる事を確かめた回に、評価し直していない'
 
 # 記録の道具が失敗しても、更新の結果は変えない。
-if ! env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
+if ! env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" XDG_STATE_HOME="$FAILURE_STATE" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   UPDATE_FAILURE_REPORT_HELPER="$TEST_HOME/base-bin/failing-ledger-helper.mjs" \
@@ -861,7 +861,7 @@ grep -q '^agents-update result: update=success report=success$' "$TEST_HOME/help
 # managed-v1が存在すれば、破損pointerでもCaveatのnpm/initを呼ばず他製品を更新する。
 mkdir -p "$TEST_HOME/.caveat-deploy/managed-v1"
 printf 'broken pointer\n' > "$TEST_HOME/.caveat-deploy/managed-v1/active.json"
-env -i HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
+env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin" \
   AGENTS_UPDATE_PATH_PREFIX="$TEST_HOME/no-system-bin" \
   FACTORY_REPORTER_RUNNER="$REPORTER" FACTORY_REPORTER_CONFIG="$REPORTER_CONFIG" \
   RUN_ID=caveat-managed \

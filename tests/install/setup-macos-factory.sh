@@ -316,7 +316,7 @@ with open(sys.argv[1], 'rb') as handle:
     value = plistlib.load(handle)
 assert value['Label'] == 'com.kite.agents-update'
 assert value['ProgramArguments'] == ['/bin/bash', sys.argv[2]]
-assert value['StartCalendarInterval'] == {'Weekday': 1, 'Hour': 4, 'Minute': 0}
+assert value['StartCalendarInterval'] == {'Hour': 2, 'Minute': 0}
 PY
 grep -Fq 'apply-codex-config --apply' "$CALLS" || fail 'Codex設定を適用しない'
 grep -Fq 'apply-claude-config --apply' "$CALLS" || fail 'Claude設定を適用しない'
