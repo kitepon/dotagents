@@ -5,6 +5,10 @@ Claude Code / Codex の環境そのもの（skill・command・agents・rule・�
 - **趣旨・原則・残件**: [PLAN.md](PLAN.md)（憲章＝聖典 v4。プランは docs/ に作る。目的・判断理由・受入条件と工程正本への導線を持つ）
 - **AI 向けの掟（全エージェント共通）**: [AGENTS.md](AGENTS.md)（Claude Code も CLAUDE.md が無ければ直接読む）。**URL を渡された AI のオンボーディング入口も AGENTS.md**（「AI オンボーディング」節）
 
+## Ponytailの管理と配布
+
+Ponytail fullを共通規範として管理する。[共通憲法](shared/constitution.md)に、上流 `DietrichGebert/ponytail` の採用commitと原文を収録し、[MITライセンス](shared/third-party/ponytail-LICENSE.txt)を同梱する。共通憲法の通常生成でClaude・Codex・Grok・Cursorへ同じ方針を配布する。人格・口調や利用者の指示、担当・承認の境界は維持する。上流更新は採用差分をレビューしてから共通正本を更新し、`node bin/render-global-constitution.mjs --write`、関連gate、通常CIを通して同期する。端末ごとのplugin導入や個別設定は不要。
+
 ## 構成
 
 ```
