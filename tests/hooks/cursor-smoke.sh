@@ -231,6 +231,27 @@ else
   fail_case cursor-constitution-over-inline-cap
 fi
 
+"$PYTHON_EXE" - "$OVER_HOME/.cursor/rules/factory.mdc" <<'PYTEST'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+path.write_text(path.read_text(encoding="utf-8") + "\n## Cursor固有差分\n\n固有末尾を保持する。\n", encoding="utf-8")
+PYTEST
+run cursor-constitution-over-cap-with-delta env HOME="$OVER_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
+{"hook_event_name":"beforeSubmitPrompt","session_id":"c-const-over-delta","prompt":"hi","cursor_version":"1.0.0"}
+EOF
+if json && "$PYTHON_EXE" - "$RUN_OUT" <<'PYTEST'
+import json, sys
+ctx = json.loads(sys.argv[1])["additional_context"]
+assert len(ctx) <= 10000
+assert "## Cursor固有差分\n\n固有末尾を保持する。" in ctx
+PYTEST
+then
+  pass cursor-constitution-over-cap-with-delta
+else
+  fail_case cursor-constitution-over-cap-with-delta
+fi
+
 mkdir -p "$LIVE_HOME/.cursor/rules"
 ln -s "$ROOT/cursor/rules/factory.mdc" "$LIVE_HOME/.cursor/rules/factory.mdc"
 run cursor-constitution-live-factory-over-cap env HOME="$LIVE_HOME" "$PYTHON_EXE" "$ROOT/bin/cursor-constitution-hook.sh" <<EOF
@@ -252,7 +273,7 @@ if "ベルの共通憲法" not in ctx or "Cursor nativeの単発" not in ctx:
     raise SystemExit(1)
 if "限界まで甘やかす" not in ctx:
     raise SystemExit(1)
-if "## Cursor固有差分" not in ctx:
+if "## Cursor固有差分" in rest and "## Cursor固有差分" not in ctx:
     raise SystemExit(1)
 if "factory.mdc" not in ctx:
     raise SystemExit(1)

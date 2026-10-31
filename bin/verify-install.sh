@@ -279,7 +279,7 @@ body = path.read_text(encoding="utf-8")
 if "alwaysApply" in ctx:
     print("FAIL: cursor-constitution-hook が frontmatter を本文へ混ぜた")
     raise SystemExit(1)
-if len(body) > 10000 and "## Cursor固有差分" not in ctx:
+if len(body) > 10000 and "## Cursor固有差分" in body and "## Cursor固有差分" not in ctx:
     print("FAIL: 超過時配達が Cursor固有差分を切った")
     raise SystemExit(1)
 PY
