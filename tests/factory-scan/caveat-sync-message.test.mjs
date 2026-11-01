@@ -120,7 +120,7 @@ for (const [major, scan, validate] of WIRES) {
         ['mismatch', diagnostic(), false, 'fail', 'remote_mismatch'],
         ['other-reason', diagnostic('not_ready', 'behind'), false, 'fail', 'behind'],
         ['ready', diagnostic('ready'), true, 'pass', undefined],
-        ['remote-advanced', diagnostic('ready', 'remote_advanced'), true, 'pass', undefined],
+        ['remote-changed', diagnostic('ready', 'remote_changed'), true, 'pass', undefined],
         ['unverified', diagnostic('unverified'), false, 'unverified', 'remote_mismatch'],
         ['schema', { ...diagnostic(), version: null }, false, 'unverified', 'native_diagnostics_schema'],
         ['json', '{', false, 'unverified', 'native_schema_invalid'],
