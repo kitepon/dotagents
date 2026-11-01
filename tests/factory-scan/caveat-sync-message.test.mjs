@@ -15,7 +15,7 @@ import { scanV8 } from '../../lib/factory/v8.mjs';
 import { scanV9 } from '../../lib/factory/v9.mjs';
 
 const NOW = '2026-10-18T06:00:00.000Z';
-const MESSAGE = 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=共有先HEADと端末HEADが一致すること。';
+const MESSAGE = 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=同期の仕組みが健全であること。';
 const fingerprint = (id) => createHash('sha256').update(`caveat\0${id}`).digest('hex');
 const find = (checks, id = 'sync') => checks.find((item) => item.check_id === id);
 
@@ -49,6 +49,7 @@ test('Caveat sync remote_mismatchの文面だけを変え、check全項目と入
   assert.deepEqual(identityAndState, oldIdentityAndState);
   assert.match(oldMessage, /理由=behind（知識repoの端末履歴が追跡先より遅れている）/u);
   assert.equal(oldReason, 'behind');
+  assert.ok(oldMessage.includes('必要状態=同期の仕組みが健全であること。'));
   assert.equal(message_template, MESSAGE);
   assert.equal(reason_code, 'remote_mismatch');
 });
@@ -119,6 +120,7 @@ for (const [major, scan, validate] of WIRES) {
         ['mismatch', diagnostic(), false, 'fail', 'remote_mismatch'],
         ['other-reason', diagnostic('not_ready', 'behind'), false, 'fail', 'behind'],
         ['ready', diagnostic('ready'), true, 'pass', undefined],
+        ['remote-advanced', diagnostic('ready', 'remote_advanced'), true, 'pass', undefined],
         ['unverified', diagnostic('unverified'), false, 'unverified', 'remote_mismatch'],
         ['schema', { ...diagnostic(), version: null }, false, 'unverified', 'native_diagnostics_schema'],
         ['json', '{', false, 'unverified', 'native_schema_invalid'],
