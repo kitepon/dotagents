@@ -21,7 +21,7 @@ else {
   else {
     const beforeReport = (() => { try { return JSON.parse(readFileSync(join(state, 'latest-report.json'), 'utf8')).report_id; } catch { return null; } })();
     const msysHome = home.replace(/^([A-Za-z]):[\\/]/u, (_, drive) => `/${drive.toLowerCase()}/`).replaceAll('\\', '/');
-    const result = spawnSync(bash, [runner], { encoding: 'utf8', env: { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), AGENTS_UPDATE_PATH_PREFIX: `${msysHome}/.local/bin`, AGENTS_UPDATE_BATCH_TOKEN: token, FACTORY_REPORTER_RUNNER: join(home, '.local', 'bin', 'factory-reporter-v9-schedule-runner') } });
+    const result = spawnSync(bash, [runner], { encoding: 'utf8', windowsHide: true, env: { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), AGENTS_UPDATE_PATH_PREFIX: `${msysHome}/.local/bin`, AGENTS_UPDATE_BATCH_TOKEN: token, FACTORY_REPORTER_RUNNER: join(home, '.local', 'bin', 'factory-reporter-v9-schedule-runner') } });
     if (result.status !== 0) fail(`agents-updateがexit ${result.status}で失敗しました`);
     else {
       let logText = ''; try { logText = readFileSync(log, 'utf8'); } catch {}

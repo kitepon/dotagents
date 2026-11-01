@@ -18,14 +18,15 @@ test('Windows native daily factory schedulerはdry-run既定で2:00・一撃setu
   assert.match(value.artifact_content, /<ScheduleByDay><DaysInterval>1<\/DaysInterval><\/ScheduleByDay>/u);
   assert.match(value.artifact_content, /<LogonType>InteractiveToken<\/LogonType>/u);
   assert.match(value.artifact_content, process.platform === 'win32' ? /<UserId>S-1-[0-9-]+<\/UserId>/u : /<UserId>S-1-5-21-100-200-300-400<\/UserId>/u);
-  assert.match(value.artifact_content, /setup-windows-native-factory\.ps1/u);
-  assert.match(value.artifact_content, /-ScheduledRun/u);
-  assert.match(value.artifact_content, /PowerShell.*7.*pwsh\.exe/u);
+  assert.match(value.launcher.content, /setup-windows-native-factory\.ps1/u);
+  assert.match(value.artifact_content, /<Command>.*wscript\.exe<\/Command>/u);
+  assert.match(value.launcher.content, /-ScheduledRun/u);
+  assert.match(value.launcher.content, /PowerShell.*7.*pwsh\.exe/u);
   assert.doesNotMatch(value.artifact_content, /WindowsPowerShell|powershell\.exe/u);
   assert.match(value.rollback, /uninstall --apply/u);
   const source = await readFile(SCHEDULER, 'utf8');
   assert.match(source, /windowsTaskExists\(TASK_NAME\)/u);
-  assert.match(source, /windowsDailyFactoryTaskMatches\(TASK_NAME, location\.runner, powershell\)/u);
+  assert.match(source, /windowsDailyFactoryTaskMatches\(TASK_NAME, spec, powershell\)/u);
   assert.match(source, /already_installed/u);
   assert.match(source, /登録後の読み戻し/u);
   assert.match(source, /writeWindowsTaskXml/u);
@@ -47,21 +48,22 @@ test('SIDはinstall dry-runだけが受理され、status/uninstallはSID照会�
 
 test('既存日次タスクが契約一致なら再登録せず already_installed にする', async () => {
   const { windowsDailyFactoryTaskMatches } = await import('../../lib/factory/windows-scheduler.mjs');
-  const runner = 'C:\\Users\\kite_\\Documents\\Program\\dotagents\\bin\\setup-windows-native-factory.ps1';
   const powershell = 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
-  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', runner, powershell, () => ({ status: 0 })), true);
-  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', runner, powershell, () => ({ status: 4 })), false);
-  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', runner, powershell, () => ({ status: 3 })), false);
-  assert.throws(() => windowsDailyFactoryTaskMatches('dotagents-agents-update', runner, powershell, () => ({ status: 1, stderr: 'boom' })), /照合に失敗/u);
+  const action = { command: 'C:\\Windows\\System32\\wscript.exe', arguments: '//B //Nologo //E:JScript "C:\\factory\\daily.js"' };
+  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', action, powershell, () => ({ status: 0 })), true);
+  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', action, powershell, () => ({ status: 4 })), false);
+  assert.equal(windowsDailyFactoryTaskMatches('dotagents-agents-update', action, powershell, () => ({ status: 3 })), false);
+  assert.throws(() => windowsDailyFactoryTaskMatches('dotagents-agents-update', action, powershell, () => ({ status: 1, stderr: 'boom' })), /照合に失敗/u);
   let command = null;
   let check = null;
-  windowsDailyFactoryTaskMatches('dotagents-agents-update', runner, powershell, (file, args) => {
+  windowsDailyFactoryTaskMatches('dotagents-agents-update', action, powershell, (file, args) => {
     command = file;
     check = args.at(-1);
     return { status: 0 };
   });
   assert.equal(command, powershell);
-  assert.match(check, /C:\\Program Files\\PowerShell\\7\\pwsh\.exe/u);
+  assert.match(check, /C:\\Windows\\System32\\wscript\.exe/u);
+  assert.match(check, /daily\.js/u);
   const source = await readFile(SCHEDULER, 'utf8');
   assert.match(source, /昇格作成の残骸/u);
 });

@@ -642,7 +642,9 @@ function Assert-DailyTask {
     throw "$TaskName is not scheduled daily at 02:00"
   }
   $action = @($task.Actions)[0]
-  if (@($task.Actions).Count -ne 1 -or $action.Execute -notmatch 'pwsh\.exe$' -or $action.Arguments -notlike '*setup-windows-native-factory.ps1*' -or $action.Arguments -notlike '*-ScheduledRun*') {
+  $launcher = Join-Path $env:LOCALAPPDATA 'dotagents\agents-update-scheduler\scheduler\dotagents-agents-update.js'
+  $expectedArguments = '//B //Nologo //E:JScript "' + $launcher + '"'
+  if (@($task.Actions).Count -ne 1 -or $action.Execute -ne (Join-Path $env:WINDIR 'System32\wscript.exe') -or $action.Arguments -ne $expectedArguments) {
     throw "$TaskName action is not the Windows one-shot setup"
   }
 }
