@@ -82,6 +82,17 @@ test('別理由・別部品・ready/unverified・不正部品・旧native_diagno
   }]);
 });
 
+test('公開autosync理由の説明と未確認状態を保持する', () => {
+  const failed = find(caveatChecks(diagnostic('not_ready', 'autosync_failed'), 'not_ready', NOW));
+  assert.deepEqual(failed, expectedFailure('sync', 'autosync_failed'));
+  assert.ok(failed.message_template.includes('理由=autosync_failed（自動同期の直近の試行が失敗したまま）'));
+  assert.ok(failed.message_template.includes('必要状態=同期の仕組みが健全であること。'));
+  assert.deepEqual(find(caveatChecks(diagnostic('unverified', 'autosync_state_unreadable'), 'unverified', NOW)), {
+    check_id: 'sync', status: 'unverified', reason_code: 'autosync_state_unreadable',
+  });
+  assert.ok(caveatFailureMessage('database', 'autosync_failed').includes('理由の具体的な意味は未確認'));
+});
+
 const WIRES = [
   [5, scanV5, validateReportV5], [6, scanV6, validateReportV6], [7, scanV7, validateReportV7],
   [8, scanV8, validateReportV8], [9, scanV9, validateReportV9],
@@ -121,6 +132,8 @@ for (const [major, scan, validate] of WIRES) {
         ['other-reason', diagnostic('not_ready', 'behind'), false, 'fail', 'behind'],
         ['ready', diagnostic('ready'), true, 'pass', undefined],
         ['remote-changed', diagnostic('ready', 'remote_changed'), true, 'pass', undefined],
+        ['autosync-failed', diagnostic('not_ready', 'autosync_failed'), false, 'fail', 'autosync_failed'],
+        ['autosync-state-unreadable', diagnostic('unverified', 'autosync_state_unreadable'), false, 'unverified', 'autosync_state_unreadable'],
         ['unverified', diagnostic('unverified'), false, 'unverified', 'remote_mismatch'],
         ['schema', { ...diagnostic(), version: null }, false, 'unverified', 'native_diagnostics_schema'],
         ['json', '{', false, 'unverified', 'native_schema_invalid'],
