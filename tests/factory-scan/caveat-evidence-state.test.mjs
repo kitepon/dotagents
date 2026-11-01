@@ -147,7 +147,7 @@ test('orphaned reservation cleanup requires verified dead identity and retains t
 });
 
 test('OFF invokes only the normal operation, retaining public check/exit/delivery bytes and identity', async () => {
-  const normal = Object.freeze({ check: { status: 'fail', reason_code: 'remote_mismatch' }, code: 1,
+  const normal = Object.freeze({ check: { status: 'fail', reason_code: 'autosync_failed' }, code: 1,
     body: Buffer.from('public bytes\n'), delivery: 'deferred' });
   let calls = 0;
   const options = { runNormal: async () => { calls++; return normal; } };
@@ -165,9 +165,9 @@ test('existing v9 scan with a fake runner retains its Caveat failure and seriali
         calls.push({ command, args });
         if (command === 'git') return { ok: true, code: 0, stdout: args.includes('--short=7') ? 'abc1234\n' : 'a'.repeat(40) + '\n', stderr: '' };
         if (command === 'caveat') return { ok: false, code: 1, reason: 'exit', stderr: '', stdout: JSON.stringify({
-          schema: 'caveat.native_factory_diagnostics.v1', product: 'caveat', version: '0.20.3', overall: { status: 'not_ready' },
+          schema: 'caveat.native_factory_diagnostics.v1', product: 'caveat', version: '0.21.18', overall: { status: 'not_ready' },
           database: { status: 'ready', reason_code: 'ready', schema_version: 3, migration_status: 'current' },
-          sync: { status: 'not_ready', reason_code: 'remote_mismatch' },
+          sync: { status: 'not_ready', reason_code: 'autosync_failed' },
         }) };
         return { ok: false, reason: 'spawn', stdout: '', stderr: '', error: { code: 'ENOENT' } };
       } });
@@ -177,8 +177,8 @@ test('existing v9 scan with a fake runner retains its Caveat failure and seriali
   Object.defineProperty(options, 'evaluate', { get() { throw new Error('OFF preparation'); } });
   const result = await simulateEvidenceCollection(options);
   const check = result.publicReport.products.caveat.checks.find((c) => c.check_id === 'sync');
-  assert.equal(check.status, 'fail'); assert.equal(check.reason_code, 'remote_mismatch'); assert.equal(check.severity, 'warn');
-  assert.equal(check.message_template, 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=同期の仕組みが健全であること。');
+  assert.equal(check.status, 'fail'); assert.equal(check.reason_code, 'autosync_failed'); assert.equal(check.severity, 'warn');
+  assert.equal(check.message_template, 'caveat sync failed。処理=factory-diagnostics: 知識repo同期状態の診断。観測=not_ready、理由=autosync_failed（自動同期の直近の試行が失敗したまま）。必要状態=同期の仕組みが健全であること。実利用の成否・原因・影響は未確認。');
   assert.equal(calls.filter((c) => c.command === 'caveat').length, 1);
   assert.equal(calls.filter((c) => c.args.some((a) => ['sync', 'report', 'runtime-errors'].includes(a))).length, 0);
   const snapshot = Buffer.from(result.body);
