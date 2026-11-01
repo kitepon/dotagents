@@ -126,7 +126,7 @@ test('ハーネスごとに、そのハーネスの部品だけが不足・未�
 });
 
 test('同じ部品で理由が変わっても、identityは変わらない', () => {
-  const reasons = ['not_git_worktree', 'origin_missing', 'upstream_not_origin', 'worktree_dirty', 'remote_mismatch', 'behind', 'ahead', 'diverged'];
+  const reasons = ['not_git_worktree', 'origin_missing', 'upstream_not_origin', 'worktree_dirty', 'autosync_failed', 'behind', 'ahead', 'diverged'];
   const seen = reasons.map((reason) => byId(caveatChecks(withPart('sync', 'not_ready', reason, 'not_ready'), 'not_ready', NOW)).sync);
   assert.deepEqual(seen.map((item) => item.reason_code), reasons);
   assert.deepEqual([...new Set(seen.map((item) => item.fingerprint))], [fingerprint('sync')]);

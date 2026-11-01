@@ -15,13 +15,13 @@ import { scanV8 } from '../../lib/factory/v8.mjs';
 import { scanV9 } from '../../lib/factory/v9.mjs';
 
 const NOW = '2026-10-18T06:00:00.000Z';
-const MESSAGE = 'Caveat同期診断で共有先HEADと端末HEADの不一致を検出。同期操作の成否・原因・実害は未確認。必要状態=同期の仕組みが健全であること。';
+const MESSAGE = 'caveat sync failed。処理=factory-diagnostics: 知識repo同期状態の診断。観測=not_ready、理由=worktree_dirty（知識repoに未コミットの変更がある）。必要状態=同期の仕組みが健全であること。実利用の成否・原因・影響は未確認。';
 const fingerprint = (id) => createHash('sha256').update(`caveat\0${id}`).digest('hex');
 const find = (checks, id = 'sync') => checks.find((item) => item.check_id === id);
 
-function diagnostic(status = 'not_ready', reason = 'remote_mismatch') {
+function diagnostic(status = 'not_ready', reason = 'worktree_dirty') {
   return {
-    schema: 'caveat.native_factory_diagnostics.v1', product: 'caveat', version: '0.20.3',
+    schema: 'caveat.native_factory_diagnostics.v1', product: 'caveat', version: '0.21.18',
     overall: { status },
     database: { status: 'ready', reason_code: 'ready', schema_version: 3, migration_status: 'current' },
     sync: { status, reason_code: reason },
@@ -36,11 +36,11 @@ function expectedFailure(id, reason, now = NOW) {
   };
 }
 
-test('Caveat sync remote_mismatchの文面だけを変え、check全項目と入力を保持する', () => {
+test('Caveat syncの実理由とcheck全項目・入力を保持する', () => {
   const value = diagnostic();
   const original = structuredClone(value);
   const checks = caveatChecks(value, 'not_ready', NOW);
-  assert.deepEqual(checks, [{ check_id: 'database', status: 'pass' }, expectedFailure('sync', 'remote_mismatch')]);
+  assert.deepEqual(checks, [{ check_id: 'database', status: 'pass' }, expectedFailure('sync', 'worktree_dirty')]);
   assert.deepEqual(value, original);
   // 理由や時刻が変わっても、同じ部品のissueのidentityは変えない。
   const otherReason = find(caveatChecks(diagnostic('not_ready', 'behind'), 'not_ready', NOW));
@@ -51,23 +51,32 @@ test('Caveat sync remote_mismatchの文面だけを変え、check全項目と入
   assert.equal(oldReason, 'behind');
   assert.ok(oldMessage.includes('必要状態=同期の仕組みが健全であること。'));
   assert.equal(message_template, MESSAGE);
-  assert.equal(reason_code, 'remote_mismatch');
+  assert.equal(reason_code, 'worktree_dirty');
+});
+
+test('旧remote_mismatchは共通文面へ投影し、入力とfail/重大度/指紋を保持する', () => {
+  const value = { ...diagnostic('not_ready', 'remote_mismatch'), version: '0.21.17' };
+  const original = structuredClone(value);
+  const found = find(caveatChecks(value, 'not_ready', NOW));
+  assert.deepEqual(found, expectedFailure('sync', 'remote_mismatch'));
+  assert.equal(found.message_template, 'caveat sync failed。処理=factory-diagnostics: 知識repo同期状態の診断。観測=not_ready、理由=remote_mismatch（理由の具体的な意味は未確認）。必要状態=同期の仕組みが健全であること。実利用の成否・原因・影響は未確認。');
+  assert.deepEqual(value, original);
 });
 
 test('別理由・別部品・ready/unverified・不正部品・旧native_diagnosticsの文面と状態を保持する', () => {
-  for (const reason of ['behind', 'ahead', 'diverged', 'origin_missing', 'remote_mismatch_extra']) {
+  for (const reason of ['behind', 'ahead', 'diverged', 'origin_missing', 'new_public_reason']) {
     assert.deepEqual(find(caveatChecks(diagnostic('not_ready', reason), 'not_ready', NOW)), expectedFailure('sync', reason));
   }
   const otherPart = diagnostic('ready', 'ready');
-  Object.assign(otherPart.database, { status: 'not_ready', reason_code: 'remote_mismatch' });
+  Object.assign(otherPart.database, { status: 'not_ready', reason_code: 'missing' });
   otherPart.overall.status = 'not_ready';
-  assert.deepEqual(find(caveatChecks(otherPart, 'not_ready', NOW), 'database'), expectedFailure('database', 'remote_mismatch'));
-  assert.deepEqual(find(caveatChecks(diagnostic('ready'), 'ready', NOW)), { check_id: 'sync', status: 'pass' });
-  assert.deepEqual(find(caveatChecks(diagnostic('unverified'), 'unverified', NOW)), {
-    check_id: 'sync', status: 'unverified', reason_code: 'remote_mismatch',
+  assert.deepEqual(find(caveatChecks(otherPart, 'not_ready', NOW), 'database'), expectedFailure('database', 'missing'));
+  assert.deepEqual(find(caveatChecks(diagnostic('ready', 'ready'), 'ready', NOW)), { check_id: 'sync', status: 'pass' });
+  assert.deepEqual(find(caveatChecks(diagnostic('unverified', 'autosync_state_unreadable'), 'unverified', NOW)), {
+    check_id: 'sync', status: 'unverified', reason_code: 'autosync_state_unreadable',
   });
-  for (const part of [null, [], { status: 'unknown', reason_code: 'remote_mismatch' },
-    { status: 'not_ready', reason_code: 'Remote Mismatch' }, { status: 'not_ready' }]) {
+  for (const part of [null, [], { status: 'unknown', reason_code: 'worktree_dirty' },
+    { status: 'not_ready', reason_code: 'Worktree Dirty' }, { status: 'not_ready' }]) {
     const value = diagnostic(); value.sync = part;
     assert.deepEqual(find(caveatChecks(value, 'not_ready', NOW)), {
       check_id: 'sync', status: 'unverified', reason_code: 'detail_schema_invalid',
@@ -128,13 +137,14 @@ for (const [major, scan, validate] of WIRES) {
     t.after(() => rm(root, { recursive: true, force: true }));
     for (const [platform, profile] of PLATFORMS) {
       for (const [label, value, exitOk, status, reason] of [
-        ['mismatch', diagnostic(), false, 'fail', 'remote_mismatch'],
+        ['dirty', diagnostic(), false, 'fail', 'worktree_dirty'],
+        ['legacy-reason', { ...diagnostic('not_ready', 'remote_mismatch'), version: '0.21.17' }, false, 'fail', 'remote_mismatch'],
         ['other-reason', diagnostic('not_ready', 'behind'), false, 'fail', 'behind'],
-        ['ready', diagnostic('ready'), true, 'pass', undefined],
+        ['ready', diagnostic('ready', 'ready'), true, 'pass', undefined],
         ['remote-changed', diagnostic('ready', 'remote_changed'), true, 'pass', undefined],
         ['autosync-failed', diagnostic('not_ready', 'autosync_failed'), false, 'fail', 'autosync_failed'],
         ['autosync-state-unreadable', diagnostic('unverified', 'autosync_state_unreadable'), false, 'unverified', 'autosync_state_unreadable'],
-        ['unverified', diagnostic('unverified'), false, 'unverified', 'remote_mismatch'],
+        ['unverified', diagnostic('unverified', 'upstream_unavailable'), false, 'unverified', 'upstream_unavailable'],
         ['schema', { ...diagnostic(), version: null }, false, 'unverified', 'native_diagnostics_schema'],
         ['json', '{', false, 'unverified', 'native_schema_invalid'],
         ['exit', diagnostic(), true, 'unverified', 'native_exit_mismatch'],
