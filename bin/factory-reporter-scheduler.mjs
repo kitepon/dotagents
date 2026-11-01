@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 import { readConfig } from '../lib/factory/contract.mjs';
-import { windowsOwnerOnlyAclScript, windowsTaskExists, writeWindowsTaskXml } from '../lib/factory/windows-scheduler.mjs';
+import { windowsHiddenTask, windowsOwnerOnlyAclScript, windowsTaskExists, writeWindowsTaskXml } from '../lib/factory/windows-scheduler.mjs';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 
 const LABEL = 'com.kite.factory-reporter';
@@ -23,7 +23,6 @@ function safePath(value, name) { if (typeof value !== 'string' || !value || UNSA
 function posixQuote(value) { return `'${safePath(value, 'command path').replaceAll("'", "'\"'\"'")}'`; }
 function cronQuote(value) { return posixQuote(value).replaceAll('%', '\\%'); }
 function xml(value) { return safePath(value, 'XML path').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;'); }
-function windowsQuote(value) { return `&quot;${xml(value)}&quot;`; }
 function commandError(result, action) { return new Error(`${action}に失敗しました: ${result.error?.message || result.stderr || result.stdout || `status ${result.status}`}`); }
 
 function locations(target, wireMajor) {
@@ -79,12 +78,12 @@ function artifact(target, config, location, wireMajor, managedEntry = false) {
     return { file, content, runner, commands: [['crontab', '<managed-crontab-with-entry>']], uninstall: [['crontab', '<managed-crontab-without-entry>']], acl: [] };
   }
   const file = join(location.control, 'scheduler', `${TASK_NAME}.xml`);
-  const argumentsText = `${windowsQuote(runner)} --config ${windowsQuote(config)}${managedEntry ? ' --caveat-managed-entry' : ''}`;
-  const content = `<?xml version="1.0" encoding="UTF-16"?><Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Triggers><CalendarTrigger><StartBoundary>2026-01-01T00:17:00</StartBoundary><Repetition><Interval>PT1H</Interval><Duration>P1D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger></Triggers><Principals><Principal id="Author"><RunLevel>LeastPrivilege</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><StartWhenAvailable>true</StartWhenAvailable></Settings><Actions Context="Author"><Exec><Command>${xml(node)}</Command><Arguments>${argumentsText}</Arguments><WorkingDirectory>${xml(location.home)}</WorkingDirectory></Exec></Actions></Task>`;
+  const action = windowsHiddenTask(file.replace(/\.xml$/u, '.js'), `"${node}" "${runner}" --config "${config}"${managedEntry ? ' --caveat-managed-entry' : ''}`);
+  const content = `<?xml version="1.0" encoding="UTF-16"?><Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task"><Triggers><CalendarTrigger><StartBoundary>2026-01-01T00:17:00</StartBoundary><Repetition><Interval>PT1H</Interval><Duration>P1D</Duration><StopAtDurationEnd>false</StopAtDurationEnd></Repetition><ScheduleByDay><DaysInterval>1</DaysInterval></ScheduleByDay></CalendarTrigger></Triggers><Principals><Principal id="Author"><RunLevel>LeastPrivilege</RunLevel></Principal></Principals><Settings><MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy><StartWhenAvailable>true</StartWhenAvailable></Settings><Actions Context="Author"><Exec><Command>${xml(action.command)}</Command><Arguments>${xml(action.arguments)}</Arguments><WorkingDirectory>${xml(location.home)}</WorkingDirectory></Exec></Actions></Task>`;
   const script = windowsOwnerOnlyAclScript();
   const powershell = hostPlatform() === 'win32'
     ? resolveWindowsPowerShell7() : 'C:\\Program Files\\PowerShell\\7\\pwsh.exe';
-  return { file, content, runner, commands: [['schtasks.exe', '/Create', '/TN', TASK_NAME, '/XML', file, '/F']], uninstall: [['schtasks.exe', '/Delete', '/TN', TASK_NAME, '/F']], acl: [[powershell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script]] };
+  return { file, content, runner, launcher: action.launcher, commands: [['schtasks.exe', '/Create', '/TN', TASK_NAME, '/XML', file, '/F']], uninstall: [['schtasks.exe', '/Delete', '/TN', TASK_NAME, '/F']], acl: [[powershell, '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', script]] };
 }
 
 async function ensurePrivateState(target, state, acl) {
@@ -107,7 +106,7 @@ function isAbsent(result, pattern) { return result.status !== 0 && pattern.test(
 
 async function apply(command, target, spec, location) {
   if (command === 'install') {
-    await ensurePrivateState(target, location.state, spec.acl); await ensurePrivateState(target, location.control, spec.acl); await mkdir(dirname(spec.file), { recursive: true, mode: 0o700 }); if (target === 'win32') await writeWindowsTaskXml(spec.file, spec.content); else await writeFile(spec.file, spec.content, { mode: 0o600 });
+    await ensurePrivateState(target, location.state, spec.acl); await ensurePrivateState(target, location.control, spec.acl); await mkdir(dirname(spec.file), { recursive: true, mode: 0o700 }); if (target === 'win32') await writeWindowsTaskXml(spec.file, spec.content, spec.launcher); else await writeFile(spec.file, spec.content, { mode: 0o600 });
     if (target === 'linux') { replaceCron(spec.content, false); await removeLegacyArtifacts(target, location); return; }
     if (target === 'darwin') { const probe = spawnSync('launchctl', ['print', spec.uninstall[0][2]], { encoding: 'utf8' }); if (probe.status === 0) { const stopped = spawnSync('launchctl', spec.uninstall[0].slice(1), { encoding: 'utf8' }); if (stopped.status !== 0) throw commandError(stopped, 'launchd既存scheduler停止'); } else if (!isAbsent(probe, ABSENT_LAUNCHD)) throw commandError(probe, 'launchd scheduler照会'); }
     const [bin, ...args] = spec.commands[0]; const result = spawnSync(bin, args, { encoding: 'utf8' }); if (result.status !== 0) throw commandError(result, `${bin}登録`); await removeLegacyArtifacts(target, location); return;
@@ -115,7 +114,7 @@ async function apply(command, target, spec, location) {
   if (target === 'linux') replaceCron(spec.content, true);
   else if (target === 'darwin') { const probe = spawnSync('launchctl', ['print', spec.uninstall[0][2]], { encoding: 'utf8' }); if (probe.status === 0) { const result = spawnSync('launchctl', spec.uninstall[0].slice(1), { encoding: 'utf8' }); if (result.status !== 0) throw commandError(result, 'launchd解除'); } else if (!isAbsent(probe, ABSENT_LAUNCHD)) throw commandError(probe, 'launchd scheduler照会'); }
   else if (windowsTaskExists(TASK_NAME)) { const [bin, ...args] = spec.uninstall[0]; const result = spawnSync(bin, args, { encoding: 'utf8' }); if (result.status !== 0) throw commandError(result, 'Windows Task Scheduler解除'); }
-  await rm(spec.file, { force: true }); await removeLegacyArtifacts(target, location);
+  await rm(spec.file, { force: true }); if (spec.launcher) await rm(spec.launcher.file, { force: true }); await removeLegacyArtifacts(target, location);
 }
 
 export async function removeLegacyArtifacts(target, location) {
@@ -148,7 +147,7 @@ async function main() {
   // fail-openになる（2026-08-10実被弾: wire v7 canary cutover）。dry-runはartifact確認用のため検証しない。
   if (request.command === 'install' && !request.dryRun) assertRunnerExecutable(spec.runner, request.target);
   if (!request.dryRun) await apply(request.command, request.target, spec, location);
-  emit({ ok: true, command: request.command, dry_run: request.dryRun, platform: request.target, wire_major: request.wireMajor, config: configPath, state: location.state, artifact: spec.file, artifact_content: request.command === 'install' ? spec.content : undefined, commands: request.command === 'install' ? spec.commands : spec.uninstall, acl_commands: spec.acl, reporting_enabled_changed: false, collection_enabled_changed: false });
+  emit({ ok: true, command: request.command, dry_run: request.dryRun, platform: request.target, wire_major: request.wireMajor, config: configPath, state: location.state, artifact: spec.file, artifact_content: request.command === 'install' ? spec.content : undefined, launcher: spec.launcher, commands: request.command === 'install' ? spec.commands : spec.uninstall, acl_commands: spec.acl, reporting_enabled_changed: false, collection_enabled_changed: false });
 }
 function assertRunnerExecutable(runner, target) {
   if (!existsSync(runner)) throw new Error(`schedulerが起動するrunnerが存在しません (runner_unresolved): ${runner}。./install.sh を再実行してsymlinkを配布してから--applyしてください`);

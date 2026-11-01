@@ -75,8 +75,13 @@ test('3OSの通常scheduler dry-runは明示flagだけを加え、既定定義�
       '--platform', platform, '--wire-major', 'v9'];
     const original = JSON.parse((await execute(process.execPath, args, { env: box.env })).stdout);
     const selected = JSON.parse((await execute(process.execPath, [...args, '--caveat-managed-entry'], { env: box.env })).stdout);
-    assert.equal(selected.artifact_content.split('--caveat-managed-entry').length, 2);
-    assert.equal(selected.artifact_content.replace(platform === 'darwin' ? '<string>--caveat-managed-entry</string>' : ' --caveat-managed-entry', ''), original.artifact_content);
+    const command = (value) => platform === 'win32' ? value.launcher.content : value.artifact_content;
+    assert.equal(command(selected).split('--caveat-managed-entry').length, 2);
+    assert.equal(command(selected).replace(platform === 'darwin' ? '<string>--caveat-managed-entry</string>' : ' --caveat-managed-entry', ''), command(original));
+    if (platform === 'win32') {
+      assert.equal(selected.artifact_content, original.artifact_content);
+      assert.equal(selected.launcher.file, original.launcher.file);
+    }
     assert.equal(selected.dry_run, true);
   }
 });
