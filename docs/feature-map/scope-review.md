@@ -33,3 +33,11 @@ Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`up
 追加の責務分割・重複整理・代替案採否は、残る接点を揃えて最新Astra xhigh適用後の設計まとまりへ渡す。旧wireのexact受理、Caveat parser差、重大度/指紋、collection/空ACK、各保存/取消・結果不明を機械的に統一しない。採否前の実装は行わない。
 
 変更範囲の必要fixtureと全体確認、図の実描画/目視、適用済みAstra最終全体整合、指導担当の成果確認、完成候補と既承認手順による反映結果は別工程。今回の文書確認だけでruntime gate/CI/3OS受入を再実行済みにしない。実動作なしのdocs調査を続けるたびに既122/60/native13/4host試験を反復しない。
+
+## 第3採否後の具体工程
+
+[第3責務設計](../adr/20261103-feature-map-responsibility-phase3.md)でscheduler専用state/nonce lock抽出を採用した。全体の所有窓口は同ADRの採否表にまとめ、旧parser/観測/各lockの異なる契約は維持する。Windows marker説明は訂正済み、ADR0136の要件と実装差は未解消のまま。実装はSol適用後である。
+
+次は新module/3runnerと全relayの接点を確定し、既scheduler/PS7 source fixtureを追従、必要な世代別・原本保持caseを隔離検証して現状図へ接続する。既読scheduler fixtureのRUNNERはv4であり、全世代の挙動確認へ代用しない。
+
+残るsource接続は、`agents-update-scheduler-contract.mjs`、`jev-products.mjs`の窓口と、`deployment-contract.mjs`/`runtime-context.mjs`の実関数・逆caller、今回確認した`windows-powershell.mjs`の返却を有限に照合する。setup/update/delivery/CI詳細へ不足分だけ補う。aliasやfile名が詳細本文にない候補を機械的に未読へ分類し直さない。全fixtureの未読一覧/既gate所属/OS条件、動的・外部caller、実OSと実CI/配布受入は引き続き残る。

@@ -32,3 +32,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 [CI・文書検査・配布接点](feature-map/ci-distribution.md)と[全体の残り](feature-map/scope-review.md)を接続した。現sourceの比較base/gateと、旧ADR/runner待機文書との不一致を観測として保持する。機械分類は全意味確認ではなく、外部イベント/観測入口/互換wrapper等の残る接点を有限に閉じて追加Astra設計へ渡す。
 
 [外部イベント保存](feature-map/external-events.md)、[GPT/Rabbit観測入口](feature-map/gpt-observation.md)、[旧runner/互換入口](feature-map/legacy-runners.md)を本文から接続した。nonce lock本体の重複と、旧wire gate/保持・通常閉鎖・過去限定scopeの差を追加責務採否へ渡す。全fixture/外部caller/実OS・最終Astra全体整合は未完。
+
+[第3責務設計](adr/20261103-feature-map-responsibility-phase3.md)で、同一scheduler state/nonce lock/ACLの専用module抽出を採用した。世代別runner/診断/配送・原本保持は維持し、実装と必要fixture追従は次のSolまとまり。Windows markerの説明を現sourceへ訂正した。ADR0136の履歴保護要件と現CIの差は未解消として残す。残るsource接続の有限工程と全fixture未読をscope-reviewへ記録し、最終Astra全体整合とは区別する。

@@ -59,7 +59,7 @@ Windowsの`windows-native-product-smoke.mjs:assertWindowsNativeProductSmoke`はw
 
 旧[ADR0136](../adr/0136-document-ci-ownership-and-base-relative-immutability.md)は比較元を全document checkへ渡し履歴を保護する記述を持つ。現sourceではcomparison_baseはoutputに出すが後段commandへ渡されず、rendererの引数にもbase-refは無い。現在の文書検査成功をbase相対のarchive不変性確認へ拡張しない。上の図はこの現sourceを表し、旧ADRや履歴を今回書換えて裁定を変更しない。
 
-factory-ci runbookのbusy marker待機の説明と、現Windows hookのmarker未使用にも差がある。source上の現挙動を上に記し、実Host上の導入版/設定を探索しない。これらは不一致の観測としてAstra設計・最終確認へ残し、今回を修理例外や共有基盤運用の引受にしない。
+factory-ci runbookにあったbusy marker待機の説明は、[第3設計](../adr/20261103-feature-map-responsibility-phase3.md)で現Windows hook/既fixtureの「互換引数のみ、読取も待機もしない」へ訂正した。実Host上の導入版/設定は未探索のまま。ADR0136の要件と実装差は解消しておらず、要件撤回や履歴検査成功とはしない。新policy実装・修理例外・共有基盤運用の引受へ広げない。
 
 `tests/ci/dotagents-ci-plan.test.mjs`本文は文書/host/共通/未分類/空差分/混在/週次/zero SHAと最終gateの拒否、専有Git履歴/出力を確認する。`tests/docs/current-docs.test.mjs`本文は生成/区分不整合/reference/HTML/srcset/code除外/履歴link除外/引数/LFを確認する。unai installer fixtureの公開exit保持も読取。これらを今回実行したとはしない。関連source/test/fixture/config/exportの固定索引は当席phase13-source-review.json/phase13-contacts.txtへ保存。
 

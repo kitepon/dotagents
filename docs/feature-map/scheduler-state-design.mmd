@@ -1,0 +1,17 @@
+flowchart TB
+  proposal[PROPOSAL / not implemented / phase 3] --> entries
+  entries[v2 and v4 runner / v5 shared runner via v6-v9 relay]
+  entries --> caller[Keep config and platform / OFF skip / wire and state path]
+  caller --> prepare[Planned scheduler-state.mjs / privateState]
+  prepare --> lock[withLock / reject legacy / publish nonce contender / validate peers]
+  prepare --> acl[ownerOnlyAcl / existing PS7 resolver and fixed ACL]
+  lock --> acl
+  lock --> task[Caller task / generation-specific scan or reuse / enqueue / flush]
+  task --> write[v5 writeStateJson / report and receipt rules stay in runner]
+  write --> acl
+  task -- result or throw --> release[Own owner release / task finally or peer-check catch / matching nonce only]
+  lock -- peer validation failed --> release
+  release --> outcome[Preserve return or error / cleanup may fail / no rollback]
+  task -. partial saved state .-> retain[Report / ACK / outbox retained under existing rules]
+  separate[Unchanged owners / v1 directory / queue PID / event PID / native SH-EX]
+  proposal -. outside extraction .-> separate

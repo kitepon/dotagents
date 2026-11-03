@@ -4,6 +4,8 @@
 
 製品所有CIの不変判断は[ADR 0136](../../docs/adr/0136-document-ci-ownership-and-base-relative-immutability.md)が正。
 
+dotagents自身の現文書検査は、ADR 0136のclosed current集合・基準commit相対の履歴保護を実装していない。比較baseは変更分類のoutputまでで、後段rendererへ渡らず、`--base-ref`も未対応である。`make lint-current-docs`成功を履歴不変性の合格にしない。[現sourceとの対応と未解消差](../../docs/feature-map/ci-distribution.md)を参照する。ADRの要件を撤回する記述ではない。
+
 ## 責任境界
 
 - 各製品repo: workflow全体、起動条件、対応OSと要求label、依存導入、試験command、文書検査、並列度、timeout、release gateと合否。製品CIをdotagentsのworkflowへ委譲せず、このrunbookへ製品workflowの内部を複製しない。
@@ -26,7 +28,7 @@
 - main-server runnerは停止している（サービスを止めて無効にした状態）。Linuxの工場setupは、`server` profileではrunnerを登録・起動せず、`linux` profileからもmain-server runnerのlabelとonlineを確かめない。
 - WSL2 runnerと`wsl2` labelは退役済み。Organizationへ再登録せず、workflowの実行対象にも戻さない。Windows CIは`windows-native` runnerだけを使い、PowerShell 7とGit for Windowsで閉じる。
 - `windows-native`席は所有者が対話で使うPCである。runnerのjob開始hook（`bin/windows-factory-runner-job-started.ps1`）で、jobのprocessを先頭8個を除いた論理CPUと優先度`BelowNormal`で動かす。製品は並列数を`os.availableParallelism()`から決め、論理CPUの総数を固定値や`NUMBER_OF_PROCESSORS`から取らない。hookは端末の`C:\ProgramData\dotagents\factory-runner\job-started.ps1`へ管理者とSYSTEMだけが書ける形で置き、runnerの`.env`の`ACTIONS_RUNNER_HOOK_JOB_STARTED`で指す。hookの失敗はjobを落とさず、jobの注記に出る。
-- 所有者の側が重い仕事（ビルドや試験）の間だけ置く鍵のファイルがある端末では、その場所をrunnerの`.env`の`FACTORY_RUNNER_BUSY_MARKER`で指す。同じhookが、鍵が在る間はjobの開始を待つ（5秒おきに見直し、最大5分。更新が15分より古い鍵は待たない）。hookは鍵を読むだけで、作らず消さない。上限を過ぎた時はjobを始め、jobの注記に出す。所有者の側は、`Runner.Worker.exe`が在る間を「工場のjobが走っている」と読める。未設定の端末では待たない。
+- 現repoのjob開始hookは、busy markerを読まず、job開始を待たない。`BusyMarkerPath`等は既callerとの互換用に受け取るだけで、`FACTORY_RUNNER_BUSY_MARKER`に値が残っていても待機しない。dedicated relayもcapacity hookへ空のmarker引数を渡す。markerの作成・削除は行わない。この説明は現sourceの契約であり、各Hostに導入済みのhook版を確認した結果ではない。
 - runnerは個人用PATHや対話sessionを前提にしない。runnerやtoolchainの障害を別環境への迂回で隠さない。
 - OS再導入で同名runnerを置き換える時は、旧登録を削除してから現行hostを同じ正規名で登録する。登録tokenと確認codeを文書・log・shell履歴へ残さない。
 - dotagentsの`.github/workflows/factory-full-ci.yml`はdotagents自身のCIと参照実装だけに使い、製品repoから参照しない。

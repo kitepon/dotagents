@@ -32,3 +32,7 @@ install.shは各binを拡張子なしリンクで配布。`factory-reporter-sche
 wrapperにはinstallのbin glob以外の自動起動callerをliteral検索で確認できないものがあり、外部の利用者caller不存在とはしない。`tests/oracle/wrappers.sh`全文は偽Node/Chromeのargv引継ぎ、`tests/wire-v6/wire-v6.test.mjs`該当caseは二製品への順序とpush引数を検査する。sync-sweep専用fixtureは候補索引で未確認。Makefile test-oracle/wire globとの接続を記録し、実行はしていない。
 
 runner関連fixtureはscheduler.test.mjsのwire別生成/非0/legacy lock/live/dead owner、lattice-cutover/wire-v4.test.mjsの必須製品差、finalize-report.test.mjsのreport-id再利用、caveat-entry-cliのv9flag等。今回読んだsectionと全fileを当席phase14-source-review.jsonで区別する。全fixture本文/全OS/同時実行・電断・未知callerは未完。既成功122/60/native13/4host試験の無根拠反復はしない。
+
+## 第3設計への接続
+
+[採否と保持条件](../adr/20261103-feature-map-responsibility-phase3.md)で、v2/v4/v5の同一state/nonce lock/ACLだけの抽出を採用した。まだ実装しておらず、上記の現状は各runner内の所有を示す。設計時にscheduler.test.mjs全文、windows-powershell.test.mjsとchild-process fixtureを確認し、移動先と各callerへsource検査を追従する必要を特定した。v1/queue/event/nativeの排他と世代別gate/receiptは抽出対象に含めない。
