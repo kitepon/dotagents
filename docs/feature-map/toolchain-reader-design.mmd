@@ -1,0 +1,23 @@
+flowchart TB
+  title[PROPOSED reader ownership - not implemented]
+  updater[agents-update orchestration]
+  writer[record CLI - existing writer validation / lock / ACL]
+  state[(toolchain-ledger.json)]
+  updater -->|existing record command| writer
+  writer -->|existing writes| state
+  subgraph proposed[Planned lib/factory/toolchain-ledger.mjs]
+    path[defaultToolchainLedgerPath<br/>call-time environment / target platform]
+    reader[readToolchainLedger<br/>file safety / JSON / reader schema]
+    result[value or toolchain_ledger_unavailable<br/>no writes / no retries]
+    path -. optional default path .-> reader
+    reader -. unchanged result .-> result
+  end
+  state -. read-only .-> reader
+  result -.-> old[v2 / v4 projection<br/>keep legacy failure semantics]
+  result -.-> current[v5 projection + same-report finalize<br/>keep launch evidence / ID / time]
+  old --> oldwire[existing old wire contracts]
+  current --> newer[v6-v9 callers / schedule runner]
+  newer --> queue[outbox / ACK / receipt<br/>next detailed investigation]
+  title ~~~ updater
+  classDef plan fill:#fff4cc,stroke:#876300,stroke-width:2px
+  class path,reader,result plan

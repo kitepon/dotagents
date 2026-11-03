@@ -29,4 +29,4 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 
 全tracked pathの機械索引は漏れを探す入口であり、意味確認の完了数には数えない。動的dispatch・alias・外部repo caller・実OS状態・各親の実session認識は未確定。
 
-進行と完了条件は[今回の工程](plan_feature-map-refactoring-20261103.md)。1Password任意化の挙動変更は全体リファクタの完了後、別差分で扱う。
+進行と完了条件は[今回の工程](plan_feature-map-refactoring-20261103.md)。[第1責務設計](adr/20261103-feature-map-responsibility-phase1.md)は、導入/設定/更新の維持理由と台帳reader整理の採否を記す。提案図は未実装であり、この現状図と区別する。1Password任意化の挙動変更は全体リファクタの完了後、別差分で扱う。
