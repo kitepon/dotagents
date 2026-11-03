@@ -4,6 +4,8 @@
 
 基準main `9fca2c8`、第2構造整理候補`619a953`からの本文調査。`scan.mjs`、`v5.mjs`、`caveat-diagnostics.mjs`、`toolchain-contract.mjs`とv6-v9の合成を確認した。候補`5c5890d`で[旧v2/v4個別診断](legacy-diagnostics.md)と[Caveat collector/非公開evidence状態](caveat-evidence.md)を追加調査した。外部製品の内部状態や実hostを観測した結果ではない。全fixture意味確認・CI/配布全体はまだ残る。
 
+[外部イベント台帳と公開readiness](external-events.md)、[GPTの観測選択とRabbit一回保持](gpt-observation.md)へ保存/許可/ACKの実関数対応を接続した。
+
 ## 状態の所有と実関数
 
 | 窓口 | 所有・入力と返却 | 失敗・保持 |

@@ -25,6 +25,8 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 | 毎時runner/台帳確定/receipt | `bin/factory-reporter-v9-schedule-runner.mjs`→v5共通runner、`bin/factory-toolchain-ledger.mjs` | [更新・確定](feature-map/update.md)。本文とfinalize投影/receiptを確認。全wireのscan/transportと実OSは未確認 |
 | outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。共通reporter/fragment/ACKと旧v1/v2/v4本文を確認。旧runner差分・全fixtureの確認は残る |
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | [writer・authority・保持](feature-map/deployment.md)。source/二SH/元Node/原本storeを本文確認。別native fixture候補とlive/issuer/store/resource/allwriter未確定を区別 |
+| 外部イベントとGPT観測入口 | `external-events.mjs`、`bughub-external-probe.mjs`、`gpt-observation-entry.mjs`、`rabbit-observation-once.mjs` | [外部イベント保存](feature-map/external-events.md)・[観測選択/一回保持](feature-map/gpt-observation.md)。旧台帳/現行readiness、通常閉鎖/過去限定scopeを区別。実permit/Hostは未確認 |
+| 旧runner・互換wrapper | v1/v2/v4/v5共通schedule runner、Oracle/sync/Community入口 | [世代別runner/補助操作](feature-map/legacy-runners.md)。state/lock/更新/receiptの差と全接点候補を記録。全fixture/動的aliasは未完 |
 | CI・公開・配布接点 | `Makefile`、`.github/workflows/`、`scripts/dotagents-ci-plan.mjs` | [CI選択・文書検査・配布](feature-map/ci-distribution.md)。event/base/分類/gate/OSと開発文書source本文を確認。旧文書差と実CI/配布受入は未確認 |
 
 全tracked pathの機械索引は漏れを探す入口であり、意味確認の完了数には数えない。動的dispatch・alias・外部repo caller・実OS状態・各親の実session認識は未確定。
@@ -37,4 +39,4 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 
 [第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)は、reporterのCLI/巡回と共有report readerの整理を採用した。配送・ACK・保持の境界は維持する。[提案図](feature-map/delivery-design.svg)は未実装であり、上の現状図とは分けて読む。
 
-第2実装の[配送CLI/報告reader現状と検証](feature-map/delivery-functions.md)へ接続した。第2設計の提案図は設計時点の履歴で、現在の関数配置はこちらを正本とする。旧v2/v4 transport本文の追加確認とv1の未読も記す。
+第2実装の[配送CLI/報告reader現状と検証](feature-map/delivery-functions.md)へ接続した。第2設計の提案図は設計時点の履歴で、現在の関数配置はこちらを正本とする。旧v1/v2/v4 transport本文の追加確認と世代別の保持差も記す。

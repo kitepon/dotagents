@@ -35,3 +35,5 @@ flowchart TB
   runner -- finalize --> receipt[delivery receipt]
   ledger -- final projection --> runner
   ci[CI plan / Makefile gates] --> result
+  external[Explicit legacy external-event store] -- legacy collection only --> scan
+  observation[GPT entry selector / fixed historical Rabbit budget] --> scan

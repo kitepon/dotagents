@@ -8,10 +8,10 @@
 | --- | --- | --- |
 | 規範生成/install/verify | [導入](installation.md)、[親hook/skill](harness.md) | clean-home等の全fixture後半/実session、未列挙alias/外部caller |
 | config applier/source同期/更新 | [設定](configuration.md)、[更新確定](update.md)、[setup](setup.md) | 他製品更新relay/退役parkと実callerの逆対応、全fixture |
-| 3OS setup/scheduler | [setup](setup.md)、[CI配布](ci-distribution.md)の補助入口 | 旧schedule-runner各世代の全期間/取消/保持差、windows helperの全逆caller/実OS |
+| 3OS setup/scheduler | [setup](setup.md)、[CI配布](ci-distribution.md)の補助入口 | [世代別runner](legacy-runners.md)へ差を接続済み。全fixture/動的caller/実OS |
 | 公開診断・旧wire | [診断](diagnostics.md)、[v2/v4](legacy-diagnostics.md) | 実probe不要。診断の全fixtureと動的command/版alias |
-| 配送/ACK/receipt | [配送](delivery.md)、[CLI/reader](delivery-functions.md) | 外部イベント台帳/probeの保存と全接点、旧runnerの未確定を閉じる |
-| GPT/Rabbit観測・permit境界 | [writer/authority](deployment.md)、[診断](diagnostics.md) | gpt-observation-context/entry、rabbit-observation-once/scopeの本文・全caller・原本/許可の接続。実permit/trustは探索しない |
+| 配送/ACK/receipt | [配送](delivery.md)、[CLI/reader](delivery-functions.md) | [外部イベント](external-events.md)・[旧runner](legacy-runners.md)へ保存/ACK/世代差を接続済み。全fixture/外部callerは残る |
+| GPT/Rabbit観測・permit境界 | [writer/authority](deployment.md)、[診断](diagnostics.md) | [観測入口/一回保持](gpt-observation.md)へ本文/原本/許可/接点を接続済み。実permit/trustは未探索 |
 | Caveat managed/private candidate | [collector/保持](caveat-evidence.md) | native worker/channel/raw保存は未接続候補。全fixture/配布実物/実OSを成功扱いしない |
 | model/4親hook/skill/agent | [harness](harness.md)、[モデル選定](model-selection.md) | 親session実発火と動的利用。既1Password接点保持、任意化は全体完了後別差分 |
 | 開発文書/CI/Lattice inventory | [CI配布](ci-distribution.md) | 旧ADRと実比較base経路、busy marker文書差、全fixture/branch protection/実CI・公開 |
@@ -22,9 +22,9 @@
 
 CI/renderer/Lattice inventory、公開製品setup relay、factory deployment/toolchain CLI、gh auth status helper、npm退避、Caveat更新owner、Windows report inventory/runner capacity source、platform chmod helper、unai installer、退役WSL2入口を本文確認した。これらの実操作は行っていない。
 
-Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`update-grok-community-overlay.sh`も本文を読んだ。前者は通常gpt-connectorと別の明示rollback入口で、Node/global-root/Chrome解決とexec、QoS guard、負座標の非可視非保証を保持する。sync-sweepは各repoをfetchして台帳をstdoutへ出し、失敗を行に残す。Community overlayは製品所有scripts/update-overlay.shへ順次委譲し、--pushは明示引数だけ。成功済み最初の製品を第二の失敗でrollbackしない。製品内部・他repoの操作を今回引き受けない。これらの全caller/test/設定/exportと既入口からの図接続は次のまとまりで閉じる。
+Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`update-grok-community-overlay.sh`も本文を読んだ。前者は通常gpt-connectorと別の明示rollback入口で、Node/global-root/Chrome解決とexec、QoS guard、負座標の非可視非保証を保持する。sync-sweepは各repoをfetchして台帳をstdoutへ出し、失敗を行に残す。Community overlayは製品所有scripts/update-overlay.shへ順次委譲し、--pushは明示引数だけ。成功済み最初の製品を第二の失敗でrollbackしない。製品内部・他repoの操作を今回引き受けない。今回[世代別runner/互換入口](legacy-runners.md)へ配布/全literal接点/test/設定の対応を接続した。動的/外部利用者は未確定。
 
-次の有限本文調査は外部イベント系（`lib/factory/external-events.mjs`、`bin/factory-external-event.mjs`、`bin/bughub-external-probe.mjs`）、観測選択系（`gpt-observation-context.mjs/gpt-observation-entry.mjs/rabbit-observation-once.mjs/rabbit-observation-scope.json`）と関連fixture/公開wrapper。必要なら旧`factory-reporter-v2/v4-schedule-runner.mjs`と現行runnerの差分を照合する。runtime-context/deployment-contract等の参照済み窓口も、全export/callerへの逆対応の残りを明示して閉じる。
+外部イベント系とGPT/Rabbit観測選択系、旧v1/v2/v4runnerとv5共通runnerを本文確認し、上の詳細へ接続した。各public export、library import、CLI/bin配布、fixture/gateのliteral候補を当席phase14-contacts.txtに固定。runtime-context/deployment-contract等の参照済み窓口も含めた、未列挙alias/動的・外部callerと全fixtureの意味確認は残る。次は既2構造整理と新たに見えた重複・保持差・旧文書差の責務採否を、Astra適用後にまとめて判断する。
 
 これは未確定のsourceだけの工程で、実runtime/実credential/permit/実観測/他writer参加の探索ではない。旧live/issuer/store/resource/allwriter未確定とSEC002本人later/旧stage停止を保持する。
 

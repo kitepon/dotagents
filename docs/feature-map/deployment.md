@@ -4,6 +4,8 @@ base main `9fca2c8`からの現状本文調査。台帳writerのsourceと通常�
 
 [writer/reader描画](deployment.svg) / [原本](deployment.mmd)。[authority/観測描画](authority.svg) / [原本](authority.mmd)。既採用の詳細契約は[authority計画](../plan_gpt-core-authority-channel.md)。このページは現在の実file/functionと状態所有を持ち、過去のCI待ちや他担当の仕事を再開条件へ復活させない。
 
+[GPT観測入口とRabbit一回枠](gpt-observation.md)は別の状態所有を持つ。private coreの原本/issuer許可と、report safe_context・過去の一回取得/送信claimを同一視しない。
+
 ## writerとreaderの所有
 
 | 実file・関数 | 所有するもの・受渡し | 失敗・保持・後始末 |

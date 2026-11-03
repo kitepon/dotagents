@@ -1,0 +1,22 @@
+flowchart TB
+  facts[Four adopted source facts] --> choose{Entry complete?}
+  choose -- no product CLI fact --> normal[Ordinary argv and v9 validator / observation closed]
+  choose -- all facts --> entry[Opt-in argv and projector and validator together]
+  scope[Fixed historical Rabbit scope / no current permission default] --> permit[Owned local permit / readback and supply bindings]
+  permit --> begin{Host UID platform window valid?}
+  begin -- yes --> claim[Exclusive durable capture claim]
+  claim --> scan[One native scan / same-report context]
+  entry --> scan
+  scan --> original[Exact captured bytes / revision time package binding]
+  original --> queue[Separate report and ACK outputs / enqueue]
+  queue --> sendclaim{Durable send claim and active window?}
+  sendclaim -- yes --> post[One POST / redirect error / no fragments]
+  sendclaim -- no --> held[Hardlink held outbox / fsync before queue unlink]
+  post --> result[One send result record / receipt distinct from ACK]
+  result -- accepted and ACK succeeded --> deleted[Queue deletion / captured original retained]
+  result -- HTTP network timeout or ACK unknown --> held
+  claim -. failure does not restore budget .-> retained[Claims and originals retained]
+  original --> retained
+  normal --> ordinary[Existing ordinary retry and fragment contracts]
+  context[Seven fixed safe-context fields] --> validation[Validate extension then full existing v9 rules]
+  validation --> view[Same-report projection only / UI delivery not implemented here]

@@ -1,0 +1,21 @@
+flowchart TB
+  installer[Install bin links] --> registrar[Scheduler selects wire / default v4]
+  setup[OS setup and daily updater explicitly select v9] --> runner[Wire runner entry]
+  registrar --> runner
+  runner --> config[File config and platform identity / normal OFF skips]
+  config --> v1[Legacy v1 / directory lock and PID]
+  config --> older[v2 and v4 / nonce contender lock / post gate]
+  config --> current[v5 to v9 / shared main selected by basename]
+  older --> owners[Publish owner hardlink / reject legacy unknown or live owner]
+  current --> owners
+  owners --> task[Scan or reuse report ID / enqueue / flush]
+  v1 --> task
+  task -- child failed --> retain[Exit nonzero / partial report ACK and queue retained]
+  task -- v7 to v9 successful finalize flush --> receipt[Batch-bound delivery receipt / separate from UI]
+  task --> release[Finally release own lock / directory or nonce by wire]
+  retain --> release
+  receipt --> release
+  installer --> oracle[Explicit Oracle compatibility / exec Node and Chrome]
+  installer --> sweep[Explicit sync sweep / repo fetch and stdout table]
+  installer --> overlay[Explicit Community relay / desktop then AFK]
+  overlay --> product[Product-owned update script / push only when requested]

@@ -1,0 +1,19 @@
+flowchart TB
+  cli[Explicit external-event CLI / fixed arguments] --> lock[Private directory and PID file lock]
+  lock --> read[Validate stored schema sequence timestamps and ACK boundary]
+  read --> mutate[Append open repeated observation or resolution]
+  mutate --> cap{More than 256 retained?}
+  cap -- unacknowledged oldest --> reject[Reject / old file retained]
+  cap -- ACKed prefix can prune --> save[Exclusive temp / rename / chmod / temp cleanup]
+  cap -- no --> save
+  read --> page[Snapshot / unique fingerprint prefix after ACK]
+  page --> old[Legacy runtime parser / v1 v2 v4 collection]
+  old --> outbox[Report queued / transport receipt]
+  outbox -- accepted --> ack[Product ACK / bounded cursor / atomic save]
+  ack --> read
+  public[Product-owned readyz / loopback GET] --> probe[Bounded HTTP UTF8 JSON and revision manifest checks]
+  probe --> projection[Public readiness checks / source revision]
+  projection --> current[Current v5 to v9 / runtime and resolutions empty / no event ACK]
+  projection --> old
+  save --> retained[Local state persisted / no fsync proof or UI acceptance]
+  probe -- unreachable or invalid --> unknown[Unverified / fixed reason / no raw details]

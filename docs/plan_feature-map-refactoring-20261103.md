@@ -30,3 +30,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 [Caveat collector/非公開evidence](feature-map/caveat-evidence.md)と[旧v2/v4個別診断](feature-map/legacy-diagnostics.md)の本文対応を追加。managed診断のbinding原本と未接続pure candidateを分け、実worker/OS/channel/raw保存が実装済みという扱いにしない。旧wireの受理/重大度/ACK差と重複parserの観測を次の責務採否へ残す。全fixture/CI・配布、動的/外部caller・実OS・最終Astra整合は未完。
 
 [CI・文書検査・配布接点](feature-map/ci-distribution.md)と[全体の残り](feature-map/scope-review.md)を接続した。現sourceの比較base/gateと、旧ADR/runner待機文書との不一致を観測として保持する。機械分類は全意味確認ではなく、外部イベント/観測入口/互換wrapper等の残る接点を有限に閉じて追加Astra設計へ渡す。
+
+[外部イベント保存](feature-map/external-events.md)、[GPT/Rabbit観測入口](feature-map/gpt-observation.md)、[旧runner/互換入口](feature-map/legacy-runners.md)を本文から接続した。nonce lock本体の重複と、旧wire gate/保持・通常閉鎖・過去限定scopeの差を追加責務採否へ渡す。全fixture/外部caller/実OS・最終Astra全体整合は未完。
