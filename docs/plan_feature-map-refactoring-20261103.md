@@ -18,3 +18,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 全機能の詳細調査/図と状態所有の確定、全caller/test/fixture/config/exportの手作業での追跡、Astra設計の採用/維持/代替案と理由、必要な段階的構造整理、変更範囲のfocused検証、図の描画/目視、Astra最終整合、指導担当の成果確認、既承認手順による公開/反映結果を区別して完了する。
 
 本番操作・停止/再起動を今回の実装指示から許可しない。1Password任意化は全体完了後の別差分。既成功試験/4host照合/既完了SEC021等を理由なく再実行しない。
+
+第1構造整理の[台帳reader](feature-map/toolchain-reader.md)を実装・局所検証した。診断からtransportの本文調査と全体の残りは継続する。

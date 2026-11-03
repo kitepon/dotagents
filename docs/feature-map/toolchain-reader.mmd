@@ -1,0 +1,15 @@
+flowchart TB
+  cli[record CLI: writer validation / lock / ACL]
+  file[(toolchain-ledger.json)]
+  cli --> file
+  subgraph reader[lib/factory/toolchain-ledger.mjs]
+    path[defaultToolchainLedgerPath<br/>call-time environment]
+    read[readToolchainLedger<br/>file safety / JSON / schema]
+    result[value or unavailable<br/>no state writes]
+    read --> result
+  end
+  path --> callers[v2 / v4 / v5 scan<br/>v5 finalize]
+  callers -- resolved path --> read
+  file -- read-only --> read
+  result --> projection[wire-owned projection<br/>legacy and v5 semantics retained]
+  projection --> report[existing report / same-report finalize]

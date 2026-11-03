@@ -51,6 +51,8 @@ updater自体は全工程を一括transactionにしない。途中失敗/強制�
 
 直読した関連fixtureは`tests/update/source-update.test.mjs`、`toolchain-ledger.test.mjs`、`finalize-report.test.mjs`。`cron-env.sh`は模擬NVM/CLI/runner/台帳失敗等の一部を読んだ。失敗報告testはfake intake/HMAC fixtureと存在の確認までで438行すべての意味確認は未完。config関連と同じく全literal候補を進行正本側`config-update-caller-candidates.json`へ残した。動的wire名、拡張子を外したbin入口、外部repo caller、環境変数overrideの全経路は今後の確定対象である。
 
-公開exportは`updateSource`、toolchain contractのparser/comparator群、失敗report moduleのstate/署名/I/O/送信群、`finalizeToolchainReport`、`assertDeliveryReceipt`。bin側はCLI契約も持つ。既fixtureの成功は再走しておらず、今回の文書差分から新しいruntime正しさを認定しない。
+公開exportは`updateSource`、toolchain contractのparser/comparator群、失敗report moduleのstate/署名/I/O/送信群、`finalizeToolchainReport`、`assertDeliveryReceipt`。bin側はCLI契約も持つ。初回の現状調査では既fixtureを再走していない。
 
 [追跡するsource/test参照候補（path・line・context）](config-update-references.json)を同じrepoへ保存する。固定baseの機械抽出候補であり、全callerの意味確認完了ではない。
+
+第1構造整理でv2/v4/v5のpath/readを共通moduleへまとめた。[現在の所有・caller・検証](toolchain-reader.md)を参照する。世代別投影とrecord CLIは保持した。
