@@ -25,11 +25,11 @@ flowchart TB
   contract -.-> scan[public diagnostics projection]
   runner --> scan
   core[deployment writer: source only / live ports unknown]
-  scan -.-> state[private report + ACK metadata]
-  state -.-> outbox[outbox / retry / fragments]
-  outbox -.-> server[ServerManager acceptance]
-  server -. accepted response .-> outbox
-  outbox -. ACK after acceptance .-> ack[product public ACK]
+  scan --> state[private report + ACK metadata]
+  state --> outbox[outbox / retry / fragments]
+  outbox --> server[ServerManager acceptance]
+  server -- accepted response --> outbox
+  outbox -- supplied bundle after acceptance --> ack[product public ACK]
   runner -- finalize --> receipt[delivery receipt]
   ledger -- final projection --> runner
   ci[CI plan / Makefile gates] -.-> result

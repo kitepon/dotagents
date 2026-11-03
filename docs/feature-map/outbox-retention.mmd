@@ -1,0 +1,17 @@
+flowchart TB
+  input[Validated report + optional ACK metadata] --> queue[Private outbox envelope]
+  queue --> post[flush / PID lock / POST]
+  post --> accepted{Accepted and same report ID?}
+  accepted -- yes --> ack{All supplied ACKs succeed?}
+  ack -- yes --> deleted[Delete original / retry / manifest]
+  ack -- no --> kept[Keep original bytes + retry metadata]
+  accepted -- timeout or recoverable rejection --> kept
+  accepted -- ordinary permanent rejection --> dead[Dead-letter retains original]
+  post -- ordinary v9 413 --> split[Fixed manifest + fragment retry]
+  split -- complete ID and hash --> ack
+  split -- partial / unknown / invalid --> kept
+  kept -- retry time reached --> post
+  queue -- v5-v8 age over 30d --> dead
+  queue -- controlled one-shot budget unavailable --> held[Private held-outbox / no auto retry]
+  post -- controlled failure --> held
+  deleted --> receipt[Runner receipt only after whole flush success]

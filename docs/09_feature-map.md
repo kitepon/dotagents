@@ -6,7 +6,7 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 
 ## 現在の全体接続索引
 
-実線は最初のまとまりで本文確認した接続、破線は既契約・実装索引に存在するが全体の詳細本文確認をまだ終えていない接続。図中のノード名はsource上の機能を指す。破線は新しい設計や実運用接続の許可を表さない。
+実線はこれまでに本文確認した接続、破線は既契約・実装索引に存在するが全体の詳細本文確認をまだ終えていない接続。図中のノード名はsource上の機能を指す。破線は新しい設計や実運用接続の許可を表さない。
 
 [全体図の描画物](feature-map/overview.svg) / [Mermaid原本](feature-map/overview.mmd)
 
@@ -21,9 +21,9 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 | source同期/日次更新 | `bin/agents-source-update.mjs`、`bin/agents-update.sh` | [更新・確定](feature-map/update.md)。本文の順序・分岐/部分保持を確認。製品setup内部とcaller全体の排他は未確認 |
 | 製品公開setupと任意連携 | `lib/factory/product-setup.mjs`、`typesafe-setup.mjs`、`jev-setup.mjs`、`bin/setup-1password.sh` | 公開入口/製品境界の索引。1Passwordの既定skill配布は現在挙動として保持、修理を混在しない |
 | 日次/毎時scheduler | `bin/agents-update-scheduler.mjs`、`bin/factory-reporter-scheduler.mjs`、`lib/factory/windows-scheduler.mjs` | 既契約/索引。OS登録/中断/実行中取消/hidden launcherの詳細本文は未調査 |
-| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v9.mjs`、`command.mjs` | 既契約/索引。profile・privacy・timeout/子終了の全分岐は未調査 |
+| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v9.mjs`、`command.mjs` | [配送・保持](feature-map/delivery.md)にreport/config/privacyとcommand終了の境界を接続。全製品診断の本文は未調査 |
 | 毎時runner/台帳確定/receipt | `bin/factory-reporter-v9-schedule-runner.mjs`→v5共通runner、`bin/factory-toolchain-ledger.mjs` | [更新・確定](feature-map/update.md)。本文とfinalize投影/receiptを確認。全wireのscan/transportと実OSは未確認 |
-| outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | 既契約/索引。応答不明/413/ACK失敗/回復・取消の詳細本文は未調査 |
+| outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。v5-v9共通reporter/fragment/ACK/契約の本文を確認。旧transport/全fixture/診断深部は未調査 |
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | source受入済みとlive/issuer/store/resource未確定を区別。図のために実接続を始めない。詳細本文は未調査 |
 | CI・公開・配布接点 | `Makefile`、`.github/workflows/`、`scripts/dotagents-ci-plan.mjs` | 本まとまりのcaller/test入口を確認。全gate/比較base・公開契約の意味確認は未完 |
 

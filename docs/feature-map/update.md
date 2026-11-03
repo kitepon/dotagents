@@ -56,3 +56,5 @@ updater自体は全工程を一括transactionにしない。途中失敗/強制�
 [追跡するsource/test参照候補（path・line・context）](config-update-references.json)を同じrepoへ保存する。固定baseの機械抽出候補であり、全callerの意味確認完了ではない。
 
 第1構造整理でv2/v4/v5のpath/readを共通moduleへまとめた。[現在の所有・caller・検証](toolchain-reader.md)を参照する。世代別投影とrecord CLIは保持した。
+
+配送と保持の詳細は[reporter・outbox・分割・ACK](delivery.md)。通常v5-v9 scanのACK一覧は空で、公開ACKの互換経路と区別する。

@@ -1,0 +1,31 @@
+sequenceDiagram
+  participant S as Scan + runner
+  participant Q as Reporter state
+  participant H as Receiver API
+  participant A as Public ACK
+  S->>S: collect diagnostics and validate report
+  S->>Q: save report then ACK metadata (separate files)
+  Note over S,Q: Current default v5-v9 scan emits empty ACK list
+  S->>Q: enqueue validated bytes and optional fixed ACK bundle
+  Q->>Q: duplicate / capacity checks, temp then rename
+  S->>Q: flush with PID lock
+  Q->>H: original report POST (10s)
+  alt accepted and matching report ID
+    opt supplied nonempty ACK bundle
+      Q->>A: allowlisted command / cursor (10s each)
+      A-->>Q: validated acknowledgement
+    end
+    Q->>Q: delete original and retry / manifest
+    Q-->>S: flush outcome
+    S->>S: finalize receipt after flush success
+  else ordinary v9 413 with split contract
+    Q->>Q: persist fixed manifest and original bytes
+    Q->>H: fragments with fixed IDs / hashes
+    H-->>Q: 202 fragment stored (not complete)
+    H-->>Q: 200 complete / matching report hash
+    Note over Q,A: ACK and delete only after whole acceptance
+  else unavailable / rejected / ACK failed
+    Q->>Q: keep + retry, dead-letter, or controlled hold
+    Q-->>S: nonzero with partial outcome
+  end
+  Note over S,H: Local receipt does not observe receiver UI

@@ -20,3 +20,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 本番操作・停止/再起動を今回の実装指示から許可しない。1Password任意化は全体完了後の別差分。既成功試験/4host照合/既完了SEC021等を理由なく再実行しない。
 
 第1構造整理の[台帳reader](feature-map/toolchain-reader.md)を実装・局所検証した。診断からtransportの本文調査と全体の残りは継続する。
+
+[配送・保持の現状図](feature-map/delivery.md)を追加。v5-v9共通reporter/fragment/ACK・契約とcommand終了を本文確認、旧transportと全製品診断深部は未調査。責務整理の追加採否はAstra設計へ渡す。
