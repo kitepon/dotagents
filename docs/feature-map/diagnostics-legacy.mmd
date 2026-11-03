@@ -5,7 +5,7 @@ flowchart TB
   scan --> native[nativeCli / Caveat / Throughline / Spotter]
   native -- invalid schema or result --> unknown[Unverified check / product projection]
   native -- valid --> status[Native status projection]
-  scan -. remaining adapter bodies unread .-> deep[Other native and third-party adapters]
+  scan --> deep[Other native and third-party adapters]
   unknown --> compose[Products / revision / report assembly]
   status --> compose
   scan -- collection enabled in legacy path --> runtime[collectRuntimeErrors / ACK candidates]
@@ -14,3 +14,10 @@ flowchart TB
   compose -- revision failure --> rejected
   compose --> returned[Report and matching ACK bundle to caller]
   current[Ordinary v5-v9 scan] --> empty[Separate current contract: empty ACK list]
+  v24[v2 and v4 / sequential native and toolchain diagnostics] --> parsed[Exact product parsers / exit and privacy checks]
+  parsed --> diff[Different Caveat parser and arguments / high severity and reason fingerprint]
+  diff --> oldreport[Wire-specific report and matching ACK metadata]
+  v24 -- collection enabled --> oldruntime[GPT and server external events / v4 adds Lattice]
+  oldruntime --> oldreport
+  oldreport --> transport[Legacy reporter acceptance then supplied ACK dispatch]
+  parsed -- command throw or revision unavailable --> rejected

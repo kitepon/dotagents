@@ -6,7 +6,7 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 
 ## 現在の全体接続索引
 
-実線はこれまでに本文確認した接続、破線は既契約・実装索引に存在するが全体の詳細本文確認をまだ終えていない接続。図中のノード名はsource上の機能を指す。破線は新しい設計や実運用接続の許可を表さない。
+実線はこれまでに本文確認した接続。破線は詳細本文未確認、または図中に明記した未供給/明示compositionだけの接点。図中のノード名はsource上の機能を指す。破線は新しい設計や実運用接続の許可を表さない。
 
 [全体図の描画物](feature-map/overview.svg) / [Mermaid原本](feature-map/overview.mmd)
 
@@ -21,7 +21,7 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 | source同期/日次更新 | `bin/agents-source-update.mjs`、`bin/agents-update.sh` | [更新・確定](feature-map/update.md)。本文の順序・分岐/部分保持を確認。製品setup内部とcaller全体の排他は未確認 |
 | 製品公開setupと任意連携 | `lib/factory/product-setup.mjs`、`typesafe-setup.mjs`、`jev-setup.mjs`、`bin/setup-1password.sh` | [公開導入/認証/保持](feature-map/setup.md)。helperと明示1Password入口を本文確認。任意化修理・実credential/外部操作は別 |
 | 日次/毎時scheduler | `bin/agents-update-scheduler.mjs`、`bin/factory-reporter-scheduler.mjs`、`lib/factory/windows-scheduler.mjs` | [登録・解除・保持](feature-map/setup.md)。OS別artifact/hidden launcher/照合/失敗を本文確認。実登録/自然回の成立は別 |
-| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v5.mjs`〜`v9.mjs`、`command.mjs` | [診断詳細](feature-map/diagnostics.md)。現行adapter/版/親配線/世代合成を本文確認。旧v2/v4個別診断とCaveat collector深部・全fixtureは未完 |
+| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v2.mjs`/`v4.mjs`〜`v9.mjs`、`command.mjs` | [診断詳細](feature-map/diagnostics.md)→[旧wire診断](feature-map/legacy-diagnostics.md)・[Caveat保持](feature-map/caveat-evidence.md)。source/差分と未接続候補を確認。全fixture/実OSは未完 |
 | 毎時runner/台帳確定/receipt | `bin/factory-reporter-v9-schedule-runner.mjs`→v5共通runner、`bin/factory-toolchain-ledger.mjs` | [更新・確定](feature-map/update.md)。本文とfinalize投影/receiptを確認。全wireのscan/transportと実OSは未確認 |
 | outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。v5-v9共通reporter/fragment/ACK/契約の本文を確認。旧transport/全fixture/診断深部は未調査 |
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | [writer・authority・保持](feature-map/deployment.md)。source/二SH/元Node/原本storeを本文確認。別native fixture候補とlive/issuer/store/resource/allwriter未確定を区別 |

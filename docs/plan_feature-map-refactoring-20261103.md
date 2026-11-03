@@ -26,3 +26,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 [第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)で、同file内のCLI/queue巡回分割と8report readerの共有を採用。postOne/fragment/controlled/ACKの既責務は維持する。次のSolで全接点を確定して実装・図同期・局所検証し、旧transport/診断深部から全体の未読調査へ続ける。現時点で第2案のコード変更はない。
 
 現在、第2案は[配送CLI/reader](feature-map/delivery-functions.md)へ実装・局所122試験済み。上の「次のSol」「変更はない」は設計時点の履歴。以後の[診断](feature-map/diagnostics.md)、[親hook/skill](feature-map/harness.md)、[3OS setup/scheduler](feature-map/setup.md)、[GPT writer/authority](feature-map/deployment.md)のsource調査を接続した。全fixture/CI配布/Caveat evidence/旧診断と最終Astra整合は継続し、全体完了とはしない。
+
+[Caveat collector/非公開evidence](feature-map/caveat-evidence.md)と[旧v2/v4個別診断](feature-map/legacy-diagnostics.md)の本文対応を追加。managed診断のbinding原本と未接続pure candidateを分け、実worker/OS/channel/raw保存が実装済みという扱いにしない。旧wireの受理/重大度/ACK差と重複parserの観測を次の責務採否へ残す。全fixture/CI・配布、動的/外部caller・実OS・最終Astra整合は未完。

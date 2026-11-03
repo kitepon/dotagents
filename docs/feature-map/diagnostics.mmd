@@ -19,6 +19,7 @@ flowchart TB
   managed[Optional managed Caveat port] --> descriptor[Before descriptor / invoke / after descriptor]
   descriptor --> binding[Binding check added without replacing raw diagnostic]
   binding --> core
-  descriptor -. deeper collector and evidence not yet reviewed .-> deeper[Private collector / evidence retention]
+  descriptor --> collector[Product-owned inventory / pinned metadata reader / identity hashes]
+  deeper[Isolated private evidence validation and retention / no native worker] -. no runtime integration .-> descriptor
   core -- runner throw / revision failure --> failure[Caller failure / no completed new report]
   note[Ordinary current scan emits empty ACK list]

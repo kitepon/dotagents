@@ -2,7 +2,7 @@
 
 [全体入口](../09_feature-map.md) / [現状図](diagnostics.svg) / [原本](diagnostics.mmd) / [旧scan](diagnostics-legacy.svg) / [保存・配送](delivery.md) / [更新台帳](toolchain-reader.md)
 
-基準main `9fca2c8`、第2構造整理候補`619a953`からの本文調査。`scan.mjs`、`v5.mjs`、`caveat-diagnostics.mjs`、`toolchain-contract.mjs`とv6-v9の合成を確認した。外部製品の内部状態や実hostを観測した結果ではない。旧v2/v4の個別診断全文、Caveat collector/証拠保持の深部、全fixture意味確認はまだ残る。
+基準main `9fca2c8`、第2構造整理候補`619a953`からの本文調査。`scan.mjs`、`v5.mjs`、`caveat-diagnostics.mjs`、`toolchain-contract.mjs`とv6-v9の合成を確認した。候補`5c5890d`で[旧v2/v4個別診断](legacy-diagnostics.md)と[Caveat collector/非公開evidence状態](caveat-evidence.md)を追加調査した。外部製品の内部状態や実hostを観測した結果ではない。全fixture意味確認・CI/配布全体はまだ残る。
 
 ## 状態の所有と実関数
 
@@ -35,7 +35,7 @@ v9 `jevProduct`は対応OSで公開version、Jevのoffline metadata、checkout r
 
 v9 CLIの明示managed-entry時は`caveat-entry.mjs:createCaveatDiagnosticPort`を渡す。選択前後のdescriptorを取り、command/args/entry/登録hash/版のidentityを比較し、stdout版も照合する。製品所有`caveat-product/diagnostic-descriptor.mjs`が4client登録/選択payloadを判定する。失敗は固定拒否理由とunverified bindingへ写し、得られた通常診断を消したり旧PATHへfallbackしたりしない。evidenceはport内の保持値をcloneして返す。collectorの出力はhash/bytes receiptとして記録し、例外の自由文を公開理由へ出さない。
 
-このport/selectorの本文確認は、`read-host.cjs`、private evidence worker/OS pipe/保持state/配布pin全体の確認ではない。これらは別に未読を保持する。実inventory/permit/trustを読んでいない。
+製品所有`read-host.cjs`とprivate evidenceの4純粋module/schema/状態fixtureは[詳細](caveat-evidence.md)へ接続した。通常managed診断のbinding原本と、実worker/OS pipe/raw保存を持たない未接続候補は別である。配布pin/実3OS/親全組合せ、実inventory/permit/trustは未確認。
 
 ## 全接点と検証の境界
 
@@ -49,4 +49,4 @@ v9 CLIの明示managed-entry時は`caveat-entry.mjs:createCaveatDiagnosticPort`�
 
 ここでは新しい構造整理案を追加しない。起動/parse/投影/世代合成は既に関数で辿れ、Caveat/各製品のoverall、重大度、fingerprint、旧wire、timeoutの意味に差がある。共通化のためのpolicy flagを先に作る根拠はない。新たな採否が必要なら、親hook/skill/modelとの全接点が揃った責務設計のまとまりでAstraへ渡す。
 
-未読は旧v2/v4診断の全本文と全fixture、Caveat collector/証拠保持深部、親hook/skill/model全体、3OS setup/scheduler/製品公開setup、GPTwriter/lease/authority、CI/配布全体。最終Astra整合は別工程。1Passwordの現在接点も全体に含め、任意化の振舞い修理は全体完了後別差分とする。
+全体の[親hook/skill/model](harness.md)、[3OS setup/scheduler/公開setup](setup.md)、[GPTwriter/lease/authority](deployment.md)にも本文対応を接続済み。残る全fixture/CI・配布の全接点、動的/外部caller、実OSと最終Astra整合は未完。1Passwordの現在接点も全体に含め、任意化の振舞い修理は全体完了後別差分とする。

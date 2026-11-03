@@ -1,0 +1,27 @@
+flowchart TB
+  scope[Isolated private evidence candidate / tests only] --> request[Injected product schemas / strict request and capability]
+  request --> transcript[Two NDJSON frames / EOF / independent peer / public byte hash]
+  transcript -- refuse or partial --> local[Fixed local status / preserve public result]
+  transcript -- validated --> pending[Pending metadata / no native capture proof]
+  off[OFF seam] --> normalOnly[Normal operation once / return same result or exception]
+  on[ON synthetic seam] --> normalOn[Normal operation once / preserve result / propagate exception]
+  normalOn -- normal result --> snapshots[Injected OS / worker / capacity snapshots]
+  snapshots --> local
+  subgraph binding[Caller-owned binding state / no filesystem]
+    prepared[Prepared exact report bytes] --> finalized[Finalized bytes / one parent / last_update only]
+    finalized --> delivery[Per-report body hash delivery event]
+    finalized -- missing or conflicting parent --> unbound[Unbound or conflict / keep previous state]
+  end
+  subgraph retention[Caller-owned retention state / no worker or physical deletion]
+    reserve[Verified inventory and lock / reserve maximum bytes] --> settle[Complete or partial / same owner]
+    settle --> observe{Ownership and dead identity verified?}
+    observe -- no or unknown --> retain[Retain original charge]
+    observe -- yes / partial stale after 24h --> plan[Plan oldest eligible tombstones]
+    plan --> charge[Deletion not complete / capacity still charged]
+    charge --> ack{Same owner and verified deletion ACK?}
+    ack -- no --> retain
+    ack -- yes --> deleted[Remove metadata / capacity available]
+  end
+  scope --> binding
+  scope --> retention
+  actual[Normal scan / report / queue] -. no import or runtime integration .-> scope
