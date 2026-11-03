@@ -32,3 +32,5 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 進行と完了条件は[今回の工程](plan_feature-map-refactoring-20261103.md)。[第1責務設計](adr/20261103-feature-map-responsibility-phase1.md)は、導入/設定/更新の維持理由と台帳reader整理の採否を記す。提案図は未実装であり、この現状図と区別する。1Password任意化の挙動変更は全体リファクタの完了後、別差分で扱う。
 
 第1実装の[台帳reader現状図・対応・検証](feature-map/toolchain-reader.md)。第1設計の提案図は設計時点の記録として残し、実装の現在地はこちらを正本とする。
+
+[第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)は、reporterのCLI/巡回と共有report readerの整理を採用した。配送・ACK・保持の境界は維持する。[提案図](feature-map/delivery-design.svg)は未実装であり、上の現状図とは分けて読む。

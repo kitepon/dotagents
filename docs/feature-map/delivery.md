@@ -64,4 +64,4 @@ schedule runnerがscan→同ID report/ACK保存→必要時enqueue→flush→rec
 
 exportはfragment4関数、config/report検証/読取/identity、runtime bundle/collect/ACK群、commandのrun/timeoutReason等。reporter binはCLI契約でトップレベルmainを起動し、queue/HTTP内部関数をlibrary exportしていない。`runtime-context.mjs`は現processの設定presenceだけを記録し、証明範囲を限定する。CA store探索やTLS probeではない。
 
-このまとまりは現状図の追加。責務整理の採否は別のAstra設計へ渡す。未読は旧transport、scan.mjsの全製品診断、v5の個別診断深部、親hook/skill/model、3OS setup/scheduler、GPT writer/authority、CI/配布全体。機械参照の件数を全caller意味確認にしない。
+このまとまりは現状図の追加。[第2責務設計](../adr/20261103-feature-map-responsibility-phase2.md)にCLI/巡回と共有report readerの採用案、配送・保持の維持理由を接続した。提案は未実装。未読は旧transport、scan.mjsの全製品診断、v5の個別診断深部、親hook/skill/model、3OS setup/scheduler、GPT writer/authority、CI/配布全体。機械参照の件数を全caller意味確認にしない。

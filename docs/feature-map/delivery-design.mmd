@@ -1,0 +1,29 @@
+flowchart TB
+  caller[Existing CLI names and scheduler callers] --> main
+  subgraph reporter[Proposed private functions in factory-reporter-v5.mjs]
+    main[main: parse / config / endpoint / dispatch]
+    main --> preview[previewReport: validate and show]
+    main --> enqueue[enqueueReport: local acceptance]
+    main --> flush[flushReports: setup / lock / JSON / exit]
+    flush --> queue[flushQueue: expire / visit / apply action / count]
+    queue --> post[Existing postOne: one delivery decision]
+    post --> completion[Existing complete: supplied ACK then delete action]
+    post --> retain[Existing retainFailure: keep or hold]
+    completion --> queue
+    retain --> queue
+    queue --> outcome[Existing counters object]
+    outcome --> flush
+    preview --> readPort[Existing WIRE.readReport / v9 keeps Rabbit gate]
+    enqueue --> readPort
+  end
+  post --> deps[Existing fragment / controlled gate / runtime ACK modules]
+  readPort -- v5 to v8 --> readers
+  readPort -- v9 --> rabbit[Existing Rabbit reader and validation / unchanged]
+  other[Existing legacy and current callers] --> readers
+  subgraph contract[Proposed private helper in contract.mjs]
+    readers[Eight existing public async report readers]
+    readers --> read[readValidatedReport: file / UTF8 / JSON]
+    read --> validators[Existing per-wire validators]
+    validators --> original[Return original bytes and report to caller]
+  end
+  note[No new module / export / CLI / configuration]
