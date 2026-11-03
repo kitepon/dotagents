@@ -93,3 +93,7 @@ Windows専用caseのskipを実OS合格へ数えない。新しいskip・許可�
 この設計の完了条件は、採否/保持/全接点/必要検証を候補へ固定し、図と文書を確認してSolの正式次工程へ渡すこと。最新Sol Highを一回正式変更し、次ターンaccepted後に実装する。実装・必要検証・現状図同期と残るsource接続の後、最新Astra xhighの最終全体整合と指導担当の成果確認へ進める。
 
 全体完了、公開/本番反映、停止/再起動は今回行わない。Host/他製品/他writer管理外、SEC002本人later/旧stage停止、Mac指定既logの自然受入、native別`539896`fixture、1Password任意化は全体完了後の別差分という既境界を保持する。
+
+## 第3実装への接続
+
+採用したscheduler state抽出を実装し、[runner現状・実関数・検証](../feature-map/legacy-runners.md)へ接続した。提案の未実装表記は設計時点の履歴である。残る補助sourceもsetup/delivery/CIへ本文対応を追補した。全fixture未読の整理と全体確認・最終Astra整合は継続する。

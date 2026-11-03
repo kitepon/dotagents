@@ -42,3 +42,5 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 第2実装の[配送CLI/報告reader現状と検証](feature-map/delivery-functions.md)へ接続した。第2設計の提案図は設計時点の履歴で、現在の関数配置はこちらを正本とする。旧v1/v2/v4 transport本文の追加確認と世代別の保持差も記す。
 
 [第3責務設計](adr/20261103-feature-map-responsibility-phase3.md)は、同一なscheduler state/nonce lockの専用module抽出を採用し、世代別の診断・配送・原本保持は維持した。[提案図](feature-map/scheduler-state-design.svg)は未実装。Windows markerの現行説明を訂正し、ADR0136と現文書CIの未解消差は明記したまま残す。
+
+第3実装のscheduler state所有窓口と検証は[runner現状](feature-map/legacy-runners.md)。上の提案図は設計履歴で、現在の関数配置はこちらを参照する。

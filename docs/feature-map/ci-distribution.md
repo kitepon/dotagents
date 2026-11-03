@@ -64,3 +64,7 @@ factory-ci runbookにあったbusy marker待機の説明は、[第3設計](../ad
 `tests/ci/dotagents-ci-plan.test.mjs`本文は文書/host/共通/未分類/空差分/混在/週次/zero SHAと最終gateの拒否、専有Git履歴/出力を確認する。`tests/docs/current-docs.test.mjs`本文は生成/区分不整合/reference/HTML/srcset/code除外/履歴link除外/引数/LFを確認する。unai installer fixtureの公開exit保持も読取。これらを今回実行したとはしない。関連source/test/fixture/config/exportの固定索引は当席phase13-source-review.json/phase13-contacts.txtへ保存。
 
 今回はdocsのみ、既122/60/native13/4host反復なし。全fixture/残る実行source・外部caller・実OS、実CIと公開/本番、最終Astra整合は未確認。実credential/送信/Host/runner metadata/未知trust探索/停止再起動0。
+
+## 補助source接続の追補
+
+配備契約の実関数/公開CLI/setup/updaterの接点は[setupの補助契約](setup.md)、runtime metadataの関数・原本/失敗は[配送](delivery.md)、PS7 resolverとscheduler state抽出は[runner](legacy-runners.md)に接続した。CURRENT_WIRE/PRODUCT_IDS/FACTORY_RUNNERSは現行rendererとWindows smoke等のsource定数で、実runner metadataではない。専用deployment-contract/runtime-context/日次scheduler fixtureはreporter glob、Jev/npm fixtureはtest-update、wire fixtureはtest-factory-wireに所属する。今回の抽出に関係しないhelperの既試験は反復していない。

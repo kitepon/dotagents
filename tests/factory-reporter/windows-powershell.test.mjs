@@ -57,13 +57,11 @@ test('現役Windows adapterは検証済み絶対PowerShell 7だけをspawnする
     'bin/agents-update-scheduler.mjs',
     'bin/factory-reporter-scheduler.mjs',
     'bin/factory-reporter-v2.mjs',
-    'bin/factory-reporter-v2-schedule-runner.mjs',
     'bin/factory-reporter-v4.mjs',
-    'bin/factory-reporter-v4-schedule-runner.mjs',
     'bin/factory-reporter-v5.mjs',
-    'bin/factory-reporter-v5-schedule-runner.mjs',
     'bin/factory-toolchain-ledger.mjs',
     'lib/factory/windows-scheduler.mjs',
+    'lib/factory/scheduler-state.mjs',
   ];
   for (const file of files) {
     const source = await readFile(resolve(root, file), 'utf8');

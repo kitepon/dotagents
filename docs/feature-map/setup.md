@@ -79,3 +79,11 @@ callerはOS wrapper/既setup→agents-update→公開製品helper/既runner、�
 対応fixtureは`tests/install/setup-{macos-factory,linux-common,linux-factory,linux-workstation-factory}.sh`、`tests/factory-reporter/{windows-native-setup,agents-update-scheduler,scheduler}.test.mjs`、`tests/update/{product-setup,typesafe-setup,jev-setup}.test.mjs`、`tests/install/onepassword.test.py`。今回は1Passwordの隔離登録/衝突/未認証/秘密出力/Windows限定fixtureの一部を本文確認。他は接点索引であり全意味確認・実行済みではない。コード変更なしのため既成功試験を反復しない。
 
 この現状調査はOS別の副作用と保持を可視化したもの。共通化の採否を先取りして新lock/設定/修理を加えない。GPTwriter/lease/authorityのsourceは[詳細](deployment.md)へ接続した。Caveat collector/evidence、旧v2/v4全診断、CI/配布・全fixtureと最終Astra整合は未完。実OS確認は別工程である。
+
+## 補助契約の実関数接続
+
+`agents-update-scheduler.mjs:main`はparse直後に`agents-update-scheduler-contract.mjs:assertFixtureSidUsage`を呼ぶ。sid指定は非Windowsのinstall --dry-runだけを許し、apply/status/uninstall/WindowsへfixtureのSIDを流用するとOS操作前にthrowする。専用fixtureはtests/factory-reporter/agents-update-scheduler.test.mjsで、reporter gateに属する。
+
+`jev-products.mjs`はJEV_PRODUCTS（3公式repo/agent-desktopだけdarwin）、jevCheckout（HOME/Developer/id）、jevSupportedだけを所有する。jev-setup.mjsはid存在検査後に対応OS/pathを使い、v9.mjsのjev診断も同じ窓口を使う。未知idを勝手に受理するvalidatorではない。tests/update/jev-setup.test.mjsとwire-v9系が接点。実checkout/導入は今回行っていない。
+
+`deployment-contract.mjs`のhostProjectionはprofile/OS/arch/macOS majorを検査しrequired/unsupported/not_applicable集合をfreezeして返す。npmPackagesForHostはOS/arch別名を正規化して固定npm集合とdarwin-arm64のAIShellを返す。公開factory-deployment-contract CLI→3OS setup/updater、current-docs renderer、Windows smokeと専用deployment-contract fixtureが逆callerである。postUpdateFailuresはpost判定のexportで、通常source内の実callerはliteral検索で見つからず、tests/factory-reporterのscheduler/deployment-contract fixtureが使用する。server自身ingest stale限定例外・完全tuple allowlist・pending差を持つ。旧v2/v4runnerの別gateと統合していない。

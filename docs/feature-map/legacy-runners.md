@@ -16,9 +16,9 @@ install.shは各binを拡張子なしリンクで配布。`factory-reporter-sche
 
 ## v2/v4/v5のcontender所有
 
-`privateState/parseLockOwner/processIsAlive/publishContender/releaseContender/rejectLegacyLock/acquireContender/withLock`の責務は各runner内にある。nonce/pid/acquired_at付きowner原本を一時fileへ書き、hardlinkで公開。legacy schedule.lockが存在すれば明示回収を要求し、ageだけで奪わない。別ownerは非symlink/4096bytes/名前とnonce一致を確認し、PIDが死んだ時だけ回収。live/EPERM/不正なら拒否し、自分のnonceだけfinallyで解放する。
+`privateState/parseLockOwner/processIsAlive/publishContender/releaseContender/rejectLegacyLock/acquireContender/withLock`の責務は`lib/factory/scheduler-state.mjs`にある。nonce/pid/acquired_at付きowner原本を一時fileへ書き、hardlinkで公開。legacy schedule.lockが存在すれば明示回収を要求し、ageだけで奪わない。別ownerは非symlink/4096bytes/名前とnonce一致を確認し、PIDが死んだ時だけ回収。live/EPERM/不正なら拒否し、自分のnonceだけfinallyで解放する。
 
-このnonce lock本体はv2/v4/v5で同一本文。各Windows ACL/privateStateも同じ責任を重複して持つ。v1のdirectory lock、reporterのqueue lock、external-eventsのpid file lock、GPTのnative leaseと自動統合しない。強制終了はfinallyが走る保証を持たず、子spawnには専用取消/全子孫停止/timeoutが無い。子のclose非0を受けても途中の保存原本を消さない。責務採否はAstraのまとまりへ渡す観測であり、Solで新module/lock修理を先行しない。
+このnonce lock本体はv2/v4/v5で同一本文。Windows ACL/privateStateとともに専用moduleへ抽出した。v1のdirectory lock、reporterのqueue lock、external-eventsのpid file lock、GPTのnative leaseと自動統合しない。強制終了はfinallyが走る保証を持たず、子spawnには専用取消/全子孫停止/timeoutが無い。子のclose非0を受けても途中の保存原本を消さない。責務採否はAstraのまとまりへ渡す観測であり、Solで新module/lock修理を先行しない。
 
 ## 互換wrapperと補助操作
 
@@ -35,4 +35,16 @@ runner関連fixtureはscheduler.test.mjsのwire別生成/非0/legacy lock/live/d
 
 ## 第3設計への接続
 
-[採否と保持条件](../adr/20261103-feature-map-responsibility-phase3.md)で、v2/v4/v5の同一state/nonce lock/ACLだけの抽出を採用した。まだ実装しておらず、上記の現状は各runner内の所有を示す。設計時にscheduler.test.mjs全文、windows-powershell.test.mjsとchild-process fixtureを確認し、移動先と各callerへsource検査を追従する必要を特定した。v1/queue/event/nativeの排他と世代別gate/receiptは抽出対象に含めない。
+[採否と保持条件](../adr/20261103-feature-map-responsibility-phase3.md)で、v2/v4/v5の同一state/nonce lock/ACLだけの抽出を採用した。採用した抽出を実装した。上記の現状は共有moduleと各runnerの所有を示す。設計時にscheduler.test.mjs全文、windows-powershell.test.mjsとchild-process fixtureを確認し、移動先と各callerへsource検査を追従する必要を特定した。v1/queue/event/nativeの排他と世代別gate/receiptは抽出対象に含めない。
+
+## scheduler stateの実関数と検証
+
+`lib/factory/scheduler-state.mjs`は`privateState(state)`、`withLock(state, task)`、`ownerOnlyAcl(path)`だけをexportする。v2/v4は前2つ、v5は3つを相対importし、v6-v9は既relayからv5へ入る。state path/config/OFF/PATH補完とtask内scan/reuse/enqueue/flush/receiptは各runnerが所有する。v5のwriteStateJsonはtemp/rename後に同じACLを使う。installのbinリンクと元repo/libの相対接続を使い、新CLI/env/HOME linkは無い。
+
+module内部のparseLockOwner/processIsAlive/publishContender/releaseContender/rejectLegacyLock/acquireContenderは非公開。前述のowner検査と原本保持、例外/finallyをそのまま移した。task返値/throwは自nonce解放後に伝搬し、解放失敗も隠さない。上位の部分report/ACK/queueを巻き戻さず、強制終了/電断/全子孫終了の保証も増やさない。
+
+`windows-powershell.mjs:resolveWindowsPowerShell7`はwhere.exeから絶対pwsh.exe・WindowsApps除外・Core7以上を検査し、既定resolverだけ成功結果をcacheする。呼出時解決のthrowはACL/runnerへ伝搬。`runWindowsPowerShellScript`は絶対通常ps1と固定上限を検査し、spawn/timeout/output_limit/exitの結果を返す別窓口であり、今回のACLをそのasync APIへ置換していない。
+
+新`tests/factory-reporter/scheduler-state.test.mjs`はv2/v4/v5/v9のOFF・live owner拒否・原本保持・空queue cleanup、moduleのtask返値/throw解放・不正peer保持・nonce不一致保持を検査する。既schedulerのACL/hardlink source検査とPS7 source一覧は新所有者へ追従し、各runner委譲も新fixtureで確認。新testはMakefileのtest-factory-reporter globへ入る。新module/3runner構文と6fileの関連60試験がLinuxで成功した（本工程の60件であり、過去の台帳reader60件とは別）。Mac/Windows実行や電断の受入は未確認。
+
+第3提案図は設計時点の履歴。現在の接続は本ページと現状描画を正本とする。

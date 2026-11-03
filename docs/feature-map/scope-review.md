@@ -41,3 +41,9 @@ Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`up
 次は新module/3runnerと全relayの接点を確定し、既scheduler/PS7 source fixtureを追従、必要な世代別・原本保持caseを隔離検証して現状図へ接続する。既読scheduler fixtureのRUNNERはv4であり、全世代の挙動確認へ代用しない。
 
 残るsource接続は、`agents-update-scheduler-contract.mjs`、`jev-products.mjs`の窓口と、`deployment-contract.mjs`/`runtime-context.mjs`の実関数・逆caller、今回確認した`windows-powershell.mjs`の返却を有限に照合する。setup/update/delivery/CI詳細へ不足分だけ補う。aliasやfile名が詳細本文にない候補を機械的に未読へ分類し直さない。全fixtureの未読一覧/既gate所属/OS条件、動的・外部caller、実OSと実CI/配布受入は引き続き残る。
+
+## 第3実装後
+
+scheduler state抽出とsource fixture追従、関連6file60試験を実施し、[runner](legacy-runners.md)へ同期した。補助5sourceの本文・逆callerを[setup](setup.md)/[配送](delivery.md)/[CI](ci-distribution.md)へ追補し、前段で挙げた有限source接続を閉じた。これは全fixture/全OS/動的外部callerの完了ではない。
+
+次は既source-reviewの全文/section根拠と全tests/helper/configを照合し、未読fixtureを機能別・既gate・OS条件へ対応させる。特にclean-home後半、旧v2専用fixtureのgate外配置、authority Python/Node helper、Caveat private fixtureの実worker未接続、wire別の実使用majorを維持する。必要な全体検証範囲をこの対応から確定して実施し、図の全体から実関数/失敗保持までの最終確認資料をAstraへ渡す。既成功試験を理由なく全量反復せず、実OS受入・公開の不足を局所Linux試験で補完しない。
