@@ -1,40 +1,27 @@
 # Dotagents全体の図起点リファクタリング
 
-対象はDotagents全体。担当ドロシー、2026年11月3日正式開始。通常の他担当依頼を遮断し、Owner新指示と既Ownerの限定Mac自然受入は保持する。Host/他製品/他writer/1Password端末導入管理は引き取らない。進行・Owner原文・モデル/予定の正本は当席docsに置き、本ページは製品repo内成果物への接続だけを持つ。
+対象はDotagents全体。担当ドロシー、2026年11月3日正式開始。通常の他担当依頼を遮断し、Owner新指示と既Ownerの限定Mac自然受入は保持する。Host/他製品/他writer/1Password端末導入管理は引き取らない。進行・Owner原文・モデル/予定の正本は当席docsに置き、本ページは製品repo内成果物への接続を持つ。
 
-base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3d7a2dbac1a3b3f3f899c0`。branch `dorothy/feature-map-refactor-20261103`を通常checkoutから分離。初期HEADはbaseと同じ。新しいmain差分は固定baseとの差分を読んで採用判断し、無断で基準を動かさない。
+基準main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、初期tree `693448687f8314278c3d7a2dbac1a3b3f3f899c0`。branch `dorothy/feature-map-refactor-20261103`を通常checkoutから分離。新mainの差分を採る場合は固定baseとの差分を読み、基準を無断で動かさない。
 
 ## 成果物と現在地
 
-- [全体の図入口](09_feature-map.md)→[規範生成・配布・導入検査](feature-map/installation.md)→実ファイル/関数。
-- 全体は接続索引図の初版。未読の機能は破線と表に明記し、機械索引の件数を意味確認の完了数にしない。
-- 規範生成/install/verifyとhost caller接続を最初のSol Highの調査まとまりにした。config applierは書込・rollbackと呼出し順の部分読取まで。source挙動の変更はまだ無い。
-- 次のSol調査で[4config applier](feature-map/configuration.md)と[source同期/日次更新/台帳確定・失敗報告](feature-map/update.md)の本文を追跡した。現状詳細を追加し、実装の挙動差分はまだ無い。
-- 責務分割・接続・代替案の設計と最後の図/コード整合は、利用可能な最新Astra xhighの適用後に行う。実コード調査/実装は最新Sol Highへ戻してから行う。fastは通常OFF。
-- 適用済みAstraによる[第1責務設計](adr/20261103-feature-map-responsibility-phase1.md)を残した。v2/v4/v5の共通台帳readerを最初の構造整理に採用し、writer受理差・wire投影差・4applier保存差は保持する。接点の確定と実装は次のSolまとまり。全体の設計完了や最終整合とはしない。
+[全体図入口](09_feature-map.md)から、導入/設定/更新、診断/配送、親hook/skill/model、3OS setup/scheduler、GPT writer/authority、Caveat、外部イベント/観測/互換wrapper、CI/配布の詳細と実ファイル・関数へ接続した。[確認範囲](feature-map/scope-review.md)と[検証対応](feature-map/verification.md)に未読/未実行を残す。機械索引を全意味確認の件数にしない。
 
-## 完了まで残る工程
+| 採否と理由 | 実装済みの所有窓口 | 局所受入 |
+| --- | --- | --- |
+| [第1ADR](adr/20261103-feature-map-responsibility-phase1.md) | [共有toolchain台帳reader](feature-map/toolchain-reader.md) | 関連5file60成功 |
+| [第2ADR](adr/20261103-feature-map-responsibility-phase2.md) | [reporter CLI/巡回と8report reader](feature-map/delivery-functions.md) | 関連122成功 |
+| [第3ADR](adr/20261103-feature-map-responsibility-phase3.md) | [scheduler state/nonce/ACL](feature-map/legacy-runners.md) | 関連6file60成功。第1の60件とは別 |
 
-全機能の詳細調査/図と状態所有の確定、全caller/test/fixture/config/exportの手作業での追跡、Astra設計の採用/維持/代替案と理由、必要な段階的構造整理、変更範囲のfocused検証、図の描画/目視、Astra最終整合、指導担当の成果確認、既承認手順による公開/反映結果を区別して完了する。
+ADRsと提案図の未実装表記は設計時点の履歴である。現状詳細に実装後の関数・全接点・保持契約を置く。既parser/各排他/ACK/原本保持の差を統一せず、Windows markerの説明だけ現sourceへ訂正した。ADR0136のclosed current/履歴保護と比較base未伝搬は未解消要件として保持する。
 
-本番操作・停止/再起動を今回の実装指示から許可しない。1Password任意化は全体完了後の別差分。既成功試験/4host照合/既完了SEC021等を理由なく再実行しない。
+実コードの調査/実装は最新Sol High、設計と最後の整合確認は最新Astra xhighを正式適用して進めた。fastはOFF。[Astra全体レビュー](feature-map/final-review.md)に整合判断と確認範囲の妥当性を固定する。
 
-第1構造整理の[台帳reader](feature-map/toolchain-reader.md)を実装・局所検証した。診断からtransportの本文調査と全体の残りは継続する。
+## 完成前に残る工程
 
-[配送・保持の現状図](feature-map/delivery.md)を追加。v5-v9共通reporter/fragment/ACK・契約とcommand終了を本文確認、旧transportと全製品診断深部は未調査。責務整理の追加採否はAstra設計へ渡す。
+指導担当の独立成果確認、固定候補の既CI契約による3OS受入、既承認手順による公開/反映と結果確認は未完。局所Linux成功を全OS成功へ拡張しない。未変更fixtureの未読枝・実session/中央UI・外部caller、native別fixture/未接続worker・実issuer/store/resource/allwriterも、sourceレビューで解消したことにしない。
 
-[第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)で、同file内のCLI/queue巡回分割と8report readerの共有を採用。postOne/fragment/controlled/ACKの既責務は維持する。次のSolで全接点を確定して実装・図同期・局所検証し、旧transport/診断深部から全体の未読調査へ続ける。現時点で第2案のコード変更はない。
+具体的な是正があれば、その窓口の本文調査・必要実装/試験/図同期を行って最終整合を更新する。新規codeが無ければ既60/122/60/native13/4hostの無根拠な反復はしない。
 
-現在、第2案は[配送CLI/reader](feature-map/delivery-functions.md)へ実装・局所122試験済み。上の「次のSol」「変更はない」は設計時点の履歴。以後の[診断](feature-map/diagnostics.md)、[親hook/skill](feature-map/harness.md)、[3OS setup/scheduler](feature-map/setup.md)、[GPT writer/authority](feature-map/deployment.md)のsource調査を接続した。全fixture/CI配布/Caveat evidence/旧診断と最終Astra整合は継続し、全体完了とはしない。
-
-[Caveat collector/非公開evidence](feature-map/caveat-evidence.md)と[旧v2/v4個別診断](feature-map/legacy-diagnostics.md)の本文対応を追加。managed診断のbinding原本と未接続pure candidateを分け、実worker/OS/channel/raw保存が実装済みという扱いにしない。旧wireの受理/重大度/ACK差と重複parserの観測を次の責務採否へ残す。全fixture/CI・配布、動的/外部caller・実OS・最終Astra整合は未完。
-
-[CI・文書検査・配布接点](feature-map/ci-distribution.md)と[全体の残り](feature-map/scope-review.md)を接続した。現sourceの比較base/gateと、旧ADR/runner待機文書との不一致を観測として保持する。機械分類は全意味確認ではなく、外部イベント/観測入口/互換wrapper等の残る接点を有限に閉じて追加Astra設計へ渡す。
-
-[外部イベント保存](feature-map/external-events.md)、[GPT/Rabbit観測入口](feature-map/gpt-observation.md)、[旧runner/互換入口](feature-map/legacy-runners.md)を本文から接続した。nonce lock本体の重複と、旧wire gate/保持・通常閉鎖・過去限定scopeの差を追加責務採否へ渡す。全fixture/外部caller/実OS・最終Astra全体整合は未完。
-
-[第3責務設計](adr/20261103-feature-map-responsibility-phase3.md)で、同一scheduler state/nonce lock/ACLの専用module抽出を採用した。世代別runner/診断/配送・原本保持は維持し、実装と必要fixture追従は次のSolまとまり。Windows markerの説明を現sourceへ訂正した。ADR0136の履歴保護要件と現CIの差は未解消として残す。残るsource接続の有限工程と全fixture未読をscope-reviewへ記録し、最終Astra全体整合とは区別する。
-
-第3案のscheduler state抽出を実装し、既6fileの関連60試験と構文確認に成功した。補助契約/metadataの有限source接続も追補。全fixtureの未読/OS条件・全体検証範囲の確定から最終Astra整合へ進む。
-
-[検証対応](feature-map/verification.md)を追加した。変更3整理の受入と全体lint/文書・CI planの確認を区別し、独立fixture/間接helper/OS条件と残る全文未監査を明示。次のAstraへ候補全体と確認範囲を渡し、不足があれば具体的窓口へ戻す。
+本工程では実CI/probe/実台帳/credential/送信/Host/runner metadata/未知trust探索を行わない。公開・本番反映は完成した候補への既承認手順に従い、停止/再起動の許可へ広げない。SEC002本人later/旧stage停止を維持し、1Password任意化は全体リファクタ完了後の別差分とする。

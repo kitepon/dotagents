@@ -13,8 +13,8 @@
 | 同`run_factory_update` | 以前のreport IDと新batchを固定しagents-update --setup、同batch log/fresh report/receipt/製品集合を検査 | 更新子の非0、log/receipt不在/不一致は失敗。古い成功票や画面反映で代替しない |
 | `setup-linux-factory.sh`と`setup-linux-workstation-factory.sh` | 実際のファイルは`setup-linux-factory.sh`と`setup-linux-workstation-factory.sh`。server/linux役割をcommonへexec | workstationだけ旧dotagentから正規pathへ条件付き移動して再exec。WSL再導入はしない |
 | `setup-linux-common.sh:run_setup` | 前提→GitHub認証→runner/SSH→backup/git identity/enrollment/toolchain→config/install→cron→更新配送→verify | variant/OS拒否。途中失敗までのOS/package/config/接続stateは残る。server verifyは配送後にreadinessを検査 |
-| 同`ensure_linux_prerequisites/ensure_node24` | root helper、nvm/Node、uv。非対話sudo/Desktop Polkit/terminal条件で前提を用意 | 不成立で停止。root helperのOS内部処理は別の未読接点として保持。今回Host管理を引き取らない |
-| 同`ensure_github_actions_runner` | serverは起動/登録しない。dedicated profileはUser/Group/群/NNP/capability/activeとonlineを検査 | dedicated停止時はsetupから起動しない。旧管理modeはrelease digest確認/登録/service/label変更を持つが今回は実行0。profile helperと実metadataは未確認 |
+| 同`ensure_linux_prerequisites/ensure_node24` | root helper、nvm/Node、uv。非対話sudo/Desktop Polkit/terminal条件で前提を用意 | 不成立で停止。root helper本文は下記の補助source表へ接続済み。今回Host管理を引き取らない |
+| 同`ensure_github_actions_runner` | serverは起動/登録しない。dedicated profileはUser/Group/群/NNP/capability/activeとonlineを検査 | dedicated停止時はsetupから起動しない。旧管理modeはrelease digest確認/登録/service/label変更を持つが今回は実行0。profile helperは下記へ本文接続済み、実metadataは未確認 |
 | 同`ensure_main_server_ssh/ensure_main_server_reverse_ssh` | 専用鍵・公開鍵受入・reverse接続のsource上の手順 | 直接/逆SSHと遠隔設定変更を含む。失敗以前の鍵/config/authorized_keysを全体rollbackしない。実鍵/接続先状態は未確認 |
 | 同`ensure_factory_reporter_enrollment` | linuxだけ、不成立時に公開管理CLIで発行/転送→private token→config→readback | token/configは別file、遠隔一時tokenの削除も別段階。読戻し成功は実trustの独立確認ではない |
 | 同`install_cron/run_scheduled_update` | 日次02:00にwrapper --scheduled-update。予約はbackup/filter/install/一行読戻し、実行は環境復元→更新→fresh receipt | 他entry保持と旧更新entry回収。crontab書換後の失敗を自動復元しない。scheduled経路は初回前提/登録を再実行しない |
@@ -78,7 +78,7 @@ callerはOS wrapper/既setup→agents-update→公開製品helper/既runner、�
 
 対応fixtureは`tests/install/setup-{macos-factory,linux-common,linux-factory,linux-workstation-factory}.sh`、`tests/factory-reporter/{windows-native-setup,agents-update-scheduler,scheduler}.test.mjs`、`tests/update/{product-setup,typesafe-setup,jev-setup}.test.mjs`、`tests/install/onepassword.test.py`。今回は1Passwordの隔離登録/衝突/未認証/秘密出力/Windows限定fixtureの一部を本文確認。他は接点索引であり全意味確認・実行済みではない。コード変更なしのため既成功試験を反復しない。
 
-この現状調査はOS別の副作用と保持を可視化したもの。共通化の採否を先取りして新lock/設定/修理を加えない。GPTwriter/lease/authorityのsourceは[詳細](deployment.md)へ接続した。Caveat collector/evidence、旧v2/v4全診断、CI/配布・全fixtureと最終Astra整合は未完。実OS確認は別工程である。
+この現状調査はOS別の副作用と保持を可視化したもの。共通化の採否を先取りして新lock/設定/修理を加えない。GPTwriter/lease/authorityのsourceは[詳細](deployment.md)へ接続した。Caveat/旧診断/CIのsource接続は[全体入口](../09_feature-map.md)に揃っている。全fixture本文と実OSは未確認。[全体レビュー](final-review.md)はこの限界を含めて判断する。
 
 ## 補助契約の実関数接続
 

@@ -21,4 +21,4 @@ v6→v5、v7→v6、v8→v7、v9→v8の公開scan接続を確認。v2/v4/v5のb
 
 当席Linuxで新reader・既v2 scan・finalize-report・台帳writer・schedulerの5file、60 PASS/0 FAIL/0 SKIP。4moduleのnode構文検査成功。3wireの残り本文が固定前候補と同一であることも、reader/path除去とimport変更を除いて照合した。世代別投影は変更していない。
 
-共通JSのCI分類は3OS full対象。最終全体CI/実Mac/Windows/Host更新は未実行。Windows実ACLを模擬合格へ数えず、既成功4host照合も反復しない。全体の診断/outbox/ACK、全fixture意味確認、最後のAstra整合は継続中。
+共通JSのCI分類は3OS full対象。最終全体CI/実Mac/Windows/Host更新は未実行。Windows実ACLを模擬合格へ数えず、既成功4host照合も反復しない。診断/outbox/ACKは各詳細へ接続済みで、全fixture全文は未確認。Astraの判断は[全体レビュー](final-review.md)を参照する。

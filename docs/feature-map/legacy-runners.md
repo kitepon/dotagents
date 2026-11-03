@@ -18,7 +18,7 @@ install.shは各binを拡張子なしリンクで配布。`factory-reporter-sche
 
 `privateState/parseLockOwner/processIsAlive/publishContender/releaseContender/rejectLegacyLock/acquireContender/withLock`の責務は`lib/factory/scheduler-state.mjs`にある。nonce/pid/acquired_at付きowner原本を一時fileへ書き、hardlinkで公開。legacy schedule.lockが存在すれば明示回収を要求し、ageだけで奪わない。別ownerは非symlink/4096bytes/名前とnonce一致を確認し、PIDが死んだ時だけ回収。live/EPERM/不正なら拒否し、自分のnonceだけfinallyで解放する。
 
-このnonce lock本体はv2/v4/v5で同一本文。Windows ACL/privateStateとともに専用moduleへ抽出した。v1のdirectory lock、reporterのqueue lock、external-eventsのpid file lock、GPTのnative leaseと自動統合しない。強制終了はfinallyが走る保証を持たず、子spawnには専用取消/全子孫停止/timeoutが無い。子のclose非0を受けても途中の保存原本を消さない。責務採否はAstraのまとまりへ渡す観測であり、Solで新module/lock修理を先行しない。
+このnonce lock本体はv2/v4/v5で同一本文。Windows ACL/privateStateとともに専用moduleへ抽出した。v1のdirectory lock、reporterのqueue lock、external-eventsのpid file lock、GPTのnative leaseと自動統合しない。強制終了はfinallyが走る保証を持たず、子spawnには専用取消/全子孫停止/timeoutが無い。子のclose非0を受けても途中の保存原本を消さない。抽出の採否は[第3設計](../adr/20261103-feature-map-responsibility-phase3.md)、その実装を本ページに反映済み。排他アルゴリズムの新設やlock修理は含まない。
 
 ## 互換wrapperと補助操作
 

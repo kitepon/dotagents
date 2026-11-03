@@ -33,4 +33,4 @@ v4はCodegraph欄をLatticeへ置換し、`scan.mjs:latticeProduct`へ接続。C
 
 全literal接点は当席phase12-contacts.txt、v2-v4差分はphase12-v2-v4.diffへ固定。既fixtureは`tests/factory-scan/v2.test.mjs`のnative shape/製品別不変条件/Throughline・aiterm/collection snapshot/ACK、`gpt-connector-runtime-errors.test.mjs`、`spotter-diagnostics.test.mjs`、`tests/lattice-cutover/wire-v4.test.mjs`、toolchain-ledger系へ接続する。今回は接点/case索引と既調査であり、旧診断fixture全件の本文・実行完了とはしない。
 
-重複private parser/投影は観測として残す。製品別exact受理・exit・wire重大度/指紋・Caveat parser差・collection差を保てる責務案かは、全接点を揃えたAstra設計で採否を決める。今回のSol調査で新共通層やpolicy flagを実装しない。残る全fixture/CI・配布/最終全体整合と実OSは未確認。
+重複private parser/投影は[第3設計](../adr/20261103-feature-map-responsibility-phase3.md)で維持を採用した。exact受理・exit・重大度/指紋・Caveat parser・collectionの差を機械的に統合しない。CIのsource接続は[CI配布](ci-distribution.md)、残るfixture/実OSと全体判断は[全体レビュー](final-review.md)を参照する。

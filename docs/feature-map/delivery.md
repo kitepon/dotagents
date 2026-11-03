@@ -4,7 +4,7 @@
 
 第2設計の実装後のCLI/reader関数配置と旧wire追加確認は[実装済みの責務](delivery-functions.md)を参照する。以下の配送・保持状態は維持する。
 
-基準main `9fca2c8`、reader整理候補`eac9a51`から本文確認した現状。v5〜v9が共有するreporter、fragment、runtime ACK、report/config契約、command、v9 scan wrapper、通常scanのACK生成、限定一回観測の保存を対象とする。古いv1/v2/v4のtransport本文と全製品診断内部は未調査。実送信・credential・Host状態は確認していない。
+基準main `9fca2c8`、reader整理候補`eac9a51`から本文確認した現状。v5〜v9が共有するreporter、fragment、runtime ACK、report/config契約、command、v9 scan wrapper、通常scanのACK生成、限定一回観測の保存を対象とする。旧v1/v2/v4 transportは[配送関数](delivery-functions.md)、診断投影は[診断詳細](diagnostics.md)へ追加調査を接続済み。実送信・credential・Host状態は確認していない。
 
 ## 完了点と所有
 
@@ -66,7 +66,7 @@ schedule runnerがscan→同ID report/ACK保存→必要時enqueue→flush→rec
 
 exportはfragment4関数、config/report検証/読取/identity、runtime bundle/collect/ACK群、commandのrun/timeoutReason等。reporter binはCLI契約でトップレベルmainを起動し、queue/HTTP内部関数をlibrary exportしていない。`runtime-context.mjs`は現processの設定presenceだけを記録し、証明範囲を限定する。CA store探索やTLS probeではない。
 
-このまとまりは現状図の追加。[第2責務設計](../adr/20261103-feature-map-responsibility-phase2.md)にCLI/巡回と共有report readerの採用案、配送・保持の維持理由を接続した。提案は未実装。未読は旧transport、scan.mjsの全製品診断、v5の個別診断深部、親hook/skill/model、3OS setup/scheduler、GPT writer/authority、CI/配布全体。機械参照の件数を全caller意味確認にしない。
+[第2責務設計](../adr/20261103-feature-map-responsibility-phase2.md)のCLI/巡回と共有readerを実装済み。現状の関数は[配送関数](delivery-functions.md)、全体の本文確認と未読は[確認範囲](scope-review.md)を参照する。機械参照の件数を全caller意味確認にしない。
 
 ## runtime metadataの実関数と保持境界
 

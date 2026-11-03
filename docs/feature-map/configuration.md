@@ -29,7 +29,7 @@ BaseExceptionを受ける保存処理でも、強制kill等でfinallyが動か�
 
 CLI scriptは実行入口が`__main__`であり、共通ライブラリとして公開exportしていない。testは`runpy`・実CLI・隔離HOME等で内部関数/振舞いへ到達する。全literal候補は進行正本側`config-update-caller-candidates.json`にline付きで保持し、履歴文書と実callerを区別する。
 
-関連入口は`tests/install/apply-claude-config.sh`、`apply-grok-config.sh`、`apply-cursor-config.sh`、`clean-home.sh`、`codex-hook-dead-interpreter.sh`、host setup fixture、`tests/factory-scan/claude-hooks-windows.test.mjs`、Windows native source契約。dry-run/保持/冪等/既存symlink/rollback/Windows引用などを持つ。testを再走した記録ではなく、fixtureの存在/対象の本文読取である。clean-homeの全後半と全host fixture、動的・外部callerの意味確認は残る。
+関連入口は`tests/install/apply-claude-config.sh`、`apply-grok-config.sh`、`apply-cursor-config.sh`、`clean-home.sh`、`codex-hook-dead-interpreter.sh`、host setup fixture、`tests/factory-scan/claude-hooks-windows.test.mjs`、Windows native source契約。dry-run/保持/冪等/既存symlink/rollback/Windows引用などを持つ。testを再走した記録ではなく、fixtureの存在/対象の本文読取である。clean-home後半は[検証対応](verification.md)へ接続済み。全host fixtureの枝、動的・外部callerの意味確認は残る。
 
 command解析と引用、backup命名、atomic保存が複数入口に存在する。違いにはhost契約/rollback/保持条件があるため、重複という見た目だけで共通化しない。採用/維持/代替案はAstra設計で判断する。
 

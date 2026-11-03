@@ -51,4 +51,4 @@ v9 CLIの明示managed-entry時は`caveat-entry.mjs:createCaveatDiagnosticPort`�
 
 ここでは新しい構造整理案を追加しない。起動/parse/投影/世代合成は既に関数で辿れ、Caveat/各製品のoverall、重大度、fingerprint、旧wire、timeoutの意味に差がある。共通化のためのpolicy flagを先に作る根拠はない。新たな採否が必要なら、親hook/skill/modelとの全接点が揃った責務設計のまとまりでAstraへ渡す。
 
-全体の[親hook/skill/model](harness.md)、[3OS setup/scheduler/公開setup](setup.md)、[GPTwriter/lease/authority](deployment.md)にも本文対応を接続済み。残る全fixture/CI・配布の全接点、動的/外部caller、実OSと最終Astra整合は未完。1Passwordの現在接点も全体に含め、任意化の振舞い修理は全体完了後別差分とする。
+全体の[親hook/skill/model](harness.md)、[3OS setup/scheduler/公開setup](setup.md)、[GPTwriter/lease/authority](deployment.md)にも本文対応を接続済み。CIのsource接点は[CI配布](ci-distribution.md)へ接続済み。全fixtureの残部、動的/外部caller、実OSは未確認。Astraの判断は[全体レビュー](final-review.md)を参照する。1Passwordの現在接点も全体に含め、任意化の振舞い修理は全体完了後別差分とする。

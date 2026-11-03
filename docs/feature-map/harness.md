@@ -64,4 +64,4 @@ callerは4harness設定、config applier、install/verify、診断v5、手動CLI
 
 既共通gateと薄いfrontend、親固有envelope、独立Cursor stateの所有は辿れるため、このまとまりで新しい共通層や修理を先行しない。必要な追加整理の採否は、残る全体接点を揃えたAstra設計で判断する。
 
-未読は1Password setup詳細/第三者環境を含む3OS setup/scheduler/製品公開setup、GPTwriter/lease/authority、Caveat collector/evidence深部、旧v2/v4全診断、CI/配布の最終接点、全fixtureと実OS。最終Astra全体整合は別工程で残る。
+1Password明示setup/3OS/公開setupは[setup](setup.md)、writer/authorityは[deployment](deployment.md)、Caveat/旧診断/CIは[全体入口](../09_feature-map.md)から接続済み。全fixture本文・実session/OS・第三者環境は未確認。[全体レビュー](final-review.md)の判断と区別する。

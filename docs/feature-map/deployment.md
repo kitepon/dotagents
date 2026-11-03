@@ -65,12 +65,12 @@ Node adapterはAsyncLocalStorageでlease所有を束縛、helper RPCを直列化
 
 通常の観測接点はsetup-linux-factory/common→observer.sh、agents-update.sh→同helper、product-setup→observer.mjs。新しいCLI/config/exportを今回追加していない。関係する環境変数は観測opt-in/明示出力/期限/source rootであり、authority/trustを有効化する一般switchではない。installのbinリンク配布とrepo相対lib/helper参照も配布接点に含める。
 
-既gateはMakefile `test-core-authority`のPython5入口とNode3file、`ci`依存。`test-update`はproduct-setup等、`test-install`はroot前提/runner登録/profile fixtureを持つ。core observer/operation observer等は独立fixtureも存在し、全fileがこのgateから実行されるとはしない。`.github/workflows`/CI plan全体の選択・配布条件は次工程で本文確定する。
+既gateはMakefile `test-core-authority`のPython5入口とNode3file、`ci`依存。`test-update`はproduct-setup等、`test-install`はroot前提/runner登録/profile fixtureを持つ。core observer/operation observer等は独立fixtureも存在し、全fileがこのgateから実行されるとはしない。`.github/workflows`/CI planの選択・配布条件は[CI配布](ci-distribution.md)へ本文接続済み。
 
-今回本文確認したfixtureは`tests/update/core-authority-sources.test.mjs`（subject保持/固定port/非同期I/O解放順）、`public-core-executor.test.mjs`（一回予約/元結果/例外）、`public-executor-release.test.mjs`（解放不明で起動0、両解放確認後だけ通常一回）、`tests/install/runner-profile.test.mjs`。他authority/core/原本/child fixtureは接点・case索引であり、全fixture本文・実行完了にはしない。当席phase11-writer-contacts.txt/source-review.jsonに固定する。
+今回本文確認したfixtureは`tests/update/core-authority-sources.test.mjs`（subject保持/固定port/非同期I/O解放順）、`public-core-executor.test.mjs`（一回予約/元結果/例外）、`public-executor-release.test.mjs`（解放不明で起動0、両解放確認後だけ通常一回）、`tests/install/runner-profile.test.mjs`。authorityの5Python/helperは後続の[検証対応](verification.md)で本文確認した。旧独立observer等の残部は索引/sectionであり、全fixture本文・実行完了にはしない。当席phase11-writer-contacts.txt/source-review.jsonに固定する。
 
 ## 確認済みと残り
 
 writer/source authority/固定bootstrap/観測store、setup補助の本文と上記fixtureを確認。今回docsのみ、旧122試験/4host/native成功を反復せず、実credential/送信/Host/runner metadata/未知trust探索0。新lock・fsync・security修理を追加しない。既writerとnested reader/bridge/storeは別責務として現存しており、実port未供給を新たな成功既定口で埋める案は採らない。追加の責務採否は全体接点を揃えたAstra設計へ渡す。
 
-全体未読はCaveat collector/evidence深部、旧v2/v4個別診断、全fixtureの意味確認、CI/配布契約の最終接点、動的/外部caller・実OS。実live/issuer/store/allwriter/resource未確定とSEC002本人later/旧stage停止を維持する。全体完了・最終Astra整合ではない。
+Caveat/旧診断/CIのsourceは[全体入口](../09_feature-map.md)から接続済み。全fixtureの残部、動的/外部caller・実OS、実live/issuer/store/allwriter/resourceは未確認。SEC002本人later/旧stage停止を維持し、[全体レビュー](final-review.md)を実authority成立の証明にしない。

@@ -1,53 +1,38 @@
 # 全体の本文確認・接続と残り
 
-[全体入口](../09_feature-map.md)。base `9fca2c8`、候補`257d8f8`時点の既機械索引と現状詳細を照合した。初期索引は1397 tracked path/324 active file、今回の機能別分類は317pathで、定義・export・設定の初期候補pathを含む。分類対象数を全意味確認の件数にしない。各fileのhash/機械分類/図への文字参照/今回の本文確認は当席phase13-coverage-index.json/source-review.jsonで区別する。basenameが文書に無いだけでは未読と断定せず、文字参照が有るだけでも本文確認済みにしない。
+[全体入口](../09_feature-map.md) / [検証対応](verification.md) / [Astra全体レビュー](final-review.md)。基準main `9fca2c8`。このページは現在の確認範囲を持ち、工程履歴は各ADRと当席progressに残す。
 
-## 現状の所有窓口
+初期索引1397 tracked path/324 active file、phase13の317path、phase14の37path/181literal接点、phase17の120test pathは機械索引または読取scopeの記録であり、全意味確認の件数ではない。basenameの記載有無、glob所属、既reviewの記録有無だけで全文読了や未読を判定しない。
 
-| 機能 | 現状詳細と接点 | 追加確認が残る範囲 |
+## 現在の所有窓口と確認範囲
+
+| 機能 | 本文と状態/接続の正本 | 残る未確認 |
 | --- | --- | --- |
-| 規範生成/install/verify | [導入](installation.md)、[親hook/skill](harness.md) | clean-home等の全fixture後半/実session、未列挙alias/外部caller |
-| config applier/source同期/更新 | [設定](configuration.md)、[更新確定](update.md)、[setup](setup.md) | 他製品更新relay/退役parkと実callerの逆対応、全fixture |
-| 3OS setup/scheduler | [setup](setup.md)、[CI配布](ci-distribution.md)の補助入口 | [世代別runner](legacy-runners.md)へ差を接続済み。全fixture/動的caller/実OS |
-| 公開診断・旧wire | [診断](diagnostics.md)、[v2/v4](legacy-diagnostics.md) | 実probe不要。診断の全fixtureと動的command/版alias |
-| 配送/ACK/receipt | [配送](delivery.md)、[CLI/reader](delivery-functions.md) | [外部イベント](external-events.md)・[旧runner](legacy-runners.md)へ保存/ACK/世代差を接続済み。全fixture/外部callerは残る |
-| GPT/Rabbit観測・permit境界 | [writer/authority](deployment.md)、[診断](diagnostics.md) | [観測入口/一回保持](gpt-observation.md)へ本文/原本/許可/接点を接続済み。実permit/trustは未探索 |
-| Caveat managed/private candidate | [collector/保持](caveat-evidence.md) | native worker/channel/raw保存は未接続候補。全fixture/配布実物/実OSを成功扱いしない |
-| model/4親hook/skill/agent | [harness](harness.md)、[モデル選定](model-selection.md) | 親session実発火と動的利用。既1Password接点保持、任意化は全体完了後別差分 |
-| 開発文書/CI/Lattice inventory | [CI配布](ci-distribution.md) | 旧ADRと実比較base経路、busy marker文書差、全fixture/branch protection/実CI・公開 |
+| 規範生成/install/verify/config | [導入](installation.md)、[設定](configuration.md) | clean-home後半は本文確認済み。その他config/OS fixtureの全枝、実session、外部caller |
+| source同期/日次更新/失敗state | [更新](update.md)、[setup](setup.md) | cron-envと失敗report fixtureはsection/接点中心。全fixture全文、実更新/配送は未確認 |
+| 3OS setup/scheduler/公開setup | [setup](setup.md)、[runner](legacy-runners.md) | root/profile/Jev補助も本文接続済み。実OS登録/自然発火/Host導入版は未確認 |
+| 公開診断・旧wire | [診断](diagnostics.md)、[旧v2/v4](legacy-diagnostics.md) | 各診断fixtureの未読枝、動的command/外部caller。実probeは未実行 |
+| 配送/ACK/receipt/各排他 | [配送](delivery.md)、[関数](delivery-functions.md)、[runner](legacy-runners.md) | 旧transport/runner本文は接続済み。wire5〜8全case/実OS/中央UIは未確認 |
+| GPT/Rabbit観測 | [観測入口](gpt-observation.md)、[writer/authority](deployment.md) | 通常閉鎖/過去限定scopeを保持。実permit/issuer/store/resource/allwriterは未確定 |
+| Caveat managed/private候補 | [collectorと保持](caveat-evidence.md) | 実worker/channel/raw保存は未接続候補。synthetic fixtureを実OS受入にしない |
+| 親hook/skill/model | [harness](harness.md)、[モデル](model-selection.md) | 実session発火と動的利用、fixture全枝。1Password任意化は全体完了後別差分 |
+| 互換wrapper/補助relay | [runner](legacy-runners.md)、[setup](setup.md)、[CI配布](ci-distribution.md) | Oracle/sync/Community/公開setupのliteral接点を確認。外部利用不存在とはしない |
+| CI/文書/配布 | [CI配布](ci-distribution.md) | ADR0136要件の実装差、実3OS full/branch protection/公開受入。Windows marker説明は訂正済み |
 
-全fileを同じ深さで再調査するのではなく、機能全体から責任窓口・状態と全接点を辿れるかを確認する。候補の二つの構造整理を全体リファクタ完了へ置換しない。
+本文確認はsourceの責任と受渡しを説明する根拠であり、実動作の受入とは別である。他製品内部/Host/他writerを対象へ取り込まない。
 
-## 今回閉じた補助入口と残る本文のまとまり
+## 採用した整理と整合判断
 
-CI/renderer/Lattice inventory、公開製品setup relay、factory deployment/toolchain CLI、gh auth status helper、npm退避、Caveat更新owner、Windows report inventory/runner capacity source、platform chmod helper、unai installer、退役WSL2入口を本文確認した。これらの実操作は行っていない。
+三つのADRで台帳reader、reporter CLI/巡回と8reader、scheduler stateを整理した。現状図と実関数は[台帳reader](toolchain-reader.md)、[配送関数](delivery-functions.md)、[runner](legacy-runners.md)を正本とする。旧wireの受理/重大度/理由指紋/ACK/保持と、v1/queue/event/nativeの異なる排他を共通化していない。
 
-Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`update-grok-community-overlay.sh`も本文を読んだ。前者は通常gpt-connectorと別の明示rollback入口で、Node/global-root/Chrome解決とexec、QoS guard、負座標の非可視非保証を保持する。sync-sweepは各repoをfetchして台帳をstdoutへ出し、失敗を行に残す。Community overlayは製品所有scripts/update-overlay.shへ順次委譲し、--pushは明示引数だけ。成功済み最初の製品を第二の失敗でrollbackしない。製品内部・他repoの操作を今回引き受けない。今回[世代別runner/互換入口](legacy-runners.md)へ配布/全literal接点/test/設定の対応を接続した。動的/外部利用者は未確定。
+第3実装後の補助5source（agents-update-scheduler-contract、jev-products、deployment-contract、runtime-context、windows-powershell）の本文・逆caller接続は完了。postUpdateFailuresは通常source内のliteral実caller未確認でfixture利用を記す。新policy・実trustや成功既定portは追加しない。
 
-外部イベント系とGPT/Rabbit観測選択系、旧v1/v2/v4runnerとv5共通runnerを本文確認し、上の詳細へ接続した。各public export、library import、CLI/bin配布、fixture/gateのliteral候補を当席phase14-contacts.txtに固定。runtime-context/deployment-contract等の参照済み窓口も含めた、未列挙alias/動的・外部callerと全fixtureの意味確認は残る。次は既2構造整理と新たに見えた重複・保持差・旧文書差の責務採否を、Astra適用後にまとめて判断する。
+Astra最終照合では三整理の責任分割と保持契約に新たな実装上の是正事項を見つけず、現状説明に残った古い未実装/未読記述を訂正した。採否と検証の妥当性、完成前の残りは[全体レビュー](final-review.md)が所有する。
 
-これは未確定のsourceだけの工程で、実runtime/実credential/permit/実観測/他writer参加の探索ではない。旧live/issuer/store/resource/allwriter未確定とSEC002本人later/旧stage停止を保持する。
+## 残る工程
 
-## 設計・実装・検証の残り
+未変更fixture全体の全文再監査を三整理の受入条件へ後付けしない。一方、部分読取を全文読了へ格上げもしない。既局所受入60/122/第3関連60、全体lintと文書/CI分類の20試験は別の根拠で、実3OS fullや配布受入の代わりにはならない。
 
-追加の責務分割・重複整理・代替案採否は、残る接点を揃えて最新Astra xhigh適用後の設計まとまりへ渡す。旧wireのexact受理、Caveat parser差、重大度/指紋、collection/空ACK、各保存/取消・結果不明を機械的に統一しない。採否前の実装は行わない。
+指導担当の独立成果確認を受け、具体的な不足が返れば対象file/function/callerだけを調査・是正する。実装変更ならSol Highの正式適用後に行い、その差分の必要試験/図同期後にAstraへ戻す。指導返信を新しい無関係作業のgateにしない。
 
-変更範囲の必要fixtureと全体確認、図の実描画/目視、適用済みAstra最終全体整合、指導担当の成果確認、完成候補と既承認手順による反映結果は別工程。今回の文書確認だけでruntime gate/CI/3OS受入を再実行済みにしない。実動作なしのdocs調査を続けるたびに既122/60/native13/4host試験を反復しない。
-
-## 第3採否後の具体工程
-
-[第3責務設計](../adr/20261103-feature-map-responsibility-phase3.md)でscheduler専用state/nonce lock抽出を採用した。全体の所有窓口は同ADRの採否表にまとめ、旧parser/観測/各lockの異なる契約は維持する。Windows marker説明は訂正済み、ADR0136の要件と実装差は未解消のまま。実装はSol適用後である。
-
-次は新module/3runnerと全relayの接点を確定し、既scheduler/PS7 source fixtureを追従、必要な世代別・原本保持caseを隔離検証して現状図へ接続する。既読scheduler fixtureのRUNNERはv4であり、全世代の挙動確認へ代用しない。
-
-残るsource接続は、`agents-update-scheduler-contract.mjs`、`jev-products.mjs`の窓口と、`deployment-contract.mjs`/`runtime-context.mjs`の実関数・逆caller、今回確認した`windows-powershell.mjs`の返却を有限に照合する。setup/update/delivery/CI詳細へ不足分だけ補う。aliasやfile名が詳細本文にない候補を機械的に未読へ分類し直さない。全fixtureの未読一覧/既gate所属/OS条件、動的・外部caller、実OSと実CI/配布受入は引き続き残る。
-
-## 第3実装後
-
-scheduler state抽出とsource fixture追従、関連6file60試験を実施し、[runner](legacy-runners.md)へ同期した。補助5sourceの本文・逆callerを[setup](setup.md)/[配送](delivery.md)/[CI](ci-distribution.md)へ追補し、前段で挙げた有限source接続を閉じた。これは全fixture/全OS/動的外部callerの完了ではない。
-
-次は既source-reviewの全文/section根拠と全tests/helper/configを照合し、未読fixtureを機能別・既gate・OS条件へ対応させる。特にclean-home後半、旧v2専用fixtureのgate外配置、authority Python/Node helper、Caveat private fixtureの実worker未接続、wire別の実使用majorを維持する。必要な全体検証範囲をこの対応から確定して実施し、図の全体から実関数/失敗保持までの最終確認資料をAstraへ渡す。既成功試験を理由なく全量反復せず、実OS受入・公開の不足を局所Linux試験で補完しない。
-
-## 最終確認へ渡す根拠
-
-[検証対応と未確認](verification.md)へ、clean-home後半/旧v2独立fixture/authority helperの本文とgate/OS、既変更受入と追加全体静的確認を接続した。全fixtureの全文監査ではない。残る未変更case本文・実OS/CI/外部callerの不足を含め、Astraで全体整合と確認範囲の妥当性を判断する。未確認を自動的に合格へ繰り上げない。
+公開/反映前は、固定候補に対する既CI契約の3OS受入と承認手順が残る。現工程から実CI/Host/metadata/credential/送信を開始しない。次の実作業では候補差分と既CI入力・未実行OS受入をレビュー可能な形へまとめ、具体的な成果に対する必要な判断へつなぐ。Mac指定既log、SEC002本人later/旧stage停止、native別候補、1Password任意化別差分の境界を維持する。

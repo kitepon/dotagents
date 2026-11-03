@@ -20,4 +20,4 @@ credential取得は選定APIより前に呼ばれ、後続失敗でも保存済�
 
 全リポliteral参照ではCLIと`tests/pick-model/pick-model.test.mjs`が公開libraryのcaller。binは既installの配布経路、fixtureは既Makefile test-pick-model globに入る。fixture本文から役割/候補、最新rollout、閉鎖期限、2段階fake request、HTTP失敗を確認した。今回は文書だけのため試験は反復していない。動的/外部caller、実platform、実API選定の結果は未確認。
 
-親hook/skill発火・呼出し元の指示・02本文と全harness設定の詳細は次の調査へ残す。今回のsource読取だけで子モデル変更を適用したり、候補選定を運用上の許可とみなしたりしない。新しい汎用選定層や失敗fallbackは作らない。
+親hook/skillと02本文・harness定義の調査は[harness詳細](harness.md)へ接続済み。実発火や動的利用は未確認。今回のsource読取だけで子モデル変更を適用したり、候補選定を運用上の許可とみなしたりしない。新しい汎用選定層や失敗fallbackは作らない。

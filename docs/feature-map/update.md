@@ -2,7 +2,7 @@
 
 [全体入口](../09_feature-map.md) / [更新確定の描画](update-finalization.svg) / [原本](update-finalization.mmd)
 
-基準main `9fca2c8`。updater/source同期、toolchain台帳、失敗記録/送信、v5共通schedule runner、finalizeToolchainReport、receipt検査の該当本文を確認した。更新・送信・credential読取・Host操作は今回実行しない。製品公開setupの内部、診断全体、transport全分岐、OS schedulerは別の詳細調査を残す。
+基準main `9fca2c8`。updater/source同期、toolchain台帳、失敗記録/送信、v5共通schedule runner、finalizeToolchainReport、receipt検査の該当本文を確認した。更新・送信・credential読取・Host操作は今回実行しない。公開setup/OS schedulerは[setup](setup.md)、診断は[診断](diagnostics.md)、transportは[配送](delivery.md)へ本文対応を接続済み。製品内部と実OSは対象外/未確認を維持する。
 
 ## 責任と状態所有
 

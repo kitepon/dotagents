@@ -20,7 +20,7 @@
 
 - `bin/verify-constitution-parity.sh`→renderer check。`Makefile`のlint-constitution/test-constitution→そのwrapper/`tests/constitution/generation.test.mjs`。
 - `tests/constitution/generation.test.mjs`は隔離root生成、drift拒否、入力不正、空delta、生成LFを検査する。生成5fileの一括原子性や強制終了cleanupを証明するfixtureではない。
-- `tests/install/clean-home.sh`はofficial/legacy HOME、実ファイル/退役link、configとtransaction、CLI parser等のfixtureを持つ。今回は入口と前半を読んだ段階であり、後半まで確認済みとしない。
+- `tests/install/clean-home.sh`はofficial/legacy HOME、実ファイル/退役link、configとtransaction、CLI parser等のfixtureを持つ。後半を含む本文確認は[検証対応](verification.md)へ接続済み。実行結果と本文読取は区別する。
 - 全候補の所在は自席の固定caller索引を使用する。動的basename/path構築、外部からのinstall起動、親におけるskillの実発火は未確定。
 
 ## 停止・取消・結果不明・後始末

@@ -35,4 +35,4 @@ v1 reporterも全本文を確認。ACK metadataをOFF判定より前に読む点
 
 [旧scanと診断接続の調査済み図](diagnostics-legacy.svg) / [原本](diagnostics-legacy.mmd)。scan.mjsの1〜180行とscanResult/mergeServerManagerExternal/公開scanを本文確認。旧scanはprofile/archを拒否し、観測時刻を固定して順次公開診断を起動する。Throughline/Spotterのschemaが不正・command不成功ならunverified、Caveatは専用parserとexit整合を確認する。collection ONの旧経路ではruntime収集/ACK候補が存在し、server側のactive fingerprintと衝突する解決/ACKをmergeが抑制する。これは通常v5-v9の空ACKとは別経路。git revision取得失敗はreport構築を中断する。診断は外部製品内部を管理する意味ではない。
 
-上記の個別診断深部は[診断](diagnostics.md)、親接点は[harness](harness.md)、3OSは[setup](setup.md)、writerは[deployment](deployment.md)、CIは[配布](ci-distribution.md)へ追加接続済み。[外部イベント](external-events.md)・[GPT/Rabbit観測](gpt-observation.md)・[旧runner](legacy-runners.md)も本文対応を追加した。全fixture/動的・外部caller・実OS・最終Astra整合は未完。1Password任意化は全体完了後の別差分とする。
+上記の個別診断深部は[診断](diagnostics.md)、親接点は[harness](harness.md)、3OSは[setup](setup.md)、writerは[deployment](deployment.md)、CIは[配布](ci-distribution.md)へ追加接続済み。[外部イベント](external-events.md)・[GPT/Rabbit観測](gpt-observation.md)・[旧runner](legacy-runners.md)も本文対応を追加した。全fixture/動的・外部caller・実OSは未確認。Astraの判断は[全体レビュー](final-review.md)を参照する。1Password任意化は全体完了後の別差分とする。

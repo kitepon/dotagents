@@ -9,7 +9,7 @@
 | 台帳path/reader | v2/v4/v5→v6-v9 scan/finalize。toolchain-ledger-reader、v2 scan、finalize、writer、schedulerの既5file | 既60成功、構文・移動前後本文照合。[reader](toolchain-reader.md)。新state抽出後のfinalize/schedulerは第3試験で再確認。実OS保存/全writerは未確認 |
 | reporter CLI/巡回・8reader | 旧v1/v2/v4、v5-v8 readerとv9 Rabbit専用reader、wire CLI/queue/fragment/ACK fixture | 既122成功、元bytes/失敗/保持と既本文一致。[配送関数](delivery-functions.md)。今回この122全量は再走していない |
 | scheduler state/nonce/ACL | v2/v4/v5とv6-v9 relay、新state/scheduler/PS7/finalize/v9flag/旧gateの6file | 第3実装60成功/skip0、新module/3runner構文、helper本文export以外とrunner残部一致。[runner](legacy-runners.md)。新testは既reporter glob、Windows ACLの実OS実行は未確認 |
-| 全体の静的・文書接続 | Makefileのlint全target、test-current-docs、test-ci-plan | 自席envを読み込んだ`make lint test-current-docs test-ci-plan`成功。Markdown267file/0error、current-docs656文書、文書10・CI plan10試験成功。履歴不変性や実CIの合格へ拡張しない |
+| 全体の静的・文書接続 | Makefileのlint全target、test-current-docs、test-ci-plan | 自席envを読み込んだ`make lint test-current-docs test-ci-plan`成功。当初Markdown267file/0error・current-docs656文書、文書10・CI plan10試験成功。検証対応ページ追加後もMarkdown268file/0error・657文書を確認した。履歴不変性や実CIの合格へ拡張しない |
 
 最初のlintはShellCheckがPATHに無くexit127で停止した。自席の既保存0.11.0とmanifestを既setup補助で検証し、既environment/env.shを読み込んで再実行した。検査条件・製品source・共通Host設定は変えていない。構文検査によるPython cache等は製品成果物に含めない。
 
@@ -35,4 +35,4 @@
 
 実Mac/Windows、実CIの3OS full、branch protection、動的/外部caller、親session認識、中央画面反映、実issuer/store/resource/allwriterは未確定。repo内共通JS/図変更のCI分類は3OS fullのまま。実CI起動・Host/runner metadata・credential/送信/permit/trust探索をこの確認から開始しない。
 
-ADR0136のclosed current/履歴保護と比較base未伝搬の要件差、通常GPT入口の欠測factによる閉鎖、Rabbit過去scope、native別候補、Caveat未接続workerを既知の制限として維持する。次のAstraは図/実装/採否/受入とこの未確認を全体で照合し、追加確認が必要なら具体的窓口へ返す。候補の公開・本番反映はまだ行わない。
+ADR0136のclosed current/履歴保護と比較base未伝搬の要件差、通常GPT入口の欠測factによる閉鎖、Rabbit過去scope、native別候補、Caveat未接続workerを既知の制限として維持する。[Astra全体レビュー](final-review.md)が図/実装/採否/受入とこの未確認を照合した。候補の公開・本番反映はまだ行わない。
