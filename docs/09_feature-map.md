@@ -34,3 +34,5 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 第1実装の[台帳reader現状図・対応・検証](feature-map/toolchain-reader.md)。第1設計の提案図は設計時点の記録として残し、実装の現在地はこちらを正本とする。
 
 [第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)は、reporterのCLI/巡回と共有report readerの整理を採用した。配送・ACK・保持の境界は維持する。[提案図](feature-map/delivery-design.svg)は未実装であり、上の現状図とは分けて読む。
+
+第2実装の[配送CLI/報告reader現状と検証](feature-map/delivery-functions.md)へ接続した。第2設計の提案図は設計時点の履歴で、現在の関数配置はこちらを正本とする。旧v2/v4 transport本文の追加確認とv1の未読も記す。

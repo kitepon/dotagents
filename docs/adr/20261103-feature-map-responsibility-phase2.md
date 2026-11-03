@@ -102,3 +102,7 @@ helperはexportしない。公開関数を削除したり、callerを新しい�
 続けて、未読の旧transportと製品診断深部をSolで本文調査し、現役/互換/退役の窓口、入力・失敗投影・取消/不明を全体図へ接続する。その後も親hook/skill/model、3OS setup/scheduler/製品公開setup、GPT writer/lease/authority、CI/配布を残す。全体を配送や1Passwordへ縮めない。次の責務設計が必要なまとまりでAstraへ切り替える。
 
 この設計の完了条件は二点の採否と保持/接点/次工程の確定であり、実装完了でも全体完了でもない。全体の最終Astra整合、指導担当の成果確認、既承認手順での公開/反映は別工程。1Password任意化は全体完了後の別差分、既選択の任意連携は保持する。限定Mac自然受入とSEC002本人later、Host/他製品/他writer/実trustの既境界を変えない。
+
+## 第2実装への接続
+
+採用した二点を実装し、[現在の関数配置・公開接点・検証](../feature-map/delivery-functions.md)へ接続した。上の未実装表記は設計時点の記録である。全体調査と最終Astra整合は継続する。

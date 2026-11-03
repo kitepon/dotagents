@@ -1,0 +1,16 @@
+flowchart TB
+  input[Legacy scan options: host / platform / arch] --> guard{Profile and arch valid?}
+  guard -- no --> rejected[Throw to caller / no completed report]
+  guard -- yes --> scan[scanResult: fixed observedAt / sequential adapters]
+  scan --> native[nativeCli / Caveat / Throughline / Spotter]
+  native -- invalid schema or result --> unknown[Unverified check / product projection]
+  native -- valid --> status[Native status projection]
+  scan -. remaining adapter bodies unread .-> deep[Other native and third-party adapters]
+  unknown --> compose[Products / revision / report assembly]
+  status --> compose
+  scan -- collection enabled in legacy path --> runtime[collectRuntimeErrors / ACK candidates]
+  runtime --> merge[Server active fingerprint merge / blocked ACK]
+  merge --> compose
+  compose -- revision failure --> rejected
+  compose --> returned[Report and matching ACK bundle to caller]
+  current[Ordinary v5-v9 scan] --> empty[Separate current contract: empty ACK list]

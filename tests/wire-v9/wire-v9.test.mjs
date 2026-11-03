@@ -39,6 +39,55 @@ function run(script, args, env = {}) {
   });
 }
 
+test('reporting OFFはenqueueのidentity/ACK読取を省き、previewはidentityを検査する', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'wire-v9-off-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const config = join(root, 'config.json'), file = join(root, 'report.json');
+  const reporter = resolve(import.meta.dirname, '../../bin/factory-reporter-v9.mjs');
+  const env = { XDG_STATE_HOME: join(root, 'state'), LOCALAPPDATA: join(root, 'state') };
+  await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'different', profile: 'mac' }, collection: { enabled: false }, reporting: { enabled: false } }));
+  await writeFile(file, JSON.stringify(reportV9()));
+  const enqueue = await run(reporter, ['enqueue', '--report', file, '--ack-metadata', join(root, 'missing'), '--config', config], env);
+  assert.equal(enqueue.code, 0, enqueue.stderr); assert.equal(enqueue.json.enqueued, false);
+  const preview = await run(reporter, ['preview', '--report', file, '--config', config], env);
+  assert.equal(preview.code, 1); assert.match(preview.stderr, /identity/u);
+  const flush = await run(reporter, ['flush', '--config', config], env);
+  assert.equal(flush.code, 0); assert.equal(flush.json.retained, 0);
+  await writeFile(file, '{');
+  assert.equal((await run(reporter, ['enqueue', '--report', file, '--config', config], env)).code, 1);
+});
+
+test('混在queueは受理/保留/不正/延期を個別集計し、lockと原本を保持する', async t => {
+  const root = await mkdtemp(join(tmpdir(), 'wire-v9-mixed-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const config = join(root, 'config.json'), file = join(root, 'report.json'), token = join(root, 'token');
+  const reporter = resolve(import.meta.dirname, '../../bin/factory-reporter-v9.mjs');
+  const env = { XDG_STATE_HOME: join(root, 'state'), LOCALAPPDATA: join(root, 'state') };
+  const ids = [1, 2, 3].map(n => `018f0000-0000-8000-8000-00000000000${n}`); const received = [];
+  const server = createServer(async (req, res) => {
+    const chunks = []; for await (const chunk of req) chunks.push(chunk);
+    const report = JSON.parse(Buffer.concat(chunks)); received.push(report.report_id);
+    res.writeHead(report.report_id === ids[0] ? 200 : 503, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ accepted: true, report_id: report.report_id }));
+  });
+  await new Promise(done => server.listen(0, '127.0.0.1', done)); t.after(() => new Promise(done => server.close(done)));
+  await writeFile(token, 'fixture-token');
+  await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'mac-kite', profile: 'mac' }, collection: { enabled: true }, reporting: { enabled: true, endpoint: `http://127.0.0.1:${server.address().port}/api/factory/v9/reports`, credential_file: token } }));
+  for (const id of ids) {
+    await writeFile(file, JSON.stringify({ ...reportV9(), report_id: id }));
+    assert.equal((await run(reporter, ['enqueue', '--report', file, '--config', config], env)).code, 0);
+  }
+  const state = join(root, 'state', 'dotagents', 'factory-reporter-v9');
+  await writeFile(join(state, 'outbox', 'malformed.json'), '{');
+  await writeFile(join(state, 'retry', `${ids[2]}.json`), JSON.stringify({ attempt: 1, next_retry_at: Date.now() + 60000 }));
+  const result = await run(reporter, ['flush', '--config', config], env);
+  assert.equal(result.code, 1, result.stderr);
+  for (const key of ['sent', 'retained', 'dead_lettered', 'deferred']) assert.equal(result.json[key], 1, key);
+  assert.equal(result.json.count, 2); assert.equal(result.json.unreachable, 0);
+  assert.deepEqual(received, ids.slice(0, 2));
+  assert.match(result.stderr, /永久拒否/u);
+  assert.deepEqual((await readdir(join(state, 'outbox'))).sort(), ids.slice(1).map(id => `${id}.json`));
+  await assert.rejects(readFile(join(state, 'flush.lock', 'pid')), { code: 'ENOENT' });
+});
+
 
 test('v9は両第三者製品を必須にし、旧v8の集合を変更しない', () => {
   assert.deepEqual(V9_PRODUCT_IDS, EXPECTED);

@@ -2,6 +2,8 @@
 
 [全体入口](../09_feature-map.md) / [更新確定との接続](update.md) / [配送図](delivery.svg) / [原本](delivery.mmd) / [保持図](outbox-retention.svg) / [原本](outbox-retention.mmd)
 
+第2設計の実装後のCLI/reader関数配置と旧wire追加確認は[実装済みの責務](delivery-functions.md)を参照する。以下の配送・保持状態は維持する。
+
 基準main `9fca2c8`、reader整理候補`eac9a51`から本文確認した現状。v5〜v9が共有するreporter、fragment、runtime ACK、report/config契約、command、v9 scan wrapper、通常scanのACK生成、限定一回観測の保存を対象とする。古いv1/v2/v4のtransport本文と全製品診断内部は未調査。実送信・credential・Host状態は確認していない。
 
 ## 完了点と所有
