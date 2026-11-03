@@ -1,0 +1,35 @@
+# 全体の本文確認・接続と残り
+
+[全体入口](../09_feature-map.md)。base `9fca2c8`、候補`257d8f8`時点の既機械索引と現状詳細を照合した。初期索引は1397 tracked path/324 active file、今回の機能別分類は317pathで、定義・export・設定の初期候補pathを含む。分類対象数を全意味確認の件数にしない。各fileのhash/機械分類/図への文字参照/今回の本文確認は当席phase13-coverage-index.json/source-review.jsonで区別する。basenameが文書に無いだけでは未読と断定せず、文字参照が有るだけでも本文確認済みにしない。
+
+## 現状の所有窓口
+
+| 機能 | 現状詳細と接点 | 追加確認が残る範囲 |
+| --- | --- | --- |
+| 規範生成/install/verify | [導入](installation.md)、[親hook/skill](harness.md) | clean-home等の全fixture後半/実session、未列挙alias/外部caller |
+| config applier/source同期/更新 | [設定](configuration.md)、[更新確定](update.md)、[setup](setup.md) | 他製品更新relay/退役parkと実callerの逆対応、全fixture |
+| 3OS setup/scheduler | [setup](setup.md)、[CI配布](ci-distribution.md)の補助入口 | 旧schedule-runner各世代の全期間/取消/保持差、windows helperの全逆caller/実OS |
+| 公開診断・旧wire | [診断](diagnostics.md)、[v2/v4](legacy-diagnostics.md) | 実probe不要。診断の全fixtureと動的command/版alias |
+| 配送/ACK/receipt | [配送](delivery.md)、[CLI/reader](delivery-functions.md) | 外部イベント台帳/probeの保存と全接点、旧runnerの未確定を閉じる |
+| GPT/Rabbit観測・permit境界 | [writer/authority](deployment.md)、[診断](diagnostics.md) | gpt-observation-context/entry、rabbit-observation-once/scopeの本文・全caller・原本/許可の接続。実permit/trustは探索しない |
+| Caveat managed/private candidate | [collector/保持](caveat-evidence.md) | native worker/channel/raw保存は未接続候補。全fixture/配布実物/実OSを成功扱いしない |
+| model/4親hook/skill/agent | [harness](harness.md)、[モデル選定](model-selection.md) | 親session実発火と動的利用。既1Password接点保持、任意化は全体完了後別差分 |
+| 開発文書/CI/Lattice inventory | [CI配布](ci-distribution.md) | 旧ADRと実比較base経路、busy marker文書差、全fixture/branch protection/実CI・公開 |
+
+全fileを同じ深さで再調査するのではなく、機能全体から責任窓口・状態と全接点を辿れるかを確認する。候補の二つの構造整理を全体リファクタ完了へ置換しない。
+
+## 今回閉じた補助入口と残る本文のまとまり
+
+CI/renderer/Lattice inventory、公開製品setup relay、factory deployment/toolchain CLI、gh auth status helper、npm退避、Caveat更新owner、Windows report inventory/runner capacity source、platform chmod helper、unai installer、退役WSL2入口を本文確認した。これらの実操作は行っていない。
+
+Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`update-grok-community-overlay.sh`も本文を読んだ。前者は通常gpt-connectorと別の明示rollback入口で、Node/global-root/Chrome解決とexec、QoS guard、負座標の非可視非保証を保持する。sync-sweepは各repoをfetchして台帳をstdoutへ出し、失敗を行に残す。Community overlayは製品所有scripts/update-overlay.shへ順次委譲し、--pushは明示引数だけ。成功済み最初の製品を第二の失敗でrollbackしない。製品内部・他repoの操作を今回引き受けない。これらの全caller/test/設定/exportと既入口からの図接続は次のまとまりで閉じる。
+
+次の有限本文調査は外部イベント系（`lib/factory/external-events.mjs`、`bin/factory-external-event.mjs`、`bin/bughub-external-probe.mjs`）、観測選択系（`gpt-observation-context.mjs/gpt-observation-entry.mjs/rabbit-observation-once.mjs/rabbit-observation-scope.json`）と関連fixture/公開wrapper。必要なら旧`factory-reporter-v2/v4-schedule-runner.mjs`と現行runnerの差分を照合する。runtime-context/deployment-contract等の参照済み窓口も、全export/callerへの逆対応の残りを明示して閉じる。
+
+これは未確定のsourceだけの工程で、実runtime/実credential/permit/実観測/他writer参加の探索ではない。旧live/issuer/store/resource/allwriter未確定とSEC002本人later/旧stage停止を保持する。
+
+## 設計・実装・検証の残り
+
+追加の責務分割・重複整理・代替案採否は、残る接点を揃えて最新Astra xhigh適用後の設計まとまりへ渡す。旧wireのexact受理、Caveat parser差、重大度/指紋、collection/空ACK、各保存/取消・結果不明を機械的に統一しない。採否前の実装は行わない。
+
+変更範囲の必要fixtureと全体確認、図の実描画/目視、適用済みAstra最終全体整合、指導担当の成果確認、完成候補と既承認手順による反映結果は別工程。今回の文書確認だけでruntime gate/CI/3OS受入を再実行済みにしない。実動作なしのdocs調査を続けるたびに既122/60/native13/4host試験を反復しない。

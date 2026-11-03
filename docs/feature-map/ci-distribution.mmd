@@ -1,0 +1,24 @@
+flowchart TB
+  event[Push / PR / weekly / manual] --> caller[Product-owned ci.yml / read-only permissions]
+  caller --> classify[Reusable classify job / Linux]
+  classify --> base[Resolve exact comparison commit / ancestry or schedule SHA]
+  base -- missing zero equal nonancestor --> fail[Classify job failure / final gate rejects]
+  base --> paths[Sorted deduplicated changed paths]
+  paths --> selection{Markdown-only?}
+  selection -- yes --> docs[Dependency install / document and constitution skill gates]
+  selection -- no --> matrix[Selected OS matrix / shared or unknown means three OS]
+  docs -- success --> skip[Product full explicitly skipped]
+  docs -- dependency or document check failed --> fail
+  matrix --> deps[Per-OS checkout / logical CPU budget / dependencies]
+  deps --> gates[make ci / all related targets / Node file concurrency 1]
+  deps -- failed --> results
+  gates --> results[Aggregate full success / failure / cancel / timeout]
+  skip --> final[Always gate / verifyResults]
+  results --> final
+  fail --> final
+  final -- classify success and matching selected result --> success[CI gate success]
+  final -- missing unknown or selected skip --> rejected[CI gate failure / exit 2]
+  docs --> current[Current facts drift and local links / no base-relative history check]
+  source[Install and OS setup / public product relays] --> distribution[HOME links / config / update / separate verify]
+  distribution --> session[Parent session recognition is a separate acceptance]
+  hook[Windows capacity hook source / no marker waiting] -. actual deployed version unknown .-> matrix

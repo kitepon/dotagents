@@ -23,11 +23,13 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 | 日次/毎時scheduler | `bin/agents-update-scheduler.mjs`、`bin/factory-reporter-scheduler.mjs`、`lib/factory/windows-scheduler.mjs` | [登録・解除・保持](feature-map/setup.md)。OS別artifact/hidden launcher/照合/失敗を本文確認。実登録/自然回の成立は別 |
 | 製品公開診断と投影 | `lib/factory/scan.mjs`、`v2.mjs`/`v4.mjs`〜`v9.mjs`、`command.mjs` | [診断詳細](feature-map/diagnostics.md)→[旧wire診断](feature-map/legacy-diagnostics.md)・[Caveat保持](feature-map/caveat-evidence.md)。source/差分と未接続候補を確認。全fixture/実OSは未完 |
 | 毎時runner/台帳確定/receipt | `bin/factory-reporter-v9-schedule-runner.mjs`→v5共通runner、`bin/factory-toolchain-ledger.mjs` | [更新・確定](feature-map/update.md)。本文とfinalize投影/receiptを確認。全wireのscan/transportと実OSは未確認 |
-| outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。v5-v9共通reporter/fragment/ACK/契約の本文を確認。旧transport/全fixture/診断深部は未調査 |
+| outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。共通reporter/fragment/ACKと旧v1/v2/v4本文を確認。旧runner差分・全fixtureの確認は残る |
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | [writer・authority・保持](feature-map/deployment.md)。source/二SH/元Node/原本storeを本文確認。別native fixture候補とlive/issuer/store/resource/allwriter未確定を区別 |
-| CI・公開・配布接点 | `Makefile`、`.github/workflows/`、`scripts/dotagents-ci-plan.mjs` | 本まとまりのcaller/test入口を確認。全gate/比較base・公開契約の意味確認は未完 |
+| CI・公開・配布接点 | `Makefile`、`.github/workflows/`、`scripts/dotagents-ci-plan.mjs` | [CI選択・文書検査・配布](feature-map/ci-distribution.md)。event/base/分類/gate/OSと開発文書source本文を確認。旧文書差と実CI/配布受入は未確認 |
 
 全tracked pathの機械索引は漏れを探す入口であり、意味確認の完了数には数えない。動的dispatch・alias・外部repo caller・実OS状態・各親の実session認識は未確定。
+
+[全体の本文確認・未接続残り](feature-map/scope-review.md)に機能別の現在地と次の有限調査を記す。
 
 進行と完了条件は[今回の工程](plan_feature-map-refactoring-20261103.md)。[第1責務設計](adr/20261103-feature-map-responsibility-phase1.md)は、導入/設定/更新の維持理由と台帳reader整理の採否を記す。提案図は未実装であり、この現状図と区別する。1Password任意化の挙動変更は全体リファクタの完了後、別差分で扱う。
 

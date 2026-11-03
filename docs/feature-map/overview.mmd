@@ -34,4 +34,4 @@ flowchart TB
   outbox -- supplied bundle after acceptance --> ack[product public ACK]
   runner -- finalize --> receipt[delivery receipt]
   ledger -- final projection --> runner
-  ci[CI plan / Makefile gates] -.-> result
+  ci[CI plan / Makefile gates] --> result
