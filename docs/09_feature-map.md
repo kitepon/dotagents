@@ -17,11 +17,11 @@ Dotagents全体の図起点リファクタリングの作業中資料。対象�
 | 規範生成とリンク配布・verify | `bin/render-global-constitution.mjs`、`install.sh`、`bin/verify-install.sh` | [導入・配布](feature-map/installation.md)。本文確認済み、全失敗/実OS動作を実証済みとはしない |
 | 親別config applier | `bin/apply-{claude,codex,grok,cursor}-config.sh`、`lib/hook-command.py` | [設定適用](feature-map/configuration.md)。4applierの本文・保存差・caller候補を確認。全test/動的外部callerの意味確認は未完 |
 | host setup | Mac/Linux common/Windows nativeの`bin/setup-*factory*` | install/config/verifyのcaller部分を確認。前提導入・enrollment・SSH/runner等の全本文は未調査 |
-| 親別hook・skill・model選定 | 4harness面、`lib/pick-model.mjs`、各bin/hooks | 配布接続のみ。全skill内tools・hook発火・model選択の本文は未調査 |
+| 親別hook・skill・model選定 | 4harness面、`lib/pick-model.mjs`、各bin/hooks | [モデル候補選定](feature-map/model-selection.md)のCLI/状態/API/返却を本文確認。全skill内tools・親hook発火・実適用は未調査 |
 | source同期/日次更新 | `bin/agents-source-update.mjs`、`bin/agents-update.sh` | [更新・確定](feature-map/update.md)。本文の順序・分岐/部分保持を確認。製品setup内部とcaller全体の排他は未確認 |
 | 製品公開setupと任意連携 | `lib/factory/product-setup.mjs`、`typesafe-setup.mjs`、`jev-setup.mjs`、`bin/setup-1password.sh` | 公開入口/製品境界の索引。1Passwordの既定skill配布は現在挙動として保持、修理を混在しない |
 | 日次/毎時scheduler | `bin/agents-update-scheduler.mjs`、`bin/factory-reporter-scheduler.mjs`、`lib/factory/windows-scheduler.mjs` | 既契約/索引。OS登録/中断/実行中取消/hidden launcherの詳細本文は未調査 |
-| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v9.mjs`、`command.mjs` | [配送・保持](feature-map/delivery.md)にreport/config/privacyとcommand終了の境界を接続。全製品診断の本文は未調査 |
+| 製品公開診断と投影 | `lib/factory/scan.mjs`、`v5.mjs`〜`v9.mjs`、`command.mjs` | [診断詳細](feature-map/diagnostics.md)。現行adapter/版/親配線/世代合成を本文確認。旧v2/v4個別診断とCaveat collector深部・全fixtureは未完 |
 | 毎時runner/台帳確定/receipt | `bin/factory-reporter-v9-schedule-runner.mjs`→v5共通runner、`bin/factory-toolchain-ledger.mjs` | [更新・確定](feature-map/update.md)。本文とfinalize投影/receiptを確認。全wireのscan/transportと実OSは未確認 |
 | outbox/送信/ACK/保持 | v9→`bin/factory-reporter-v5.mjs`、`lib/factory/report-fragments.mjs`、`delivery-receipt.mjs` | [配送・保持](feature-map/delivery.md)。v5-v9共通reporter/fragment/ACK/契約の本文を確認。旧transport/全fixture/診断深部は未調査 |
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | source受入済みとlive/issuer/store/resource未確定を区別。図のために実接続を始めない。詳細本文は未調査 |

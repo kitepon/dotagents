@@ -1,0 +1,24 @@
+flowchart TB
+  caller[Scan CLI / schedule runner] --> wire[v9 to v8 to v7 to v6 to v5 composition]
+  wire --> core[v5 native / MCP / toolchain adapters]
+  core --> run[command.run: close / timeout / output limit]
+  run --> parse[Product-specific parse and exit checks]
+  parse -- malformed / timeout / unavailable --> unknown[Missing or unverified / preserve reason]
+  parse -- valid --> project[Project product status / fixed checks]
+  project --> caveat[Caveat components: warn / stable fingerprint]
+  project --> server[Server readiness: fatal or high]
+  project --> toolchain[Version comparison / integration / last_update]
+  caveat --> report[Report with original generation contracts]
+  server --> report
+  toolchain --> report
+  unknown --> report
+  wire --> added[Peertable / Unai / Jev adapters]
+  added --> report
+  report --> output[Validate / report and separate ACK metadata files]
+  output --> delivery[Existing queue / acceptance / ACK / receipt]
+  managed[Optional managed Caveat port] --> descriptor[Before descriptor / invoke / after descriptor]
+  descriptor --> binding[Binding check added without replacing raw diagnostic]
+  binding --> core
+  descriptor -. deeper collector and evidence not yet reviewed .-> deeper[Private collector / evidence retention]
+  core -- runner throw / revision failure --> failure[Caller failure / no completed new report]
+  note[Ordinary current scan emits empty ACK list]

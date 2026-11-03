@@ -1,0 +1,16 @@
+flowchart TB
+  cli[pick-model CLI] --> command{Task or closed command?}
+  command -- closed --> validate[Validate harness and expiry]
+  validate --> file[Read current closures / direct write]
+  file --> out[JSON result / caller]
+  command -- task --> inputs[Read closures / recorded Codex usage / credential]
+  inputs --> models[Read 02 roles / ranking / model specs]
+  models --> role[Jev role request / 60s]
+  role --> candidates[Role candidates minus closed harnesses]
+  candidates --> pick[Jev candidate request / 60s]
+  pick --> out
+  inputs -. failure .-> error[stderr / exit 2 / no completed choice]
+  models -. failure .-> error
+  role -. failure or no candidates .-> error
+  pick -. failure .-> error
+  out --> note[No child spawn / no model application]
