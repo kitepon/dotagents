@@ -36,3 +36,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 [第3責務設計](adr/20261103-feature-map-responsibility-phase3.md)で、同一scheduler state/nonce lock/ACLの専用module抽出を採用した。世代別runner/診断/配送・原本保持は維持し、実装と必要fixture追従は次のSolまとまり。Windows markerの説明を現sourceへ訂正した。ADR0136の履歴保護要件と現CIの差は未解消として残す。残るsource接続の有限工程と全fixture未読をscope-reviewへ記録し、最終Astra全体整合とは区別する。
 
 第3案のscheduler state抽出を実装し、既6fileの関連60試験と構文確認に成功した。補助契約/metadataの有限source接続も追補。全fixtureの未読/OS条件・全体検証範囲の確定から最終Astra整合へ進む。
+
+[検証対応](feature-map/verification.md)を追加した。変更3整理の受入と全体lint/文書・CI planの確認を区別し、独立fixture/間接helper/OS条件と残る全文未監査を明示。次のAstraへ候補全体と確認範囲を渡し、不足があれば具体的窓口へ戻す。

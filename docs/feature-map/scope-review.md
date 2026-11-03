@@ -47,3 +47,7 @@ Oracle互換`oracle-mcp-stable.sh/oracle-chrome-shim.sh`、`sync-sweep.sh`、`up
 scheduler state抽出とsource fixture追従、関連6file60試験を実施し、[runner](legacy-runners.md)へ同期した。補助5sourceの本文・逆callerを[setup](setup.md)/[配送](delivery.md)/[CI](ci-distribution.md)へ追補し、前段で挙げた有限source接続を閉じた。これは全fixture/全OS/動的外部callerの完了ではない。
 
 次は既source-reviewの全文/section根拠と全tests/helper/configを照合し、未読fixtureを機能別・既gate・OS条件へ対応させる。特にclean-home後半、旧v2専用fixtureのgate外配置、authority Python/Node helper、Caveat private fixtureの実worker未接続、wire別の実使用majorを維持する。必要な全体検証範囲をこの対応から確定して実施し、図の全体から実関数/失敗保持までの最終確認資料をAstraへ渡す。既成功試験を理由なく全量反復せず、実OS受入・公開の不足を局所Linux試験で補完しない。
+
+## 最終確認へ渡す根拠
+
+[検証対応と未確認](verification.md)へ、clean-home後半/旧v2独立fixture/authority helperの本文とgate/OS、既変更受入と追加全体静的確認を接続した。全fixtureの全文監査ではない。残る未変更case本文・実OS/CI/外部callerの不足を含め、Astraで全体整合と確認範囲の妥当性を判断する。未確認を自動的に合格へ繰り上げない。
