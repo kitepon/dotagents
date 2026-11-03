@@ -1,0 +1,21 @@
+flowchart TB
+  source[Factory definitions / four config appliers] --> config[HOME settings and hook configuration]
+  config --> event[Harness event / current session snapshot]
+  event --> frontend[Four Python frontend entries]
+  frontend --> core[Shared git-destroy-gate main / envelope selection]
+  core --> parse[Shell segments / git tokens / destroy target]
+  parse --> status[git status / cwd / pathspec / 2s]
+  status -- observed changes --> deny[Parent-specific deny JSON]
+  core -- off / unsupported / invalid --> noop[No output]
+  parse -- no supported target --> noop
+  status -- clean or observation failure --> noop
+  event --> constitution[Cursor constitution hook]
+  constitution -- prompt or preToolUse --> stamp{Stamp already exists?}
+  constitution -- sessionStart --> read
+  stamp -- yes --> noop
+  stamp -- no --> read[Read factory.mdc / strip frontmatter]
+  read --> context[Full or compact additional_context]
+  context --> parent[Parent receives output / reading not acknowledged]
+  context -- prompt or preToolUse --> save[Write per-session stamp for two events]
+  save -- failure --> repeat[Next event may repeat delivery]
+  read -- missing or empty --> noop
