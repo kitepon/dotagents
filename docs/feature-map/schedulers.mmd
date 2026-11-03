@@ -1,0 +1,18 @@
+flowchart TB
+  setup[Host setup / manual registration] --> day[Daily 02:00 OS schedule]
+  day --> mac[Mac agents-update]
+  day --> linux[Linux wrapper --scheduled-update]
+  day --> win[Windows setup -ScheduledRun]
+  mac --> update[Existing update and report finalization]
+  linux --> update
+  win --> update
+  update --> delivery[Enqueue / flush / receipt]
+  hourly[Public reporter scheduler CLI] --> check[Config profile / wire / runner validation]
+  check --> artifact[Every hour at minute 17 / OS artifact]
+  artifact --> scan[Schedule runner scan and delivery]
+  scan --> delivery
+  hourly -- uninstall --> remove[Remove owned schedule and artifacts / keep report state]
+  artifact --> note[Registered does not prove natural execution]
+  setup -- Windows manual path --> retired[Retire old hourly task / keep daily flow]
+  helpers[PATH / stable node / hidden launcher / ACL helpers] --> artifact
+  helpers --> day

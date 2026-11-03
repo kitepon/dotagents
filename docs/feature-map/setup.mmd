@@ -1,0 +1,24 @@
+flowchart TB
+  entry[OS setup entry / platform and mode validation] --> mac[Mac prerequisites / backup / bootstrap]
+  entry --> linux[Linux role / prerequisites / runner / SSH / enrollment]
+  entry --> windows[Windows prerequisites / transcript / setup file lock]
+  mac --> posix[Config then install links]
+  linux --> posix
+  windows --> winconfig[Normalize reporter config / manual-only links and config]
+  posix --> daily[OS daily 02:00 registration]
+  winconfig --> daily
+  daily --> update[Existing agents-update / public product setup / finalize]
+  update --> receipt[Fresh report ID and batch / delivery receipt]
+  receipt --> verify[Inventory and verify-install]
+  verify --> done[Setup result / Windows setup receipt]
+  done -- Windows manual only --> smoke[Start daily task / bounded fresh receipt smoke]
+  smoke --> accepted[Scheduled receipt observed]
+  mac -. failure .-> held
+  linux -. failure .-> held[Completed earlier steps retained / no global rollback]
+  windows -. failure .-> held
+  update -. failure or unknown .-> held
+  optional[Explicit 1Password setup only] --> package[Install / protocol / register]
+  package --> auth[CLI and optional desktop authentication]
+  auth -- ready --> ready[exit 0]
+  auth -- waiting --> waiting[JSON / exit 3 / installed state retained]
+  package -. failure .-> held
