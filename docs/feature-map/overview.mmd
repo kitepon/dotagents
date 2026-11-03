@@ -16,15 +16,17 @@ flowchart TB
   home --> verify[verify-install]
   config --> verify
   verify --> result[exit status + diagnostics]
-  home -.-> session[host hooks / skills / model selection]
-  setup -.-> sched[OS daily / hourly scheduler]
-  sched -.-> update[source sync + product updates]
-  sched -.-> runner[report schedule runner]
+  home --> session[host hooks / skills / model selection]
+  setup --> sched[OS daily / hourly scheduler]
+  sched --> update[source sync + product updates]
+  sched --> runner[report schedule runner]
   update --> ledger[toolchain ledger + failure record]
   update --> runner
   contract -.-> scan[public diagnostics projection]
   runner --> scan
-  core[deployment writer: source only / live ports unknown]
+  update --> public[Public product setup]
+  public -. explicit composition only .-> core[Deployment writer / two SH authority / private originals]
+  unknown[Live issuer / store / all-writer resources unknown] -. no default .-> core
   scan --> state[private report + ACK metadata]
   state --> outbox[outbox / retry / fragments]
   outbox --> server[ServerManager acceptance]

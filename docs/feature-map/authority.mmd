@@ -1,0 +1,27 @@
+flowchart TB
+  public[Public setup / ordinary result once] --> before[Opt-in public before observation / private WeakMap]
+  before -. explicit composition only .-> executor[Public core executor / reserve once]
+  executor --> factory[Canonical factory reader SH]
+  factory --> product[Canonical product reader SH]
+  product --> subjects[Private verifier / exact sources receipts / issuer port]
+  subjects --> launch[Installed launch / exact role bytes / fd7 record]
+  launch --> child[Original product child / fixed preload / same ESM registration]
+  child --> helper[Fixed core helper / fd3 reply / fd4 authority]
+  helper --> receiver[Kernel receiver / pid credentials control bytes]
+  receiver --> node[Original factory Node sends response on fd5]
+  subjects --> node
+  node --> trust[Fixed trust adapter / two subject originals / request hash]
+  trust --> core[Core begin / result / same run and stdout admission]
+  core --> frame[Full accepted exact frame only]
+  core -- denied or output unknown --> metadata[Metadata only / null result original]
+  frame --> store[Private nonreplacement originals / pending retained]
+  metadata --> store
+  store --> reply[Recorded raw or unknown / no reporting or resource permission]
+  child --> settle[Original execution and broker settle / no retry]
+  settle --> leases[Settle pending verifier I/O then release product and factory SH]
+  executor -- missing before SH attempt --> fallback[Ordinary invocation once]
+  product -- decline before child --> sentinel[Private no-launch sentinel]
+  sentinel --> released{Both canonical wrappers completed cleanup?}
+  released -- yes --> fallback
+  released -- no or unknown --> stopped[No child / no fallback / fixed failure]
+  issuer[Actual issuer / store / resource catalogue / all-writer participation unknown] -. no success default .-> subjects

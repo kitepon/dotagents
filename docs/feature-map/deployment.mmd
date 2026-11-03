@@ -1,0 +1,26 @@
+flowchart TB
+  input[Explicit request and supplied native ports] --> check[Clone and validate identity / paths / resources / sources]
+  check --> ex[Acquire EX / assert resources / read old committed]
+  ex --> mut[CAS mutating / new generation / receipt null]
+  mut --> ops[Retire before / install / retire after]
+  ops --> evidence[Capture original bytes / provenance / adoption]
+  evidence --> issue[Issue receipt and read exact source bundle]
+  issue --> commit[CAS committed / guard]
+  commit --> release[Complete EX release]
+  release --> handoff[Committed handoff]
+  handoff --> sh[Acquire SH / exact scope generation receipt / verifyCurrent]
+  sh --> callback[Reader callback / normal result]
+  callback --> cleanup[Guard and complete SH release]
+  cleanup --> done[Completed / normal result preserved]
+  mut -. failure after saved .-> incomplete[Under EX save incomplete / receipt null]
+  ops -. abort or failure .-> incomplete
+  evidence -. rejected or unknown .-> incomplete
+  issue -. missing evidence .-> incomplete
+  commit -. guard failure .-> incomplete
+  incomplete --> held[Persistence saved or unknown / package result retained]
+  ex -. acquire or release failure .-> blocked[Blocked / no trusted handoff]
+  release -. release failure .-> blocked
+  sh -. changed or unknown .-> blocked
+  cleanup -. release failure .-> result[Blocked / retain obtained normal result / no rerun]
+  ports[Native store / trust / all-writer resource ownership unknown] -. supplied only .-> input
+  fixture[Separate Linux fixture candidate / no normal CLI integration] -. demonstrates limited adapter contract .-> ports

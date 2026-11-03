@@ -44,7 +44,18 @@ Windows手動setupは毎時reporter taskを退役させ、日次setupが更新�
 
 `typesafe-setup.mjs:setupTypeSafe`はcredential取得→公式skillの4面導入→一覧/全agent確認→30秒実API分類smokeを順に行う。後半の失敗でも先行skill/credentialを戻さない。今回このAPIや導入を実行していない。
 
-`jev-setup.mjs:setupJevProduct`はOS対応とfork設定形式を検査し、既checkoutのorigin/dirtyを拒否境界にする。上流/forkの取得、uv/npm/cargoによる導入、必要な版照合後にfork設定を解除する。途中失敗したcheckout/導入物は残る。公式releaseでのfork卒業判定は`jev-fork-release.mjs`の別責務で、今回その全本文は未読。GUI起動や他製品の内部修理は含めない。
+`jev-setup.mjs:setupJevProduct`はOS対応とfork設定形式を検査し、既checkoutのorigin/dirtyを拒否境界にする。上流/forkの取得、uv/npm/cargoによる導入、必要な版照合後にfork設定を解除する。途中失敗したcheckout/導入物は残る。公式releaseでのfork卒業判定は`jev-fork-release.mjs`の別責務。GUI起動や他製品の内部修理は含めない。
+
+## setup補助のsource契約
+
+| 実file・窓口 | 所有する処理 | 失敗と未確定 |
+| --- | --- | --- |
+| `bin/setup-linux-prerequisites-root.sh` | root/user/role/Ubuntuを検査、欠けたapt package、既Dockerが無い時の公式repository、cron/docker有効化。役割別sudoersをvisudoで検査、SSH設定を検査後reload、docker groupとsmoke | 先行package/設定/group/サービスを全rollbackしない。製品の明示bootstrap sourceであり、今回root実行やHost管理を引き受けていない |
+| `bin/factory-runner-profile.mjs`→`lib/factory/runner-profile.mjs:readRunnerProfile/parseDedicatedRunnerProfile` | 固定profile path、不在ENOENTだけlegacy。root所有regular/non-writable/O_NOFOLLOWとlstat/fstat、固定dedicated identity/activeを検査 | present malformed/foreign/trial/symlinkをlegacyへ落とさない。fdはfinally close。実metadataは今回読まず、GitHub組織runnerの現状態/割当可否を推定しない |
+| `lib/factory/jev-fork-release.mjs:officialForkRelease/isTrackedJevFork` | tracked PR/forkだけ。gh APIでmerged/commit/time、前提PR順序、git compare ahead/identical、registry latest distributionを版へ照合 | 未merge/未包含/版不一致はnull、未知ID/command/不正返却はthrow。commandは30秒/1MiB、PyPI fetchには明示timeoutが無い。今回接続/版採取なし。fork解除はcallerで版照合後 |
+| `bin/factory-update-context-observer.sh`、`lib/factory/update-context-observer.mjs` | opt-in phaseの非秘密限定入力/元返却hash/時間を固定Python helperへ渡す。shellのNode/npm解決はmetadataだけ | 観測失敗は警告と通常結果保持。private原本の非置換保存/core bridgeは[writer・authority](deployment.md)へ。実runtime/issuerの証明にしない |
+
+Linux commonからroot前提helperへ、Linux setupから公開runner profile CLI/libraryへ、Jev setupからfork releaseへ、setup/update/public setupから観測helperへ接続する。固定path/環境変数や公開exportを現物から確認し、新configを加えていない。実OS/runner metadata/credential/接続/サービス操作は0。
 
 ## 1Passwordの明示setup
 
@@ -63,8 +74,8 @@ Windows手動setupは毎時reporter taskを退役させ、日次setupが更新�
 
 ## 接点・確認・未読
 
-callerはOS wrapper/既setup→agents-update→公開製品helper/既runner、日次/毎時CLI、Windows PS relay、installのbin配布。exportは公開setup command表/outcome/runner、TypeSafe/Jev setup、scheduler path/XML/ACL照合等。全literal候補を当席phase10-setup-contacts.txtへ固定した。動的major名、fork release、root prerequisite helper、専用runner profile、観測helper、全fixtureは本文未確認を残す。
+callerはOS wrapper/既setup→agents-update→公開製品helper/既runner、日次/毎時CLI、Windows PS relay、installのbin配布。exportは公開setup command表/outcome/runner、TypeSafe/Jev setup、scheduler path/XML/ACL照合等。全literal候補を当席phase10-setup-contacts.txt、補助をphase11-source-review.jsonへ固定した。動的major名・外部caller・全fixtureの意味確認は未完。
 
 対応fixtureは`tests/install/setup-{macos-factory,linux-common,linux-factory,linux-workstation-factory}.sh`、`tests/factory-reporter/{windows-native-setup,agents-update-scheduler,scheduler}.test.mjs`、`tests/update/{product-setup,typesafe-setup,jev-setup}.test.mjs`、`tests/install/onepassword.test.py`。今回は1Passwordの隔離登録/衝突/未認証/秘密出力/Windows限定fixtureの一部を本文確認。他は接点索引であり全意味確認・実行済みではない。コード変更なしのため既成功試験を反復しない。
 
-この現状調査はOS別の副作用と保持を可視化したもの。共通化の採否を先取りして新lock/設定/修理を加えない。次は未読helperとGPTwriter/lease/authority、Caveat collector/evidence、旧v2/v4全診断、CI/配布・全fixtureを全体へ接続する。最終Astra整合と実OS確認は別工程である。
+この現状調査はOS別の副作用と保持を可視化したもの。共通化の採否を先取りして新lock/設定/修理を加えない。GPTwriter/lease/authorityのsourceは[詳細](deployment.md)へ接続した。Caveat collector/evidence、旧v2/v4全診断、CI/配布・全fixtureと最終Astra整合は未完。実OS確認は別工程である。

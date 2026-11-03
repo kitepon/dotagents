@@ -24,3 +24,5 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 [配送・保持の現状図](feature-map/delivery.md)を追加。v5-v9共通reporter/fragment/ACK・契約とcommand終了を本文確認、旧transportと全製品診断深部は未調査。責務整理の追加採否はAstra設計へ渡す。
 
 [第2責務設計](adr/20261103-feature-map-responsibility-phase2.md)で、同file内のCLI/queue巡回分割と8report readerの共有を採用。postOne/fragment/controlled/ACKの既責務は維持する。次のSolで全接点を確定して実装・図同期・局所検証し、旧transport/診断深部から全体の未読調査へ続ける。現時点で第2案のコード変更はない。
+
+現在、第2案は[配送CLI/reader](feature-map/delivery-functions.md)へ実装・局所122試験済み。上の「次のSol」「変更はない」は設計時点の履歴。以後の[診断](feature-map/diagnostics.md)、[親hook/skill](feature-map/harness.md)、[3OS setup/scheduler](feature-map/setup.md)、[GPT writer/authority](feature-map/deployment.md)のsource調査を接続した。全fixture/CI配布/Caveat evidence/旧診断と最終Astra整合は継続し、全体完了とはしない。
