@@ -9,6 +9,7 @@ base main `9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5`、tree `693448687f8314278c3
 - [全体の図入口](09_feature-map.md)→[規範生成・配布・導入検査](feature-map/installation.md)→実ファイル/関数。
 - 全体は接続索引図の初版。未読の機能は破線と表に明記し、機械索引の件数を意味確認の完了数にしない。
 - 規範生成/install/verifyとhost caller接続を最初のSol Highの調査まとまりにした。config applierは書込・rollbackと呼出し順の部分読取まで。source挙動の変更はまだ無い。
+- 次のSol調査で[4config applier](feature-map/configuration.md)と[source同期/日次更新/台帳確定・失敗報告](feature-map/update.md)の本文を追跡した。現状詳細を追加し、実装の挙動差分はまだ無い。
 - 責務分割・接続・代替案の設計と最後の図/コード整合は、利用可能な最新Astra xhighの適用後に行う。実コード調査/実装は最新Sol Highへ戻してから行う。fastは通常OFF。
 
 ## 完了まで残る工程

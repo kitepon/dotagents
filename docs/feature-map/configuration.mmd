@@ -1,0 +1,26 @@
+flowchart TB
+  caller[host setup or explicit CLI] --> read[read original config / reject forbidden symlink]
+  read --> propose[host-specific owned fields and hooks]
+  propose --> unchanged{changed?}
+  unchanged -->|no| noop[exit 0 / preserve bytes]
+  unchanged -->|yes| mode{apply?}
+  mode -->|no| diff[print diff / keep real config]
+  mode -->|yes| archive[backup original text / owner-only archive]
+  archive --> kind{host writer}
+  kind -->|Codex| prepare[prepare changed file set]
+  prepare --> replace[replace in order]
+  replace -->|complete| success[print applied / return to caller]
+  replace -->|failure| rollback[reverse replaced files]
+  rollback --> failure[raise original and any rollback failure]
+  kind -->|Claude / Cursor| single[temp write + fsync + mode + replace]
+  single --> success
+  single -->|failure| restore[restore changed original if possible / remove temp]
+  restore --> failure
+  kind -->|Grok| cfg[config apply first if changed]
+  cfg --> hooks[generate real hook file / unlink old destination / replace]
+  hooks --> success
+  hooks -->|failure| partial[config may remain changed / old hook may be absent]
+  partial --> failure
+  failure --> archivekept[backup retained for recovery]
+  propose -.-> parser[Codex dry-run also uses CLI parser in temporary HOME]
+  success -.-> session[new host session and UI adoption are separate]

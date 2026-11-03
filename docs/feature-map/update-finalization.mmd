@@ -1,0 +1,39 @@
+sequenceDiagram
+  participant Entry as updater / caller
+  participant Source as source-sync
+  participant Product as product public CLI
+  participant Ledger as toolchain ledger
+  participant Runner as schedule runner
+  participant Scan as public diagnostics
+  participant Queue as outbox / transport
+  participant Fail as update-failure record
+  Entry->>Source: normal run: root / main / origin / dirty guards
+  Source->>Source: fetch + ancestor guard + ff-only
+  Source-->>Entry: append source result and reopen Bash with result flag
+  Note over Entry,Source: setup bypasses self-sync, log/restart failure is separate
+  loop configured products
+    Entry->>Product: compare / install / product-owned setup
+    Product-->>Entry: exit and public result
+    Entry->>Ledger: tracked CLIs only: operation with post gate pending
+  end
+  Entry->>Runner: post-update
+  Runner->>Scan: capture report + ACK metadata once
+  Scan-->>Runner: report ID + output path
+  Runner->>Queue: flush earlier queue if reporting enabled
+  Runner-->>Entry: process status / post gate result
+  Note over Runner,Scan: scan completion is not every product check passing
+  Entry->>Ledger: final post gate result for three CLIs
+  alt final ledger writes and report ID available
+    Entry->>Runner: finalize-update / expected report ID
+    Runner->>Ledger: read final records
+    Runner->>Runner: reproject last_update on same report
+    Runner->>Queue: enqueue final bytes + existing ACK metadata
+    Queue-->>Runner: flush exit status
+    Runner->>Runner: write delivery receipt if reporting enabled
+    Runner-->>Entry: finalized or explicit failure
+  else final record / report ID missing
+    Entry->>Entry: keep report failure, do not finalize
+  end
+  Entry->>Fail: record ran/failed steps and optional report evidence
+  Fail-->>Entry: record / reporting outcome, failure only warns updater
+  Entry-->>Entry: return update/report status

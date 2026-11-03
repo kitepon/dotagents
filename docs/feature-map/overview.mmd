@@ -20,16 +20,16 @@ flowchart TB
   setup -.-> sched[OS daily / hourly scheduler]
   sched -.-> update[source sync + product updates]
   sched -.-> runner[report schedule runner]
-  update -.-> ledger[toolchain ledger + failure record]
-  update -.-> runner
+  update --> ledger[toolchain ledger + failure record]
+  update --> runner
   contract -.-> scan[public diagnostics projection]
-  runner -.-> scan
+  runner --> scan
   core[deployment writer: source only / live ports unknown]
   scan -.-> state[private report + ACK metadata]
   state -.-> outbox[outbox / retry / fragments]
   outbox -.-> server[ServerManager acceptance]
   server -. accepted response .-> outbox
   outbox -. ACK after acceptance .-> ack[product public ACK]
-  runner -. finalize .-> receipt[delivery receipt]
-  ledger -.-> receipt
+  runner -- finalize --> receipt[delivery receipt]
+  ledger -- final projection --> runner
   ci[CI plan / Makefile gates] -.-> result

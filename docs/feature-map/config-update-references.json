@@ -1,0 +1,1698 @@
+{
+  "source_base": "9fca2c8bf002b9b0ac8bd22d13d8076142a02ff5",
+  "scope": "config appliers and source/update/ledger/finalize/receipt tracked literal references",
+  "limits": "candidate references only; dynamic/alias/external callers remain unconfirmed",
+  "references": [
+    {
+      "path": "bin/agents-update-schedule-runner.mjs",
+      "line": 8,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "import { assertDeliveryReceipt } from '../lib/factory/delivery-receipt.mjs';"
+    },
+    {
+      "path": "bin/agents-update-schedule-runner.mjs",
+      "line": 24,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "    const result = spawnSync(bash, [runner], { encoding: 'utf8', windowsHide: true, env: { ...process.env, HOME: home, CODEX_HOME: join(home, '.codex'), AGENTS_UPDATE_PATH_PREFIX: `${msysHome}/.local/bin`, AGENTS_UPDATE_BATCH_TOKEN: token, FACTORY_REPORTER_RUNNER: join(home, '.local', 'bin', 'factory-reporter-v9-schedule-runner') } });"
+    },
+    {
+      "path": "bin/agents-update-schedule-runner.mjs",
+      "line": 29,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "      else try { const report = JSON.parse(readFileSync(join(state, 'latest-report.json'), 'utf8')); const receipt = JSON.parse(readFileSync(join(state, 'delivery-receipt.json'), 'utf8')); assertDeliveryReceipt({ report, priorReportId: beforeReport, receipt, batchToken: token }); process.stdout.write(`${JSON.stringify({ ok: true, batch_token: token, report: 'v9', delivery_acknowledged: true })}\\n`); } catch { fail('今回のv9 reportとBugHub accepted後のdelivery receiptを確認できません'); }"
+    },
+    {
+      "path": "bin/agents-update.sh",
+      "line": 14,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  *) printf '使い方: agents-update.sh [--setup]\\n' >&2; exit 2 ;;"
+    },
+    {
+      "path": "bin/agents-update.sh",
+      "line": 88,
+      "tokens": [
+        "agents-source-update",
+        "agents-update.sh"
+      ],
+      "context": "  exec node \"$SCRIPT_DIR/agents-source-update.mjs\" \"$SCRIPT_DIR/agents-update.sh\" \"$LOG\" \"$BASH\" \"$@\""
+    },
+    {
+      "path": "bin/agents-update.sh",
+      "line": 90,
+      "tokens": [
+        "factory-toolchain-ledger"
+      ],
+      "context": "TOOLCHAIN_LEDGER_HELPER=\"${TOOLCHAIN_LEDGER_HELPER:-$SCRIPT_DIR/factory-toolchain-ledger.mjs}\""
+    },
+    {
+      "path": "bin/agents-update.sh",
+      "line": 94,
+      "tokens": [
+        "factory-update-failure-report"
+      ],
+      "context": "UPDATE_FAILURE_REPORT_HELPER=\"${UPDATE_FAILURE_REPORT_HELPER:-$SCRIPT_DIR/factory-update-failure-report.mjs}\""
+    },
+    {
+      "path": "bin/apply-claude-config.sh",
+      "line": 281,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "        print(\"apply-claude-config: 変更なし\")"
+    },
+    {
+      "path": "bin/apply-claude-config.sh",
+      "line": 288,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "    print(f\"apply-claude-config: 適用完了（backup: {archive}）\")"
+    },
+    {
+      "path": "bin/apply-codex-config.sh",
+      "line": 439,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "        print(\"apply-codex-config: 変更なし\")"
+    },
+    {
+      "path": "bin/apply-codex-config.sh",
+      "line": 444,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "    print(f\"apply-codex-config: 適用完了（backup: {archive}）\")"
+    },
+    {
+      "path": "bin/apply-cursor-config.sh",
+      "line": 232,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "        print(\"apply-cursor-config: 変更なし\")"
+    },
+    {
+      "path": "bin/apply-cursor-config.sh",
+      "line": 244,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "    print(f\"apply-cursor-config: 適用完了（backup: {archive}）\")"
+    },
+    {
+      "path": "bin/apply-grok-config.sh",
+      "line": 325,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "        print(\"apply-grok-config: 変更なし\")"
+    },
+    {
+      "path": "bin/apply-grok-config.sh",
+      "line": 345,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "    print(f\"apply-grok-config: 適用完了（backup: {archive}）\")"
+    },
+    {
+      "path": "bin/factory-reporter-v5-schedule-runner.mjs",
+      "line": 12,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "import { finalizeToolchainReport } from '../lib/factory/v5.mjs';"
+    },
+    {
+      "path": "bin/factory-reporter-v5-schedule-runner.mjs",
+      "line": 173,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "          report = await finalizeToolchainReport(report, { expectedReportId });"
+    },
+    {
+      "path": "bin/factory-reporter-v6-schedule-runner.mjs",
+      "line": 2,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "await import('./factory-reporter-v5-schedule-runner.mjs');"
+    },
+    {
+      "path": "bin/factory-reporter-v7-schedule-runner.mjs",
+      "line": 2,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "await import('./factory-reporter-v5-schedule-runner.mjs');"
+    },
+    {
+      "path": "bin/factory-reporter-v8-schedule-runner.mjs",
+      "line": 2,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "import './factory-reporter-v5-schedule-runner.mjs';"
+    },
+    {
+      "path": "bin/factory-reporter-v9-schedule-runner.mjs",
+      "line": 2,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "import './factory-reporter-v5-schedule-runner.mjs';"
+    },
+    {
+      "path": "bin/factory-toolchain-ledger.mjs",
+      "line": 57,
+      "tokens": [
+        "factory-toolchain-ledger"
+      ],
+      "context": "} catch (error) { process.stderr.write(`[factory-toolchain-ledger] ${error?.message || '失敗'}\\n`); process.exitCode = 1; }"
+    },
+    {
+      "path": "bin/factory-update-failure-report.mjs",
+      "line": 3,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "// agents-update.shが最後に `record` を呼ぶ。届かなかった分は、次の回か `flush` で送る。"
+    },
+    {
+      "path": "bin/factory-update-failure-report.mjs",
+      "line": 111,
+      "tokens": [
+        "factory-update-failure-report"
+      ],
+      "context": "  process.stderr.write(`[factory-update-failure-report] ${error?.message || '失敗'}\\n`);"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 514,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "const { assertDeliveryReceipt } = await import(pathToFileURL(contractPath).href);"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 517,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "assertDeliveryReceipt({ report, priorReportId: priorReportId || null, receipt, batchToken });"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 571,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "    FACTORY_REPORTER_RUNNER=\"$HOME/.local/bin/factory-reporter-v9-schedule-runner\" \\"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 572,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "    env -u THROUGHLINE_CODEX_THREAD_ID -u CODEX_THREAD_ID \"$ROOT/bin/agents-update.sh\" \"$@\""
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 643,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "    echo \"INFO: Grok未login。apply-grok-config をスキップする（toolchain optional）\""
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 646,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-grok-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 650,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-cursor-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 720,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-codex-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-linux-common.sh",
+      "line": 721,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-claude-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 75,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "const { assertDeliveryReceipt } = await import(pathToFileURL(contractPath).href);"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 78,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "assertDeliveryReceipt({ report, priorReportId: priorReportId || null, receipt, batchToken });"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 119,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "    FACTORY_REPORTER_RUNNER=\"$HOME/.local/bin/factory-reporter-v9-schedule-runner\" \\"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 120,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "    \"$ROOT/bin/agents-update.sh\" --setup"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 176,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "    echo \"INFO: Grok未login。apply-grok-config をスキップする（toolchain optional）\""
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 179,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-grok-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 183,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-cursor-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 263,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-codex-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-macos-factory.sh",
+      "line": 264,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "  \"$ROOT/bin/apply-claude-config.sh\" --apply"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 529,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "  $env:FACTORY_REPORTER_RUNNER = Convert-ToGitBashPath (Join-Path $env:USERPROFILE '.local\\bin\\factory-reporter-v9-schedule-runner')"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 750,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  $update = Convert-ToGitBashPath (Join-Path $RepoRoot 'bin\\agents-update.sh')"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 751,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "  $applyCodex = Join-Path $RepoRoot 'bin\\apply-codex-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 752,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "  $applyClaude = Join-Path $RepoRoot 'bin\\apply-claude-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 753,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  $applyGrok = Join-Path $RepoRoot 'bin\\apply-grok-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 754,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "  $applyCursor = Join-Path $RepoRoot 'bin\\apply-cursor-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 773,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "  # apply-codex-config.sh"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 774,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "  Invoke-Checked -File 'python' -Arguments @($applyCodex, '--apply') -Label 'codex-config: apply-codex-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 778,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "    Invoke-Checked -File 'python' -Arguments @($applyClaude, '--apply') -Label 'claude-config: apply-claude-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 786,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "    Write-Host 'INFO: Grok not logged in. Skipping apply-grok-config (toolchain optional)'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 791,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "      Invoke-Checked -File 'python' -Arguments @($applyGrok, '--apply') -Label 'grok-config: apply-grok-config.sh'"
+    },
+    {
+      "path": "bin/setup-windows-native-factory.ps1",
+      "line": 799,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "    Invoke-Checked -File 'python' -Arguments @($applyCursor, '--apply') -Label 'cursor-config: apply-cursor-config.sh'"
+    },
+    {
+      "path": "bin/verify-install.sh",
+      "line": 149,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "      echo \"FAIL: $dest 不在（工場hookは apply-grok-config が実ファイルを書く）\"; fail=1"
+    },
+    {
+      "path": "lib/factory/delivery-receipt.mjs",
+      "line": 3,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "export function assertDeliveryReceipt({ report, priorReportId, receipt, batchToken }) {"
+    },
+    {
+      "path": "lib/factory/v5.mjs",
+      "line": 226,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "// bin/apply-claude-config.sh の HOOKS と同じ組。Windows nativeのClaudeはshellを `PowerShell` ツールで実行するため、"
+    },
+    {
+      "path": "lib/factory/v5.mjs",
+      "line": 333,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "export async function finalizeToolchainReport(report, { expectedReportId, platform = process.platform, toolchainLedgerPath } = {}) {"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 79,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  const { assertDeliveryReceipt, DELIVERY_RECEIPT_SCHEMA } = await import('../../lib/factory/delivery-receipt.mjs');"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 82,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  assert.throws(() => assertDeliveryReceipt({ report, priorReportId: 'old-report', receipt: null, batchToken: token }));"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 83,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  assert.throws(() => assertDeliveryReceipt({ report, priorReportId: 'new-report', receipt: valid, batchToken: token }));"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 84,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  assert.throws(() => assertDeliveryReceipt({ report, priorReportId: 'old-report', receipt: { ...valid, batch_token: '22222222-2222-4222-8222-222222222222' }, batchToken: token }));"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 85,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  assert.equal(assertDeliveryReceipt({ report, priorReportId: 'old-report', receipt: valid, batchToken: token }), true);"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 98,
+      "tokens": [
+        "assertDeliveryReceipt"
+      ],
+      "context": "  assert.match(source, /assertDeliveryReceipt\\(/u);"
+    },
+    {
+      "path": "tests/factory-reporter/agents-update-scheduler.test.mjs",
+      "line": 99,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "  const scheduleRunner = await readFile(join(ROOT, 'bin', 'factory-reporter-v5-schedule-runner.mjs'), 'utf8');"
+    },
+    {
+      "path": "tests/factory-reporter/windows-native-setup.test.mjs",
+      "line": 20,
+      "tokens": [
+        "apply-codex-config",
+        "apply-cursor-config"
+      ],
+      "context": "    'codex-config: apply-codex-config.sh', 'cursor-config: apply-cursor-config.sh',"
+    },
+    {
+      "path": "tests/factory-reporter/windows-native-setup.test.mjs",
+      "line": 44,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  assert.match(source, /Grok not logged in\\. Skipping apply-grok-config/u);"
+    },
+    {
+      "path": "tests/factory-reporter/windows-native-setup.test.mjs",
+      "line": 45,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  assert.match(source, /python.*apply-grok-config\\.sh/su);"
+    },
+    {
+      "path": "tests/factory-reporter/windows-native-setup.test.mjs",
+      "line": 53,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "  assert.match(source, /FACTORY_REPORTER_RUNNER.*factory-reporter-v9-schedule-runner/su);"
+    },
+    {
+      "path": "tests/factory-reporter/windows-powershell.test.mjs",
+      "line": 64,
+      "tokens": [
+        "factory-reporter-v5-schedule-runner"
+      ],
+      "context": "    'bin/factory-reporter-v5-schedule-runner.mjs',"
+    },
+    {
+      "path": "tests/factory-reporter/windows-powershell.test.mjs",
+      "line": 65,
+      "tokens": [
+        "factory-toolchain-ledger"
+      ],
+      "context": "    'bin/factory-toolchain-ledger.mjs',"
+    },
+    {
+      "path": "tests/factory-scan/caveat-entry-cli.test.mjs",
+      "line": 62,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "  await execute(process.execPath, [join(ROOT, 'bin/factory-reporter-v9-schedule-runner.mjs'), '--config', box.config,"
+    },
+    {
+      "path": "tests/factory-scan/claude-hooks-windows.test.mjs",
+      "line": 83,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "  // rabbit・macbook・foxの実配置（apply-claude-configの生成物とRTKの登録）"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 2,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "# apply-claude-config の差分適用を実 HOME に触れず検証する。"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 15,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "[ -L \"$HOME_FIXTURE/.local/bin/apply-claude-config\" ] \\"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 16,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "  || fail 'apply-claude-config を ~/.local/bin へ配布しない'"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 18,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "dry=\"$(HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-claude-config\" --dry-run)\""
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 22,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "HOME=\"$ABSENT_HOME\" \"$HOME_FIXTURE/.local/bin/apply-claude-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 27,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-claude-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 74,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "second=\"$(HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-claude-config\" --apply)\""
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 83,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "if HOME=\"$ROLLBACK_HOME\" DOTAGENTS_TEST_FAIL_REPLACE=settings.json \"$HOME_FIXTURE/.local/bin/apply-claude-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/apply-claude-config.sh",
+      "line": 90,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "echo 'apply-claude-config install test: OK'"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 2,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "# apply-cursor-config を実 HOME に触れず検証する。"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 16,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "[ -L \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" ] \\"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 17,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "  || fail 'apply-cursor-config を ~/.local/bin へ配布しない'"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 18,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "[ \"$(readlink \"$HOME_FIXTURE/.local/bin/apply-cursor-config\")\" = \"$ROOT/bin/apply-cursor-config.sh\" ] \\"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 19,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "  || fail 'apply-cursor-config の symlink 先が本リポでない'"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 45,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "dry=\"$(HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --dry-run)\""
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 51,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 87,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply | grep -Fq '変更なし' \\"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 91,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$ABSENT_HOME\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 98,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$SYMLINK_HOME\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 110,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 125,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 134,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-cursor-config\" --dry-run | grep -Fq '変更なし' \\"
+    },
+    {
+      "path": "tests/install/apply-cursor-config.sh",
+      "line": 136,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "echo 'apply-cursor-config: OK'"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 2,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "# apply-grok-config の Wave 1 面を実 HOME に触れず検証する。"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 16,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "[ -L \"$HOME_FIXTURE/.local/bin/apply-grok-config\" ] \\"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 17,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  || fail 'apply-grok-config を ~/.local/bin へ配布しない'"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 51,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "hook_dry=\"$(HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --hooks-only --dry-run)\""
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 56,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "dry=\"$(HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --dry-run)\""
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 65,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 93,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --apply | grep -Fq '変更なし' \\"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 99,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --hooks-only --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 104,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$HOME_FIXTURE\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --hooks-only --apply | grep -Fq '変更なし' \\"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 107,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$ABSENT_HOME\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 116,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "if HOME=\"$SYMLINK_HOME\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 130,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "HOME=\"$ABSENT_HOME\" \"$HOME_FIXTURE/.local/bin/apply-grok-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/apply-grok-config.sh",
+      "line": 132,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "echo 'apply-grok-config: OK'"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 2,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "# install profile と apply-codex-config を実 HOME に触れず検証する。"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 41,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "apply_config() { HOME=\"$1\" CODEX_HOME=\"$1/.codex\" \"$PYTHON_BIN\" \"$1/.local/bin/apply-codex-config\" \"$2\"; }"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 43,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  HOME=\"$1\" \"$PYTHON_BIN\" \"$1/.local/bin/apply-grok-config\" --apply >/dev/null"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 273,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "assert_link \"$OFFICIAL_HOME/.local/bin/factory-reporter-v9-schedule-runner\" \"$ROOT/bin/factory-reporter-v9-schedule-runner.mjs\""
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 396,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "external_output=\"$(HOME=\"$OFFICIAL_HOME\" CODEX_HOME=\"$EXTERNAL_CODEX_HOME\" \"$PYTHON_BIN\" \"$OFFICIAL_HOME/.local/bin/apply-codex-config\" --apply)\""
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 414,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if HOME=\"$OFFICIAL_HOME\" CODEX_HOME=\"$SYMLINK_CODEX_HOME\" \"$PYTHON_BIN\" \"$OFFICIAL_HOME/.local/bin/apply-codex-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 424,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if HOME=\"$OFFICIAL_HOME\" CODEX_HOME=\"$BAD_CODEX_HOME\" \"$PYTHON_BIN\" \"$OFFICIAL_HOME/.local/bin/apply-codex-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 435,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if HOME=\"$OFFICIAL_HOME\" CODEX_HOME=\"$TRANSACTION_CODEX_HOME\" DOTAGENTS_TEST_FAIL_REPLACE=hooks.json \"$PYTHON_BIN\" \"$OFFICIAL_HOME/.local/bin/apply-codex-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/clean-home.sh",
+      "line": 444,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if HOME=\"$OFFICIAL_HOME\" CODEX_HOME=\"$TRANSACTION_CODEX_HOME\" DOTAGENTS_TEST_FAIL_REPLACE=hooks.json \"$PYTHON_BIN\" \"$OFFICIAL_HOME/.local/bin/apply-codex-config\" --apply >/dev/null 2>&1; then"
+    },
+    {
+      "path": "tests/install/codex-hook-dead-interpreter.sh",
+      "line": 7,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "python3 - \"$ROOT/bin/apply-codex-config.sh\" <<'PY'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 75,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-codex-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 77,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "printf 'apply-codex-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 81,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-claude-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 83,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "printf 'apply-claude-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 85,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-grok-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 87,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "printf 'apply-grok-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 89,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-cursor-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 91,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "printf 'apply-cursor-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 108,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/agents-update.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 291,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('\"$ROOT/bin/apply-codex-config.sh\" --apply'))"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 328,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "grep -Fq 'apply-codex-config --apply' \"$CALLS\" || fail 'Codex設定を適用しない'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 329,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "grep -Fq 'apply-claude-config --apply' \"$CALLS\" || fail 'Claude設定を適用しない'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 330,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "if grep -Fq 'apply-grok-config' \"$CALLS\"; then"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 331,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  fail 'Grok未loginでapply-grok-configを実行した'"
+    },
+    {
+      "path": "tests/install/setup-linux-common.sh",
+      "line": 333,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "grep -Fq 'apply-cursor-config --apply' \"$CALLS\" || fail 'Cursor設定を適用しない'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 40,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "ln -sfn \"$DOTAGENTS_SETUP_TEST_ROOT/bin/agents-update.sh\" \"$HOME/.local/bin/agents-update\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 41,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "ln -sfn \"$DOTAGENTS_SETUP_TEST_ROOT/bin/factory-reporter-v9-schedule-runner\" \"$HOME/.local/bin/factory-reporter-v9-schedule-runner\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 49,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-codex-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 51,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "printf 'apply-codex-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 55,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-claude-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 57,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "printf 'apply-claude-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 59,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-grok-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 61,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "printf 'apply-grok-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 63,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/apply-cursor-config.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 65,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "printf 'apply-cursor-config %s\\n' \"$*\" >>\"$DOTAGENTS_SETUP_TEST_CALLS\""
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 72,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/factory-reporter-v9-schedule-runner\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 86,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "cat >\"$FIXTURE_ROOT/bin/agents-update.sh\" <<'EOF'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 296,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "if (!(source.indexOf('ensure_toolchain_bootstrap') < source.indexOf('\"$ROOT/bin/apply-codex-config.sh\" --apply'))"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 321,
+      "tokens": [
+        "apply-codex-config"
+      ],
+      "context": "grep -Fq 'apply-codex-config --apply' \"$CALLS\" || fail 'Codex設定を適用しない'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 322,
+      "tokens": [
+        "apply-claude-config"
+      ],
+      "context": "grep -Fq 'apply-claude-config --apply' \"$CALLS\" || fail 'Claude設定を適用しない'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 323,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "if grep -Fq 'apply-grok-config' \"$CALLS\"; then"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 324,
+      "tokens": [
+        "apply-grok-config"
+      ],
+      "context": "  fail 'Grok未loginでapply-grok-configを実行した'"
+    },
+    {
+      "path": "tests/install/setup-macos-factory.sh",
+      "line": 326,
+      "tokens": [
+        "apply-cursor-config"
+      ],
+      "context": "grep -Fq 'apply-cursor-config --apply' \"$CALLS\" || fail 'Cursor設定を適用しない'"
+    },
+    {
+      "path": "tests/lattice-cutover/wire-v4.test.mjs",
+      "line": 44,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  const updater = await readFile(new URL('../../bin/agents-update.sh', import.meta.url), 'utf8');"
+    },
+    {
+      "path": "tests/update/context_observer_test.py",
+      "line": 159,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "        writer = (ROOT / 'bin/agents-update.sh').read_text()"
+    },
+    {
+      "path": "tests/update/context_operation_observer_test.py",
+      "line": 11,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "WRITER = (ROOT / 'bin/agents-update.sh').read_text()"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 219,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/normal.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 235,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/typesafe-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 246,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/jev-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 277,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/toolchain-update.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 295,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/retired-clear.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 314,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/retired-stuck.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 332,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/retired-unchecked.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 350,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "[ \"$(grep -Fc 'throughline self-update --json' \"$ROOT/bin/agents-update.sh\")\" -eq 1 ] \\"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 352,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "if grep -Eq 'throughline migrate|throughline\\.database_migration|validate_throughline_migration' \"$ROOT/bin/agents-update.sh\"; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 387,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/scheduler-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 397,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/system-npm-shadow.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 410,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/path-shadow.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 426,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/registry-drift.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 441,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/registry-unknown.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 454,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/npm-downgrade.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 467,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/registry-advanced.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 478,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/post-version-older.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 488,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/post-cli-missing.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 499,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  RUN_ID=grok-downgrade /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/grok-downgrade.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 513,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/grok-post-missing.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 524,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/grok-check-failed.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 533,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/grok-check-failed-missing.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 545,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/invalid-prefix.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 560,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/fresh-prefix.out\" 2>&1 || true"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 573,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "ln -s \"$ROOT/bin/agents-update.sh\" \"$TEST_HOME/distributed-bin/agents-update\""
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 574,
+      "tokens": [
+        "factory-toolchain-ledger"
+      ],
+      "context": "ln -s \"$ROOT/bin/factory-toolchain-ledger.mjs\" \"$TEST_HOME/distributed-bin/factory-toolchain-ledger\""
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 597,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 617,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/throughline-self-update-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 631,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/throughline-self-update-opaque.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 644,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/uv-missing.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 657,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/uv-absent.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 668,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/uv-list-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 684,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/uv-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 700,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/report-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 727,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/ledger-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 740,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$EMPTY_HOME/out.log\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 759,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/step-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 776,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/step-recover.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 792,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/report-defect.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 799,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/report-unreachable.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 826,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "    /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/$1.out\" 2>&1"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 852,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/helper-fail.out\" 2>&1; then"
+    },
+    {
+      "path": "tests/update/cron-env.sh",
+      "line": 868,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  /bin/bash \"$ROOT/bin/agents-update.sh\" >\"$TEST_HOME/caveat-managed.out\" 2>&1 \\"
+    },
+    {
+      "path": "tests/update/finalize-report.test.mjs",
+      "line": 7,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "import { finalizeToolchainReport } from '../../lib/factory/v5.mjs';"
+    },
+    {
+      "path": "tests/update/finalize-report.test.mjs",
+      "line": 24,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "  const result = await finalizeToolchainReport(report, { expectedReportId: 'report-one', toolchainLedgerPath });"
+    },
+    {
+      "path": "tests/update/finalize-report.test.mjs",
+      "line": 32,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "  await assert.rejects(finalizeToolchainReport(report, { expectedReportId: 'old-report', toolchainLedgerPath }), /finalize_report_mismatch/u);"
+    },
+    {
+      "path": "tests/update/finalize-report.test.mjs",
+      "line": 71,
+      "tokens": [
+        "finalizeToolchainReport"
+      ],
+      "context": "  const result = await finalizeToolchainReport(report, { expectedReportId: 'report-one', toolchainLedgerPath });"
+    },
+    {
+      "path": "tests/update/npm-runtime-context.test.mjs",
+      "line": 8,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "const writer = readFileSync(new URL('../../bin/agents-update.sh', import.meta.url), 'utf8');"
+    },
+    {
+      "path": "tests/update/source-update.test.mjs",
+      "line": 7,
+      "tokens": [
+        "agents-source-update"
+      ],
+      "context": "import { updateSource } from '../../bin/agents-source-update.mjs';"
+    },
+    {
+      "path": "tests/update/source-update.test.mjs",
+      "line": 64,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  writeFileSync(join(upstream, 'bin', 'agents-update.sh'), 'printf \"new:%s:%s\" \"$DOTAGENTS_SOURCE_UPDATED\" \"$DOTAGENTS_SOURCE_UPDATE_FAILED\"');"
+    },
+    {
+      "path": "tests/update/source-update.test.mjs",
+      "line": 66,
+      "tokens": [
+        "agents-source-update",
+        "agents-update.sh"
+      ],
+      "context": "  const run = () => spawnSync(process.execPath, [resolve('bin/agents-source-update.mjs'), join(local, 'bin', 'agents-update.sh'), join(base, 'log'), 'bash'], { encoding: 'utf8' });"
+    },
+    {
+      "path": "tests/update/throughline-bootstrap.sh",
+      "line": 8,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "awk '/^update_throughline\\(\\)/ { capture=1 } capture { print } capture && /^}/ { exit }' \"$ROOT/bin/agents-update.sh\" >\"$fixture/entry.sh\""
+    },
+    {
+      "path": "tests/update/toolchain-ledger.test.mjs",
+      "line": 8,
+      "tokens": [
+        "factory-toolchain-ledger"
+      ],
+      "context": "const CLI = resolve('bin/factory-toolchain-ledger.mjs');"
+    },
+    {
+      "path": "tests/update/update-failure-report.test.mjs",
+      "line": 13,
+      "tokens": [
+        "factory-update-failure-report"
+      ],
+      "context": "const CLI = resolve('bin/factory-update-failure-report.mjs');"
+    },
+    {
+      "path": "tests/wire-v6/wire-v6.test.mjs",
+      "line": 26,
+      "tokens": [
+        "agents-update.sh"
+      ],
+      "context": "  const source = await readFile(resolve(import.meta.dirname, '../../bin/agents-update.sh'), 'utf8');"
+    },
+    {
+      "path": "tests/wire-v9/wire-v9.test.mjs",
+      "line": 131,
+      "tokens": [
+        "factory-reporter-v9-schedule-runner"
+      ],
+      "context": "  assert.match(result.json.artifact_content, /factory-reporter-v9-schedule-runner/u); assert.match(result.json.state, /factory-reporter-v9$/u);"
+    }
+  ]
+}

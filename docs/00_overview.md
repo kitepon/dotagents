@@ -23,6 +23,7 @@ CIは履歴以外の文書のlocal link切れと、生成物のずれだけを�
 | [06_gpt-connector.md](06_gpt-connector.md) | ChatGPT製品を工場へ登録する薄い接続pointer（`gpt_connector` / `gpt-connector-mcp`） |
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
+| [09_feature-map.md](09_feature-map.md) | 全体→機能詳細→実ファイル/関数・状態/失敗保持の現状図。調査中の範囲と未確認を明示する |
 | [../README.md](../README.md#他端末セットアップランブック) | 現役4席（Mac / main-server / rabbit native Linux / Windows native）の一撃展開と定期更新。Windows nativeはPowerShell 7＋Git for Windowsだけで閉じ、WSL／Dockerを前提にせず、main-server恒久SSHも同じ入口で閉じる |
 | `plan_*.md` | 現役計画だけ。完遂時は`archive/`へ移し、固定path consumerが実在する場合だけroot stubを残す |
 | [archive/](archive/) | 役目を終えた文書（Fable 期キャンペーンの計画 v3・消化台帳一式、完遂した推薦入口の計画） |

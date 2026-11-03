@@ -11,7 +11,7 @@
 | 規範生成 | `bin/render-global-constitution.mjs`の`parseArgs/normalizeDelta/render/atomicWrite/main` | repoがcommon/delta/生成5出力を所有。`--write`は出力ごとのtemp→rename、`--check`は比較のみ。drift=1、引数/読み書き等の例外=2、成功=0を起動者へ返す |
 | link作成・退役link回収 | `install.sh`の`link_one/remove_retired_link`と4harness/binのloop | repo source→HOME symlink。既実ファイルはSKIPして保持。退役はリンク先が固定候補と一致するものだけ削除。set -eの途中失敗で先行作成分は残り、全体rollbackは無い |
 | 導入検査 | `bin/verify-install.sh`の`check/verify_factory_core/verify_retired_codegraph_settings`、埋込Python検査 | 期待linkの一致、反対Codex面、実行権限、routing、hook等を検査しfail flagへ集約。入力不正=2、検査失敗=1、成功=0。HOME設定を読む。Cursorの一時HOMEでhookを起動する副作用もある |
-| 設定適用の接続 | `bin/apply-{claude,codex,grok,cursor}-config.sh`の`main/backup/apply`、Codexの`prepare_write/apply_transaction` | 個人設定を保持し限定工場面を提案/書込。既定dry-run、明示applyでbackup。Codexは2fileを準備して順次replaceし、後段失敗時は既置換分を逆順rollback。各harnessの全変換関数は未読で、同一transaction契約へ一般化しない |
+| 設定適用の接続 | `bin/apply-{claude,codex,grok,cursor}-config.sh`の`main/backup/apply`、Codexの`prepare_write/apply_transaction` | [設定詳細](configuration.md)へ各変換関数と保存/途中失敗の違いを接続。既定dry-run、明示applyでbackup。Codexの2file transactionを他harnessへ一般化しない |
 | hook照合 | `lib/hook-command.py:hook_script/command_matches`、Codex固有のcommand parser | 同名・引用・interpreterの識別を検査/適用が参照。複数の照合実装が存在する事実を記録。統合の可否・設計はAstra工程で判断する |
 
 ## callerと設定・test/fixture
