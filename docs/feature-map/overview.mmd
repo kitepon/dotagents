@@ -1,0 +1,35 @@
+flowchart TB
+  subgraph canonical[Repository-owned source and contracts]
+    common[constitution + four host deltas]
+    render[render-global-constitution]
+    generated[generated host rules]
+    assets[skills / agents / commands / bin]
+    contract[deployment-contract]
+  end
+  common --> render --> generated
+  generated --> install[install.sh]
+  assets --> install
+  setup[host setup entrypoints] --> install
+  setup --> apply[host config appliers]
+  apply --> config[HOME config + backup]
+  install --> home[HOME symlinks]
+  home --> verify[verify-install]
+  config --> verify
+  verify --> result[exit status + diagnostics]
+  home -.-> session[host hooks / skills / model selection]
+  setup -.-> sched[OS daily / hourly scheduler]
+  sched -.-> update[source sync + product updates]
+  sched -.-> runner[report schedule runner]
+  update -.-> ledger[toolchain ledger + failure record]
+  update -.-> runner
+  contract -.-> scan[public diagnostics projection]
+  runner -.-> scan
+  core[deployment writer: source only / live ports unknown]
+  scan -.-> state[private report + ACK metadata]
+  state -.-> outbox[outbox / retry / fragments]
+  outbox -.-> server[ServerManager acceptance]
+  server -. accepted response .-> outbox
+  outbox -. ACK after acceptance .-> ack[product public ACK]
+  runner -. finalize .-> receipt[delivery receipt]
+  ledger -.-> receipt
+  ci[CI plan / Makefile gates] -.-> result

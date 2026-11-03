@@ -1,0 +1,32 @@
+flowchart TB
+  input[common + one host delta] --> render[render / normalizeDelta]
+  render --> mode{write or check}
+  mode -->|check| compare[compare each generated output]
+  compare -->|drift| drift[exit 1: list drift]
+  compare -->|equal| genok[generation check complete]
+  mode -->|write| temp[write PID temp file]
+  temp --> rename[rename one output]
+  rename --> next[repeat for five outputs]
+  temp -->|I/O failure| renderfail[exit 2: prior outputs may remain]
+  rename -->|I/O failure| renderfail
+  next --> genok
+  setup[host setup or explicit install] --> args[parse profile]
+  args -->|invalid| argfail[exit 2: no install started]
+  args --> retire[remove only matched retired symlinks]
+  retire --> each[iterate host assets and bin]
+  each --> dest{real destination exists?}
+  dest -->|yes| skip[SKIP: preserve existing file]
+  dest -->|no / symlink| link[ln -sfn to repository source]
+  skip --> installed[install exit 0 after loop]
+  link --> installed
+  link -->|command failure| partial[nonzero: earlier links remain]
+  installed -->|caller invokes separately| verify[verify-install]
+  verify --> links[expected links / permissions / retired entries]
+  links --> configs[routing and hook config checks]
+  configs --> probe[isolated Cursor hook probe]
+  probe --> aggregate{failure flag}
+  aggregate -->|0| ok[exit 0: placement and checks complete]
+  aggregate -->|1| fail[exit 1: diagnostics to caller]
+  probe -.->|forced termination| unknown[temporary directory cleanup not guaranteed]
+  ok -.-> session[host session discovery is separate]
+  fail -.-> preserve[existing config and links retained]
