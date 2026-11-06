@@ -34,6 +34,8 @@ gateはstash/patch保存を案内するが、退避・削除・rollback自体を
 
 `bin/cursor-constitution-hook.sh:main`は対象eventを選び、CURSOR_HOMEまたはHOMEのrules/factory.mdcを読む。frontmatterを外し、10000字以内なら本文、超過なら`compact_delivery`で案内・本文冒頭・Cursor deltaをcap内へ組む。stdoutのadditional_contextが返却先であり、モデルが全文を理解/正本をReadした証明ではない。
 
+The compact Cursor header follows the [recipient-based language contract](installation.md#recipient-based-language-policy-2026-11-06). Owner input → common constitution → generated MDC → compact header and body → `additional_context`; reviewer definitions → spawned reviewers → English review responses. This content update preserves hook dispatch, the inline cap, delta retention, stamps, and schemas. The existing over-cap hook fixture checks the new header; unchanged hook behavior is not a new deployment claim.
+
 sessionStartはstampせず、beforeSubmitPrompt/preToolUseはsession/conversation IDをsafe名にした`factory-hook-state/constitution-delivered`のstampを確認する。既stampなら無出力、返却後にmkdir/writeを試みる。書込失敗は握り潰すので次回も配送し得る。stampは読了ACKや内容hashではない。欠測/空本文/不正入力は無出力、他の例外がすべてこのhookで捕捉されるわけではない。強制終了で出力後stamp未保存という部分状態もあり得る。
 
 冒頭commentのDesktop版の説明は既実装の前提記録であり、今回live clientを再確認した事実ではない。sessionごとのworker snapshotや実画面反映は未確認。設定検査passと発火/注入完了を分ける。

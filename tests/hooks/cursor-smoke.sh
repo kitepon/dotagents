@@ -210,6 +210,8 @@ ctx = data.get("additional_context") or ""
 path = Path(sys.argv[2])
 if len(ctx) > 10000:
     raise SystemExit(1)
+assert "Use Japanese only with the owner; use English for everything else." in ctx
+assert "応答は日本語。" not in ctx
 if "ベルの共通憲法" not in ctx or "Cursor nativeの単発" not in ctx:
     raise SystemExit(1)
 if str(path.resolve()) not in ctx:

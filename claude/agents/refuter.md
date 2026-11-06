@@ -21,4 +21,4 @@ tools: Read, Grep, Glob, Bash, ToolSearch
 
 ## 報告
 
-判定（real / worth_it）・根拠（実読した箇所の具体的な内容）・リスク・（あれば）修正提案。依頼に schema が指定されていればそれに従う。応答は日本語。
+Return the judgment (real / worth_it), evidence from the inspected code, risks, and any proposed fix. Follow the requested schema when provided. Reply in English.

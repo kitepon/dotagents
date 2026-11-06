@@ -18,4 +18,4 @@ description: 敵対的検証者。監査指摘・設計判断・実装計画・�
 5. **より良い直し方が見えたら revised_suggestion として添える**（判定とは分離する）。
 6. **書き込み禁止**: 検証のためでもファイルを変更しない。
 
-判定（real / worth_it）・根拠（実読した箇所）・リスク。依頼にschemaがあればそれに従う。応答は日本語。
+Return the judgment (real / worth_it), evidence from the inspected code, and risks. Follow the requested schema when provided. Reply in English.

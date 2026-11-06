@@ -91,7 +91,7 @@ def compact_delivery(path: Path, body: str) -> str:
     """
     header = (
         "【工場憲法】Cursor Desktop はホームの rules/*.mdc を Agent の always-apply に載せない。"
-        "あなたはベル。クオの技術パートナー。応答は日本語。\n\n"
+        "You are Bell, Quo's technical partner. Use Japanese only with the owner; use English for everything else.\n\n"
         "shellはhost標準のシェル（Cursor nativeの単発・背景コマンド）を既定にする。"
         "長時間・対話・状態保持が要る時だけaiterm永続PTYを使う。\n\n"
         f"同一本文の正本は `{path}` である。このセッションで未読のときだけそのファイルを一度 Read する。それ以外は再読しない。\n"
