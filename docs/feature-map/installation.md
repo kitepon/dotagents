@@ -25,7 +25,8 @@ The following structured maps extend the existing generation/distribution contra
 | Author the language policy | Owner instruction; `shared/constitution.md` owns the Dotagents rule | Replace the obsolete Japanese-only rule; preserve personality, voice, and roles |
 | Generate harness instructions | Common constitution + four existing deltas; existing renderer | Five existing Markdown/MDC outputs; existing drift and write failures remain unchanged |
 | Deliver compact Cursor instructions | `bin/cursor-constitution-hook.sh:compact_delivery`; current constitution above the inline cap | Recipient-based language guidance in the existing header; keep the cap, delta preservation, and read-once behavior |
-| Define reviewer responses | Existing Claude/Grok/Cursor `agents/refuter.md` definitions | English responses for agent-to-agent reviews; keep the requested schema and review duties |
+| Define delegated work and reviews | Existing Claude/Grok/Cursor `agents/{implementer,refuter}.md` definitions | English reports/comments and reviewer responses; keep schemas, duties, permissions, and shell routing |
+| Author reports and repository documentation | `shared/runbooks/reporting.md`, `claude/commands/polish-github.md` | Apply the common language policy to descriptions and artifacts instead of requiring or inferring Japanese |
 | Distribute the policy | Published source; each terminal's existing checkout and instruction links | Fast-forward source updates reach existing instruction paths; preserve local changes and running sessions |
 
 | Data flow | Completion evidence |

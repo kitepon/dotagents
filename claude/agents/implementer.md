@@ -21,4 +21,4 @@ model: sonnet
 
 ## 応答言語
 
-報告・コード内コメントは日本語（識別子・コマンドは英語可）。
+Write reports and code comments in English.

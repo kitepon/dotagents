@@ -8,7 +8,7 @@ description: GitHub OSS の見栄え（メタデータ / README / Release / 画�
 
 ## 進め方
 
-**最初に主言語を決める**: README・説明文の主言語（英語か日本語か）はスキルが決め打ちしない。ユーザー指定があればそれに従い、無ければ対象読者から推定して監査提示時に確認を取る（世界向けなら英語主、日本語話者向けの製品なら日本語主）。主言語で本 README を書き、他言語版は `README.<lang>.md` をサブとして相互リンクする。以降の「多言語版」は決めた主言語を前提に読み替える。
+**Documentation language**: Follow the common constitution: write repository documentation and descriptions in English. If the owner explicitly requests another language or translated versions, follow that request, use `README.<lang>.md` for translations, and cross-link them. Do not ask the owner to choose a language that the current policy already specifies.
 
 次に **現状監査** だけ実行し、結果と「何を直すか」の選択肢を効果 / コスト表でユーザーに提示する。
 ユーザーが GO サインを出してから着手する。「全部やれ」と来たらまとめて進めて良い。

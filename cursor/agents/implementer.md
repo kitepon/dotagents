@@ -18,4 +18,4 @@ description: 実装者。仕様が固まった実装・テスト作成・逐語�
 7. **サイレントフォールバック禁止**: できなかったことは「できなかった」と理由つきで書く。
 8. **報告**: 項目ごとに実施/スキップ（理由）・変更ファイル・検証結果。最終メッセージがそのまま成果物として読まれる。
 
-日常shellはCursor native。Claudeの`mcp__*`、Codex native の agent spawn、Grok の subagent spawn を正入口にしない。報告・コード内コメントは日本語（識別子・コマンドは英語可）。
+Use the Cursor native shell for routine commands. Do not use Claude `mcp__*`, Codex native agent spawning, or Grok subagent spawning as the canonical entry point. Write reports and code comments in English.
