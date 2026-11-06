@@ -16,6 +16,22 @@
 
 ## callerと設定・test/fixture
 
+### Recipient-based language policy (2026-11-06)
+
+The following structured maps extend the existing generation/distribution contract. They change policy content, not the generator, installation algorithm, or configuration ownership.
+
+| Function | Input / owner | Output and failure boundary |
+| --- | --- | --- |
+| Author the language policy | Owner instruction; `shared/constitution.md` owns the Dotagents rule | Replace the obsolete Japanese-only rule; preserve personality, voice, and roles |
+| Generate harness instructions | Common constitution + four existing deltas; existing renderer | Five existing Markdown/MDC outputs; existing drift and write failures remain unchanged |
+| Distribute the policy | Published source; each terminal's existing checkout and instruction links | Fast-forward source updates reach existing instruction paths; preserve local changes and running sessions |
+
+| Data flow | Completion evidence |
+| --- | --- |
+| Owner instruction → common policy → existing renderer → five generated outputs | Generation parity and the current language rule in those outputs |
+| Published commit → terminal checkout → existing Claude/Codex/Grok/Cursor instruction path | Successful source update and policy presence at the deployed instruction paths |
+| Updated instruction file → next harness instruction load | File deployment is distinct from rereading instructions inside an already running conversation |
+
 呼出しの本文確認: Macはconfig apply→install→launchd登録→通常更新→verify。Linux commonもconfig apply→install→cron登録→更新→verify。Windows nativeのmanual setupはinstall→config apply等→日次登録→更新→verify、ScheduledRunではmanual部分を通らず更新/verifyへ進む。これらhost setup自体を今回実行しない。
 
 - `bin/verify-constitution-parity.sh`→renderer check。`Makefile`のlint-constitution/test-constitution→そのwrapper/`tests/constitution/generation.test.mjs`。
