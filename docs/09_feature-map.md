@@ -27,6 +27,7 @@ Dotagents全体の図起点リファクタリング候補の現状資料。対�
 | GPT台帳writer/排他/観測 | `lib/factory/deployment-writer.mjs`、`core-authority-sources.mjs`、`update_context_*` | [writer・authority・保持](feature-map/deployment.md)。source/二SH/元Node/原本storeを本文確認。別native fixture候補とlive/issuer/store/resource/allwriter未確定を区別 |
 | 外部イベントとGPT観測入口 | `external-events.mjs`、`bughub-external-probe.mjs`、`gpt-observation-entry.mjs`、`rabbit-observation-once.mjs` | [外部イベント保存](feature-map/external-events.md)・[観測選択/一回保持](feature-map/gpt-observation.md)。旧台帳/現行readiness、通常閉鎖/過去限定scopeを区別。実permit/Hostは未確認 |
 | 旧runner・互換wrapper | v1/v2/v4/v5共通schedule runner、Oracle/sync/Community入口 | [世代別runner/補助操作](feature-map/legacy-runners.md)。state/lock/更新/receiptの差と全接点候補を記録。全fixture/動的aliasは未完 |
+| Mac factory Node runtime | `lib/factory/mac-node-runtime.sh` → host `/usr/local/libexec/dotagents/factory-node-runtime.sh` | [Mac Node generations](feature-map/mac-node-runtime.md). Functions, data flow, durable states, deployment/rollback. darwin-arm64 test in `make test-factory-core` |
 | CI・公開・配布接点 | `Makefile`、`.github/workflows/`、`scripts/dotagents-ci-plan.mjs` | [CI選択・文書検査・配布](feature-map/ci-distribution.md)。event/base/分類/gate/OSと開発文書source本文を確認。旧文書差と実CI/配布受入は未確認 |
 
 全tracked pathの機械索引は漏れを探す入口であり、意味確認の完了数には数えない。動的dispatch・alias・外部repo caller・実OS状態・各親の実session認識は未確定。

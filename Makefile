@@ -96,6 +96,7 @@ test-oracle: ## Oracle wrapper のOS非依存な入口選択を検証
 
 test-factory-core: ## 工場所有の互換入口と退役製品の配置を検証
 	bash tests/factory-core/smoke.sh
+	node --test --test-concurrency=1 tests/factory-node-runtime/*.test.mjs
 
 test-factory-reporter: ## BugHub factory reporter のprivacy/outbox/retry/scheduler契約を検証
 	node --test --test-concurrency=1 tests/factory-reporter/*.test.mjs
