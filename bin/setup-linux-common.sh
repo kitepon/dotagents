@@ -94,21 +94,22 @@ ensure_github_actions_runner() {
   profile="$(dedicated_runner_profile)" || die '専用runnerの管理設定が不正。旧runnerを自動で起動しない'
   profile_mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$profile")"
   if [ "$profile_mode" = dedicated ]; then
-    profile_name="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).name)' "$profile")"
-    profile_service="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).service)' "$profile")"
     profile_user="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).user)' "$profile")"
-    actual_user="$(systemctl show "$profile_service" --property=User --value)" \
-      || die '専用runnerの実行利用者を読めない'
-    [ "$actual_user" = "$profile_user" ] || die '専用runnerの実行利用者が不一致'
-    actual_group="$(systemctl show "$profile_service" --property=Group --value)" || die '専用runnerの実行群を読めない'
-    [ "$actual_group" = "$profile_user" ] || die '専用runnerの実行群が不一致'
     [ "$(id -nG "$profile_user")" = "$profile_user" ] || die '専用runnerに余分な所属群がある'
-    actual_nnp="$(systemctl show "$profile_service" --property=NoNewPrivileges --value)" || die '専用runnerのNoNewPrivilegesを読めない'
-    [ "$actual_nnp" = yes ] || die '専用runnerのNoNewPrivilegesが無効'
-    actual_capabilities="$(systemctl show "$profile_service" --property=CapabilityBoundingSet --value)" || die '専用runnerのcapabilityを読めない'
-    [ -z "$actual_capabilities" ] || die '専用runnerにcapabilityが残っている'
-    systemctl is-active --quiet "$profile_service" || die '専用runnerは停止中。setupでは起動しない'
-    verify_org_runner_online "$profile_name" "$ACTIONS_RUNNER_LABEL"
+    # Every instance shares the principal and hardening; any instance failing stops setup.
+    while IFS=$'\t' read -r profile_name profile_service; do
+      actual_user="$(systemctl show "$profile_service" --property=User --value)" \
+        || die '専用runnerの実行利用者を読めない'
+      [ "$actual_user" = "$profile_user" ] || die '専用runnerの実行利用者が不一致'
+      actual_group="$(systemctl show "$profile_service" --property=Group --value)" || die '専用runnerの実行群を読めない'
+      [ "$actual_group" = "$profile_user" ] || die '専用runnerの実行群が不一致'
+      actual_nnp="$(systemctl show "$profile_service" --property=NoNewPrivileges --value)" || die '専用runnerのNoNewPrivilegesを読めない'
+      [ "$actual_nnp" = yes ] || die '専用runnerのNoNewPrivilegesが無効'
+      actual_capabilities="$(systemctl show "$profile_service" --property=CapabilityBoundingSet --value)" || die '専用runnerのcapabilityを読めない'
+      [ -z "$actual_capabilities" ] || die '専用runnerにcapabilityが残っている'
+      systemctl is-active --quiet "$profile_service" || die '専用runnerは停止中。setupでは起動しない'
+      verify_org_runner_online "$profile_name" "$ACTIONS_RUNNER_LABEL"
+    done < <(node -e 'for (const item of JSON.parse(process.argv[1]).instances) console.log([item.name, item.service].join("\t"))' "$profile")
     echo "INFO: 専用runnerは外部管理。setupは登録・起動・label更新を行わない"
     return 0
   fi

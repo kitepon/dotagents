@@ -56,7 +56,7 @@ sudo() { printf 'sudo %s\n' "$*" >>"$fixture/server-calls"; }
 
 # 移行済みのworkstationでsetupを再実行しても、旧利用者のrunnerを起こさない。
 dedicated_runner_profile() {
-  printf '{"mode":"dedicated","name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service","user":"factory-runner"}\n'
+  printf '{"mode":"dedicated","user":"factory-runner","instances":[{"name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service"},{"name":"factory-linux-rabbit-u2","service":"actions.runner.kitepon.factory-linux-rabbit-u2.service"}]}\n'
 }
 verify_org_runner_online() { printf 'verify %s\n' "$*" >>"$fixture/dedicated-calls"; }
 id() { printf '%s\n' "${fixture_groups:-factory-runner}"; }
@@ -69,7 +69,7 @@ systemctl() {
     *--property=CapabilityBoundingSet*)
       [ "${fixture_cap_read_error:-0}" != 1 ] || return 1
       printf '%s' "${fixture_capabilities:-}" ;;
-    is-active*) [ "${fixture_service_stopped:-0}" != 1 ] ;;
+    is-active*) [ "${fixture_service_stopped:-0}" != 1 ] && [[ "$*" != *"${fixture_stopped_service:-none}"* ]] ;;
     *) echo 'FAIL: 専用runnerへの変更命令' >&2; return 1 ;;
   esac
 }
@@ -79,6 +79,10 @@ systemctl() {
   ensure_github_actions_runner
 )
 grep -Fq 'verify factory-linux-rabbit-u linux-workstation' "$fixture/dedicated-calls"
+grep -Fq 'verify factory-linux-rabbit-u2 linux-workstation' "$fixture/dedicated-calls"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_stopped_service=factory-linux-rabbit-u2.service ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 停止中の追加instanceを許容した' >&2; exit 1
+fi
 [ ! -e "$fixture/server-calls" ] || { echo 'FAIL: 専用runnerの確認でgh/sudoによる変更を行った' >&2; exit 1; }
 if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_service_user=kite ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
   echo 'FAIL: 旧利用者のserviceを許容した' >&2; exit 1

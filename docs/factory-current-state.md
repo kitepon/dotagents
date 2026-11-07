@@ -14,7 +14,7 @@
 | 現役wire | v9（schema `9.0`、17製品） |
 | 本番BugHub endpoint | `/api/factory/v9/reports` |
 | host別rollback先 | wire v8 |
-| self-hosted runner | 3席 |
+| self-hosted runner | 3席（6 instance） |
 | full CI環境 | 3環境 |
 
 ## 製品集合
@@ -25,11 +25,13 @@
 
 ## CI runner
 
-| runner | host label | 利用面 |
-|---|---|---|
-| `factory-macos-m5-u` | `macos-native` | full CI |
-| `factory-linux-rabbit-u` | `linux-workstation` | full CI |
-| `factory-windows-fox-u` | `windows-native` | full CI |
+| runner | host label | 利用面 | instance（CPU集合） |
+|---|---|---|---|
+| `factory-macos-m5-u` | `macos-native` | full CI | `factory-macos-m5-u`（全CPU） |
+| `factory-linux-rabbit-u` | `linux-workstation` | full CI | `factory-linux-rabbit-u`（8-15）、`factory-linux-rabbit-u2`（16-23） |
+| `factory-windows-fox-u` | `windows-native` | full CI | `factory-windows-fox-u`（8-15）、`factory-windows-fox-u2`（16-23）、`factory-windows-fox-u3`（24-31） |
+
+instanceは同じhost labelと同じ専用利用者で動く独立runnerで、CPU集合は互いに重ならない。配置と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 
 full CIは`full CI`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと`wsl2` labelは現役集合へ含めない。
 

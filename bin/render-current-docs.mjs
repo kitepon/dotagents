@@ -104,6 +104,12 @@ function renderCurrentState(facts) {
     new Set(runners.map((runner) => runner.label)).size !== runners.length || fullCiRunners.length === 0) {
     throw new Error('工場runner集合が不正です');
   }
+  const instances = runners.flatMap((runner) => Array.isArray(runner.instances) ? runner.instances : [null]);
+  if (instances.some((item) => typeof item?.name !== 'string' || item.name.length === 0 ||
+    !(item.cpus === null || /^\d+-\d+$/u.test(item.cpus))) || new Set(instances.map((item) => item.name)).size !== instances.length ||
+    runners.some((runner) => runner.instances.length === 0 || runner.instances[0].name !== runner.name)) {
+    throw new Error('工場runner instance集合が不正です');
+  }
 
   return `# 工場の現行状態
 
@@ -121,7 +127,7 @@ function renderCurrentState(facts) {
 | 現役wire | v${facts.CURRENT_WIRE_MAJOR}（schema \`${facts.CURRENT_WIRE_SCHEMA_VERSION}\`、${wire.length}製品） |
 | 本番BugHub endpoint | \`${facts.CURRENT_WIRE_ENDPOINT}\` |
 | host別rollback先 | wire v${facts.ROLLBACK_WIRE_MAJOR} |
-| self-hosted runner | ${runners.length}席 |
+| self-hosted runner | ${runners.length}席（${instances.length} instance） |
 | full CI環境 | ${fullCiRunners.length}環境 |
 
 ## 製品集合
@@ -132,9 +138,11 @@ function renderCurrentState(facts) {
 
 ## CI runner
 
-| runner | host label | 利用面 |
-|---|---|---|
-${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} |`).join('\n')}
+| runner | host label | 利用面 | instance（CPU集合） |
+|---|---|---|---|
+${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\`（${item.cpus ?? '全CPU'}）`).join('、')} |`).join('\n')}
+
+instanceは同じhost labelと同じ専用利用者で動く独立runnerで、CPU集合は互いに重ならない。配置と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 
 full CIは\`full CI\`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。
 

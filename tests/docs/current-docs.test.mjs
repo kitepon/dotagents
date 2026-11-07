@@ -18,8 +18,8 @@ export const CURRENT_WIRE_ENDPOINT = '/api/factory/v8/reports';
 export const ROLLBACK_WIRE_MAJOR = 7;
 export const CURRENT_WIRE_PRODUCT_IDS = Object.freeze(['alpha', 'third', 'tool']);
 export const FACTORY_RUNNERS = Object.freeze([
-  Object.freeze({ name: 'factory-linux-test', label: 'linux-workstation', fullCi: true }),
-  Object.freeze({ name: 'factory-linux-ops', label: 'linux-server', fullCi: false }),
+  Object.freeze({ name: 'factory-linux-test', label: 'linux-workstation', fullCi: true, instances: [{ name: 'factory-linux-test', cpus: '8-15' }, { name: 'factory-linux-test2', cpus: '16-23' }] }),
+  Object.freeze({ name: 'factory-linux-ops', label: 'linux-server', fullCi: false, instances: [{ name: 'factory-linux-ops', cpus: null }] }),
 ]);
 `;
 
@@ -33,6 +33,8 @@ async function fixture(t) {
   await writeFile(join(root, 'docs', 'present.md'), '# 存在\n', 'utf8');
   await writeFile(join(root, 'docs', 'factory-product-contracts.md'), '# 製品契約\n', 'utf8');
   await writeFile(join(root, 'docs', 'factory-host-product-matrix.md'), '# host matrix\n', 'utf8');
+  await mkdir(join(root, 'docs', 'feature-map'), { recursive: true });
+  await writeFile(join(root, 'docs', 'feature-map', 'runner-capacity.md'), '# capacity\n', 'utf8');
   return root;
 }
 
@@ -50,7 +52,8 @@ test('構造化正本から現行状態ページを冪等生成する', async (t
   assert.match(state, /`\/api\/factory\/v8\/reports`/);
   assert.match(state, /self-hosted runner \| 2席/);
   assert.match(state, /full CI環境 \| 1環境/);
-  assert.match(state, /`factory-linux-test` \| `linux-workstation` \| full CI/);
+  assert.match(state, /`factory-linux-test` \| `linux-workstation` \| full CI \| `factory-linux-test`（8-15）、`factory-linux-test2`（16-23） \|/);
+  assert.match(state, /self-hosted runner \| 2席（3 instance）/);
   assert.match(state, /`factory-linux-ops` \| `linux-server` \| 運用workflow/);
   assert.equal(run(root, '--check').status, 0);
   assert.equal(run(root, '--write').status, 0);
