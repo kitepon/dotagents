@@ -45,7 +45,7 @@ Count basis: about 8 CPUs per job. RAM was checked against current samples only 
 Order per host: (1) prepare and register new instances while the existing one keeps working; (2) apply CPU sets; (3) restart the existing instance only when it has no Runner.Worker. Running jobs are never cancelled. A job assigned in the seconds between the idle check and the restart is the residual risk documented in Shiratsuru's requeue contract (it fails as a runner shutdown and is re-run normally).
 
 - Fox: one Owner + Approval Box admin step runs `windows-factory-runner-instances.ps1 -Mode Apply`. Rollback: restore the previous entry/run/hook files (their SHA-256 are printed by `-Mode Inspect`), restart the task while idle, remove the u2/u3 registrations with the normal remove token. Roots may be deleted after deregistration.
-- Rabbit: Sorin runs `bin/linux-factory-runner-instances.sh` from the merged checkout on Rabbit. Rollback: disable u2, remove its registration, delete the `cpu.conf` drop-ins, restore profile v1, restart rabbit-u while idle.
+- Rabbit: Sorin runs `PATH="$HOME/.local/bin:$PATH" bin/linux-factory-runner-instances.sh` as kite from the merged checkout on Rabbit. The `PATH` prefix is required: a non-interactive SSH session on Rabbit omits `/home/kite/.local/bin`, where kite's `node` lives, and the script then exits 1 before any change (first apply, 2026-11-08 05:04 JST). Rollback: disable u2, remove its registration, delete the `cpu.conf` drop-ins, restore profile v1, restart rabbit-u while idle.
 - Acceptance: on each host, one observation of two naturally queued jobs running at the same time on different instances, with the hook/affinity line and memory recorded. No manual CI dispatch for this proof.
 
 ## Verification
