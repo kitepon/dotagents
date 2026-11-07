@@ -4,11 +4,13 @@ import { mkdtemp, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { cpus, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
+import { FACTORY_RUNNERS } from '../../lib/factory/deployment-contract.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..', '..');
 const HOOK = join(ROOT, 'bin', 'windows-factory-runner-job-started.ps1');
 // 旧runnerにcached marker環境が残っても、CI開始を直列化しない。
-const ENV = { ...process.env, FACTORY_RUNNER_BUSY_MARKER: '' };
+// RUNNER_NAME is cleared so the CI runner's own pinned set does not apply to the fallback cases.
+const ENV = { ...process.env, FACTORY_RUNNER_BUSY_MARKER: '', RUNNER_NAME: '' };
 const PWSH = ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass'];
 
 function runHookWithMarker(marker, extra = []) {
@@ -38,11 +40,31 @@ test('job開始hookを掛けたprocessの子は、割り当てた論理CPU数と
   const value = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
   const logical = cpus().length;
   const expected = logical <= 64 && logical - 8 >= 4 ? logical - 8 : logical;
-  assert.match(result.stdout, /factory-runner capacity: pwsh pid=\d+ priority=BelowNormal/u);
+  assert.match(result.stdout, /factory-runner capacity: runner= pwsh pid=\d+ priority=BelowNormal/u);
   assert.doesNotMatch(result.stdout, /::warning/u);
   assert.equal(value.parallelism, expected);
   assert.equal(value.own, 'BelowNormal');
   assert.equal(value.child, 'BelowNormal');
+});
+
+test('hookの固定CPU集合は配備契約のwindows-native instanceと一致する', async () => {
+  const source = await readFile(HOOK, 'utf8');
+  const map = Object.fromEntries([...source.match(/\$InstanceCpuSets = @\{([^}]*)\}/u)[1].matchAll(/'([^']+)' = '([^']+)'/gu)].map((m) => [m[1], m[2]]));
+  const seat = FACTORY_RUNNERS.find((runner) => runner.label === 'windows-native');
+  assert.deepEqual(map, Object.fromEntries(seat.instances.map((item) => [item.name, item.cpus])));
+});
+
+test('固定表のrunner名ではそのCPU集合だけを子processへ渡す', { skip: process.platform !== 'win32' || cpus().length < 24 || cpus().length > 64 }, () => {
+  const script = [
+    `& '${HOOK}' -TargetProcessId $PID | Out-Host`,
+    "$parallelism = node -p \"require('node:os').availableParallelism()\"",
+    "[pscustomobject]@{ parallelism = [int]$parallelism; mask = '{0:X}' -f [int64](Get-Process -Id $PID).ProcessorAffinity } | ConvertTo-Json -Compress",
+  ].join('; ');
+  const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: { ...ENV, RUNNER_NAME: 'factory-windows-fox-u2' } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /factory-runner capacity: runner=factory-windows-fox-u2 pwsh pid=\d+ priority=BelowNormal logical=8\//u);
+  const value = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
+  assert.deepEqual(value, { parallelism: 8, mask: 'FF0000' });
 });
 
 test('job開始hookは対象のprocessが無くても終了値0で注記だけを出す', { skip: process.platform !== 'win32' }, () => {

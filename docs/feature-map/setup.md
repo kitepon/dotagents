@@ -51,7 +51,7 @@ Windows手動setupは毎時reporter taskを退役させ、日次setupが更新�
 | 実file・窓口 | 所有する処理 | 失敗と未確定 |
 | --- | --- | --- |
 | `bin/setup-linux-prerequisites-root.sh` | root/user/role/Ubuntuを検査、欠けたapt package、既Dockerが無い時の公式repository、cron/docker有効化。役割別sudoersをvisudoで検査、SSH設定を検査後reload、docker groupとsmoke | 先行package/設定/group/サービスを全rollbackしない。製品の明示bootstrap sourceであり、今回root実行やHost管理を引き受けていない |
-| `bin/factory-runner-profile.mjs`→`lib/factory/runner-profile.mjs:readRunnerProfile/parseDedicatedRunnerProfile` | 固定profile path、不在ENOENTだけlegacy。root所有regular/non-writable/O_NOFOLLOWとlstat/fstat、固定dedicated identity/activeを検査 | present malformed/foreign/trial/symlinkをlegacyへ落とさない。fdはfinally close。実metadataは今回読まず、GitHub組織runnerの現状態/割当可否を推定しない |
+| `bin/factory-runner-profile.mjs`→`lib/factory/runner-profile.mjs:readRunnerProfile/parseDedicatedRunnerProfile` | 固定profile path、不在ENOENTだけlegacy。root所有regular/non-writable/O_NOFOLLOWとlstat/fstat、固定dedicated identity/activeを検査。v2は契約の全instance（[runner capacity](runner-capacity.md)）を返し、setupはinstanceごとに同じ検査を行う | present malformed/foreign/trial/symlinkをlegacyへ落とさない。fdはfinally close。実metadataは今回読まず、GitHub組織runnerの現状態/割当可否を推定しない |
 | `lib/factory/jev-fork-release.mjs:officialForkRelease/isTrackedJevFork` | tracked PR/forkだけ。gh APIでmerged/commit/time、前提PR順序、git compare ahead/identical、registry latest distributionを版へ照合 | 未merge/未包含/版不一致はnull、未知ID/command/不正返却はthrow。commandは30秒/1MiB、PyPI fetchには明示timeoutが無い。今回接続/版採取なし。fork解除はcallerで版照合後 |
 | `bin/factory-update-context-observer.sh`、`lib/factory/update-context-observer.mjs` | opt-in phaseの非秘密限定入力/元返却hash/時間を固定Python helperへ渡す。shellのNode/npm解決はmetadataだけ | 観測失敗は警告と通常結果保持。private原本の非置換保存/core bridgeは[writer・authority](deployment.md)へ。実runtime/issuerの証明にしない |
 

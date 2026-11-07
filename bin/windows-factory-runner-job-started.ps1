@@ -13,6 +13,9 @@ param(
   [int]$BusyMarkerPollSeconds = 5
 )
 
+# Parallel instances: pinned CPU set per runner name (must equal FACTORY_RUNNERS in lib/factory/deployment-contract.mjs).
+$InstanceCpuSets = @{ 'factory-windows-fox-u' = '8-15'; 'factory-windows-fox-u2' = '16-23'; 'factory-windows-fox-u3' = '24-31' }
+
 $ErrorActionPreference = 'Stop'
 try {
   if ($TargetProcessId -eq 0) {
@@ -30,7 +33,12 @@ try {
   $target = Get-Process -Id $TargetProcessId
   $allowed = $logical
   # 残りが少ない端末と、64を超える端末（processor groupが分かれる）では割り当てを変えない。
-  if ($ReservedLogicalProcessors -gt 0 -and $logical -le 64 -and ($logical - $ReservedLogicalProcessors) -ge 4) {
+  $set = $InstanceCpuSets[[string]$env:RUNNER_NAME]
+  if ($set -and $logical -le 64 -and $set -match '^(\d+)-(\d+)$' -and [int]$Matches[2] -lt $logical) {
+    $first = [int]$Matches[1]; $count = [int]$Matches[2] - $first + 1
+    $target.ProcessorAffinity = [IntPtr](((1L -shl $count) - 1L) -shl $first)
+    $allowed = $count
+  } elseif ($ReservedLogicalProcessors -gt 0 -and $logical -le 64 -and ($logical - $ReservedLogicalProcessors) -ge 4) {
     $all = if ($logical -eq 64) { -1L } else { (1L -shl $logical) - 1L }
     $reserved = (1L -shl $ReservedLogicalProcessors) - 1L
     $target.ProcessorAffinity = [IntPtr]($all -band (-bnot $reserved))
@@ -39,7 +47,7 @@ try {
   $target.PriorityClass = $PriorityClass
   $target.Refresh()
   $mask = '{0:X}' -f [int64]$target.ProcessorAffinity
-  Write-Host "factory-runner capacity: $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass) logical=$allowed/$logical affinity=0x$mask"
+  Write-Host "factory-runner capacity: runner=$env:RUNNER_NAME $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass) logical=$allowed/$logical affinity=0x$mask"
 } catch {
   # hookの失敗でjobを落とさない。絞れなかった事はjobの注記に残す。
   Write-Host "::warning title=factory-runner capacity::The job-started hook could not limit this job: $($_.Exception.Message)"
