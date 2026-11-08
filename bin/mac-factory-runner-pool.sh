@@ -22,9 +22,10 @@ as_runner() { sudo -u "$RUNNER_USER" -H env -i HOME="$RUNNER_HOME" PATH=/usr/bin
 [ "$(id -u)" = 0 ] || { echo 'run as root' >&2; exit 2; }
 if dseditgroup -o checkmember -m "$RUNNER_USER" admin >/dev/null 2>&1; then echo 'factory-runner is an admin; refuse' >&2; exit 2; fi
 as_runner test -x "$NODE"
+# $NODE is factory-runner-owned, so it only ever runs as factory-runner (never as root); $SRC must be world-readable.
 
 instances=()
-while IFS= read -r line; do instances+=("$line"); done < <("$NODE" --input-type=module -e '
+while IFS= read -r line; do instances+=("$line"); done < <(as_runner "$NODE" --input-type=module -e '
   const { FACTORY_RUNNERS } = await import(process.argv[1]);
   for (const item of FACTORY_RUNNERS.find((runner) => runner.label === "macos-native").instances) console.log([item.name, item.root].join("\t"));
 ' "$SRC/lib/factory/deployment-contract.mjs")
@@ -49,7 +50,7 @@ unset registration_token
 # 2. Scaler file and config, root-owned (the runner principal reads them only).
 install -d -o root -g wheel -m 755 "$(dirname "$SCALER")" /etc/dotagents
 install -o root -g wheel -m 644 "$SRC/lib/factory/runner-scaler.mjs" "$SCALER"
-"$NODE" "$SRC/bin/factory-runner-scaler-config.mjs" macos-native "$LOG" >"$CONFIG"
+as_runner "$NODE" "$SRC/bin/factory-runner-scaler-config.mjs" macos-native "$LOG" >"$CONFIG"
 chown root:wheel "$CONFIG"
 chmod 644 "$CONFIG"
 
