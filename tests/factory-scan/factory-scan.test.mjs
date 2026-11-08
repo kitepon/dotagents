@@ -123,7 +123,8 @@ function assertProcessNotRunning(pid) {
     throw error;
   }
   const state = processState(pid);
-  assert.ok(!state || state.startsWith('Z'), `子processが実行中です: state=${state}`);
+  // macOS ps flag E = already exiting (a loaded host can show a SIGKILLed child as `?E` for a moment).
+  assert.ok(!state || state.startsWith('Z') || state.includes('E'), `子processが実行中です: state=${state}`);
 }
 
 function runScanner(box, extraEnv = {}, extraArgs = []) {
