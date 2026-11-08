@@ -74,7 +74,10 @@ foreach ($f in $files.GetEnumerator()) {
   if ((Get-Sha $f.Key) -ne $state.files[$f.Key].staged) { throw "Installed helper differs: $($f.Key)" }
 }
 
-# 3. Registration pipe (first instance only, so a squatted name fails here and no token is sent).
+# 3. Registration pipe (first instance only, so a squatted name fails here and no token is sent). The task entry
+#    connects only when a root has no .runner (same test as the entry), so a rerun with every root registered
+#    restarts the task without waiting for a pipe client.
+$pending = @($newRoots.Values | Where-Object { (Test-Path -LiteralPath $_) -and !(Test-Path -LiteralPath (Join-Path $_ '.runner')) })
 Add-Type -AssemblyName System.IO.Pipes.AccessControl
 $security = [IO.Pipes.PipeSecurity]::new(); $security.SetAccessRuleProtection($true, $false)
 foreach ($sid in @('S-1-5-32-544','S-1-5-18')) { $security.AddAccessRule([IO.Pipes.PipeAccessRule]::new([Security.Principal.SecurityIdentifier]::new($sid), [IO.Pipes.PipeAccessRights]::FullControl, 'Allow')) }
@@ -89,17 +92,19 @@ try {
   for ($i = 0; $i -lt 60 -and @(Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'").Count; $i++) { Start-Sleep -Seconds 1 }
   Get-CimInstance Win32_Process -Filter "Name='Runner.Listener.exe'" | Where-Object { $_.ExecutablePath -like 'C:\actions-runner-dotagents-u*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
   Start-ScheduledTask -TaskName $taskName
-  $connect = $server.WaitForConnectionAsync()
-  if (!$connect.Wait(90000)) { throw 'Task entry did not request registration' }
-  $reader = [IO.StreamReader]::new($server, [Text.UTF8Encoding]::new($false), $false, 4096, $true)
-  $writer = [IO.StreamWriter]::new($server, [Text.UTF8Encoding]::new($false), 4096, $true); $writer.AutoFlush = $true
-  $token = Invoke-Sec002AdminApi -Arguments @('api','--method','POST','orgs/kitepon/actions/runners/registration-token','--jq','.token')
-  $writer.WriteLine($token); $token = $null
-  while ($true) {
-    $next = $reader.ReadLineAsync(); if (!$next.Wait(300000)) { throw 'Registration still running; inspect' }
-    $line = $next.GetAwaiter().GetResult(); if (!$line) { throw 'Task entry disconnected' }
-    $item = $line | ConvertFrom-Json; if ($item.phase -eq 'complete') { break }
-    $results += [ordered]@{ name = $item.name; exit_code = $item.exit_code }; $line
+  if ($pending.Count) {
+    $connect = $server.WaitForConnectionAsync()
+    if (!$connect.Wait(90000)) { throw 'Task entry did not request registration' }
+    $reader = [IO.StreamReader]::new($server, [Text.UTF8Encoding]::new($false), $false, 4096, $true)
+    $writer = [IO.StreamWriter]::new($server, [Text.UTF8Encoding]::new($false), 4096, $true); $writer.AutoFlush = $true
+    $token = Invoke-Sec002AdminApi -Arguments @('api','--method','POST','orgs/kitepon/actions/runners/registration-token','--jq','.token')
+    $writer.WriteLine($token); $token = $null
+    while ($true) {
+      $next = $reader.ReadLineAsync(); if (!$next.Wait(300000)) { throw 'Registration still running; inspect' }
+      $line = $next.GetAwaiter().GetResult(); if (!$line) { throw 'Task entry disconnected' }
+      $item = $line | ConvertFrom-Json; if ($item.phase -eq 'complete') { break }
+      $results += [ordered]@{ name = $item.name; exit_code = $item.exit_code }; $line
+    }
   }
 } finally { $token = $null; $server.Dispose() }
 
