@@ -4,8 +4,9 @@
 #   mac-factory-runner-pool.sh <dotagents checkout> <factory node binary>
 # Registers the runner pool from FACTORY_RUNNERS (the registration token is read from stdin, only when a pool root is
 # unregistered) and replaces the per-runner LaunchDaemon with the one load-driven scaler.
-# Contract: docs/feature-map/runner-capacity.md. Idempotent; exit 3 = a Runner.Worker was running, so the supervisor
-# swap is pending and a rerun completes it.
+# Contract: docs/feature-map/runner-capacity.md. Idempotent; exit 3 = a Runner.Worker was running before the first
+# supervisor swap, so the swap is pending and a rerun completes it. After the swap a rerun only restarts the scaler.
+# Work folder `_work.noindex`: Spotlight skips `*.noindex` folders (`.metadata_never_index` is ignored for folders).
 set -euo pipefail
 set +x
 SRC=$1
@@ -31,6 +32,7 @@ while IFS= read -r line; do instances+=("$line"); done < <(as_runner "$NODE" --i
 ' "$SRC/lib/factory/deployment-contract.mjs")
 IFS=$'\t' read -r first_name first_root <<<"${instances[0]}"
 old_label="actions.runner.kitepon.$first_name"
+WORK=_work.noindex
 
 # 1. Pool roots: runner layout without identity, credentials, logs or work; symlinked bin/externals copied as content.
 for line in "${instances[@]:1}"; do
@@ -42,10 +44,35 @@ for line in "${instances[@]:1}"; do
   printf '%s\n' "$registration_token" | as_runner /bin/bash -c '
     set -euo pipefail; set +x
     IFS= read -r ACTIONS_RUNNER_INPUT_TOKEN; export ACTIONS_RUNNER_INPUT_TOKEN
-    cd "$1" && ./config.sh --unattended --url https://github.com/kitepon --name "$2" --labels factory,macos-native --work _work
-  ' _ "$root" "$name"
+    cd "$1" && ./config.sh --unattended --url https://github.com/kitepon --name "$2" --labels factory,macos-native --work "$3"
+  ' _ "$root" "$name" "$WORK"
 done
 unset registration_token
+# config.sh rewrites .path from its own minimal PATH (no /opt/homebrew/bin, so `node` was missing in jobs on u2/u3);
+# every pool root runs jobs with the first root's PATH. The scaler passes .path to each listener it starts.
+for line in "${instances[@]:1}"; do
+  IFS=$'\t' read -r name root <<<"$line"
+  as_runner cp -p "$first_root/.path" "$root/.path"
+done
+
+# 1b. Work folder out of Spotlight: .runner workFolder (UTF-8 BOM JSON, read by every new Worker) first, then the old
+#     _work only while that root has no Runner.Worker (a running job keeps its folder; a rerun removes it later).
+for line in "${instances[@]}"; do
+  IFS=$'\t' read -r name root <<<"$line"
+  as_runner "$NODE" -e '
+    const fs = require("fs"); const [file, work] = process.argv.slice(1);
+    const settings = JSON.parse(fs.readFileSync(file, "utf8").replace(/^\uFEFF/u, ""));
+    if (settings.workFolder !== work) {
+      settings.workFolder = work;
+      fs.writeFileSync(file + ".tmp", "\uFEFF" + JSON.stringify(settings, null, 2), { mode: 0o644 });
+      fs.renameSync(file + ".tmp", file);
+    }
+  ' "$root/.runner" "$WORK"
+  as_runner test -d "$root/_work" || continue
+  sleep 2
+  if pgrep -u "$RUNNER_USER" -f "^$root/bin[^/]*/Runner.Worker" >/dev/null; then echo "$name: old _work kept (job running); rerun later"; continue; fi
+  as_runner rm -rf "$root/_work"
+done
 
 # 2. Scaler file and config, root-owned (the runner principal reads them only).
 install -d -o root -g wheel -m 755 "$(dirname "$SCALER")" /etc/dotagents
@@ -81,9 +108,10 @@ chown root:wheel "$PLIST.new"
 chmod 644 "$PLIST.new"
 plutil -lint "$PLIST.new" >/dev/null
 
-# 4. Swap only while no job runs; a running job is never cancelled. The old plist stays as .disabled for rollback.
-if pgrep -u "$RUNNER_USER" -x Runner.Worker >/dev/null; then rm -f "$PLIST.new"; echo 'swap pending (a Runner.Worker is running); rerun later'; exit 3; fi
+# 4. First swap only while no job runs; a running job is never cancelled. The old plist stays as .disabled for rollback.
+#    Once swapped, restarting the scaler is safe with jobs running: listeners live in their own process groups.
 if [ -f "/Library/LaunchDaemons/$old_label.plist" ]; then
+  if pgrep -u "$RUNNER_USER" -x Runner.Worker >/dev/null; then rm -f "$PLIST.new"; echo 'swap pending (a Runner.Worker is running); rerun later'; exit 3; fi
   launchctl bootout "system/$old_label" 2>/dev/null || true
   mv "/Library/LaunchDaemons/$old_label.plist" "/Library/LaunchDaemons/$old_label.plist.disabled"
 fi

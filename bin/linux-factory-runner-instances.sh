@@ -43,6 +43,11 @@ for line in "${instances[@]:1}"; do
   ' _ "$root" "$name"
   unset registration_token
 done
+# config.sh rewrites .path from its own minimal PATH; every pool root runs jobs with the first root's PATH.
+for line in "${instances[@]:1}"; do
+  IFS=$'\t' read -r name root <<<"$line"
+  sudo -n -u "$RUNNER_USER" cp -p "$first_root/.path" "$root/.path"
+done
 
 # 2. Scaler file and config, root-owned (the runner principal reads them only).
 sudo -n install -d -m 755 "$(dirname "$SCALER")" /etc/dotagents
