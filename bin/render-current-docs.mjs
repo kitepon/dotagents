@@ -105,9 +105,10 @@ function renderCurrentState(facts) {
     throw new Error('工場runner集合が不正です');
   }
   const instances = runners.flatMap((runner) => Array.isArray(runner.instances) ? runner.instances : [null]);
-  if (instances.some((item) => typeof item?.name !== 'string' || item.name.length === 0 ||
-    !(item.cpus === null || /^\d+-\d+$/u.test(item.cpus))) || new Set(instances.map((item) => item.name)).size !== instances.length ||
-    runners.some((runner) => runner.instances.length === 0 || runner.instances[0].name !== runner.name)) {
+  if (instances.some((item) => typeof item?.name !== 'string' || item.name.length === 0 || typeof item.root !== 'string' || item.root.length === 0) ||
+    new Set(instances.map((item) => item.name)).size !== instances.length ||
+    runners.some((runner) => runner.instances.length === 0 || runner.instances[0].name !== runner.name ||
+      !(runner.jobGiB > 0) || !(runner.reserveGiB >= 0))) {
     throw new Error('工場runner instance集合が不正です');
   }
 
@@ -138,11 +139,11 @@ function renderCurrentState(facts) {
 
 ## CI runner
 
-| runner | host label | 利用面 | instance（CPU集合） |
-|---|---|---|---|
-${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\`（${item.cpus ?? '全CPU'}）`).join('、')} |`).join('\n')}
+| runner | host label | 利用面 | pool（最大同時job） | job / 予備メモリ |
+|---|---|---|---|---|
+${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\``).join('、')}（${runner.instances.length}） | ${runner.jobGiB} / ${runner.reserveGiB} GiB |`).join('\n')}
 
-instanceは同じhost labelと同じ専用利用者で動く独立runnerで、CPU集合は互いに重ならない。配置と適用手順は[runner capacity](feature-map/runner-capacity.md)。
+poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。CPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 
 full CIは\`full CI\`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。
 

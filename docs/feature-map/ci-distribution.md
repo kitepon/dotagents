@@ -53,7 +53,7 @@ full-commandは道具の版表示後`make --jobs="$FACTORY_CI_JOBS" ci`。Make�
 
 `caveat-update-owner.mjs:caveatUpdateOwner`はownership markerのENOENTだけlegacy factory writerを許し、managed存在/不明を区別する。`npm-retired.mjs:clearRetiredPackage/removeTree`はretire名とpackageを検査し、消せないものを同volume renameでpark、残りがあればCLI exit20で入替を見送る。processを停止せず、copyへfallbackせず、残parkを全消去済みとしない。`lib/platform.mjs`は現行世代のPOSIX chmod差だけで、旧wire内部を自動統合しない。
 
-Windowsの`windows-native-product-smoke.mjs:assertWindowsNativeProductSmoke`はwire9/profile/platform/全ID inventoryだけを検査しpassedを返す。全製品readyや実使用は検査しない。`windows-factory-runner-job-started.ps1`とdedicated relayは優先度/CPU割当のsource（runner名ごとの固定CPU集合は[runner capacity](runner-capacity.md)）で、marker引数は互換受理だけ、読取も待機もしない。失敗はwarningとexit0。今回実process/affinity/runner設定を変更していない。
+Windowsの`windows-native-product-smoke.mjs:assertWindowsNativeProductSmoke`はwire9/profile/platform/全ID inventoryだけを検査しpassedを返す。全製品readyや実使用は検査しない。`windows-factory-runner-job-started.ps1`とdedicated relayは優先度のsource（CPU割当は無く、同時job数はhostのscalerが決める。[runner capacity](runner-capacity.md)）で、marker引数は互換受理だけ、読取も待機もしない。失敗はwarningとexit0。今回実process/affinity/runner設定を変更していない。
 
 ## 旧文書との不一致・検証境界
 

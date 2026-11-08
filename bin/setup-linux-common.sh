@@ -82,6 +82,27 @@ verify_org_runner_online() {
   die "GitHub Actions runnerのonline/label readbackに失敗: $runner_name"
 }
 
+# A scaled pool keeps only the needed listeners online; one online pool member proves the seat works.
+verify_any_org_runner_online() {
+  local runner_label="$1" runner_name runner_json
+  shift
+  for _ in {1..15}; do
+    for runner_name in "$@"; do
+      runner_json="$(org_runner_record "$runner_name")" || die "GitHub Actions runnerの状態を取得できない: $runner_name"
+      if node -e '
+        const value=JSON.parse(process.argv[1]);
+        const labels=new Set(value.labels.map((label) => label.name));
+        process.exit(value.status === "online" && labels.has("factory") && labels.has(process.argv[2]) ? 0 : 1);
+      ' "$runner_json" "$runner_label" 2>/dev/null; then
+        echo "INFO: GitHub Actions runner online: $runner_name ($runner_label)"
+        return 0
+      fi
+    done
+    sleep 2
+  done
+  die "GitHub Actions runnerのonline/label readbackに失敗: $*"
+}
+
 dedicated_runner_profile() {
   node "$ROOT/bin/factory-runner-profile.mjs"
 }
@@ -91,6 +112,7 @@ ensure_github_actions_runner() {
   # main-serverの共通runnerは停止済み。serverのsetupは登録・起動・online確認をしない。
   [ "$HOST_PROFILE" != server ] || return 0
   local profile profile_mode profile_name profile_service profile_user actual_user actual_group actual_nnp actual_capabilities
+  local -a profile_names=()
   profile="$(dedicated_runner_profile)" || die '専用runnerの管理設定が不正。旧runnerを自動で起動しない'
   profile_mode="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mode)' "$profile")"
   if [ "$profile_mode" = dedicated ]; then
@@ -108,8 +130,9 @@ ensure_github_actions_runner() {
       actual_capabilities="$(systemctl show "$profile_service" --property=CapabilityBoundingSet --value)" || die '専用runnerのcapabilityを読めない'
       [ -z "$actual_capabilities" ] || die '専用runnerにcapabilityが残っている'
       systemctl is-active --quiet "$profile_service" || die '専用runnerは停止中。setupでは起動しない'
-      verify_org_runner_online "$profile_name" "$ACTIONS_RUNNER_LABEL"
+      profile_names+=("$profile_name")
     done < <(node -e 'for (const item of JSON.parse(process.argv[1]).instances) console.log([item.name, item.service].join("\t"))' "$profile")
+    verify_any_org_runner_online "$ACTIONS_RUNNER_LABEL" "${profile_names[@]}"
     echo "INFO: 専用runnerは外部管理。setupは登録・起動・label更新を行わない"
     return 0
   fi

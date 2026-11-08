@@ -1,57 +1,78 @@
-# Factory runner capacity: parallel instances per host
+# Factory runner capacity: load-driven runner pool per host
 
 [Overall index](../09_feature-map.md) / [factory-ci runbook](../../shared/runbooks/factory-ci.md) / [contract](../../lib/factory/deployment-contract.mjs) / [current state](../factory-current-state.md) / [setup](setup.md) / [CI](ci-distribution.md)
 
-Why: on 2026-11-08 the Owner directed parallel CI on existing factory hardware (delivered by Shiratsuru). Fox (`windows-native`) had one runner and five PR runs queued behind a ~2.5 h job. Each seat now runs several independent runner instances under the SAME host label and the SAME dedicated non-admin principal, each pinned to a disjoint CPU set. Products keep sizing their parallelism from `os.availableParallelism()`, which follows the set. The Mac seat is unchanged (one instance, no CPU set).
+Why: on 2026-11-08 the Owner directed parallel CI on existing factory hardware, then (11:1x JST) "decide the parallelism dynamically from real load, Mac too, minimum 1; CPUs dynamic too". The fixed design of the same morning (Rabbit 2 / Fox 3 instances, one pinned CPU set each, CPUs 0-7 reserved) is replaced: each seat keeps a POOL of registered runner instances under the SAME host label and the SAME dedicated non-admin principal, and ONE scaler per host decides from measured CPU idle and available memory how many listeners run (1 to pool size). No CPU affinity anywhere; every job sees all CPUs (`os.availableParallelism()`) and runs at low priority, so the Owner's interactive work wins and also lowers the measured idle, which stops further scale-up.
 
-## Instances (source of truth: `FACTORY_RUNNERS[].instances` in `lib/factory/deployment-contract.mjs`)
+## Pool (source of truth: `FACTORY_RUNNERS[]` in `lib/factory/deployment-contract.mjs`)
 
-| Seat label | Instance | Root | CPU set | Owner CPUs |
-| --- | --- | --- | --- | --- |
-| `linux-workstation` (Rabbit, 24 logical, 30 GiB) | `factory-linux-rabbit-u` | `/home/factory-runner/actions-runner` | 8-15 | 0-7 (interactive GUI seat) |
-| | `factory-linux-rabbit-u2` | `/home/factory-runner/actions-runner-2` | 16-23 | |
-| `windows-native` (Fox, 32 logical, 61.6 GB) | `factory-windows-fox-u` | `C:\actions-runner-dotagents-u` | 8-15 | 0-7 (Owner console) |
-| | `factory-windows-fox-u2` | `C:\actions-runner-dotagents-u2` | 16-23 | |
-| | `factory-windows-fox-u3` | `C:\actions-runner-dotagents-u3` | 24-31 | |
+| Seat label | Pool (instances, roots) | Basis | `jobGiB` / `reserveGiB` |
+| --- | --- | --- | --- |
+| `linux-workstation` (Rabbit, 24 logical, 30 GiB) | `factory-linux-rabbit-u`..`-u5`, `/home/factory-runner/actions-runner`, `-2`..`-5` | ~4 GiB largest job sample | 4 / 4 |
+| `windows-native` (Fox, 32 logical, 61.6 GB) | `factory-windows-fox-u`..`-u8`, `C:\actions-runner-dotagents-u`, `-u2`..`-u8` | 1.86 GB private max per Lattice job (09:50-10:40 JST) | 3 / 4 |
+| `macos-native` (Mac M5, 10 logical, 24 GB, Owner laptop) | `factory-macos-m5-u`..`-u3`, `/Users/factory-runner/actions-runner`, `-2`, `-3` | one Lattice job tree 1.32 GB RSS (14:1x JST); laptop with swap in use, so 6 GiB stays for the Owner | 3 / 6 |
 
-Count basis: about 8 CPUs per job. RAM was checked against current samples only (Fox 01:27 JST Lattice full: 1.51 GB working set with 32 GB free; Rabbit 22 GiB available). No full-job PEAK RSS has been measured, so the RAM fit is an expectation recorded at the first concurrent observation, not a measured guarantee. Fall back to 2 x 12 on Fox only if that observation shows memory pressure.
+Pool size is only a ceiling. The first instance keeps the existing name and root, so the existing registration and credentials stay.
 
 ## Function diagram
 
 | Owner / function | Inputs | Output and state owned | Refusal / failure |
 | --- | --- | --- | --- |
-| Dotagents, `deployment-contract.mjs:FACTORY_RUNNERS` | Source edit | Seat label, full-CI flag, instances `{name, root, cpus}` | `render-current-docs` refuses empty/duplicate names, labels or instance names. |
-| Dotagents, `bin/windows-factory-runner-job-started.ps1` (host copy `C:\ProgramData\dotagents\factory-runner\job-started.ps1`, admin/SYSTEM-writable) | Runner job-started hook (via the dedicated relay) with `RUNNER_NAME` from the job environment | Runner.Worker affinity = pinned set for that name, priority BelowNormal | Unknown name: previous rule (all but the first 8). Any error: warning, exit 0, job continues. |
-| Dotagents, `bin/windows-factory-runner-task-entry.ps1` (host copy `C:\ProgramData\dotagents\factory-tools\native-task-entry.ps1`) | Existing task `\dotagents-factory-runner-dedicated` (factory-runner, Password, Limited) at startup | For each pinned root: registers it if it has no `.runner` and the registration pipe is offered, then starts `run-dedicated.ps1 -Root` with a clean environment; waits for all children | Unregistered root without pipe: skipped (logged), others still start. Registration failure: that root stays unregistered, others run. |
-| Dotagents, `bin/windows-factory-runner-run.ps1` (host copy `...\factory-tools\run-dedicated.ps1`) | `-Root` from the pinned list; registration token on stdin when registering | `config.cmd` with `--name <instance> --labels factory,windows-native`, then `run.cmd` in that root | Root outside the pinned list or token missing: exit non-zero. |
-| Dotagents, `bin/windows-factory-runner-instances.ps1` (run elevated by Dorothy after Owner approval) | Staged repo files, token from the existing admin API broker | New roots (copy of the registered root's runner layout and ACL, without identity/state files; `bin`/`externals` junctions left by runner self-update are copied from their resolved `bin.<ver>`/`externals.<ver>` directory inside the root, because an elevated process refuses to traverse a mount point a non-admin user created), installed helpers/hook, one task restart while idle, registration over a FirstPipeInstance pipe, API readback | Not elevated, factory account admin/unexpected SID, task credential type changed, Runner.Worker present: exit without change. It never resets the factory password (that would destroy the user DPAPI key protecting `.credentials_rsaparams`). |
-| Dotagents, `lib/factory/runner-profile.mjs` + `bin/factory-runner-profile.mjs` | `/etc/dotagents/factory-runner-profile.json` (root-owned) | Normalized `{mode, user, label, instances[{name, service, root}]}`; v1 = one instance, v2 = contract instances | Foreign identity, trial state, partial instance list, writable/symlink: refuse (no legacy fallback). |
-| Dotagents, `bin/setup-linux-common.sh:ensure_github_actions_runner` | Profile | Per instance: User/Group/groups/NNP/capabilities/active and online+labels | Any instance failing: setup stops; it never starts, registers or relabels a dedicated instance. |
-| Dotagents, `bin/linux-factory-runner-instances.sh` (Rabbit host apply by Sorin) | Contract instances, kite's `gh` (admin:org), sudo | New root copy as factory-runner, registration (token on stdin), unit per instance (same hardening as rabbit-u), `CPUAffinity=` drop-in per instance, profile v2, enable new units, restart an existing unit only while idle | Busy existing instance: exits 3 after the idle-independent steps; rerun completes the restart. Any registration/readback failure stops; nothing already registered is removed. |
+| Dotagents, `deployment-contract.mjs:FACTORY_RUNNERS` | Source edit | Seat label, full-CI flag, `jobGiB`, `reserveGiB`, instances `{name, root}` | `render-current-docs` refuses empty/duplicate names, labels or instance names and non-positive sizes. |
+| Dotagents, `bin/factory-runner-scaler-config.mjs <label> <log>` | Contract | Scaler config JSON `{label, jobGiB, reserveGiB, log, instances}` written by the host apply step to a root/admin-owned path | Unknown label: exit 1. |
+| Dotagents, `lib/factory/runner-scaler.mjs` (host copy: Rabbit/Mac `/usr/local/libexec/dotagents/factory-runner-scaler.mjs`, Fox `C:\ProgramData\dotagents\factory-tools\runner-scaler.mjs`; admin-owned) | Config path (argv); every 30 s: process table (Listener/Worker per root), `os.cpus()` deltas over >= 60 s, available memory, last run per root (newest `_diag` mtime, or the last tick that saw its listener) | Starts one listener (`<root>/bin/Runner.Listener run`, PATH from `<root>/.path`, own process group / own hidden console) or stops one idle listener (SIGINT; Windows Ctrl+Break into that listener's console); one JSON line per action to the log. In-memory state only: idle-since per root. | Unregistered root (no `.runner`): never started. Spawn/stop failure: logged, next tick re-decides from the process table. Scaler exit: listeners keep running and are adopted by the next scaler. |
+| `decide()` in the same module (pure, unit-tested) | Per root `{registered, running, busy, idleSince, lastRun}`, `cpuIdle`, `availGiB`, sizes, now | `{action, name, reason, desired}` (action = start, stop or none) | See state diagram. |
+| Dotagents, `bin/linux-factory-runner-instances.sh` (Rabbit host apply by Sorin) | Contract, kite's `gh` (admin:org), sudo | Pool roots (copied layout + registration, token on stdin), scaler file + config, `factory-runner-scaler.service` derived from the first runner unit (same hardening; `KillMode=process`, `Nice=10`, `CPUWeight=20`, `Restart=always`), old per-instance units disabled and removed only while idle, profile v3 | Any old instance busy: exits 3 before disabling anything; rerun completes. Registration/readback failure stops; nothing registered is removed. |
+| Dotagents, `lib/factory/runner-profile.mjs` + `bin/factory-runner-profile.mjs` | `/etc/dotagents/factory-runner-profile.json` (root-owned) | Normalized `{mode, user, label, instances[{name, service, root}]}`; v1 = one instance, v2 = per-instance units (prefix of the pool), v3 = whole pool under `factory-runner-scaler.service` | Foreign identity, trial state, wrong instance list, writable/symlink: refuse. |
+| Dotagents, `bin/setup-linux-common.sh:ensure_github_actions_runner` | Profile | Every distinct service: User/Group/groups/NNP/capabilities/active; at least one pool instance online with the seat label | Any check failing: setup stops; it never starts, registers or relabels a dedicated instance. |
+| Dotagents, `bin/windows-factory-runner-task-entry.ps1` (host `...\factory-tools\native-task-entry.ps1`) | Existing task `\dotagents-factory-runner-dedicated` (factory-runner, Password, Limited) | Registers roots without `.runner` when the elevated script offers the pipe (unchanged), then runs the scaler with a clean environment and waits for it | No registered root: exit 1. |
+| Dotagents, `bin/windows-factory-runner-run.ps1` (host `run-dedicated.ps1`) | `-Root -Name -Register`, token on stdin | `config.cmd` for that root (registration only; listeners are started by the scaler) | Token missing: exit non-zero. |
+| Dotagents, `bin/windows-factory-runner-job-started.ps1` (host `C:\ProgramData\dotagents\factory-runner\job-started.ps1`) | Job-started hook | Runner.Worker priority BelowNormal (inherited by steps); no affinity | Any error: warning, exit 0. |
+| Dotagents, `bin/windows-factory-runner-instances.ps1` (elevated, Owner + Approval Box) | Staged repo files incl. scaler + generated config, token from the admin API broker | New pool roots (layout copy as before), helpers/hook/scaler installed, one task restart while idle, registration over the FirstPipeInstance pipe, readback | Not elevated, factory account admin, task principal changed, Runner.Worker present: exit without change. Never resets the factory password. |
+| Dotagents, `bin/mac-factory-runner-pool.sh <checkout> <factory node>` (root via the Owner-allowed sudo helper) | Contract, registration token on stdin (from kite's `gh` on Rabbit) | Pool roots as factory-runner (layout copy + `config.sh`), scaler + config, LaunchDaemon `com.kitepon.factory-runner-scaler` (UserName factory-runner, ProcessType Interactive as before, `Nice` 10, `AbandonProcessGroup`), old per-runner plist booted out and kept as `.plist.disabled` only while idle | Busy Worker: exit 3 before unloading. Token missing for an unregistered root: exit 1. |
 | Product repo workflows | `runs-on: [self-hosted, factory, <label>]` | Their own tests | Fixed ports / global paths that collide between concurrent jobs are product defects (reported to Shiratsuru, not repaired here). |
+
+## State diagram (one pool instance, as seen by the scaler)
+
+| From | Event / condition | To | Note |
+| --- | --- | --- | --- |
+| unregistered | host apply registers the root | stopped | Only the admin step registers. |
+| stopped | `running < desired`, least-recent `lastRun` first | idle | start |
+| stopped | headroom AND `lastRun` older than 7 days | idle | refresh: GitHub deletes self-hosted runners offline > 14 days; trimmed again after 120 s idle. New roots (no `_diag`) refresh first. |
+| idle | Runner.Worker appears | busy | |
+| busy | Worker exits (job end) | idle | self-exit of the "never stop busy" guard |
+| idle | `running > desired` AND idle >= 120 s, longest idle first | stopped | SIGINT / Ctrl+Break: graceful, deletes the session |
+| idle / busy | listener exits by itself (self-update, error, session conflict) | stopped | next tick re-decides |
+
+`busy` = roots with a Runner.Worker. `headroom` = CPU idle >= 30 % AND available memory >= `jobGiB + reserveGiB`. `desired = clamp(busy + (headroom ? 1 : 0), 1, registered)`. One action per tick. Guards (named protection): a busy listener is never stopped (running job = data loss); the count never goes below 1 (Owner minimum). Both leave by themselves: the job ends, or more load arrives.
+
+Available memory: Linux `os.freemem()` (MemAvailable), Windows `os.freemem()` (available physical), macOS `kern.memorystatus_level` (the system's memory-free percentage, as `memory_pressure` prints) × physical memory; `vm_stat` free + inactive pages miss compressible memory (2026-11-08 14:1x JST, one Lattice job running: 5 GiB by pages vs 42 % = 10 GiB free, 5 GiB swap in use).
 
 ## Data flow
 
 | Stage | Producer → consumer | Transform / state | Failure behavior |
 | --- | --- | --- | --- |
-| Contract | `FACTORY_RUNNERS` → `factory-current-state.md`, profile parser, Linux apply script, hook test | instance names/roots/CPU sets | Hook map and contract are compared by `tests/factory-reporter/windows-runner-job-started-hook.test.mjs`. |
-| Fox registration | Elevated script → pipe `dotagents-factory-runner-register` (FirstPipeInstance; Admins/SYSTEM full, factory RW) → task entry → `run-dedicated.ps1` stdin → `config.cmd` env `ACTIONS_RUNNER_INPUT_TOKEN` | token never on disk, argv or log; result lines per root back over the pipe | Squatted pipe name: server create fails, no token sent. |
-| Fox job start | GitHub → instance listener → Worker → hook (`RUNNER_NAME`) | affinity mask from the pinned set | warning only. |
-| Rabbit registration | `gh api POST registration-token` (kite) → stdin → `config.sh` as factory-runner | same as the 2026-10-15 install | token unset after use. |
-| Rabbit job start | systemd unit + `cpu.conf` drop-in → runsvc.sh → Listener → Worker → steps | `sched_getaffinity` = set, inherited by every step | none (kernel-enforced). |
+| Contract | `FACTORY_RUNNERS` → `factory-current-state.md`, profile parser, scaler config generator, apply scripts, tests | names/roots/sizes | Tests compare the PowerShell maps with the contract. |
+| Config | generator → admin-owned JSON next to the scaler | label, sizes, log path, instances | Scaler refuses a config without instances. |
+| Load sample | OS → scaler | CPU idle fraction (>= 60 s window), available GiB, process table (`ps -A -o pid=,args=`; Windows CIM `Win32_Process` ExecutablePath) mapped to roots by path prefix | Sample failure: tick skipped. |
+| Decision | `decide()` → action | start/stop one root | none |
+| Action log | scaler → `<log>` | `{at, action, name, reason, busy, running, desired, cpuIdle, availGiB}` | Write failure ignored (logged to stderr). |
+| Registration | Rabbit `gh` / Fox admin broker pipe / Rabbit `gh` → ssh → Mac sudo stdin → `config.*` as factory-runner | token never on disk, argv or log | same as before |
 
 ## Deployment, admission and rollback
 
-Order per host: (1) prepare and register new instances while the existing one keeps working; (2) apply CPU sets; (3) restart the existing instance only when it has no Runner.Worker. Running jobs are never cancelled. A job assigned in the seconds between the idle check and the restart is the residual risk documented in Shiratsuru's requeue contract (it fails as a runner shutdown and is re-run normally).
+Order per host: (1) register the new pool roots while the existing listeners keep working; (2) install scaler + config; (3) swap the supervisor (old units/plist/task children) only when no Runner.Worker exists. Running jobs are never cancelled. A job assigned in the seconds between the idle check and a stop is the residual risk in Shiratsuru's requeue contract.
 
-- Fox: one Owner + Approval Box admin step runs `windows-factory-runner-instances.ps1 -Mode Apply`. Rollback: restore the previous entry/run/hook files (their SHA-256 are printed by `-Mode Inspect`), restart the task while idle, remove the u2/u3 registrations with the normal remove token. Roots may be deleted after deregistration.
-- Rabbit: Sorin runs `PATH="$HOME/.local/bin:$PATH" bin/linux-factory-runner-instances.sh` as kite from the merged checkout on Rabbit. The `PATH` prefix is required: a non-interactive SSH session on Rabbit omits `/home/kite/.local/bin`, where kite's `node` lives, and the script then exits 1 before any change (first apply, 2026-11-08 05:04 JST). Rollback: disable u2, remove its registration, delete the `cpu.conf` drop-ins, restore profile v1, restart rabbit-u while idle.
-- Acceptance: on each host, one observation of two naturally queued jobs running at the same time on different instances, with the hook/affinity line and memory recorded. No manual CI dispatch for this proof.
+- Rabbit (Sorin): `PATH="$HOME/.local/bin:$PATH" bin/linux-factory-runner-instances.sh` as kite from the merged checkout. Rollback: stop/disable the scaler unit while idle, restore the per-instance units for u/u2 from git history (bf8600f), profile v2.
+- Fox (Owner + Approval Box): `windows-factory-runner-instances.ps1 -Mode Apply`. Rollback: restore the previous entry/run/hook (SHA-256 printed by `-Mode Inspect`), restart the task while idle.
+- Mac (Dorothy, sudo helper): `bin/mac-factory-runner-pool.sh` with the token on stdin. Rollback: unload the scaler plist while idle, reload the old plist (kept as `.disabled`).
+- Acceptance: per host, from the scaler log under natural load, one scale-up past 1 and one scale-down back to 1. No manual CI dispatch.
 
 ## Verification
 
-- `tests/install/runner-profile.test.mjs`: v1 and v2 parse; partial/foreign v2 refused.
-- `tests/install/linux-runner-registration.sh`: setup checks every profile instance.
-- `tests/factory-reporter/windows-runner-job-started-hook.test.mjs`: pinned map equals the contract; on Windows CI, an unknown name keeps the old rule.
-- `tests/docs/current-docs.test.mjs`: instance rendering.
-- The Fox/Rabbit apply scripts are parsed/linted in CI but run only on the hosts; their real effect is proven by the readback and the concurrency observation, not by tests.
+- `tests/factory-reporter/runner-scaler.test.mjs`: `decide()` (scale up, headroom gates, max, minimum 1, idle 120 s, never busy, LRU, refresh), sampling parsers, config generator.
+- `tests/install/runner-profile.test.mjs`: v1/v2/v3 parse; partial/foreign refused.
+- `tests/install/linux-runner-registration.sh`: setup checks every service and needs one instance online.
+- `tests/factory-reporter/windows-runner-instances.test.mjs` / `windows-runner-job-started-hook.test.mjs`: maps equal the contract; hook sets priority only.
+- `tests/docs/current-docs.test.mjs`: pool rendering.
+- Apply scripts are linted/parsed in CI and run only on the hosts; their effect is proven by readback and the scaler log.

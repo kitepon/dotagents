@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
 import { chmod, lstat, mkdtemp, mkdir, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
@@ -178,7 +177,8 @@ test('PATHで先に当たるnodeがrunnerのnodeと違う時だけ、runnerのno
   assert.equal(result.code, 0, result.stderr);
   assert.equal((await readFile(marker, 'utf8')).trim(), process.version);
 });
-test('runnerは原子的owner contenderの死んだPIDだけを掃除して再実行できる', async () => { const box = await sandbox(CURRENT_PROFILE, false, true); const child = spawn(process.execPath, ['-e', 'process.exit(0)']); const deadPid = child.pid; await new Promise((resolveClose) => child.on('close', resolveClose)); const dead = await writeRunnerLock(box, deadPid); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 0, result.stderr); assert.deepEqual(result.json, { ok: true, post_gate_status: 'success' }); await assert.rejects(lstat(dead)); assert.deepEqual((await readdir(box.state)).filter((name) => name.includes('schedule.lock.')), []); });
+test('runnerは原子的owner contenderの死んだPIDだけを掃除して再実行できる', async () => { const box = await sandbox(CURRENT_PROFILE, false, true); // A just-exited child's PID can be reused at once under concurrent jobs (Windows, 2026-11-08); this one exceeds every OS PID range.
+  const deadPid = 2147483644; const dead = await writeRunnerLock(box, deadPid); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 0, result.stderr); assert.deepEqual(result.json, { ok: true, post_gate_status: 'success' }); await assert.rejects(lstat(dead)); assert.deepEqual((await readdir(box.state)).filter((name) => name.includes('schedule.lock.')), []); });
 test('runnerはowner完成後の固有hard-link公開とnonce一致cleanupで共有lock削除を避ける', async () => { const source = await readFile(SCHEDULER_STATE, 'utf8'); assert.match(source, /await link\(temporary, published\)/); assert.match(source, /current\?\.nonce === nonce/); assert.match(source, /schedule\\\.lock\\\.\[0-9a-f-\]\{36\}\\\.owner/); assert.doesNotMatch(source, /\.reclaim|oldEnough|mtimeMs/); });
 test('runnerは既存POSIX stateのgroup/other permissionを0700へ矯正する', { skip: process.platform === 'win32' }, async () => { const box = await sandbox(CURRENT_PROFILE, true); await chmod(await mkdir(box.state, { recursive: true }).then(() => box.state), 0o755); await writeRunnerLock(box, process.pid); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 1); assert.equal((await stat(box.state)).mode & 0o777, 0o700); });
 test('v4 runnerはstate symlink先へscan artifactを書かない', async () => { const box = await sandbox(CURRENT_PROFILE, true); const target = join(box.root, 'symlink-target'); await mkdir(target); await mkdir(join(box.state, '..'), { recursive: true }); await symlink(target, box.state, process.platform === 'win32' ? 'junction' : undefined); const result = await run(RUNNER, ['--config', box.config], box); assert.equal(result.code, 1); assert.match(result.stderr, /symlink/); assert.deepEqual(await readdir(target), []); });
