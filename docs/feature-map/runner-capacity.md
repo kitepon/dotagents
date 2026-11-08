@@ -10,7 +10,7 @@ Why: on 2026-11-08 the Owner directed parallel CI on existing factory hardware, 
 | --- | --- | --- | --- |
 | `linux-workstation` (Rabbit, 24 logical, 30 GiB) | `factory-linux-rabbit-u`..`-u5`, `/home/factory-runner/actions-runner`, `-2`..`-5` | ~4 GiB largest job sample | 4 / 4 |
 | `windows-native` (Fox, 32 logical, 61.6 GB) | `factory-windows-fox-u`..`-u8`, `C:\actions-runner-dotagents-u`, `-u2`..`-u8` | 1.86 GB private max per Lattice job (09:50-10:40 JST) | 3 / 4 |
-| `macos-native` (Mac M5, 10 logical, 24 GB, Owner laptop) | `factory-macos-m5-u`..`-u3`, `/Users/factory-runner/actions-runner`, `-2`, `-3` | no concurrent sample; laptop margin | 4 / 8 |
+| `macos-native` (Mac M5, 10 logical, 24 GB, Owner laptop) | `factory-macos-m5-u`..`-u3`, `/Users/factory-runner/actions-runner`, `-2`, `-3` | one Lattice job tree 1.32 GB RSS (14:1x JST); laptop with swap in use, so 6 GiB stays for the Owner | 3 / 6 |
 
 Pool size is only a ceiling. The first instance keeps the existing name and root, so the existing registration and credentials stay.
 
@@ -46,7 +46,7 @@ Pool size is only a ceiling. The first instance keeps the existing name and root
 
 `busy` = roots with a Runner.Worker. `headroom` = CPU idle >= 30 % AND available memory >= `jobGiB + reserveGiB`. `desired = clamp(busy + (headroom ? 1 : 0), 1, registered)`. One action per tick. Guards (named protection): a busy listener is never stopped (running job = data loss); the count never goes below 1 (Owner minimum). Both leave by themselves: the job ends, or more load arrives.
 
-Available memory: Linux `os.freemem()` (MemAvailable), Windows `os.freemem()` (available physical), macOS `vm_stat` free + inactive + speculative pages.
+Available memory: Linux `os.freemem()` (MemAvailable), Windows `os.freemem()` (available physical), macOS `kern.memorystatus_level` (the system's memory-free percentage, as `memory_pressure` prints) × physical memory; `vm_stat` free + inactive pages miss compressible memory (2026-11-08 14:1x JST, one Lattice job running: 5 GiB by pages vs 42 % = 10 GiB free, 5 GiB swap in use).
 
 ## Data flow
 

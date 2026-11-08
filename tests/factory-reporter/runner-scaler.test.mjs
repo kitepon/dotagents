@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { FACTORY_RUNNERS } from '../../lib/factory/deployment-contract.mjs';
-import { IDLE_STOP_MS, REFRESH_MS, decide, idleFraction, parseVmStat, rootProcesses } from '../../lib/factory/runner-scaler.mjs';
+import { IDLE_STOP_MS, REFRESH_MS, decide, idleFraction, memorystatusBytes, rootProcesses } from '../../lib/factory/runner-scaler.mjs';
 
 // docs/feature-map/runner-capacity.md: state diagram and decide() rules.
 const NOW = 10 * REFRESH_MS;
@@ -56,9 +56,8 @@ test('process table maps listeners and workers to roots by path prefix', () => {
 });
 
 test('macOS available memory and CPU idle window', () => {
-  const vm = 'Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free:                               1000.\nPages active:                             9.\nPages inactive:                           2000.\nPages speculative:                         100.\n';
-  assert.equal(parseVmStat(vm), 3100 * 16384);
-  assert.throws(() => parseVmStat('nothing'));
+  assert.equal(memorystatusBytes('42\n', 100), 42);
+  for (const bad of ['', 'x', '101', '-1']) assert.throws(() => memorystatusBytes(bad, 100));
   assert.equal(idleFraction([{ at: 0, idle: 0, total: 0 }, { at: 30_000, idle: 5, total: 10 }], 30_000), null);
   assert.equal(idleFraction([{ at: 0, idle: 0, total: 0 }, { at: 30_000, idle: 5, total: 10 }, { at: 60_000, idle: 30, total: 100 }], 60_000), 0.3);
 });
