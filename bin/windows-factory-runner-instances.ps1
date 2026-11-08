@@ -47,7 +47,16 @@ foreach ($r in $newRoots.GetEnumerator()) {
     New-Item -ItemType Directory -Path $r.Value | Out-Null
     Set-Acl -LiteralPath $r.Value -AclObject (Get-Acl -LiteralPath $existingRoot)
   }
-  foreach ($item in $layout) { Copy-Item -LiteralPath (Join-Path $existingRoot $item) -Destination $r.Value -Recurse -Force }
+  foreach ($item in $layout) {
+    $from = Get-Item -LiteralPath (Join-Path $existingRoot $item) -Force
+    # Runner self-update leaves bin/externals as factory-runner-owned junctions; elevation refuses to traverse them, so copy the version dir.
+    if ($from.LinkType -eq 'Junction') { $from = Get-Item -LiteralPath (Join-Path $existingRoot (Split-Path -Leaf $from.Target)) -Force }
+    if ($from.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw "Unexpected reparse point: $($from.FullName)" }
+    if ($from.PSIsContainer) {
+      $to = Join-Path $r.Value $item; New-Item -ItemType Directory -Path $to -Force | Out-Null
+      Copy-Item -Path (Join-Path $from.FullName '*') -Destination $to -Recurse -Force
+    } else { Copy-Item -LiteralPath $from.FullName -Destination $r.Value -Force }
+  }
 }
 
 # 2. Helpers and hook: replaced in place, so they keep the protected directory ACL.
