@@ -108,7 +108,7 @@ function renderCurrentState(facts) {
   if (instances.some((item) => typeof item?.name !== 'string' || item.name.length === 0 || typeof item.root !== 'string' || item.root.length === 0) ||
     new Set(instances.map((item) => item.name)).size !== instances.length ||
     runners.some((runner) => runner.instances.length === 0 || runner.instances[0].name !== runner.name ||
-      !(runner.jobGiB > 0) || !(runner.reserveGiB >= 0))) {
+      !(runner.jobGiB > 0) || !(runner.reserveGiB >= 0) || !(runner.maxLoadPerCpu === undefined || runner.maxLoadPerCpu > 0))) {
     throw new Error('工場runner instance集合が不正です');
   }
 

@@ -26,6 +26,17 @@ test('no CPU or memory headroom, or an incomplete CPU window: no scale-up', () =
   }
 });
 
+test('load gate: a seat limit blocks scale-up above the 1-minute load per CPU and names the failed gate', () => {
+  const roots = [busy('a'), root('b')];
+  const mac = { ...free, maxLoadPerCpu: 1 };
+  assert.deepEqual((({ action, gate }) => [action, gate])(decide({ ...mac, loadPerCpu: 1, roots })), ['start', null]);
+  assert.deepEqual((({ action, gate, desired }) => [action, gate, desired])(decide({ ...mac, loadPerCpu: 5.2, roots })), [null, 'load', 1]);
+  assert.equal(decide({ ...mac, loadPerCpu: null, roots }).gate, 'load');
+  assert.equal(decide({ ...free, loadPerCpu: 52, roots }).action, 'start'); // no seat limit: load ignored (Linux/Windows)
+  assert.deepEqual([tight, { ...free, availGiB: 7.9 }, { ...free, cpuIdle: null }].map((load) => decide({ ...load, roots }).gate), ['cpu-idle', 'memory', 'cpu-window']);
+  assert.equal(decide({ ...mac, loadPerCpu: 5.2, roots: [busy('a'), idle('b')] }).action, 'stop');
+});
+
 test('minimum one listener even without headroom; never above the registered pool', () => {
   assert.deepEqual(Object.values((({ action, name }) => ({ action, name }))(decide({ ...tight, roots: [root('a'), root('b')] }))), ['start', 'a']);
   const full = decide({ ...free, roots: [busy('a'), busy('b'), root('c', { registered: false })] });
@@ -66,7 +77,8 @@ test('config generator emits each seat pool from the contract', () => {
   for (const seat of FACTORY_RUNNERS) {
     const result = spawnSync(process.execPath, ['bin/factory-runner-scaler-config.mjs', seat.label, '/tmp/x.log'], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout), { label: seat.label, jobGiB: seat.jobGiB, reserveGiB: seat.reserveGiB, log: '/tmp/x.log', instances: seat.instances.map((item) => ({ ...item })) });
+    const expected = { label: seat.label, jobGiB: seat.jobGiB, reserveGiB: seat.reserveGiB, maxLoadPerCpu: seat.maxLoadPerCpu, log: '/tmp/x.log', instances: seat.instances.map((item) => ({ ...item })) };
+    assert.deepEqual(JSON.parse(result.stdout), JSON.parse(JSON.stringify(expected)));
   }
   assert.notEqual(spawnSync(process.execPath, ['bin/factory-runner-scaler-config.mjs', 'nope', '/tmp/x.log']).status, 0);
 });
