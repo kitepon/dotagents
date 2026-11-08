@@ -48,6 +48,12 @@ for line in "${instances[@]:1}"; do
   ' _ "$root" "$name" "$WORK"
 done
 unset registration_token
+# config.sh rewrites .path from its own minimal PATH (no /opt/homebrew/bin, so `node` was missing in jobs on u2/u3);
+# every pool root runs jobs with the first root's PATH. The scaler passes .path to each listener it starts.
+for line in "${instances[@]:1}"; do
+  IFS=$'\t' read -r name root <<<"$line"
+  as_runner cp -p "$first_root/.path" "$root/.path"
+done
 
 # 1b. Work folder out of Spotlight: .runner workFolder (UTF-8 BOM JSON, read by every new Worker) first, then the old
 #     _work only while that root has no Runner.Worker (a running job keeps its folder; a rerun removes it later).
