@@ -1,20 +1,16 @@
 # GitHub Actions runnerのjob開始hook（Windowsの工場席）。runnerの `.env` の ACTIONS_RUNNER_HOOK_JOB_STARTED で指す。
-# 所有者が対話で使うPCで、jobが論理CPUを使い切らないようにする。
-# Runner.Workerの優先度とCPUの割り当てを下げると、その後に起動されるstepのprocessが引き継ぐ。
-# 製品のworkflowは os.availableParallelism() で並列数を決めるので、割り当てた数へ追従する。
+# 所有者が対話で使うPCで、jobより所有者の操作を先に動かす。
+# Runner.Workerの優先度を下げると、その後に起動されるstepのprocessが引き継ぐ。CPUは割り当てない（全CPUを使う）。
+# 同時に動くjobの数は、hostのscalerが実負荷から決める（docs/feature-map/runner-capacity.md）。
 # OpenLogicoolのbuild/publishとCIは並行する。marker引数は互換用に受け取るが読まず、待たない。
 param(
   [int]$TargetProcessId = 0,
-  [int]$ReservedLogicalProcessors = 8,
   [string]$PriorityClass = 'BelowNormal',
   [string]$BusyMarkerPath = '',
   [int]$BusyMarkerMaxWaitSeconds = 300,
   [int]$BusyMarkerStaleMinutes = 15,
   [int]$BusyMarkerPollSeconds = 5
 )
-
-# Parallel instances: pinned CPU set per runner name (must equal FACTORY_RUNNERS in lib/factory/deployment-contract.mjs).
-$InstanceCpuSets = @{ 'factory-windows-fox-u' = '8-15'; 'factory-windows-fox-u2' = '16-23'; 'factory-windows-fox-u3' = '24-31' }
 
 $ErrorActionPreference = 'Stop'
 try {
@@ -29,27 +25,12 @@ try {
     if ($TargetProcessId -eq 0) { throw 'Runner.Worker was not found among the ancestors of this hook' }
   }
 
-  $logical = [int](Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
   $target = Get-Process -Id $TargetProcessId
-  $allowed = $logical
-  # 残りが少ない端末と、64を超える端末（processor groupが分かれる）では割り当てを変えない。
-  $set = $InstanceCpuSets[[string]$env:RUNNER_NAME]
-  if ($set -and $logical -le 64 -and $set -match '^(\d+)-(\d+)$' -and [int]$Matches[2] -lt $logical) {
-    $first = [int]$Matches[1]; $count = [int]$Matches[2] - $first + 1
-    $target.ProcessorAffinity = [IntPtr](((1L -shl $count) - 1L) -shl $first)
-    $allowed = $count
-  } elseif ($ReservedLogicalProcessors -gt 0 -and $logical -le 64 -and ($logical - $ReservedLogicalProcessors) -ge 4) {
-    $all = if ($logical -eq 64) { -1L } else { (1L -shl $logical) - 1L }
-    $reserved = (1L -shl $ReservedLogicalProcessors) - 1L
-    $target.ProcessorAffinity = [IntPtr]($all -band (-bnot $reserved))
-    $allowed = $logical - $ReservedLogicalProcessors
-  }
   $target.PriorityClass = $PriorityClass
   $target.Refresh()
-  $mask = '{0:X}' -f [int64]$target.ProcessorAffinity
-  Write-Host "factory-runner capacity: runner=$env:RUNNER_NAME $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass) logical=$allowed/$logical affinity=0x$mask"
+  Write-Host "factory-runner capacity: runner=$env:RUNNER_NAME $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass)"
 } catch {
-  # hookの失敗でjobを落とさない。絞れなかった事はjobの注記に残す。
+  # hookの失敗でjobを落とさない。下げられなかった事はjobの注記に残す。
   Write-Host "::warning title=factory-runner capacity::The job-started hook could not limit this job: $($_.Exception.Message)"
 }
 

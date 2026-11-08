@@ -1,5 +1,6 @@
 #Requires -Version 7.0
-# Elevated, Owner-approved step on Fox: add the pinned parallel runner instances under the EXISTING dedicated task.
+# Elevated, Owner-approved step on Fox: register the runner pool and install the load-driven scaler under the EXISTING
+# dedicated task.
 # Contract: docs/feature-map/runner-capacity.md. The operator dot-sources the admin API broker (Invoke-Sec002AdminApi).
 # Never resets the factory-runner password: an admin reset destroys the user DPAPI key that protects the
 # registered instance's .credentials_rsaparams and invalidates the task credential.
@@ -9,12 +10,20 @@ $ErrorActionPreference = 'Stop'
 $tools = 'C:\ProgramData\dotagents\factory-tools'
 $taskName = 'dotagents-factory-runner-dedicated'
 $existingRoot = 'C:\actions-runner-dotagents-u'
-$newRoots = [ordered]@{ 'factory-windows-fox-u2' = 'C:\actions-runner-dotagents-u2'; 'factory-windows-fox-u3' = 'C:\actions-runner-dotagents-u3' }
+$newRoots = [ordered]@{
+  'factory-windows-fox-u2' = 'C:\actions-runner-dotagents-u2'; 'factory-windows-fox-u3' = 'C:\actions-runner-dotagents-u3'
+  'factory-windows-fox-u4' = 'C:\actions-runner-dotagents-u4'; 'factory-windows-fox-u5' = 'C:\actions-runner-dotagents-u5'
+  'factory-windows-fox-u6' = 'C:\actions-runner-dotagents-u6'; 'factory-windows-fox-u7' = 'C:\actions-runner-dotagents-u7'
+  'factory-windows-fox-u8' = 'C:\actions-runner-dotagents-u8'
+}
 $names = @('factory-windows-fox-u') + @($newRoots.Keys)
 $files = [ordered]@{
   "$tools\native-task-entry.ps1" = 'windows-factory-runner-task-entry.ps1'
   "$tools\run-dedicated.ps1" = 'windows-factory-runner-run.ps1'
   'C:\ProgramData\dotagents\factory-runner\job-started.ps1' = 'windows-factory-runner-job-started.ps1'
+  "$tools\runner-scaler.mjs" = 'runner-scaler.mjs'
+  # Staged output of bin/factory-runner-scaler-config.mjs windows-native C:\Users\factory-runner\runner-scaler.log
+  "$tools\runner-scaler.json" = 'runner-scaler.json'
 }
 # Runner layout copied from the registered root; identity, credentials, logs and work stay behind.
 $layout = @('bin','externals','config.cmd','run.cmd','run-helper.cmd.template','run-helper.sh.template','.path','.env')
@@ -94,17 +103,20 @@ try {
   }
 } finally { $token = $null; $server.Dispose() }
 
-# 5. Readback: every instance online with exactly the factory + windows-native custom labels.
-$online = $null
+# 5. Readback: every pool instance registered with exactly the factory + windows-native custom labels; the scaler
+#    keeps 1..pool online, so at least one must be online.
+$pool = $null; $online = @()
 for ($i = 0; $i -lt 24; $i++) {
-  $online = @(Invoke-Sec002AdminApi -Arguments @('api','orgs/kitepon/actions/runners','--jq','[.runners[]|{name,status,labels:[.labels[]|select(.type=="custom")|.name]}]') | ConvertFrom-Json |
-    Where-Object { $_.name -in $names -and $_.status -eq 'online' -and (($_.labels | Sort-Object) -join ',') -eq 'factory,windows-native' })
-  if ($online.Count -eq $names.Count) { break }
+  $pool = @(Invoke-Sec002AdminApi -Arguments @('api','orgs/kitepon/actions/runners','--jq','[.runners[]|{name,status,labels:[.labels[]|select(.type=="custom")|.name]}]') | ConvertFrom-Json |
+    Where-Object { $_.name -in $names -and (($_.labels | Sort-Object) -join ',') -eq 'factory,windows-native' })
+  $online = @($pool | Where-Object status -eq 'online')
+  if ($pool.Count -eq $names.Count -and $online.Count) { break }
   Start-Sleep -Seconds 5
 }
 [ordered]@{
   at = [DateTimeOffset]::Now.ToString('o'); approval = $ApprovalId; registration = $results
-  online = @($online | ForEach-Object name); files = @($files.Keys | ForEach-Object { [ordered]@{ path = $_; sha256 = (Get-Sha $_) } })
+  registered = @($pool | ForEach-Object name); online = @($online | ForEach-Object name)
+  files = @($files.Keys | ForEach-Object { [ordered]@{ path = $_; sha256 = (Get-Sha $_) } })
   password_reset = $false
 } | ConvertTo-Json -Depth 4 -Compress
-if ($online.Count -ne $names.Count) { exit 1 }
+if ($pool.Count -ne $names.Count -or !$online.Count) { exit 1 }

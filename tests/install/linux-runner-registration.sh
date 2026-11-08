@@ -58,7 +58,7 @@ sudo() { printf 'sudo %s\n' "$*" >>"$fixture/server-calls"; }
 dedicated_runner_profile() {
   printf '{"mode":"dedicated","user":"factory-runner","instances":[{"name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service"},{"name":"factory-linux-rabbit-u2","service":"actions.runner.kitepon.factory-linux-rabbit-u2.service"}]}\n'
 }
-verify_org_runner_online() { printf 'verify %s\n' "$*" >>"$fixture/dedicated-calls"; }
+verify_any_org_runner_online() { printf 'verify-any %s\n' "$*" >>"$fixture/dedicated-calls"; }
 id() { printf '%s\n' "${fixture_groups:-factory-runner}"; }
 systemctl() {
   printf 'systemctl %s\n' "$*" >>"$fixture/dedicated-calls"
@@ -78,8 +78,8 @@ systemctl() {
   unset ACTIONS_RUNNER_ROOT ACTIONS_RUNNER_NAME DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER
   ensure_github_actions_runner
 )
-grep -Fq 'verify factory-linux-rabbit-u linux-workstation' "$fixture/dedicated-calls"
-grep -Fq 'verify factory-linux-rabbit-u2 linux-workstation' "$fixture/dedicated-calls"
+# A scaled pool needs one online member, not all (docs/feature-map/runner-capacity.md).
+grep -Fxq 'verify-any linux-workstation factory-linux-rabbit-u factory-linux-rabbit-u2' "$fixture/dedicated-calls"
 if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_stopped_service=factory-linux-rabbit-u2.service ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
   echo 'FAIL: 停止中の追加instanceを許容した' >&2; exit 1
 fi

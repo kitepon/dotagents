@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { DEDICATED_INSTANCES, parseDedicatedRunnerProfile, readRunnerProfile } from '../../lib/factory/runner-profile.mjs';
+import { DEDICATED_INSTANCES, POOL_INSTANCES, SCALER_SERVICE, parseDedicatedRunnerProfile, readRunnerProfile } from '../../lib/factory/runner-profile.mjs';
 
 const value = {
   schema: 'dotagents.runner-profile.v1', mode: 'dedicated', state: 'active',
@@ -15,21 +15,28 @@ const trusted = { isFile: true, uid: 0, mode: 0o100644 };
 
 const first = { name: value.name, service: value.service, root: value.root };
 const normalized = (instances) => ({ mode: 'dedicated', user: 'factory-runner', label: 'linux-workstation', state: 'active', instances });
-const v2 = { schema: 'dotagents.runner-profile.v2', mode: 'dedicated', state: 'active', user: 'factory-runner', label: 'linux-workstation', instances: DEDICATED_INSTANCES };
 
 test('root-owned active dedicated profile preserves the approved identity', () => {
   assert.deepEqual(parseDedicatedRunnerProfile(JSON.stringify(value), trusted), normalized([first]));
 });
 
-test('v2 profile lists exactly the contract instances in order', () => {
-  assert.equal(DEDICATED_INSTANCES.length, 2);
+test('v2 profile lists a prefix of the pool with per-instance units (2026-11-08 fixed layout)', () => {
+  const v2 = { schema: 'dotagents.runner-profile.v2', mode: 'dedicated', state: 'active', user: 'factory-runner', label: 'linux-workstation', instances: DEDICATED_INSTANCES.slice(0, 2) };
+  assert.equal(DEDICATED_INSTANCES.length, 5);
   assert.deepEqual(DEDICATED_INSTANCES[0], first);
-  assert.deepEqual(parseDedicatedRunnerProfile(JSON.stringify(v2), trusted), normalized(DEDICATED_INSTANCES.map((item) => ({ ...item }))));
+  assert.deepEqual(parseDedicatedRunnerProfile(JSON.stringify(v2), trusted), normalized(DEDICATED_INSTANCES.slice(0, 2).map((item) => ({ ...item }))));
   const foreign = { ...DEDICATED_INSTANCES[1], service: 'ssh.service' };
-  for (const instances of [[first], [...DEDICATED_INSTANCES].reverse(), [first, foreign], [...DEDICATED_INSTANCES, first]]) {
+  for (const instances of [[], [DEDICATED_INSTANCES[1]], [first, foreign], [...DEDICATED_INSTANCES, first]]) {
     assert.throws(() => parseDedicatedRunnerProfile(JSON.stringify({ ...v2, instances }), trusted), /instances/);
   }
-  assert.throws(() => parseDedicatedRunnerProfile(JSON.stringify({ ...v2, schema: 'dotagents.runner-profile.v3' }), trusted), /schema/);
+  assert.throws(() => parseDedicatedRunnerProfile(JSON.stringify({ ...v2, schema: 'dotagents.runner-profile.v4' }), trusted), /schema/);
+});
+
+test('v3 profile is the whole pool under the scaler unit', () => {
+  const v3 = { schema: 'dotagents.runner-profile.v3', mode: 'dedicated', state: 'active', user: 'factory-runner', label: 'linux-workstation', service: SCALER_SERVICE, instances: POOL_INSTANCES };
+  assert.deepEqual(parseDedicatedRunnerProfile(JSON.stringify(v3), trusted), normalized(POOL_INSTANCES.map((item) => ({ ...item, service: SCALER_SERVICE }))));
+  assert.throws(() => parseDedicatedRunnerProfile(JSON.stringify({ ...v3, service: 'ssh.service' }), trusted), /service/);
+  assert.throws(() => parseDedicatedRunnerProfile(JSON.stringify({ ...v3, instances: POOL_INSTANCES.slice(0, 2) }), trusted), /instances/);
 });
 
 test('untrusted file ownership, writable permissions and symlinks fail closed', () => {

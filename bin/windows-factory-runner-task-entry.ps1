@@ -1,8 +1,8 @@
 #Requires -Version 7.0
 # Entry of the existing task \dotagents-factory-runner-dedicated (factory-runner, Password, Limited).
 # Host copy: C:\ProgramData\dotagents\factory-tools\native-task-entry.ps1. Contract: docs/feature-map/runner-capacity.md.
-# Starts every pinned instance that is registered. A root without .runner is registered only when the elevated
-# instances script offers the registration pipe; the token goes to config.cmd over stdin and is never written.
+# Registers pool roots without .runner only when the elevated instances script offers the registration pipe (the token
+# goes to config.cmd over stdin and is never written), then runs the load-driven scaler, which starts and stops listeners.
 param([ValidateSet('Runner')][string]$Target = 'Runner')
 $ErrorActionPreference = 'Stop'
 $tools = 'C:\ProgramData\dotagents\factory-tools'
@@ -11,16 +11,21 @@ $Instances = [ordered]@{
   'factory-windows-fox-u'  = 'C:\actions-runner-dotagents-u'
   'factory-windows-fox-u2' = 'C:\actions-runner-dotagents-u2'
   'factory-windows-fox-u3' = 'C:\actions-runner-dotagents-u3'
+  'factory-windows-fox-u4' = 'C:\actions-runner-dotagents-u4'
+  'factory-windows-fox-u5' = 'C:\actions-runner-dotagents-u5'
+  'factory-windows-fox-u6' = 'C:\actions-runner-dotagents-u6'
+  'factory-windows-fox-u7' = 'C:\actions-runner-dotagents-u7'
+  'factory-windows-fox-u8' = 'C:\actions-runner-dotagents-u8'
 }
 
-function New-InstanceStart([string]$Name, [string]$Root, [switch]$Register) {
-  $start = [Diagnostics.ProcessStartInfo]::new('C:\Program Files\PowerShell\7\pwsh.exe')
+function New-InstanceStart([string]$Name, [string]$Root, [switch]$Register, [string]$File = 'C:\Program Files\PowerShell\7\pwsh.exe', [string[]]$Arguments = @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',"$tools\run-dedicated.ps1",'-Root',$Root,'-Name',$Name)) {
+  $start = [Diagnostics.ProcessStartInfo]::new($File)
   $start.UseShellExecute = $false; $start.WorkingDirectory = $Root
   $start.Environment.Clear()
   $profile = 'C:\Users\factory-runner'
   $allowed = @{SystemRoot='C:\Windows';WINDIR='C:\Windows';SystemDrive='C:';ComSpec='C:\Windows\System32\cmd.exe';PATH=[IO.File]::ReadAllText($Root+'\.path');USERPROFILE=$profile;HOME=$profile;APPDATA=$profile+'\AppData\Roaming';LOCALAPPDATA=$profile+'\AppData\Local';TEMP=$profile+'\AppData\Local\Temp';TMP=$profile+'\AppData\Local\Temp';USERNAME='factory-runner';USERDOMAIN=$env:COMPUTERNAME;COMPUTERNAME=$env:COMPUTERNAME;ProgramData='C:\ProgramData';ProgramFiles='C:\Program Files';ProgramW6432='C:\Program Files';'ProgramFiles(x86)'='C:\Program Files (x86)';CommonProgramFiles='C:\Program Files\Common Files';'CommonProgramFiles(x86)'='C:\Program Files (x86)\Common Files';OS='Windows_NT';PATHEXT='.COM;.EXE;.BAT;.CMD';NUMBER_OF_PROCESSORS=[string][Environment]::ProcessorCount}
   foreach ($e in $allowed.GetEnumerator()) { $start.Environment[$e.Key] = $e.Value }
-  foreach ($arg in @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',"$tools\run-dedicated.ps1",'-Root',$Root,'-Name',$Name)) { $start.ArgumentList.Add($arg) }
+  foreach ($arg in $Arguments) { $start.ArgumentList.Add($arg) }
   if ($Register) {
     $start.ArgumentList.Add('-Register')
     $start.RedirectStandardInput = $true; $start.RedirectStandardOutput = $true; $start.RedirectStandardError = $true
@@ -54,10 +59,12 @@ if ($pending.Count) {
   }
 }
 
-$children = @(foreach ($item in $Instances.GetEnumerator()) {
-  if (Test-Path -LiteralPath (Join-Path $item.Value '.runner')) { [Diagnostics.Process]::Start((New-InstanceStart $item.Key $item.Value)) }
-})
-if (!$children.Count) { exit 1 }
-$code = 0
-foreach ($child in $children) { $child.WaitForExit(); if ($child.ExitCode -ne 0) { $code = $child.ExitCode } }
-exit $code
+# The scaler keeps 1..pool listeners running from measured load (docs/feature-map/runner-capacity.md). Listeners outlive
+# a scaler exit and are adopted by the next one, so it is simply started again (like Restart=always on Linux).
+$first = @($Instances.GetEnumerator())[0]
+if (!(Test-Path -LiteralPath (Join-Path $first.Value '.runner'))) { exit 1 }
+while ($true) {
+  $scaler = [Diagnostics.Process]::Start((New-InstanceStart $first.Key $first.Value -File 'C:\Program Files\nodejs\node.exe' -Arguments @("$tools\runner-scaler.mjs", "$tools\runner-scaler.json")))
+  $scaler.WaitForExit()
+  Start-Sleep -Seconds 30
+}

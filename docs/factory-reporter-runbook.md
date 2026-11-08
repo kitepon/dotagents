@@ -176,7 +176,7 @@ setupは専用serviceの実利用者・NoNewPrivileges・稼働と公開runner�
 WindowsのrunnerはOpenLogicoolのbuild/test/publishと並行して動かす。
 `windows-factory-runner-job-started-dedicated.ps1`を
 `C:\ProgramData\dotagents\factory-runner\job-started-dedicated.ps1`として設置し、
-同じディレクトリの`job-started.ps1`でRunner.Workerの優先度とCPU割当だけを調整する。
+同じディレクトリの`job-started.ps1`でRunner.Workerの優先度だけを調整する（CPU割当は無い）。
 両hookともbuild.lockを読まず、待たず、作成・変更・削除しない。
 過去のmarker引数・cached環境変数が残っていても無視する。
 runnerの`.env`から`FACTORY_RUNNER_BUSY_MARKER`を取り除く。
