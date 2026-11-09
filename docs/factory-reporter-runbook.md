@@ -190,5 +190,5 @@ CIと製品の直列化、全比較完了待ち、製品間の窓待ちは置か
 - client送信停止は`reporting.enabled=false`。既存outboxを保持する。
 - credential漏洩はServerManager側で対象credentialをrevokeし、host側fileを置換する。
 - scan非0はenqueueしない。reporter非0はstdoutのtyped codeに従い、acceptedでないoutboxを保持する。
-- 製品CLIの応答が上限（既定20秒）を超えた時は、そのcheckを`unverified`／`cli_timeout`で残す。出力を読めていないので`fail`にせず、製品側の契約違反（`native_schema_invalid`など）とも区別する。npm CLIの版を読む呼出しが時間切れした時は、PATH上の別の導入へ読み替えない。
+- 製品CLIの応答が上限（既定60秒）を超えた時は、そのcheckを`unverified`／`cli_timeout`で残す。出力を読めていないので`fail`にせず、製品側の契約違反（`native_schema_invalid`など）とも区別する。npm CLIの版を読む呼出しが時間切れした時は、PATH上の別の導入へ読み替えない。
 - server-side停止・migration・feature flag・credential lifecycle・BugHub復旧はServerManagerの正本に従う。
