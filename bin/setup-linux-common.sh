@@ -304,12 +304,14 @@ ensure_main_server_ssh() {
   [ "$HOST_PROFILE" = linux ] || return 0
   local ssh_dir="$HOME/.ssh" key="$HOME/.ssh/id_ed25519" public_key
   install -d -m 700 "$ssh_dir"
-  if [ ! -s "$key" ] || [ ! -s "$key.pub" ]; then
-    echo 'INFO: rabbit用のEd25519 SSH keyを一撃入口内で生成します'
-    ssh-keygen -q -t ed25519 -N '' -C "${USER}@rabbit" -f "$key"
-  fi
+  # 既に通る経路（1Passwordから鍵を受けるagentを含む）はそのまま受け入れ、鍵fileを作らない・要求しない。
   if ssh -o BatchMode=yes -o ConnectTimeout=5 "$MAIN_SERVER_SSH_TARGET" true 2>/dev/null; then
     return 0
+  fi
+  # 1Passwordは任意。公開鍵が無い時だけ従来どおり鍵fileを作り、公開鍵だけ（agent保持）はそのまま使う。
+  if [ ! -s "$key.pub" ]; then
+    echo 'INFO: rabbit用のEd25519 SSH keyを一撃入口内で生成します'
+    ssh-keygen -q -t ed25519 -N '' -C "${USER}@rabbit" -f "$key"
   fi
   [ -t 0 ] && [ -t 1 ] || die 'main-serverへrabbitの公開鍵を登録する対話作業が必要'
   public_key="$(<"$key.pub")"
@@ -328,28 +330,35 @@ ensure_main_server_reverse_ssh() {
   ensure_main_server_ssh
 
   local ssh_dir="$HOME/.ssh" authorized_keys authorized_tmp
-  local public_key key_type key_blob
+  local public_key identity key_type key_blob
   local host_key_type host_key_blob
   public_key="$(ssh "$MAIN_SERVER_SSH_TARGET" 'bash -s' <<'REMOTE'
 set -euo pipefail
 ssh_dir="$HOME/.ssh"
 key="$ssh_dir/id_ed25519_rabbit"
 install -d -m 700 "$ssh_dir"
-if [ -e "$key" ] || [ -e "$key.pub" ]; then
-  [ -s "$key" ] && [ -s "$key.pub" ] \
-    || { echo 'rabbit専用SSH keyが不完全です' >&2; exit 1; }
-else
+# 1Passwordは任意。どちらも無い時だけ従来どおり鍵の組を作る。公開鍵だけならagentが秘密鍵を持つ形としてIdentityFileに公開鍵を指す。
+if [ ! -e "$key" ] && [ ! -e "$key.pub" ]; then
   ssh-keygen -q -t ed25519 -N '' -C 'main-server-to-rabbit' -f "$key"
 fi
-chmod 600 "$key"
+[ -s "$key.pub" ] || { echo 'rabbit専用SSH keyが不完全です' >&2; exit 1; }
 chmod 644 "$key.pub"
-derived="$(ssh-keygen -y -f "$key" | awk '{print $1 " " $2}')"
-recorded="$(awk '{print $1 " " $2}' "$key.pub")"
-[ "$derived" = "$recorded" ] || { echo 'rabbit専用SSH key pairが不一致です' >&2; exit 1; }
+if [ -e "$key" ]; then
+  chmod 600 "$key"
+  derived="$(ssh-keygen -y -f "$key" | awk '{print $1 " " $2}')"
+  recorded="$(awk '{print $1 " " $2}' "$key.pub")"
+  [ "$derived" = "$recorded" ] || { echo 'rabbit専用SSH key pairが不一致です' >&2; exit 1; }
+  identity='~/.ssh/id_ed25519_rabbit'
+else
+  identity='~/.ssh/id_ed25519_rabbit.pub'
+fi
+printf '%s ' "$identity"
 cat "$key.pub"
 REMOTE
 )" || die 'main-serverでrabbit専用SSH keyを準備できない'
-  read -r key_type key_blob _ <<<"$public_key"
+  read -r identity key_type key_blob _ <<<"$public_key"
+  # shellcheck disable=SC2088 # remoteのssh_configへ書くliteralの~。
+  case "$identity" in '~/.ssh/id_ed25519_rabbit' | '~/.ssh/id_ed25519_rabbit.pub') ;; *) die 'main-serverのrabbit専用鍵の指定が不正' ;; esac
   [ "$key_type" = ssh-ed25519 ] && [[ "$key_blob" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] \
     || die 'main-serverのrabbit専用公開鍵が不正'
 
@@ -371,13 +380,14 @@ REMOTE
   read -r host_key_type host_key_blob _ </etc/ssh/ssh_host_ed25519_key.pub
   [ "$host_key_type" = ssh-ed25519 ] && [[ "$host_key_blob" =~ ^[A-Za-z0-9+/]+={0,2}$ ]] \
     || die 'rabbitのSSH host公開鍵が不正'
-  # 値は直前の厳格なIPv4／base64検証を通した単語だけをremote引数へ渡す。
+  # 値は直前の厳格なIPv4／base64／固定path検証を通した単語だけをremote引数へ渡す。
   # shellcheck disable=SC2029
   ssh "$MAIN_SERVER_SSH_TARGET" \
-    "bash -s -- '$RABBIT_SSH_HOST' '$host_key_blob'" <<'REMOTE'
+    "bash -s -- '$RABBIT_SSH_HOST' '$host_key_blob' '$identity'" <<'REMOTE'
 set -euo pipefail
 rabbit_host="$1"
 host_key_blob="$2"
+identity="$3"
 ssh_dir="$HOME/.ssh"
 config="$ssh_dir/config"
 known_hosts="$ssh_dir/known_hosts"
@@ -398,7 +408,7 @@ awk '
   printf 'Host rabbit %s\n' "$rabbit_host"
   printf '  HostName %s\n' "$rabbit_host"
   printf '%s\n' '  User kite'
-  printf '%s\n' '  IdentityFile ~/.ssh/id_ed25519_rabbit'
+  printf '  IdentityFile %s\n' "$identity"
   printf '%s\n' '  IdentitiesOnly yes'
   printf '%s\n' '# dotagents-rabbit end'
 } >>"$config_tmp"

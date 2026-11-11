@@ -361,16 +361,15 @@ function Assert-MainServerDedicatedKeyAccepted([string]$IdentityFile, [string]$P
 }
 
 function Get-MainServerKeyMode([string]$PrivateKey, [string]$PublicKeyPath) {
-  # 鍵は作らない。秘密鍵をディスクに置かない方針（全credentialを1Passwordに置く）に合わせ、置かれた形だけを受け付ける。
+  # 1Passwordは任意。公開鍵だけならagent（1Password SSH agent）が秘密鍵を持つ形とし、どちらも無い時だけ従来どおり組を作る。
   $hasPrivate = Test-Path -LiteralPath $PrivateKey -PathType Leaf
   $hasPublic = Test-Path -LiteralPath $PublicKeyPath -PathType Leaf
   if ($hasPrivate -and $hasPublic) { return 'file' }
   if ($hasPublic) { return 'agent' }
   if ($hasPrivate) { throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half' }
-  Write-Host '[windows-native-factory] main-server-ssh: main-server用の専用鍵がありません。このsetupは鍵を作りません。'
-  Write-Host '[windows-native-factory]   1PasswordでSSH鍵（Ed25519）を作り、1Password SSH agentで使えるようにしてください。'
-  Write-Host "[windows-native-factory]   公開鍵を $PublicKeyPath に保存し、main-serverへの登録をSSH整備の担当へ依頼してから、このsetupをもう一度実行してください。"
-  throw "The main-server SSH key is missing; create it in 1Password and save only the public key at $PublicKeyPath"
+  & $GitSshKeygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $PrivateKey | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to generate the permanent main-server SSH key' }
+  return 'file'
 }
 
 function Assert-MainServerAgentOffersKey([string]$PublicKey) {
