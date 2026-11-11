@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { setupTypeSafe } from '../../lib/factory/typesafe-setup.mjs';
-import { loadTypeSafeKey, serverServiceAccountPath, TYPESAFE_OP_REFERENCE } from '../../lib/factory/typesafe-credentials.mjs';
+import { loadTypeSafeKey, serverServiceAccountPath, typeSafeKeyPath } from '../../lib/factory/typesafe-credentials.mjs';
 
 const secret = '試験専用の秘密';
 const installed = [{ name: 'typesafe-ai', scope: 'global', source: 'typesafe-ai/skills', agents: ['Claude Code', 'Codex', 'Cursor', 'Grok Build'] }];
@@ -63,26 +63,74 @@ async function temporaryHome(t) {
   return home;
 }
 
-test('キーは1Passwordの参照からだけ読み、端末にfileを作らない', async (t) => {
+test('未配布端末はSSHで受け取り、次回は保存済みキーを使う', async (t) => {
   const home = await temporaryHome(t);
   const calls = [];
-  const execute = async (command, args, options) => {
-    calls.push([command, args, options.env.OP_SERVICE_ACCOUNT_TOKEN]);
-    return { ok: true, stdout: secret };
+  const execute = async (...args) => {
+    calls.push(args);
+    return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
   };
-  for (const platform of ['linux', 'darwin', 'win32']) {
-    assert.equal(await loadTypeSafeKey({ home, env: {}, execute, platform }), secret);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute, platform: 'linux' }), secret);
+  assert.deepEqual(calls[0].slice(0, 2), ['ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
+    'kite@192.168.1.2', 'cat .config/dotagents/credentials/typesafe/api.env']]);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute }), secret);
+  assert.equal(calls.length, 1);
+  if (process.platform !== 'win32') {
+    assert.equal((await stat(typeSafeKeyPath(home))).mode & 0o777, 0o600);
+    assert.equal((await stat(dirname(typeSafeKeyPath(home)))).mode & 0o777, 0o700);
   }
-  assert.deepEqual(calls.map(([command, args]) => [command, args]),
-    Array(3).fill(['op', ['read', '--no-newline', TYPESAFE_OP_REFERENCE]]));
-  assert.match(TYPESAFE_OP_REFERENCE, /^op:\/\/[a-z0-9]{26}\/[a-z0-9]{26}\/credential$/u);
-  await assert.rejects(stat(join(home, '.config', 'dotagents', 'credentials', 'typesafe')), { code: 'ENOENT' });
 });
 
-test('環境変数は明示指定として優先し、1Passwordを呼ばない', async (t) => {
+test('環境変数は明示指定として優先し、不正な保存済みキーは転送で隠さない', async (t) => {
   const home = await temporaryHome(t);
-  assert.equal(await loadTypeSafeKey({ home, env: { TYPESAFE_API_KEY: ` ${secret} ` },
-    execute: async () => assert.fail('1Passwordを呼んだ') }), secret);
+  const execute = async () => assert.fail('転送へ進んだ');
+  assert.equal(await loadTypeSafeKey({ home, env: { TYPESAFE_API_KEY: secret }, execute }), secret);
+  await mkdir(dirname(typeSafeKeyPath(home)), { recursive: true });
+  await writeFile(typeSafeKeyPath(home), 'OTHER=value');
+  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute }), /TYPESAFE_CREDENTIAL_READ_FAILED/u);
+});
+
+test('転送失敗と不正な内容ではキーを保存しない', async (t) => {
+  const home = await temporaryHome(t);
+  for (const result of [{ ok: false, stdout: secret }, { ok: true, stdout: 'OTHER=value' }]) {
+    await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => result }), /TYPESAFE_CREDENTIAL_/u);
+    await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
+  }
+});
+
+test('Windowsではキー書込前に所有者ACLを適用し、失敗時は保存しない', async (t) => {
+  const home = await temporaryHome(t);
+  const calls = [];
+  const gitSsh = 'C:\\Program Files\\Git\\usr\\bin\\ssh.exe';
+  const execute = async (command, args, options) => {
+    calls.push(command);
+    if (command === gitSsh) return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
+    assert.equal(command, 'pwsh.exe');
+    assert.equal(options.env.DOTAGENTS_FACTORY_ACL_TARGET, dirname(typeSafeKeyPath(home)));
+    assert.match(args.at(-1), /SetAccessRuleProtection/u);
+    await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
+    return { ok: false };
+  };
+  await assert.rejects(loadTypeSafeKey({ home, env: { ProgramFiles: 'C:\\Program Files' }, execute, platform: 'win32' }), /TYPESAFE_CREDENTIAL_ACL_FAILED/u);
+  assert.deepEqual(calls, [gitSsh, 'pwsh.exe']);
+  await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
+});
+
+const reference = 'op://vault/item/credential';
+
+test('envかapi.envの値がop://参照の時だけ1Passwordから読み、平文はopを呼ばない', async (t) => {
+  const home = await temporaryHome(t);
+  const calls = [];
+  const execute = async (command, args) => { calls.push([command, args]); return { ok: true, stdout: `${secret}\n` }; };
+  for (const platform of ['linux', 'darwin', 'win32']) {
+    assert.equal(await loadTypeSafeKey({ home, env: { TYPESAFE_API_KEY: reference }, execute, platform }), secret);
+  }
+  await mkdir(dirname(typeSafeKeyPath(home)), { recursive: true });
+  await writeFile(typeSafeKeyPath(home), `TYPESAFE_API_KEY=${reference}\n`);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute, platform: 'darwin' }), secret);
+  assert.deepEqual(calls, Array(4).fill(['op', ['read', '--no-newline', reference]]));
+  await writeFile(typeSafeKeyPath(home), `TYPESAFE_API_KEY=${secret}\n`);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute: async () => assert.fail('opを呼んだ') }), secret);
 });
 
 test('main-serverの暗号化Service Accountはopの子の環境だけへ渡す', async (t) => {
@@ -99,22 +147,23 @@ test('main-serverの暗号化Service Accountはopの子の環境だけへ渡す'
     assert.equal(options.env.OP_SERVICE_ACCOUNT_TOKEN, 'sa-token');
     return { ok: true, stdout: secret };
   };
-  const env = {};
+  const env = { TYPESAFE_API_KEY: reference };
   assert.equal(await loadTypeSafeKey({ home, env, execute, platform: 'linux' }), secret);
   assert.deepEqual(calls, ['systemd-creds', 'op']);
   assert.equal(env.OP_SERVICE_ACCOUNT_TOKEN, undefined);
   // 既に渡されたService Accountは復号し直さない。
   calls.length = 0;
   const preset = async (command, args, options) => { calls.push(command); assert.equal(options.env.OP_SERVICE_ACCOUNT_TOKEN, 'given'); return { ok: true, stdout: secret }; };
-  assert.equal(await loadTypeSafeKey({ home, env: { OP_SERVICE_ACCOUNT_TOKEN: 'given' }, execute: preset, platform: 'linux' }), secret);
+  assert.equal(await loadTypeSafeKey({ home, env: { ...env, OP_SERVICE_ACCOUNT_TOKEN: 'given' }, execute: preset, platform: 'linux' }), secret);
   assert.deepEqual(calls, ['op']);
 });
 
-test('復号・読取の失敗と不正な値は名前で止まる', async (t) => {
+test('参照の復号・読取の失敗と不正な値は名前で止まる', async (t) => {
   const home = await temporaryHome(t);
-  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => ({ ok: false }), platform: 'darwin' }), /TYPESAFE_OP_READ_FAILED/u);
-  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => ({ ok: true, stdout: 'a b' }), platform: 'darwin' }), /TYPESAFE_CREDENTIAL_INVALID/u);
+  const env = { TYPESAFE_API_KEY: reference };
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: false }), platform: 'darwin' }), /TYPESAFE_OP_READ_FAILED/u);
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: true, stdout: 'a b' }), platform: 'darwin' }), /TYPESAFE_CREDENTIAL_INVALID/u);
   await mkdir(dirname(serverServiceAccountPath(home)), { recursive: true });
   await writeFile(serverServiceAccountPath(home), 'ciphertext');
-  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => ({ ok: false }), platform: 'linux' }), /TYPESAFE_SERVICE_ACCOUNT_DECRYPT_FAILED/u);
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: false }), platform: 'linux' }), /TYPESAFE_SERVICE_ACCOUNT_DECRYPT_FAILED/u);
 });
