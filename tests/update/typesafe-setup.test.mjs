@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { setupTypeSafe } from '../../lib/factory/typesafe-setup.mjs';
-import { loadTypeSafeKey, typeSafeKeyPath } from '../../lib/factory/typesafe-credentials.mjs';
+import { loadTypeSafeKey, serverServiceAccountPath, typeSafeKeyPath } from '../../lib/factory/typesafe-credentials.mjs';
 
 const secret = '試験専用の秘密';
 const installed = [{ name: 'typesafe-ai', scope: 'global', source: 'typesafe-ai/skills', agents: ['Claude Code', 'Codex', 'Cursor', 'Grok Build'] }];
@@ -114,4 +114,56 @@ test('Windowsではキー書込前に所有者ACLを適用し、失敗時は保�
   await assert.rejects(loadTypeSafeKey({ home, env: { ProgramFiles: 'C:\\Program Files' }, execute, platform: 'win32' }), /TYPESAFE_CREDENTIAL_ACL_FAILED/u);
   assert.deepEqual(calls, [gitSsh, 'pwsh.exe']);
   await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
+});
+
+const reference = 'op://vault/item/credential';
+
+test('envかapi.envの値がop://参照の時だけ1Passwordから読み、平文はopを呼ばない', async (t) => {
+  const home = await temporaryHome(t);
+  const calls = [];
+  const execute = async (command, args) => { calls.push([command, args]); return { ok: true, stdout: `${secret}\n` }; };
+  for (const platform of ['linux', 'darwin', 'win32']) {
+    assert.equal(await loadTypeSafeKey({ home, env: { TYPESAFE_API_KEY: reference }, execute, platform }), secret);
+  }
+  await mkdir(dirname(typeSafeKeyPath(home)), { recursive: true });
+  await writeFile(typeSafeKeyPath(home), `TYPESAFE_API_KEY=${reference}\n`);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute, platform: 'darwin' }), secret);
+  assert.deepEqual(calls, Array(4).fill(['op', ['read', '--no-newline', reference]]));
+  await writeFile(typeSafeKeyPath(home), `TYPESAFE_API_KEY=${secret}\n`);
+  assert.equal(await loadTypeSafeKey({ home, env: {}, execute: async () => assert.fail('opを呼んだ') }), secret);
+});
+
+test('main-serverの暗号化Service Accountはopの子の環境だけへ渡す', async (t) => {
+  const home = await temporaryHome(t);
+  await mkdir(dirname(serverServiceAccountPath(home)), { recursive: true });
+  await writeFile(serverServiceAccountPath(home), 'ciphertext');
+  const calls = [];
+  const execute = async (command, args, options) => {
+    calls.push(command);
+    if (command === 'systemd-creds') {
+      assert.deepEqual(args, ['--user', '--refuse-null', '--name=op-service-account-token', 'decrypt', serverServiceAccountPath(home), '-']);
+      return { ok: true, stdout: 'sa-token\n' };
+    }
+    assert.equal(options.env.OP_SERVICE_ACCOUNT_TOKEN, 'sa-token');
+    return { ok: true, stdout: secret };
+  };
+  const env = { TYPESAFE_API_KEY: reference };
+  assert.equal(await loadTypeSafeKey({ home, env, execute, platform: 'linux' }), secret);
+  assert.deepEqual(calls, ['systemd-creds', 'op']);
+  assert.equal(env.OP_SERVICE_ACCOUNT_TOKEN, undefined);
+  // 既に渡されたService Accountは復号し直さない。
+  calls.length = 0;
+  const preset = async (command, args, options) => { calls.push(command); assert.equal(options.env.OP_SERVICE_ACCOUNT_TOKEN, 'given'); return { ok: true, stdout: secret }; };
+  assert.equal(await loadTypeSafeKey({ home, env: { ...env, OP_SERVICE_ACCOUNT_TOKEN: 'given' }, execute: preset, platform: 'linux' }), secret);
+  assert.deepEqual(calls, ['op']);
+});
+
+test('参照の復号・読取の失敗と不正な値は名前で止まる', async (t) => {
+  const home = await temporaryHome(t);
+  const env = { TYPESAFE_API_KEY: reference };
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: false }), platform: 'darwin' }), /TYPESAFE_OP_READ_FAILED/u);
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: true, stdout: 'a b' }), platform: 'darwin' }), /TYPESAFE_CREDENTIAL_INVALID/u);
+  await mkdir(dirname(serverServiceAccountPath(home)), { recursive: true });
+  await writeFile(serverServiceAccountPath(home), 'ciphertext');
+  await assert.rejects(loadTypeSafeKey({ home, env, execute: async () => ({ ok: false }), platform: 'linux' }), /TYPESAFE_SERVICE_ACCOUNT_DECRYPT_FAILED/u);
 });

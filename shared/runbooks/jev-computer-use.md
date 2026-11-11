@@ -20,6 +20,6 @@
 
 ## 工場が渡すもの
 
-- TypeSafeキーは`~/.config/dotagents/credentials/typesafe/api.env`を、Nodeかuvの`--env-file`で読ませる。キー値を引数・ログ・Gitへ出さない。
+- TypeSafeキーは`~/.config/dotagents/credentials/typesafe/api.env`を、Nodeかuvの`--env-file`で読ませる。値を`op://`参照にした配置では`op run --env-file`で子の環境へだけ渡す。キー値を引数・ログ・Gitへ出さない。
 - ブラウザの文字生成に使う別モデルのキーは、上流の`.env.example`に従って製品の`.env`へ置く。
 - 対象hostへの導入や権限が未確認なら、その不足を確かめる。別の操作経路へ無言で切り替えない。
