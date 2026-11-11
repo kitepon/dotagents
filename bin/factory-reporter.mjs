@@ -15,6 +15,7 @@ import {
   acknowledgeRuntimeErrors,
   validateAcknowledgementBundle,
 } from '../lib/factory/runtime-errors.mjs';
+import { resolveSecret } from '../lib/factory/op-secret.mjs';
 
 const MAX_QUEUE_ITEMS = 128;
 const MAX_QUEUE_BYTES = 2 * 1024 * 1024;
@@ -189,7 +190,8 @@ async function credential(config) {
     throw new Error(`credential fileを読めません (${error.code || error.message})`);
   }
   if (!token) throw new Error('credential fileが空です');
-  return token;
+  // fileの中身が`op://`参照の時だけ1Passwordから読む（任意）。
+  return resolveSecret(token);
 }
 
 async function postOne(config, token, loc, entry) {

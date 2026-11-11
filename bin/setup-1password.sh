@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import getpass
 import json
 import os
 from pathlib import Path
@@ -45,7 +46,7 @@ def newer_python(which=shutil.which):
     return None
 
 
-def run(argv, *, input=None, timeout=120, sensitive=False):
+def run(argv, *, input=None, timeout=120, sensitive=False, env=None):
     # Windowsの公式npm/CLI launcherはPowerShell 7から呼ぶ。
     if sys.platform == "win32" and Path(argv[0]).suffix.lower() in {".ps1", ".cmd", ".bat"}:
         command = ("[Console]::InputEncoding=[Text.UTF8Encoding]::new($false);"
@@ -54,7 +55,7 @@ def run(argv, *, input=None, timeout=120, sensitive=False):
                    + " ".join("'" + value.replace("'", "''") + "'" for value in argv))
         encoded = base64.b64encode(command.encode("utf-16le")).decode()
         argv = ["pwsh", "-NoProfile", "-NonInteractive", "-EncodedCommand", encoded]
-    result = subprocess.run(argv, input=input, capture_output=True, text=True, encoding="utf-8", timeout=timeout, check=False)
+    result = subprocess.run(argv, input=input, capture_output=True, text=True, encoding="utf-8", timeout=timeout, check=False, env=env)
     if result.returncode:
         if sensitive:
             raise SetupError(f"command_failed: {Path(argv[0]).name}: exit {result.returncode}（秘密を含み得る出力は非表示）")
@@ -401,6 +402,63 @@ print(json.dumps({{"server_authenticated":True,"encrypted_credential":True,"prof
     return json.loads(output)
 
 
+# 無人実行の共通読取専用Service Account（保管庫「工場無人実行」だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
+UNATTENDED_SERVICE = "dotagents-1password-unattended"
+DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); '
+               'New-Item -ItemType Directory -Force -Path (Split-Path $env:DOTAGENTS_UNATTENDED_TOKEN_FILE) | Out-Null; '
+               'ConvertTo-SecureString $t -AsPlainText -Force | ConvertFrom-SecureString | '
+               'Set-Content -NoNewline -LiteralPath ($env:DOTAGENTS_UNATTENDED_TOKEN_FILE + ".tmp"); '
+               'Move-Item -Force -LiteralPath ($env:DOTAGENTS_UNATTENDED_TOKEN_FILE + ".tmp") -Destination $env:DOTAGENTS_UNATTENDED_TOKEN_FILE')
+DPAPI_READ = ('$ErrorActionPreference="Stop"; Get-Content -Raw -LiteralPath $env:DOTAGENTS_UNATTENDED_TOKEN_FILE'
+              ' | ConvertTo-SecureString | ConvertFrom-SecureString -AsPlainText')
+
+
+def unattended_path(profile):
+    if profile == "windows-native":
+        local = os.environ.get("LOCALAPPDATA") or str(Path.home() / "AppData" / "Local")
+        return Path(local) / "dotagents" / "credentials" / "1password" / "unattended.dpapi"
+    return Path.home() / ".config" / "dotagents" / "credentials" / "1password" / "unattended.cred"
+
+
+def store_unattended_token(profile, token):
+    # tokenはstdinだけで渡し、argv・平文fileへ載せない。保存前にService Accountとして通ることを確かめる。
+    if not token.startswith("ops_") or any(character.isspace() for character in token):
+        raise SetupError("token_invalid: Service Account tokenの形ではありません")
+    identity = json.loads(run([executable("op"), "whoami", "--format", "json"], sensitive=True,
+                              env={**os.environ, "OP_SERVICE_ACCOUNT_TOKEN": token}))
+    if identity.get("user_type") != "SERVICE_ACCOUNT":
+        raise SetupError("token_not_service_account: Service Account tokenではありません")
+    path = unattended_path(profile)
+    if profile == "mac":
+        account = os.environ.get("USER") or getpass.getuser()
+        run(["security", "-i"], input=f'add-generic-password -U -s {UNATTENDED_SERVICE} -a "{account}" -w "{token}"\n', sensitive=True)
+        stored = run(["security", "find-generic-password", "-s", UNATTENDED_SERVICE, "-a", account, "-w"], sensitive=True)
+        store = f"keychain:{UNATTENDED_SERVICE}"
+    elif profile == "windows-native":
+        dpapi_env = {**os.environ, "DOTAGENTS_UNATTENDED_TOKEN_FILE": str(path)}
+        run(["pwsh", "-NoProfile", "-NonInteractive", "-Command", DPAPI_WRITE], input=token, sensitive=True, env=dpapi_env)
+        stored = run(["pwsh", "-NoProfile", "-NonInteractive", "-Command", DPAPI_READ], sensitive=True, env=dpapi_env)
+        store = str(path)
+    else:
+        if path.is_symlink():
+            raise SetupError("credential_owned_elsewhere: symlinkは変更できません")
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        staging = path.with_name(path.name + ".tmp")
+        run(["systemd-creds", "--user", "--name=op-service-account-token", "encrypt", "-", str(staging)], input=token, sensitive=True)
+        os.chmod(staging, 0o600)
+        os.replace(staging, path)
+        stored = run(["systemd-creds", "--user", "--refuse-null", "--name=op-service-account-token", "decrypt", str(path), "-"],
+                     input="", sensitive=True)
+        store = str(path)
+    if stored.strip() != token:
+        raise SetupError("token_readback_mismatch: 保存したtokenを読み戻せません")
+    return {"stored": True, "store": store, "service_account": True}
+
+
+def read_token():
+    return (getpass.getpass("Service Account token: ") if sys.stdin.isatty() else sys.stdin.read()).strip()
+
+
 def main():
     parser = argparse.ArgumentParser(description="公式1Passwordを導入し、4ハーネスへ登録して疎通する")
     parser.add_argument("--profile", choices=("mac", "linux", "server", "windows-native"), required=True)
@@ -408,10 +466,16 @@ def main():
     mode.add_argument("--authenticate", action="store_true", help="公式MCPの本人認証と環境一覧を確認する（既定）")
     mode.add_argument("--configure-only", action="store_true", help="本人不在時に導入・登録だけ行い、認証待ちを返す")
     parser.add_argument("--server-host", help="指定したLinuxサーバーへ限定Service Accountの暗号化資格情報を接続する")
+    parser.add_argument("--store-unattended-token", action="store_true",
+                        help="無人実行の共通Service Account tokenを隠し入力かstdinから受け、OSの暗号化storeへ保存する")
     args = parser.parse_args()
     expected = {"mac": "darwin", "linux": "linux", "server": "linux", "windows-native": "win32"}
     if expected[args.profile] != sys.platform:
         raise SetupError("profile_platform_mismatch: profileと実OSが一致しません")
+    if args.store_unattended_token:
+        print(json.dumps({"schema": "dotagents.1password-unattended-token.v1", "profile": args.profile,
+                          **store_unattended_token(args.profile, read_token())}, ensure_ascii=False))
+        return 0
     install(args.profile)
     result = {"schema": "dotagents.1password-setup.v1", "profile": args.profile,
               "cli_version": run([executable("op"), "--version"]).strip()}

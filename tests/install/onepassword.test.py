@@ -178,6 +178,39 @@ class SetupTests(unittest.TestCase):
         self.assertTrue(all(secret not in " ".join(argv) for argv, _ in calls))
         self.assertEqual(calls[-1][1]["input"], secret)
 
+    def test_無人実行tokenはstdinだけで渡しService_Accountを確かめてから保存する(self):
+        secret = "ops_unit-test-token"
+        for profile in ("linux", "mac", "windows-native"):
+            calls = []
+
+            def official(argv, **kwargs):
+                calls.append((argv, kwargs))
+                if argv[1:2] == ["whoami"]:
+                    self.assertEqual(kwargs["env"]["OP_SERVICE_ACCOUNT_TOKEN"], secret)
+                    return '{"user_type":"SERVICE_ACCOUNT"}'
+                if "decrypt" in argv or "find-generic-password" in argv or argv[-1] == setup.DPAPI_READ:
+                    return secret + "\n"
+                return ""
+
+            with tempfile.TemporaryDirectory() as home, patch.dict(os.environ, {"HOME": home, "LOCALAPPDATA": home, "USER": "kite"}), \
+                    patch.object(setup, "executable", return_value="op"), patch.object(setup, "run", side_effect=official), \
+                    patch.object(setup.os, "replace"), patch.object(setup.os, "chmod"):
+                result = setup.store_unattended_token(profile, secret)
+            self.assertTrue(result["stored"])
+            self.assertEqual(calls[0][0][1], "whoami")
+            # macのsecurity -iはstdinでだけ値を受ける。どのargvにもtokenを載せない。
+            self.assertTrue(all(secret not in " ".join(argv) for argv, _ in calls), profile)
+            self.assertTrue(any(secret in (kwargs.get("input") or "") for _, kwargs in calls), profile)
+
+    def test_無人実行tokenは形とService_Accountでない物を保存しない(self):
+        with self.assertRaises(setup.SetupError):
+            setup.store_unattended_token("linux", "not a token")
+        with patch.object(setup, "executable", return_value="op"), \
+                patch.object(setup, "run", return_value='{"user_type":"HUMAN"}'):
+            with self.assertRaises(setup.SetupError) as error:
+                setup.store_unattended_token("linux", "ops_unit")
+        self.assertIn("token_not_service_account", str(error.exception))
+
     def test_秘密を扱うCLIの失敗出力をエラーへ含めない(self):
         secret = "unit-test-secret-output"
         completed = setup.subprocess.CompletedProcess(["op"], 1, secret, secret)

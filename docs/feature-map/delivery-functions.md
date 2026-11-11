@@ -9,7 +9,7 @@
 | CLI受付 | `bin/factory-reporter-v5.mjs:main` | parse→config→path→有効時endpoint→handler。例外は既top-level catchへ |
 | preview | 同`previewReport` | WIRE reader→identity→JSON。identity不一致をOFFでも拒否 |
 | ローカル受付 | 同`enqueueReport` | report読取後、OFFならACK/identityに進まずstatsを返す。ONだけidentity/ACK/enqueue、原本を上書きしない |
-| flushの起動と表示 | 同`flushReports` | OFFはstatsだけ。ONはstate→credential→lock→巡回→stats/JSON/診断/exit。最終statsはlock外のまま |
+| flushの起動と表示 | 同`flushReports` | OFFはstatsだけ。ONはstate→credential（fileの中身が`op://`参照なら`resolveSecret`で1Passwordから読む。任意）→lock→巡回→stats/JSON/診断/exit。最終statsはlock外のまま |
 | queue巡回 | 同`flushQueue` | lock内でexpire→entry→retry日時→postOne→処分/counter。途中例外は残りを成功扱いせず上位へ |
 | 一件配送とACK | 同`postOne`と既closure | 本文を変更していない。受理/分割/ACK/keep/dead/holdの状態は配送・保持の現状図を参照 |
 | reportの共通読取 | `lib/factory/contract.mjs:readValidatedReport` | private。file errorは元error、UTF8/JSONだけ既文言へ、validator errorは元のまま。元Buffer/reportを返す |
