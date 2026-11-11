@@ -63,8 +63,8 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
   assert.match(source, /\$GitSsh = .*Git\\usr\\bin\\ssh\.exe.*\$GitSshKeygen = .*function Ensure-WindowsPrerequisites.*\$GitSsh, \$GitSshKeygen.*Git\.Git/su);
   assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*Get-MainServerKeyMode.*'file'.*Set-OwnerOnlyAcl.*\$GitSshKeygen -y.*\$ssh = \$GitSsh.*\$identityFile = \$privateKey.*Assert-MainServerAgentOffersKey.*\$ssh = \$SystemSsh.*\$identityFile = \$publicKeyPath.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig -SshDirectory \$sshDirectory -IdentityFile \$identityFile -Ssh \$ssh.*Assert-MainServerDedicatedKeyAccepted -IdentityFile \$identityFile.*-UseAgent \(\$mode -eq 'agent'\).*Test-MainServerSsh -Ssh \$ssh.*three reconnects passed/su);
-  // 鍵は作らない。秘密鍵をディスクに置かない方針のため、公開鍵だけの形を1Password SSH agentとして受け付ける。
-  assert.doesNotMatch(source, /ssh-keygen\.exe'[\s\S]*& \$GitSshKeygen -q -t ed25519/u);
+  // 1Passwordは任意。公開鍵だけの形はagentとして受け、鍵が無い時だけ従来どおり組を作る。
+  assert.match(source, /function Get-MainServerKeyMode.*return 'agent'.*incomplete.*& \$GitSshKeygen -q -t ed25519 -N '' -C \$MainServerKeyComment -f \$PrivateKey.*return 'file'/su);
   assert.match(source, /\$SystemSsh = Join-Path \$env:SystemRoot 'System32\\OpenSSH\\ssh\.exe'.*\$SystemSshAdd = Join-Path \$env:SystemRoot 'System32\\OpenSSH\\ssh-add\.exe'/su);
   assert.match(source, /function Assert-MainServerAgentOffersKey.*& \$SystemSshAdd -L.*does not offer the main-server public key/su);
   assert.doesNotMatch(source, /ssh-keyscan/u);
@@ -134,19 +134,21 @@ if ($before -cne $after -or $after.Trim() -cne $MainServerHostKey) { throw '固�
   assert.equal(result.status, 0, result.stderr || result.stdout);
 });
 
-test('main-serverの鍵の形からmodeを選び、鍵が無い時は作らずに止まる', { skip: process.platform !== 'win32' }, async (t) => {
+test('main-serverの鍵の形からmodeを選び、鍵が無い時だけ従来どおり組を作る', { skip: process.platform !== 'win32' }, async (t) => {
   const source = await readFile(SETUP, 'utf8');
   const root = await mkdtemp(join(tmpdir(), 'dotagents-key-mode-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const body = source.slice(source.indexOf('function Get-MainServerKeyMode'), source.indexOf('function Assert-MainServerAgentOffersKey'));
   const script = `$ErrorActionPreference = 'Stop'
+$GitSshKeygen = Join-Path $env:ProgramFiles 'Git\\usr\\bin\\ssh-keygen.exe'
+$MainServerKeyComment = 'dotagents-key-mode-test'
 ${body}
 $private = Join-Path $env:DOTAGENTS_KEY_MODE_FIXTURE 'id_ed25519_main_server'
 $public = "$private.pub"
 function Mode { try { Get-MainServerKeyMode -PrivateKey $private -PublicKeyPath $public 6>$null } catch { 'throw:' + $_.Exception.Message } }
 $none = Mode
-if (Test-Path $private) { throw '秘密鍵を作った' }
-Set-Content -LiteralPath $public -Value 'ssh-ed25519 AAAA test'
+if (-not (Test-Path $private) -or -not (Test-Path $public)) { throw '鍵が無い時に組を作らない' }
+Remove-Item -LiteralPath $private
 $agent = Mode
 Set-Content -LiteralPath $private -Value 'x'
 $file = Mode
@@ -159,7 +161,7 @@ $half = Mode
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
   const [none, agent, file, half] = result.stdout.trim().split('|');
-  assert.match(none, /^throw:.*create it in 1Password/u);
+  assert.equal(none, 'file');
   assert.equal(agent, 'agent');
   assert.equal(file, 'file');
   assert.match(half, /^throw:.*incomplete/u);

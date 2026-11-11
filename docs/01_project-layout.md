@@ -101,7 +101,7 @@ LaunchAgent／cron／Task Scheduler、config、hook、credentialはhost別実装
 Windows nativeのrepoは`%USERPROFILE%\Developer`配下に置く。このPCの正規checkoutは`C:\Users\kite_\Developer\dotagents`であり、PowerShell 7とGit for Windowsのnative executableだけで配備する。
 Git for Windowsの`bash.exe`／`sh.exe`はWSLではない。Windows native入口はWSL distro、Docker Desktop、仮想化機能を作成・起動・検証せず、
 rabbit native Linuxの`/home/<user>/Developer/dotagents`とは別checkout・別HOME・別schedulerとして扱う。
-同入口は管理block `Host main-server 192.168.1.2`をWindows HOMEだけに作り、専用鍵`~/.ssh/id_ed25519_main_server`は作らない（秘密鍵と公開鍵の組か、1Password SSH agent用の公開鍵だけを受け付ける）。main-serverの固定ED25519 host keyを照合する。公開鍵のmain-serverへの登録・交換はこの入口では行わず、SSH整備の担当へ依頼する。入口は専用鍵だけを明示した接続で受け付けを確かめ、受け付けられない時は公開鍵の指紋を出して止まる。秘密鍵・Windows HOME・旧WSL HOMEは転送しない。aliasと`kite@192.168.1.2`直指定の双方が専用鍵へ解決されなければ受理しない。
+同入口は管理block `Host main-server 192.168.1.2`をWindows HOMEだけに作り、専用鍵`~/.ssh/id_ed25519_main_server`は秘密鍵と公開鍵の組か、1Password SSH agent用の公開鍵だけを受け付け、どちらも無い時だけ従来どおり組を作る（1Passwordは任意）。main-serverの固定ED25519 host keyを照合する。公開鍵のmain-serverへの登録・交換はこの入口では行わず、SSH整備の担当へ依頼する。入口は専用鍵だけを明示した接続で受け付けを確かめ、受け付けられない時は公開鍵の指紋を出して止まる。秘密鍵・Windows HOME・旧WSL HOMEは転送しない。aliasと`kite@192.168.1.2`直指定の双方が専用鍵へ解決されなければ受理しない。
 
 ### Skill の frontmatter
 

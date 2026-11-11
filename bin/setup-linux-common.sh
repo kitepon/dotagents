@@ -308,9 +308,11 @@ ensure_main_server_ssh() {
   if ssh -o BatchMode=yes -o ConnectTimeout=5 "$MAIN_SERVER_SSH_TARGET" true 2>/dev/null; then
     return 0
   fi
-  # 秘密鍵をディスクへ作らない（全credentialを1Passwordに置く方針）。
-  [ -s "$key.pub" ] \
-    || die "main-serverへの鍵がありません。1PasswordでEd25519鍵を作り、公開鍵だけを $key.pub に保存してから再実行してください（このsetupは鍵を作りません）"
+  # 1Passwordは任意。公開鍵が無い時だけ従来どおり鍵fileを作り、公開鍵だけ（agent保持）はそのまま使う。
+  if [ ! -s "$key.pub" ]; then
+    echo 'INFO: rabbit用のEd25519 SSH keyを一撃入口内で生成します'
+    ssh-keygen -q -t ed25519 -N '' -C "${USER}@rabbit" -f "$key"
+  fi
   [ -t 0 ] && [ -t 1 ] || die 'main-serverへrabbitの公開鍵を登録する対話作業が必要'
   public_key="$(<"$key.pub")"
   printf '%s\n' 'INFO: main-serverの /home/kite/.ssh/authorized_keys へ次の公開鍵を1行追加してください:'
@@ -335,9 +337,11 @@ set -euo pipefail
 ssh_dir="$HOME/.ssh"
 key="$ssh_dir/id_ed25519_rabbit"
 install -d -m 700 "$ssh_dir"
-# 鍵は作らない。公開鍵だけならagent（1Password）が秘密鍵を持つ形として、IdentityFileに公開鍵を指す。
-[ -s "$key.pub" ] \
-  || { echo "rabbit専用SSH keyの公開鍵がありません。1Passwordで作り、公開鍵だけを $key.pub に保存してください（このsetupは鍵を作りません）" >&2; exit 1; }
+# 1Passwordは任意。どちらも無い時だけ従来どおり鍵の組を作る。公開鍵だけならagentが秘密鍵を持つ形としてIdentityFileに公開鍵を指す。
+if [ ! -e "$key" ] && [ ! -e "$key.pub" ]; then
+  ssh-keygen -q -t ed25519 -N '' -C 'main-server-to-rabbit' -f "$key"
+fi
+[ -s "$key.pub" ] || { echo 'rabbit専用SSH keyが不完全です' >&2; exit 1; }
 chmod 644 "$key.pub"
 if [ -e "$key" ]; then
   chmod 600 "$key"

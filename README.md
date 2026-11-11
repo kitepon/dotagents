@@ -215,8 +215,8 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
   ```
   製品MCPの登録は各製品の公開setupが所有する。Grokの`compat.claude.mcps`は切らない。`apply-grok-config`は互換設定と工場hook、`apply-cursor-config`は工場hookだけを適用する。Cursorの`cli-config.json`は触らない
 - **人間用の窓（任意だが標準）**: Obsidian（`brew install --cask obsidian`。無料・md 直読み。vault 設定 `.obsidian/` は端末ローカル＝gitignore 済み）
-- **home-server ssh**: `kite@192.168.1.2`（固定IP）または`main-server`。Windows native入口は専用鍵`~/.ssh/id_ed25519_main_server`、固定済みserver ED25519指紋、`IdentitiesOnly yes`を管理し、直IPとaliasの両方へ適用する。鍵は2つの形を受け付ける。秘密鍵と公開鍵の組（パスフレーズなし、owner-only ACL、Git同梱ssh）か、公開鍵`.pub`だけを置いて秘密鍵を1Password SSH agentに持たせる形（System32 OpenSSHから使う。Git同梱sshはWindowsのagent pipeを使えない）。鍵が無い時は作らず、1Passwordで作って公開鍵を置くよう案内して止まる。main-serverへの公開鍵の登録はこの入口では行わず、SSH整備の担当へ依頼する。server側鍵行はagent／port／X11 forwardingを禁止する
-- **main-server → rabbit ssh**: `kite@192.168.1.5`または`rabbit`。rabbit一撃入口がUbuntu公式OpenSSH Server、鍵認証限定のsshd設定、`kite`専用passwordless sudoersをroot phaseで管理する。main-serverには専用鍵`~/.ssh/id_ed25519_rabbit`（秘密鍵との組か、1Password等のagentが秘密鍵を持つ公開鍵だけ。setupは鍵を作らない）と固定済みrabbit ED25519 host keyを配線し、rabbit側はagent／port／X11 forwardingを禁止した公開鍵行だけを受け入れる。alias／直IP接続と`sudo -n`の実火が成功しない限りfail closedにする
+- **home-server ssh**: `kite@192.168.1.2`（固定IP）または`main-server`。Windows native入口は専用鍵`~/.ssh/id_ed25519_main_server`、固定済みserver ED25519指紋、`IdentitiesOnly yes`を管理し、直IPとaliasの両方へ適用する。鍵は2つの形を受け付ける。秘密鍵と公開鍵の組（パスフレーズなし、owner-only ACL、Git同梱ssh）か、公開鍵`.pub`だけを置いて秘密鍵を1Password SSH agentに持たせる形（System32 OpenSSHから使う。Git同梱sshはWindowsのagent pipeを使えない）。1Passwordは任意で、鍵が無い時は従来どおり組を作る。main-serverへの公開鍵の登録はこの入口では行わず、SSH整備の担当へ依頼する。server側鍵行はagent／port／X11 forwardingを禁止する
+- **main-server → rabbit ssh**: `kite@192.168.1.5`または`rabbit`。rabbit一撃入口がUbuntu公式OpenSSH Server、鍵認証限定のsshd設定、`kite`専用passwordless sudoersをroot phaseで管理する。main-serverには専用鍵`~/.ssh/id_ed25519_rabbit`（秘密鍵との組か、1Password等のagentが秘密鍵を持つ公開鍵だけ。どちらも無い時は従来どおり組を作る）と固定済みrabbit ED25519 host keyを配線し、rabbit側はagent／port／X11 forwardingを禁止した公開鍵行だけを受け入れる。alias／直IP接続と`sudo -n`の実火が成功しない限りfail closedにする
 
 ### 1. clone（`Developer`配下へ集約。Windows nativeとPOSIXは別checkout）
 
