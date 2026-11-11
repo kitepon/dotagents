@@ -12,7 +12,7 @@
 | 閉鎖状態 | 同`closuresPath/readClosures/recordClosure` | XDG_STATE_HOME既定のharness-closures.json。欠測は空、期限内だけ返す。更新はharness/日時を検査しmkdir→直接write、排他/atomic/fsyncは追加されていない |
 | 候補選択 | 同`pickModel/roleRequest/pickRequest/ask` | 02全文とtaskを使いroleを一回、その役割のopen候補を一回Jevへ問い合わせる。Codex100%以上ならresetまで候補から除く |
 | API結果 | 同`ask` | 各requestは60秒AbortSignal。network/timeoutはJEV_UNREACHABLE、HTTPはJEV_HTTP、choice形/範囲不成立はJEV_INVALID_ANSWER。JSON parse例外は元のまま上位へ |
-| credential | `lib/factory/typesafe-credentials.mjs:loadTypeSafeKey` | env→private fileの順。不在時だけ既SSH転送→保護directory→exclusive file保存。転送/ACL失敗は停止、既fileは上書きしない。実行・承認を今回増やさない |
+| credential | `lib/factory/typesafe-credentials.mjs:loadTypeSafeKey` | 明示env→1Password参照`TYPESAFE_OP_REFERENCE`（保管庫・項目をIDで指す）を`op read`。Linuxで`OP_SERVICE_ACCOUNT_TOKEN`が無く`~/.config/dotagents/credentials/1password/main-server.cred`がある時だけ、systemd-credsで復号してopの子の環境へ渡す。端末にキーのfileを作らず、SSH転送もしない。復号失敗・op読取失敗（未認証・ロック中・権限なし）・不正値は名前付きで停止。無人の端末（rabbit/Mac/FOXの02:00）は、端末ごとの読取専用SAができるまでopを使えず失敗する |
 
 候補結果はtask/role/harness/model/effort/confidence/閉鎖/利用枠を返す。CLIが子をspawnしたり親モデルを変更したりはしない。role問い合わせだけ成功して候補問い合わせに失敗しても、選定完了JSONを返さない。自動別モデルfallback/retryはない。途中取消では外部APIが処理済みか不明な場合があり、照会結果や取消receiptの永続化は行わない。
 
