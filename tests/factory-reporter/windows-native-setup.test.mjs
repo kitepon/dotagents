@@ -62,17 +62,21 @@ test('Windows native一撃setupは工場展開・配線・fresh BugHub受理・�
   assert.match(source, /Microsoft\.PowerShell.*winget installation failed.*officialPowerShell @relayArguments/su);
   assert.match(source, /function Ensure-WindowsPrerequisites.*Git\.Git.*OpenJS\.NodeJS\.LTS.*GitHub\.cli.*Python\.Python\.3\.13.*astral-sh\.uv.*ezwinports\.make.*koalaman\.shellcheck.*BurntSushi\.ripgrep\.MSVC/su);
   assert.match(source, /\$GitSsh = .*Git\\usr\\bin\\ssh\.exe.*\$GitSshKeygen = .*function Ensure-WindowsPrerequisites.*\$GitSsh, \$GitSshKeygen.*Git\.Git/su);
-  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*\$GitSshKeygen.*Set-OwnerOnlyAcl.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig.*Assert-MainServerDedicatedKeyAccepted -PrivateKey \$privateKey.*three reconnects passed/su);
+  assert.match(source, /function Ensure-MainServerSsh.*id_ed25519_main_server.*Get-MainServerKeyMode.*'file'.*Set-OwnerOnlyAcl.*\$GitSshKeygen -y.*\$ssh = \$GitSsh.*\$identityFile = \$privateKey.*Assert-MainServerAgentOffersKey.*\$ssh = \$SystemSsh.*\$identityFile = \$publicKeyPath.*Ensure-MainServerKnownHost.*Ensure-MainServerSshConfig -SshDirectory \$sshDirectory -IdentityFile \$identityFile -Ssh \$ssh.*Assert-MainServerDedicatedKeyAccepted -IdentityFile \$identityFile.*-UseAgent \(\$mode -eq 'agent'\).*Test-MainServerSsh -Ssh \$ssh.*three reconnects passed/su);
+  // 鍵は作らない。秘密鍵をディスクに置かない方針のため、公開鍵だけの形を1Password SSH agentとして受け付ける。
+  assert.doesNotMatch(source, /ssh-keygen\.exe'[\s\S]*& \$GitSshKeygen -q -t ed25519/u);
+  assert.match(source, /\$SystemSsh = Join-Path \$env:SystemRoot 'System32\\OpenSSH\\ssh\.exe'.*\$SystemSshAdd = Join-Path \$env:SystemRoot 'System32\\OpenSSH\\ssh-add\.exe'/su);
+  assert.match(source, /function Assert-MainServerAgentOffersKey.*& \$SystemSshAdd -L.*does not offer the main-server public key/su);
   assert.doesNotMatch(source, /ssh-keyscan/u);
   assert.doesNotMatch(source, /& ssh(?:-keygen)? /u);
   assert.match(source, /MainServerHostKeyFingerprint = 'SHA256:TLhN\/5MaQ7MR2Y0E6c9G1ZQK23UfidDZlsdCjLVCOWs'.*function Ensure-MainServerKnownHost.*pinned host key readback/su);
-  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*\$managed`n`n.*\$GitSsh -G.*direct-IP/su);
-  assert.match(source, /function Invoke-MainServerDedicatedKeyProbe.*'-F', 'none', '-i', \$PrivateKey.*IdentitiesOnly=yes.*IdentityAgent=none.*StrictHostKeyChecking=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-key-ok/su);
+  assert.match(source, /function Ensure-MainServerSshConfig.*Host \$MainServerAlias \$MainServerHost.*HostName.*IdentityFile.*IdentitiesOnly yes.*StrictHostKeyChecking yes.*\$managed`n`n.*\$Ssh -G \$MainServerAlias.*\$Ssh -G \$MainServerHost.*direct-IP/su);
+  assert.match(source, /function Invoke-MainServerDedicatedKeyProbe.*if \(\$UseAgent\) \{ @\(\) \} else \{ @\('-o', 'IdentityAgent=none'\) \}.*'-F', 'none', '-i', \$IdentityFile.*IdentitiesOnly=yes'\) \+ \$agentOption.*StrictHostKeyChecking=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-key-ok.*& \$Ssh @arguments/su);
   assert.match(source, /function Get-MainServerSshFailureKind.*Host key verification failed.*'host-key'.*Permission denied.*'key-not-accepted'.*Connection timed out.*'unreachable'.*'unclassified'/su);
   assert.match(source, /function Assert-MainServerDedicatedKeyAccepted.*'key-not-accepted' \{.*\$GitSshKeygen -lf \$PublicKeyPath.*このsetupは鍵を登録しません.*SSH整備の担当.*did not accept the dedicated key.*'host-key' \{.*enrollment state was not checked.*'unreachable' \{.*enrollment state was not checked/su);
   assert.doesNotMatch(source, /enroll-windows-main-server-ssh|MAIN_SERVER_WINDOWS_PUBLIC_KEY|gh secret set|gh workflow run|authorized_keys/u);
   assert.equal(existsSync(join(ROOT, '.github', 'workflows', 'enroll-windows-main-server-ssh.yml')), false);
-  assert.match(source, /\$GitSsh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
+  assert.match(source, /\$directOutput = & \$ssh -o BatchMode=yes.*"\$MainServerUser@\$MainServerHost".*dotagents-main-server-direct-ssh-ok/su);
   assert.match(source, /node --version.*\[int\]\$Matches\[1\] -lt 24.*Node\.js 24以上/su);
   assert.doesNotMatch(source, /WindowsPowerShell\\v1\.0\\powershell\.exe/u);
   assert.match(source, /FileSystemAclExtensions\]::SetAccessControl\(\$item, \$acl\)/u);
@@ -128,6 +132,37 @@ if ($before -cne $after -or $after.Trim() -cne $MainServerHostKey) { throw '固�
     encoding: 'utf8', env: { ...process.env, DOTAGENTS_HOST_KEY_FIXTURE: root }, timeout: 30000,
   });
   assert.equal(result.status, 0, result.stderr || result.stdout);
+});
+
+test('main-serverの鍵の形からmodeを選び、鍵が無い時は作らずに止まる', { skip: process.platform !== 'win32' }, async (t) => {
+  const source = await readFile(SETUP, 'utf8');
+  const root = await mkdtemp(join(tmpdir(), 'dotagents-key-mode-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const body = source.slice(source.indexOf('function Get-MainServerKeyMode'), source.indexOf('function Assert-MainServerAgentOffersKey'));
+  const script = `$ErrorActionPreference = 'Stop'
+${body}
+$private = Join-Path $env:DOTAGENTS_KEY_MODE_FIXTURE 'id_ed25519_main_server'
+$public = "$private.pub"
+function Mode { try { Get-MainServerKeyMode -PrivateKey $private -PublicKeyPath $public 6>$null } catch { 'throw:' + $_.Exception.Message } }
+$none = Mode
+if (Test-Path $private) { throw '秘密鍵を作った' }
+Set-Content -LiteralPath $public -Value 'ssh-ed25519 AAAA test'
+$agent = Mode
+Set-Content -LiteralPath $private -Value 'x'
+$file = Mode
+Remove-Item -LiteralPath $public
+$half = Mode
+"$none|$agent|$file|$half"
+`;
+  const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], {
+    encoding: 'utf8', env: { ...process.env, DOTAGENTS_KEY_MODE_FIXTURE: root }, timeout: 30000,
+  });
+  assert.equal(result.status, 0, result.stderr || result.stdout);
+  const [none, agent, file, half] = result.stdout.trim().split('|');
+  assert.match(none, /^throw:.*create it in 1Password/u);
+  assert.equal(agent, 'agent');
+  assert.equal(file, 'file');
+  assert.match(half, /^throw:.*incomplete/u);
 });
 
 function passingProduct(checkIds) {

@@ -59,6 +59,9 @@ $GitBash = Join-Path $env:ProgramFiles 'Git\bin\bash.exe'
 # 工場はGit for Windows同梱のOpenSSHだけを使う。
 $GitSsh = Join-Path $env:ProgramFiles 'Git\usr\bin\ssh.exe'
 $GitSshKeygen = Join-Path $env:ProgramFiles 'Git\usr\bin\ssh-keygen.exe'
+# Git同梱sshはWindowsのnamed pipe agentへ繋げない（2026-11-11 FOXで確認）。1Password SSH agentの鍵はSystem32 OpenSSHから使う。
+$SystemSsh = Join-Path $env:SystemRoot 'System32\OpenSSH\ssh.exe'
+$SystemSshAdd = Join-Path $env:SystemRoot 'System32\OpenSSH\ssh-add.exe'
 $ConfigPath = Join-Path $env:LOCALAPPDATA 'dotagents\factory-reporter\config.json'
 $StateDirectory = Join-Path $env:LOCALAPPDATA 'dotagents\windows-native-factory-setup'
 $ReceiptPath = Join-Path $StateDirectory 'latest-receipt.json'
@@ -220,11 +223,11 @@ function Write-Utf8NoBom([string]$Path, [string]$Content) {
   [IO.File]::WriteAllText($Path, $Content, [Text.UTF8Encoding]::new($false))
 }
 
-function Test-MainServerSsh {
+function Test-MainServerSsh([string]$Ssh) {
   $previousPreference = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
   try {
-    $output = & $GitSsh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
+    $output = & $Ssh -o BatchMode=yes -o ConnectTimeout=10 $MainServerAlias "printf 'dotagents-main-server-ssh-ok'" 2>$null
     $code = $LASTEXITCODE
   } finally {
     $ErrorActionPreference = $previousPreference
@@ -247,7 +250,7 @@ function Ensure-MainServerKnownHost([string]$SshDirectory) {
   }
 }
 
-function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) {
+function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$IdentityFile, [string]$Ssh) {
   $configPath = Join-Path $SshDirectory 'config'
   $begin = '# dotagents main-server begin'
   $end = '# dotagents main-server end'
@@ -256,7 +259,7 @@ function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) 
     "Host $MainServerAlias $MainServerHost",
     "    HostName $MainServerHost",
     "    User $MainServerUser",
-    "    IdentityFile $($PrivateKey.Replace('\', '/'))",
+    "    IdentityFile $($IdentityFile.Replace('\', '/'))",
     '    IdentitiesOnly yes',
     '    PreferredAuthentications publickey',
     '    StrictHostKeyChecking yes',
@@ -272,36 +275,38 @@ function Ensure-MainServerSshConfig([string]$SshDirectory, [string]$PrivateKey) 
   Write-Utf8NoBom -Path $configPath -Content $next
   Set-OwnerOnlyAcl $configPath
 
-  $effective = & $GitSsh -G $MainServerAlias 2>$null
+  $effective = & $Ssh -G $MainServerAlias 2>$null
   $expected = @(
     "hostname $MainServerHost",
     "user $MainServerUser",
-    "identityfile $($PrivateKey.Replace('\', '/'))",
+    "identityfile $($IdentityFile.Replace('\', '/'))",
     'identitiesonly yes',
     'stricthostkeychecking true'
   )
   foreach ($entry in $expected) {
     if ($effective -notcontains $entry) { throw "main-server SSH config readback is missing: $entry" }
   }
-  $directEffective = & $GitSsh -G $MainServerHost 2>$null
+  $directEffective = & $Ssh -G $MainServerHost 2>$null
   foreach ($entry in $expected) {
     if ($directEffective -notcontains $entry) { throw "direct-IP main-server SSH config readback is missing: $entry" }
   }
 }
 
-function Invoke-MainServerDedicatedKeyProbe([string]$PrivateKey) {
+function Invoke-MainServerDedicatedKeyProbe([string]$IdentityFile, [string]$Ssh, [bool]$UseAgent) {
   # 設定ファイルを読まずに専用鍵だけを明示する。別の鍵で入れた成功を、専用鍵の登録済みと読み違えないため。
+  # agent modeは公開鍵を-iに渡し、IdentitiesOnlyでagentの鍵のうちその1本だけを使わせる。
+  $agentOption = if ($UseAgent) { @() } else { @('-o', 'IdentityAgent=none') }
   $arguments = @(
-    '-F', 'none', '-i', $PrivateKey.Replace('\', '/'),
+    '-F', 'none', '-i', $IdentityFile.Replace('\', '/'),
     '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
-    '-o', 'IdentitiesOnly=yes', '-o', 'IdentityAgent=none',
+    '-o', 'IdentitiesOnly=yes') + $agentOption + @(
     '-o', 'PreferredAuthentications=publickey', '-o', 'StrictHostKeyChecking=yes',
     "$MainServerUser@$MainServerHost", "printf 'dotagents-main-server-key-ok'"
   )
   $previousPreference = $ErrorActionPreference
   $ErrorActionPreference = 'Continue'
   try {
-    $all = @(& $GitSsh @arguments 2>&1)
+    $all = @(& $Ssh @arguments 2>&1)
     $code = $LASTEXITCODE
   } finally {
     $ErrorActionPreference = $previousPreference
@@ -318,14 +323,14 @@ function Invoke-MainServerDedicatedKeyProbe([string]$PrivateKey) {
 function Get-MainServerSshFailureKind([string]$Stderr) {
   # 鍵を受け付けない事と、届かない事・host keyが合わない事を分ける。後の2つは鍵の登録の有無を確かめられていない。
   if ($Stderr -match 'Host key verification failed|HOST IDENTIFICATION HAS CHANGED|No \S+ host key is known') { return 'host-key' }
-  if ($Stderr -match 'UNPROTECTED PRIVATE KEY FILE|bad permissions|invalid format|No such file or directory') { return 'local-key' }
+  if ($Stderr -match 'UNPROTECTED PRIVATE KEY FILE|bad permissions|invalid format|No such file or directory|agent refused operation|signing failed') { return 'local-key' }
   if ($Stderr -match 'Permission denied \(') { return 'key-not-accepted' }
   if ($Stderr -match 'Connection timed out|Connection refused|No route to host|Network is unreachable|Could not resolve hostname|Connection closed by|Connection reset by|kex_exchange_identification') { return 'unreachable' }
   return 'unclassified'
 }
 
-function Assert-MainServerDedicatedKeyAccepted([string]$PrivateKey, [string]$PublicKeyPath) {
-  $probe = Invoke-MainServerDedicatedKeyProbe -PrivateKey $PrivateKey
+function Assert-MainServerDedicatedKeyAccepted([string]$IdentityFile, [string]$PublicKeyPath, [string]$Ssh, [bool]$UseAgent) {
+  $probe = Invoke-MainServerDedicatedKeyProbe -IdentityFile $IdentityFile -Ssh $Ssh -UseAgent $UseAgent
   if ($probe.Accepted) { return }
   $detail = "ssh exit=$($probe.Code): $($probe.Stderr)"
   switch (Get-MainServerSshFailureKind -Stderr $probe.Stderr) {
@@ -355,6 +360,33 @@ function Assert-MainServerDedicatedKeyAccepted([string]$PrivateKey, [string]$Pub
   }
 }
 
+function Get-MainServerKeyMode([string]$PrivateKey, [string]$PublicKeyPath) {
+  # 鍵は作らない。秘密鍵をディスクに置かない方針（全credentialを1Passwordに置く）に合わせ、置かれた形だけを受け付ける。
+  $hasPrivate = Test-Path -LiteralPath $PrivateKey -PathType Leaf
+  $hasPublic = Test-Path -LiteralPath $PublicKeyPath -PathType Leaf
+  if ($hasPrivate -and $hasPublic) { return 'file' }
+  if ($hasPublic) { return 'agent' }
+  if ($hasPrivate) { throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half' }
+  Write-Host '[windows-native-factory] main-server-ssh: main-server用の専用鍵がありません。このsetupは鍵を作りません。'
+  Write-Host '[windows-native-factory]   1PasswordでSSH鍵（Ed25519）を作り、1Password SSH agentで使えるようにしてください。'
+  Write-Host "[windows-native-factory]   公開鍵を $PublicKeyPath に保存し、main-serverへの登録をSSH整備の担当へ依頼してから、このsetupをもう一度実行してください。"
+  throw "The main-server SSH key is missing; create it in 1Password and save only the public key at $PublicKeyPath"
+}
+
+function Assert-MainServerAgentOffersKey([string]$PublicKey) {
+  $previousPreference = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $offered = @(& $SystemSshAdd -L 2>$null)
+  } finally {
+    $ErrorActionPreference = $previousPreference
+  }
+  $blob = $PublicKey.Split(' ')[1]
+  if (-not ($offered | Where-Object { $_.Split(' ')[1] -eq $blob })) {
+    throw 'The SSH agent on \\.\pipe\openssh-ssh-agent does not offer the main-server public key; unlock 1Password, check that agent.toml includes the key''s vault, and stop the Windows ssh-agent service if it owns the pipe'
+  }
+}
+
 function Ensure-MainServerSsh {
   Write-Step 'main-server-ssh'
   $sshDirectory = Join-Path $env:USERPROFILE '.ssh'
@@ -362,30 +394,40 @@ function Ensure-MainServerSsh {
   $publicKeyPath = "$privateKey.pub"
   New-Item -ItemType Directory -Force -Path $sshDirectory | Out-Null
 
-  if (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -and -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
-    & $GitSshKeygen -q -t ed25519 -N '' -C $MainServerKeyComment -f $privateKey
-    if ($LASTEXITCODE -ne 0) { throw 'Failed to generate the permanent main-server SSH key' }
-  } elseif (-not (Test-Path -LiteralPath $privateKey -PathType Leaf) -or -not (Test-Path -LiteralPath $publicKeyPath -PathType Leaf)) {
-    throw 'The permanent main-server SSH key pair is incomplete; refusing to replace either half'
-  }
-
-  Set-OwnerOnlyAcl $privateKey
+  $mode = Get-MainServerKeyMode -PrivateKey $privateKey -PublicKeyPath $publicKeyPath
   $publicKey = (Get-Content -Raw -LiteralPath $publicKeyPath).Trim()
-  if ($publicKey -notmatch "^ssh-ed25519 [A-Za-z0-9+/]+={0,3} $([regex]::Escape($MainServerKeyComment))$") {
-    throw "Unexpected permanent main-server public key format or comment: $publicKeyPath"
+  if ($mode -eq 'file') {
+    Set-OwnerOnlyAcl $privateKey
+    if ($publicKey -notmatch "^ssh-ed25519 [A-Za-z0-9+/]+={0,3} $([regex]::Escape($MainServerKeyComment))$") {
+      throw "Unexpected permanent main-server public key format or comment: $publicKeyPath"
+    }
+    $derived = (& $GitSshKeygen -y -P '' -f $privateKey 2>$null).Trim()
+    if ($LASTEXITCODE -ne 0 -or $publicKey.Split(' ')[1] -ne $derived.Split(' ')[1]) {
+      throw 'The permanent main-server key is passphrase-protected or its public half does not match'
+    }
+    $ssh = $GitSsh
+    $identityFile = $privateKey
+  } else {
+    # 1Passwordが書き出す公開鍵の注釈は鍵の名前になるため、注釈は問わない。
+    if ($publicKey -notmatch '^ssh-ed25519 [A-Za-z0-9+/]+={0,3}( .*)?$') {
+      throw "Unexpected main-server public key format: $publicKeyPath"
+    }
+    if (-not (Test-Path -LiteralPath $SystemSsh -PathType Leaf) -or -not (Test-Path -LiteralPath $SystemSshAdd -PathType Leaf)) {
+      throw "The 1Password SSH agent mode needs Windows OpenSSH Client: $SystemSsh"
+    }
+    Assert-MainServerAgentOffersKey -PublicKey $publicKey
+    $ssh = $SystemSsh
+    $identityFile = $publicKeyPath
   }
-  $derived = (& $GitSshKeygen -y -P '' -f $privateKey 2>$null).Trim()
-  if ($LASTEXITCODE -ne 0 -or $publicKey.Split(' ')[1] -ne $derived.Split(' ')[1]) {
-    throw 'The permanent main-server key is passphrase-protected or its public half does not match'
-  }
+  Write-Step "main-server-ssh: $mode mode"
 
   Ensure-MainServerKnownHost -SshDirectory $sshDirectory
-  Ensure-MainServerSshConfig -SshDirectory $sshDirectory -PrivateKey $privateKey
-  Assert-MainServerDedicatedKeyAccepted -PrivateKey $privateKey -PublicKeyPath $publicKeyPath
+  Ensure-MainServerSshConfig -SshDirectory $sshDirectory -IdentityFile $identityFile -Ssh $ssh
+  Assert-MainServerDedicatedKeyAccepted -IdentityFile $identityFile -PublicKeyPath $publicKeyPath -Ssh $ssh -UseAgent ($mode -eq 'agent')
   foreach ($attempt in 1..3) {
-    if (-not (Test-MainServerSsh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
+    if (-not (Test-MainServerSsh -Ssh $ssh)) { throw "Permanent main-server SSH verification failed on attempt $attempt" }
   }
-  $directOutput = & $GitSsh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
+  $directOutput = & $ssh -o BatchMode=yes -o ConnectTimeout=10 "$MainServerUser@$MainServerHost" "printf 'dotagents-main-server-direct-ssh-ok'"
   if ($LASTEXITCODE -ne 0 -or $directOutput -ne 'dotagents-main-server-direct-ssh-ok') {
     throw 'Permanent direct-IP main-server SSH verification failed'
   }

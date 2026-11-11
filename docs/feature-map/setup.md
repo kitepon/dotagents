@@ -20,7 +20,7 @@
 | 同`install_cron/run_scheduled_update` | 日次02:00にwrapper --scheduled-update。予約はbackup/filter/install/一行読戻し、実行は環境復元→更新→fresh receipt | 他entry保持と旧更新entry回収。crontab書換後の失敗を自動復元しない。scheduled経路は初回前提/登録を再実行しない |
 | `setup-windows-native-factory.ps1`本体 | Win32/PS7→手動のみ前提、private state/transcript、排他file→config→手動配線→更新配送/verify/receipt | 前提導入はsetup.lockより前。全setup rollbackなし。lockは処理finallyでDisposeするが、全例外で末尾Stop-Transcriptまで到達する保証ではない |
 | 同`Normalize-WindowsReporterConfig` | scheduled時だけ一意なCodex cacheから復元候補、config/credential検査、backup/BOM無し正規化/ACL | 曖昧候補・credential不在を拒否。copy/config/ACLは別操作で部分保持し得る |
-| 同`Ensure-MainServerSsh/Assert-MainServerDedicatedKeyAccepted` | 固定host key、専用pair整合、config/alias/直指定readback、専用鍵のみのprobe | 鍵非受入/host-key/到達不能/local-key/不明を区別。非受入なら公開鍵の登録担当へ渡して停止し、この入口から遠隔登録しない |
+| 同`Get-MainServerKeyMode/Ensure-MainServerSsh/Assert-MainServerDedicatedKeyAccepted` | 鍵の形でmodeを決める: 秘密鍵＋公開鍵=file mode（Git同梱ssh、従来どおり）、公開鍵だけ=agent mode（1Password SSH agent、System32 OpenSSH）。固定host key、config/alias/直指定readback（IdentityFileはfile modeで秘密鍵、agent modeで公開鍵）、専用鍵だけのprobe（agent modeはagentがその公開鍵を出すことも確かめる） | 鍵が無い時は作らず、1Passwordで作って公開鍵を置くよう案内して停止する。秘密鍵だけの時は停止する。鍵非受入/host-key/到達不能/local-key/agent未提供/不明を区別。非受入なら公開鍵の登録担当へ渡して停止し、この入口から遠隔登録しない。Git同梱sshはWindowsのnamed pipe agentを使えない（2026-11-11 FOXで確認）ため、agent modeのmain-serverはSystem32 sshからだけ使える |
 | 同手動分岐 | 旧毎時task停止/解除、旧cron回収→links/config→gh共有account切替→SSH→日次task登録 | 手動とScheduledRunの責任を分ける。setup sourceを読んだだけで停止/認証切替を実行しない |
 | 同`Invoke-FactoryUpdate/Write-Receipt/Wait-ScheduledSmoke` | 環境を一時設定して更新子を呼びfinallyで復元、新ID/batch/配送票/製品inventory/verifyを確認。手動最後に日次taskを起動し最大20分のfresh票確認 | 更新失敗でも先行変更は残る。setup receiptとMSIX mirrorは順次保存。smokeの結果不明/timeoutを成功にしない。自然日次実行の証明とは別 |
 
