@@ -9,6 +9,7 @@ import { homedir, platform } from 'node:os';
 import { basename, join } from 'node:path';
 import process from 'node:process';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
+import { resolveSecret } from '../lib/factory/op-secret.mjs';
 import { createFragmentManifest, sendReportFragments, validateFragmentManifest } from '../lib/factory/report-fragments.mjs';
 import { logRuntimeContext } from '../lib/factory/runtime-context.mjs';
 import {
@@ -157,7 +158,7 @@ async function enqueue(loc, bytes, id, acknowledgements) { await ensureState(loc
 async function retryInfo(loc, name) { try { const value = JSON.parse(await readFile(join(loc.retry, name), 'utf8')); return Number.isSafeInteger(value.attempt) && Number.isFinite(value.next_retry_at) ? value : null; } catch { return null; } }
 async function postpone(loc, name, prior) { const attempt = Math.min((prior?.attempt || 0) + 1, 16); const next_retry_at = Date.now() + Math.min(RETRY_BASE_MS * 2 ** (attempt - 1), RETRY_MAX_MS); const path = join(loc.retry, name); await writeFile(path, JSON.stringify({ attempt, next_retry_at }), { mode: 0o600 }); ownerOnlyAcl(path); }
 async function withLock(loc, fn) { try { await mkdir(loc.lock); } catch (error) { if (error?.code !== 'EEXIST') throw error; let stale = false; try { const pid = Number((await readFile(join(loc.lock, 'pid'), 'utf8')).trim()); try { process.kill(pid, 0); } catch (probe) { stale = probe?.code === 'ESRCH'; } } catch {} if (!stale) throw new Error('送信処理はすでに実行中です'); await rm(loc.lock, { recursive: true, force: true }); await mkdir(loc.lock); } ownerOnlyAcl(loc.lock); const pid = join(loc.lock, 'pid'); await writeFile(pid, String(process.pid), { mode: 0o600 }); ownerOnlyAcl(pid); try { return await fn(); } finally { await rm(loc.lock, { recursive: true, force: true }); } }
-async function credential(config) { let token; try { token = (await readFile(config.reporting.credential_file, 'utf8')).trim(); } catch (error) { throw new Error(`credential fileを読めません (${error.code || error.message})`); } if (!token) throw new Error('credential fileが空です'); return token; }
+async function credential(config) { let token; try { token = (await readFile(config.reporting.credential_file, 'utf8')).trim(); } catch (error) { throw new Error(`credential fileを読めません (${error.code || error.message})`); } if (!token) throw new Error('credential fileが空です'); return resolveSecret(token); } // 中身が`op://`参照の時だけ1Passwordから読む（任意）。
 function fragmentManifestPath(loc, entry) { return join(loc.retry, `${entry.name}.fragments`); }
 async function readFragmentManifest(loc, entry, decoded) {
   const path = fragmentManifestPath(loc, entry);
