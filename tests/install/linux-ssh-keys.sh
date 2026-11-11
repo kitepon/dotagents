@@ -15,6 +15,7 @@ awk '/^ensure_main_server_ssh\(\)/ { capture=1 } /^ensure_main_server_reverse_ss
 # shellcheck source=/dev/null
 source "$fixture/forward.sh"
 HOST_PROFILE=linux
+USER="${USER:-test}" # Git BashはUSERを持たない。
 MAIN_SERVER_SSH_TARGET=kite@main-server.invalid
 die() { printf '%s\n' "$*" >"$fixture/died"; exit 1; }
 ssh() { [ "${route_ok:-0}" = 1 ]; }
@@ -29,7 +30,7 @@ if (route_ok=0 ensure_main_server_ssh) </dev/null >/dev/null; then fail '未登�
 grep -Fq '対話作業' "$fixture/died" || fail '公開鍵だけの時に登録の対話へ進まない'
 [ ! -e "$HOME/.ssh/id_ed25519" ] || fail '公開鍵だけの時に秘密鍵を作った'
 
-HOME="$fixture/home-none"; mkdir -p "$HOME"
+HOME="$fixture/home-none"; mkdir -p "$HOME"; rm -f "$fixture/died"
 ssh-keygen() { : >"${*: -1}"; echo 'ssh-ed25519 AAAA generated' >"${*: -1}.pub"; }
 if (route_ok=0 ensure_main_server_ssh) </dev/null >/dev/null; then fail '未登録の鍵で成功した'; fi
 grep -Fq '対話作業' "$fixture/died" || fail '鍵を作った後に登録の対話へ進まない'
