@@ -72,6 +72,7 @@ test-install: ## 隔離 HOME の install/profile/config apply 検証
 	bash tests/install/install-unai.sh
 	bash tests/install/linux-prerequisite-packages.sh
 	bash tests/install/linux-runner-registration.sh
+	bash tests/install/linux-ssh-keys.sh
 	node --test --test-concurrency=1 tests/install/runner-profile.test.mjs
 	bash tests/install/clean-home.sh
 	bash tests/install/setup-linux-factory.sh
