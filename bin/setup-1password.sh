@@ -402,7 +402,7 @@ print(json.dumps({{"server_authenticated":True,"encrypted_credential":True,"prof
     return json.loads(output)
 
 
-# 無人実行の共通読取専用Service Account（保管庫「工場無人実行」だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
+# 無人実行の共通読取専用Service Account（保管庫「開発工場」を読むだけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
 UNATTENDED_SERVICE = "dotagents-1password-unattended"
 DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); '
                'New-Item -ItemType Directory -Force -Path (Split-Path $env:DOTAGENTS_UNATTENDED_TOKEN_FILE) | Out-Null; '
