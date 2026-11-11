@@ -20,6 +20,11 @@ test('平文はopを呼ばず、op://参照だけを読む', async () => {
   const execute = async (command, args, options) => { calls.push([command, args, options.env.OP_SERVICE_ACCOUNT_TOKEN]); return { ok: true, stdout: 'secret\n' }; };
   assert.equal(await resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'given' }, execute }), 'secret');
   assert.deepEqual(calls, [['op', ['read', '--no-newline', reference], 'given']]);
+  // launchdの最小PATHでもHomebrewのopへ届く。
+  let path;
+  await resolveSecret(reference, { platform: 'darwin', home: '/Users/kite', env: { PATH: '/usr/bin:/bin', OP_SERVICE_ACCOUNT_TOKEN: 'x' },
+    execute: async (command, args, options) => { path = options.env.PATH; return { ok: true, stdout: 'secret' }; } });
+  assert.match(path, /^\/usr\/bin:\/bin:.*:\/opt\/homebrew\/bin/u);
 });
 
 test('保存済みtokenをOSごとのstoreから読み、opの子へだけ渡す', async (t) => {
