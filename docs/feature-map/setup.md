@@ -67,6 +67,8 @@ Linux commonからroot前提helperへ、Linux setupから公開runner profile CL
 | `mcp_command/mcp_probe/MCP` | serverはdesktop MCPなし。desktopは初期化/tool一覧を登録前に確認、必要時authenticate/list。request別timeout、finallyでterminate→5秒後kill。子全descendantや親強制終了時の清掃保証ではない |
 | `register/backup/registration` | symlink/conflictを拒否し、変更前archive。公式3CLIとCursor fileへ順次登録、旧一致名を移行、Cursor enable、readback |
 | `cli_probe` | whoami→必要時desktop signin。本人認証不能/複数account等は未認証状態に保持。server/configure-onlyは追加本人認証へ進まない |
+| `store_unattended_token/read_token` | `--store-unattended-token`。隠し入力かstdinのtokenを形と`op whoami`のSERVICE_ACCOUNTで確かめ、Mac Keychain（`security -i`のstdin）・Linux systemd-creds（`unattended.cred`、tmp→rename）・Windows DPAPI（pwsh stdin）へ保存して読み戻す。argv・平文fileへ出さない。再実行は上書き（漏洩時の再配布） |
+| `lib/factory/op-secret.mjs:unattendedToken/resolveSecret`、`bin/dotagents-op-run.mjs:prepare` | 読取側。`op://`参照だけ`op read`、平文は素通し。tokenはenv→OS store→無し（opの本人認証へ任せる）。op-runはenv fileの参照を解決し、子のenvから`OP_SERVICE_ACCOUNT_TOKEN`を除いて起動。読めなければ子を起動せずexit 2、spawn失敗127、子のexit/signalを返す |
 | `provision_server` | 既認証時だけService Account/保管庫/正本itemと暗号化server資格情報を接続。秘密はstdin経由、sensitive失敗出力は非表示。既profile conflict/symlinkを拒否 |
 | 完了返却 | readyならexit0、認証待ちはJSON付きexit3、所定例外はstderr JSON/exit2。導入/登録/本人認証/利用可能を区別。複数面・外部stateの全rollbackはない |
 
