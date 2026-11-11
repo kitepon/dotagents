@@ -402,7 +402,7 @@ print(json.dumps({{"server_authenticated":True,"encrypted_credential":True,"prof
     return json.loads(output)
 
 
-# 無人実行の共通読取専用Service Account（保管庫「工場無人実行」だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
+# 無人実行の端末ごとの読取専用Service Account（その端末専用の保管庫だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
 UNATTENDED_SERVICE = "dotagents-1password-unattended"
 DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); '
                'New-Item -ItemType Directory -Force -Path (Split-Path $env:DOTAGENTS_UNATTENDED_TOKEN_FILE) | Out-Null; '
@@ -467,7 +467,7 @@ def main():
     mode.add_argument("--configure-only", action="store_true", help="本人不在時に導入・登録だけ行い、認証待ちを返す")
     parser.add_argument("--server-host", help="指定したLinuxサーバーへ限定Service Accountの暗号化資格情報を接続する")
     parser.add_argument("--store-unattended-token", action="store_true",
-                        help="無人実行の共通Service Account tokenを隠し入力かstdinから受け、OSの暗号化storeへ保存する")
+                        help="無人実行の端末用Service Account tokenを隠し入力かstdinから受け、OSの暗号化storeへ保存する")
     args = parser.parse_args()
     expected = {"mac": "darwin", "linux": "linux", "server": "linux", "windows-native": "win32"}
     if expected[args.profile] != sys.platform:
