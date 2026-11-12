@@ -6,5 +6,5 @@ import { FACTORY_RUNNERS } from '../lib/factory/deployment-contract.mjs';
 const [label, log] = process.argv.slice(2);
 const seat = FACTORY_RUNNERS.find((runner) => runner.label === label);
 if (!seat || !log) { console.error('usage: factory-runner-scaler-config.mjs <seat label> <log path>'); process.exit(1); }
-const { jobGiB, reserveGiB, maxLoadPerCpu, instances } = seat;
-console.log(JSON.stringify({ label, jobGiB, reserveGiB, maxLoadPerCpu, log, instances }));
+const { jobGiB, reserveGiB, maxLoadPerCpu, maxRunning, instances } = seat;
+console.log(JSON.stringify({ label, jobGiB, reserveGiB, maxLoadPerCpu, maxRunning, log, instances }));

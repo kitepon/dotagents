@@ -6,15 +6,17 @@ Why: on 2026-11-08 the Owner directed parallel CI on existing factory hardware, 
 
 ## Pool (source of truth: `FACTORY_RUNNERS[]` in `lib/factory/deployment-contract.mjs`)
 
-| Seat label | Pool (instances, roots) | Basis | `jobGiB` / `reserveGiB` / `maxLoadPerCpu` |
+| Seat label | Pool (instances, roots) | Basis | `jobGiB` / `reserveGiB` / `maxLoadPerCpu` / `maxRunning` |
 | --- | --- | --- | --- |
-| `linux-workstation` (Rabbit, 24 logical, 30 GiB) | `factory-linux-rabbit-u`..`-u5`, `/home/factory-runner/actions-runner`, `-2`..`-5` | ~4 GiB largest job sample | 4 / 4 / none |
-| `windows-native` (Fox, 32 logical, 61.6 GB) | `factory-windows-fox-u`..`-u8`, `C:\actions-runner-dotagents-u`, `-u2`..`-u8` | 1.86 GB private max per Lattice job (09:50-10:40 JST); reserve 12 GiB because the Owner's workloads page the host (see "Fox memory reserve") | 3 / 12 / none (Windows has no load average) |
-| `macos-native` (Mac M5, 10 logical, 24 GB, Owner laptop) | `factory-macos-m5-u`..`-u3`, `/Users/factory-runner/actions-runner`, `-2`, `-3` | one Lattice job tree 1.32 GB RSS (14:1x JST); laptop with swap in use, so 6 GiB stays for the Owner. Load: see "Mac load gate" | 3 / 6 / 1.0 |
+| `linux-workstation` (Rabbit, 24 logical, 30 GiB) | `factory-linux-rabbit-u`..`-u5`, `/home/factory-runner/actions-runner`, `-2`..`-5` | ~4 GiB largest job sample | 4 / 4 / none / pool |
+| `windows-native` (Fox, 32 logical, 61.6 GB) | `factory-windows-fox-u`..`-u8`, `C:\actions-runner-dotagents-u`, `-u2`..`-u8` | 1.86 GB private max per Lattice job (09:50-10:40 JST); reserve 12 GiB because the Owner's workloads page the host (see "Fox memory reserve") | 3 / 12 / none (Windows has no load average) / pool |
+| `macos-native` (Mac M5, 10 logical, 24 GB, Owner laptop) | `factory-macos-m5-u`..`-u3`, `/Users/factory-runner/actions-runner`, `-2`, `-3` | one Lattice job tree 1.32 GB RSS (14:1x JST); laptop with swap in use, so 6 GiB stays for the Owner. Load: see "Mac load gate"; concurrency: see "Mac concurrency cap" | 3 / 6 / 1.0 / 1 |
 
-Pool size is only a ceiling. The first instance keeps the existing name and root, so the existing registration and credentials stay.
+Pool size is only a ceiling; `maxRunning` (optional) lowers it without unregistering instances. The first instance keeps the existing name and root, so the existing registration and credentials stay.
 
 Mac load gate (2026-11-08 18:0x JST, Shiratsuru/Snow): the first natural Mac pair (17:34-17:54 JST) failed two Lattice latency tests (1000 ms daemon identity probe, 5000 ms beforeEach) while the Mac's 1-minute load average was 50-520 on 10 CPUs (Nextcloud FileProvider, fileproviderd, Spotlight, media analysis, ESET). The scaler had started u3 at CPU idle 0.349 because background-QoS daemons queue on the efficiency cores while the performance cores show idle; idle alone does not show the queue. A second/third Mac job therefore also needs the 1-minute load average per logical CPU <= 1.0 (no run queue on average). Sample 17:59 JST with one job: load 50-60, idle 0.06-0.10 → hold. Linux/Windows keep idle + memory only.
+
+Mac concurrency cap (2026-11-13 JST, Shiratsuru decision from Xuan's analysis and Dorothy's host readback): rule **max 1 concurrent `macos-native` runner on MacBook-Air; reason CPU contention 2026-11-13; reopen if Mac queue wait becomes the bottleneck.** Lattice full runs on u2 + u3 (15:19-15:42Z 11-12) failed together on fixed timing windows: CPU idle 0.505 → 0.01, load per CPU ~2.1 on 10 CPUs; no fd limit was near (`kern.num_files` 5.4 % of `kern.maxfiles`, ≤ 41 fds per node process). Over 63 Mac full jobs 11-08..11-12 overlapped jobs failed 29 % vs 15 % solo. The load gate samples only at start (u3 started at load per CPU 0.54 while one suite ran), so it cannot prevent the overlap; the scaler cannot know which job a listener will receive. Contract `maxRunning: 1`; u2/u3 stay registered and are refreshed by rotation. Rollback: drop `maxRunning` (pool 3).
 
 Fox memory reserve (2026-11-08 18:5x JST, Shiratsuru decision): Lattice windows jobs failed on 5000/1000 ms timeouts 08:57-09:43Z, the first one alone on fox-u. CPU was not the limit (29-45 % busy, queue 0-3, idle 0.763 at the only scale-up), memory was: available 2.2-5.7 GB of 61.6, hard page reads up to 4.3k/s, disk time up to 214 % while the Owner's ComfyUI held ~45 GB private. The scaler had started u2 at 7.24 GiB (3 + 4). reserveGiB 4 → 12, so a 2nd Fox job needs >= 15 GiB available.
 
@@ -24,10 +26,10 @@ Mac work folder: Spotlight indexed the runner roots, `_work` and `RUNNER_TEMP` (
 
 | Owner / function | Inputs | Output and state owned | Refusal / failure |
 | --- | --- | --- | --- |
-| Dotagents, `deployment-contract.mjs:FACTORY_RUNNERS` | Source edit | Seat label, full-CI flag, `jobGiB`, `reserveGiB`, optional `maxLoadPerCpu`, instances `{name, root}` | `render-current-docs` refuses empty/duplicate names, labels or instance names and non-positive sizes. |
-| Dotagents, `bin/factory-runner-scaler-config.mjs <label> <log>` | Contract | Scaler config JSON `{label, jobGiB, reserveGiB, maxLoadPerCpu?, log, instances}` written by the host apply step to a root/admin-owned path | Unknown label: exit 1. |
+| Dotagents, `deployment-contract.mjs:FACTORY_RUNNERS` | Source edit | Seat label, full-CI flag, `jobGiB`, `reserveGiB`, optional `maxLoadPerCpu`, optional `maxRunning` (integer 1..pool), instances `{name, root}` | `render-current-docs` refuses empty/duplicate names, labels or instance names, non-positive sizes and a `maxRunning` outside 1..pool. |
+| Dotagents, `bin/factory-runner-scaler-config.mjs <label> <log>` | Contract | Scaler config JSON `{label, jobGiB, reserveGiB, maxLoadPerCpu?, maxRunning?, log, instances}` written by the host apply step to a root/admin-owned path | Unknown label: exit 1. |
 | Dotagents, `lib/factory/runner-scaler.mjs` (host copy: Rabbit/Mac `/usr/local/libexec/dotagents/factory-runner-scaler.mjs`, Fox `C:\ProgramData\dotagents\factory-tools\runner-scaler.mjs`; admin-owned) | Config path (argv); every 30 s: process table (Listener/Worker per root), `os.cpus()` deltas over >= 60 s, `os.loadavg()[0]` / logical CPUs, available memory, last run per root (newest `_diag` mtime, or the last tick that saw its listener) | Starts one listener (`<root>/bin/Runner.Listener run`, PATH from `<root>/.path`, own process group / own hidden console) or stops one idle listener (SIGINT; Windows Ctrl+Break into that listener's console); one JSON line per action, and one `hold` line whenever a scale-up is blocked (logged once per change of busy/running/gate). In-memory state only: idle-since per root. | Unregistered root (no `.runner`): never started. Spawn/stop failure: logged, next tick re-decides from the process table. Scaler exit: listeners keep running and are adopted by the next scaler. |
-| `decide()` in the same module (pure, unit-tested) | Per root `{registered, running, busy, idleSince, lastRun}`, `cpuIdle`, `loadPerCpu`, `availGiB`, sizes, `maxLoadPerCpu`, now | `{action, name, reason, desired, gate}` (action = start, stop or none; `gate` = first failed headroom check: `cpu-window`, `cpu-idle`, `load`, `memory`, or null) | See state diagram. |
+| `decide()` in the same module (pure, unit-tested) | Per root `{registered, running, busy, idleSince, lastRun}`, `cpuIdle`, `loadPerCpu`, `availGiB`, sizes, `maxLoadPerCpu`, `maxRunning`, now | `{action, name, reason, desired, gate}` (action = start, stop or none; `gate` = first failed headroom check: `max` (busy already at the cap), `cpu-window`, `cpu-idle`, `load`, `memory`, or null) | See state diagram. |
 | Dotagents, `bin/linux-factory-runner-instances.sh` (Rabbit host apply by Sorin) | Contract, kite's `gh` (admin:org), sudo | Pool roots (copied layout + registration, token on stdin; every root's `.path` = the first root's), scaler file + config, `factory-runner-scaler.service` derived from the first runner unit (same hardening; `KillMode=process`, `Nice=10`, `CPUWeight=20`, `Restart=always`), old per-instance units disabled and removed only while idle, profile v3 | Any old instance busy: exits 3 before disabling anything; rerun completes. Registration/readback failure stops; nothing registered is removed. |
 | Dotagents, `lib/factory/runner-profile.mjs` + `bin/factory-runner-profile.mjs` | `/etc/dotagents/factory-runner-profile.json` (root-owned) | Normalized `{mode, user, label, instances[{name, service, root}]}`; v1 = one instance, v2 = per-instance units (prefix of the pool), v3 = whole pool under `factory-runner-scaler.service` | Foreign identity, trial state, wrong instance list, writable/symlink: refuse. |
 | Dotagents, `bin/setup-linux-common.sh:ensure_github_actions_runner` | Profile | Every distinct service: User/Group/groups/NNP/capabilities/active; at least one pool instance online with the seat label | Any check failing: setup stops; it never starts, registers or relabels a dedicated instance. |
@@ -44,13 +46,14 @@ Mac work folder: Spotlight indexed the runner roots, `_work` and `RUNNER_TEMP` (
 | --- | --- | --- | --- |
 | unregistered | host apply registers the root | stopped | Only the admin step registers. |
 | stopped | `running < desired`, least-recent `lastRun` first | idle | start |
-| stopped | headroom AND `lastRun` older than 7 days | idle | refresh: GitHub deletes self-hosted runners offline > 14 days; trimmed again after 120 s idle. New roots (no `_diag`) refresh first. |
+| stopped | headroom AND `running < cap` AND `lastRun` older than 7 days | idle | refresh: GitHub deletes self-hosted runners offline > 14 days; trimmed again after 120 s idle. New roots (no `_diag`) refresh first. |
+| idle | `running >= cap` AND a stopped root's `lastRun` older than 7 days AND idle >= 120 s | stopped | refresh-rotate: frees the slot; the next tick's start picks the stale root (least-recent `lastRun`), so the cap is never exceeded. |
 | idle | Runner.Worker appears | busy | |
 | busy | Worker exits (job end) | idle | self-exit of the "never stop busy" guard |
 | idle | `running > desired` AND idle >= 120 s, longest idle first | stopped | SIGINT / Ctrl+Break: graceful, deletes the session |
 | idle / busy | listener exits by itself (self-update, error, session conflict) | stopped | next tick re-decides |
 
-`busy` = roots with a Runner.Worker. `headroom` = CPU idle >= 30 % (60 s window complete) AND (no `maxLoadPerCpu`, or 1-minute load average / logical CPUs <= `maxLoadPerCpu`) AND available memory >= `jobGiB + reserveGiB`. `desired = clamp(busy + (headroom ? 1 : 0), 1, registered)`. One action per tick. Guards (named protection): a busy listener is never stopped (running job = data loss); the count never goes below 1 (Owner minimum). Both leave by themselves: the job ends, or more load arrives.
+`busy` = roots with a Runner.Worker. `headroom` = CPU idle >= 30 % (60 s window complete) AND (no `maxLoadPerCpu`, or 1-minute load average / logical CPUs <= `maxLoadPerCpu`) AND available memory >= `jobGiB + reserveGiB`. `cap = min(registered, maxRunning ?? registered)`; `desired = clamp(busy + (headroom ? 1 : 0), 1, cap)`; busy >= cap fails headroom with gate `max` (logged as a hold). One action per tick. Guards (named protection): a busy listener is never stopped (running job = data loss); the count never goes below 1 (Owner minimum); the cap only withholds a start (protects the running job's CPU, the 2026-11-13 failure) and frees by itself when the job ends. All leave by themselves: the job ends, or more load arrives.
 
 Available memory: Linux `os.freemem()` (MemAvailable), Windows `os.freemem()` (available physical), macOS `kern.memorystatus_level` (the system's memory-free percentage, as `memory_pressure` prints) × physical memory; `vm_stat` free + inactive pages miss compressible memory (2026-11-08 14:1x JST, one Lattice job running: 5 GiB by pages vs 42 % = 10 GiB free, 5 GiB swap in use).
 
@@ -59,7 +62,7 @@ Available memory: Linux `os.freemem()` (MemAvailable), Windows `os.freemem()` (a
 | Stage | Producer → consumer | Transform / state | Failure behavior |
 | --- | --- | --- | --- |
 | Contract | `FACTORY_RUNNERS` → `factory-current-state.md`, profile parser, scaler config generator, apply scripts, tests | names/roots/sizes | Tests compare the PowerShell maps with the contract. |
-| Config | generator → admin-owned JSON next to the scaler | label, sizes, log path, instances | Scaler refuses a config without instances. |
+| Config | generator → admin-owned JSON next to the scaler | label, sizes, `maxRunning`, log path, instances | Scaler refuses a config without instances. |
 | Load sample | OS → scaler | CPU idle fraction (>= 60 s window), 1-minute load average per logical CPU, available GiB, process table (`ps -A -o pid=,args=`; Windows CIM `Win32_Process` ExecutablePath) mapped to roots by path prefix | Sample failure: tick skipped. |
 | Decision | `decide()` → action | start/stop one root | none |
 | Action log | scaler → `<log>` | `{at, action, name, reason, busy, running, desired, gate, cpuIdle, loadPerCpu, availGiB}`; action `hold` = scale-up blocked by `gate` | Write failure ignored (logged to stderr). |
@@ -76,7 +79,7 @@ Order per host: (1) register the new pool roots while the existing listeners kee
 
 ## Verification
 
-- `tests/factory-reporter/runner-scaler.test.mjs`: `decide()` (scale up, headroom gates incl. the load gate and its `gate` name, max, minimum 1, idle 120 s, never busy, LRU, refresh), sampling parsers, config generator.
+- `tests/factory-reporter/runner-scaler.test.mjs`: `decide()` (scale up, headroom gates incl. the load gate and its `gate` name, max, `maxRunning` cap + refresh rotation, minimum 1, idle 120 s, never busy, LRU, refresh), sampling parsers, config generator.
 - `tests/install/runner-profile.test.mjs`: v1/v2/v3 parse; partial/foreign refused.
 - `tests/install/linux-runner-registration.sh`: setup checks every service and needs one instance online.
 - `tests/factory-reporter/windows-runner-instances.test.mjs` / `windows-runner-job-started-hook.test.mjs`: maps equal the contract; hook sets priority only.

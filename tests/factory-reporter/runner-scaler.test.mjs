@@ -57,6 +57,20 @@ test('stale stopped root is refreshed only with headroom; idle extra listeners a
   assert.equal(decide({ ...tight, roots }).action, null);
 });
 
+test('maxRunning caps concurrent listeners: hold at the cap, trim above it, rotate a stale root through the slot', () => {
+  const capped = { ...free, maxRunning: 1 };
+  const atCap = decide({ ...capped, roots: [busy('a'), root('b'), root('c')] });
+  assert.deepEqual([atCap.action, atCap.gate, atCap.desired, atCap.headroom], [null, 'max', 1, false]);
+  assert.deepEqual((({ action, name }) => [action, name])(decide({ ...capped, roots: [busy('a'), idle('b')] })), ['stop', 'b']);
+  assert.equal(decide({ ...capped, roots: [idle('a'), root('b')] }).action, null);
+  assert.deepEqual((({ action, name }) => [action, name])(decide({ ...capped, roots: [root('a'), root('b', { lastRun: 0 })] })), ['start', 'b']);
+  const stale = [idle('a'), root('b', { lastRun: 0 })];
+  assert.deepEqual((({ action, name, reason }) => [action, name, reason])(decide({ ...capped, roots: stale })), ['stop', 'a', 'refresh-rotate']);
+  assert.equal(decide({ ...capped, roots: [busy('a'), root('b', { lastRun: 0 })] }).action, null);
+  assert.equal(decide({ ...capped, roots: [idle('a', NOW), root('b', { lastRun: 0 })] }).action, null);
+  assert.equal(decide({ ...free, maxRunning: 2, roots: [busy('a'), root('b'), root('c')] }).action, 'start');
+});
+
 test('process table maps listeners and workers to roots by path prefix', () => {
   const unix = [{ name: 'u', root: '/home/r/actions-runner' }, { name: 'u2', root: '/home/r/actions-runner-2' }];
   const ps = ' 10 /home/r/actions-runner/bin/Runner.Listener run\n 11 /home/r/actions-runner-2/bin/Runner.Listener run\n 12 /home/r/actions-runner-2/bin/Runner.Worker spawnclient 1 2\n 13 /usr/bin/node x\n';
@@ -77,7 +91,7 @@ test('config generator emits each seat pool from the contract', () => {
   for (const seat of FACTORY_RUNNERS) {
     const result = spawnSync(process.execPath, ['bin/factory-runner-scaler-config.mjs', seat.label, '/tmp/x.log'], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
-    const expected = { label: seat.label, jobGiB: seat.jobGiB, reserveGiB: seat.reserveGiB, maxLoadPerCpu: seat.maxLoadPerCpu, log: '/tmp/x.log', instances: seat.instances.map((item) => ({ ...item })) };
+    const expected = { label: seat.label, jobGiB: seat.jobGiB, reserveGiB: seat.reserveGiB, maxLoadPerCpu: seat.maxLoadPerCpu, maxRunning: seat.maxRunning, log: '/tmp/x.log', instances: seat.instances.map((item) => ({ ...item })) };
     assert.deepEqual(JSON.parse(result.stdout), JSON.parse(JSON.stringify(expected)));
   }
   assert.notEqual(spawnSync(process.execPath, ['bin/factory-runner-scaler-config.mjs', 'nope', '/tmp/x.log']).status, 0);
