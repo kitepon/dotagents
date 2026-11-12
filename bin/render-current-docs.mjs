@@ -108,7 +108,8 @@ function renderCurrentState(facts) {
   if (instances.some((item) => typeof item?.name !== 'string' || item.name.length === 0 || typeof item.root !== 'string' || item.root.length === 0) ||
     new Set(instances.map((item) => item.name)).size !== instances.length ||
     runners.some((runner) => runner.instances.length === 0 || runner.instances[0].name !== runner.name ||
-      !(runner.jobGiB > 0) || !(runner.reserveGiB >= 0) || !(runner.maxLoadPerCpu === undefined || runner.maxLoadPerCpu > 0))) {
+      !(runner.jobGiB > 0) || !(runner.reserveGiB >= 0) || !(runner.maxLoadPerCpu === undefined || runner.maxLoadPerCpu > 0) ||
+      !(runner.maxRunning === undefined || (Number.isInteger(runner.maxRunning) && runner.maxRunning >= 1 && runner.maxRunning <= runner.instances.length)))) {
     throw new Error('工場runner instance集合が不正です');
   }
 
@@ -141,7 +142,7 @@ function renderCurrentState(facts) {
 
 | runner | host label | 利用面 | pool（最大同時job） | job / 予備メモリ |
 |---|---|---|---|---|
-${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\``).join('、')}（${runner.instances.length}） | ${runner.jobGiB} / ${runner.reserveGiB} GiB |`).join('\n')}
+${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\``).join('、')}（${runner.instances.length}${runner.maxRunning ? `、同時${runner.maxRunning}` : ''}） | ${runner.jobGiB} / ${runner.reserveGiB} GiB |`).join('\n')}
 
 poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。CPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 

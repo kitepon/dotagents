@@ -27,7 +27,7 @@
 
 | runner | host label | 利用面 | pool（最大同時job） | job / 予備メモリ |
 |---|---|---|---|---|
-| `factory-macos-m5-u` | `macos-native` | full CI | `factory-macos-m5-u`、`factory-macos-m5-u2`、`factory-macos-m5-u3`（3） | 3 / 6 GiB |
+| `factory-macos-m5-u` | `macos-native` | full CI | `factory-macos-m5-u`、`factory-macos-m5-u2`、`factory-macos-m5-u3`（3、同時1） | 3 / 6 GiB |
 | `factory-linux-rabbit-u` | `linux-workstation` | full CI | `factory-linux-rabbit-u`、`factory-linux-rabbit-u2`、`factory-linux-rabbit-u3`、`factory-linux-rabbit-u4`、`factory-linux-rabbit-u5`（5） | 4 / 4 GiB |
 | `factory-windows-fox-u` | `windows-native` | full CI | `factory-windows-fox-u`、`factory-windows-fox-u2`、`factory-windows-fox-u3`、`factory-windows-fox-u4`、`factory-windows-fox-u5`、`factory-windows-fox-u6`、`factory-windows-fox-u7`、`factory-windows-fox-u8`（8） | 3 / 12 GiB |
 
