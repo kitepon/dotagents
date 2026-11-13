@@ -65,12 +65,21 @@ test('未保存ならopの本人認証へ任せ、保存済みで読めなけれ
   await assert.rejects(resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, execute: async () => ({ ok: true, stdout: ' ' }) }), /OP_READ_EMPTY/u);
 });
 
+test('trim:falseはop readの値をそのまま返す（PEMの末尾改行を残す）', async () => {
+  const pem = '-----BEGIN PRIVATE KEY-----\nMIIE\n-----END PRIVATE KEY-----\n';
+  const execute = async () => ({ ok: true, stdout: pem });
+  assert.equal(await resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, execute, trim: false }), pem);
+  assert.equal(await resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, execute }), pem.trim());
+  assert.equal(await resolveSecret(' plain ', { trim: false, execute: async () => assert.fail('opを呼んだ') }), ' plain ');
+  await assert.rejects(resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, trim: false, execute: async () => ({ ok: true, stdout: ' \n' }) }), /OP_READ_EMPTY/u);
+});
+
 test('dotagents-op-runは参照を解決し、子へService Account tokenを渡さない', async () => {
   const resolved = [];
   const prepared = await prepare(['--env-file', 'app.env', '--', 'app', '--flag'], {
     env: { PATH: '/bin', OP_SERVICE_ACCOUNT_TOKEN: 'sa' },
     readText: async () => `TYPESAFE_API_KEY=${reference}\nPLAIN=value\n`,
-    resolve: async (value, { env }) => { resolved.push([value, env.OP_SERVICE_ACCOUNT_TOKEN]); return value === reference ? 'secret' : value; },
+    resolve: async (value, { env, trim }) => { assert.equal(trim, false); resolved.push([value, env.OP_SERVICE_ACCOUNT_TOKEN]); return value === reference ? 'secret' : value; },
   });
   assert.deepEqual(prepared, { command: 'app', args: ['--flag'], env: { PATH: '/bin', TYPESAFE_API_KEY: 'secret', PLAIN: 'value' } });
   assert.deepEqual(resolved.sort(), [[reference, 'sa'], ['value', 'sa']]);
