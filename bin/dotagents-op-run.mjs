@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 子processへ秘密を渡す入口。env fileの`op://`参照だけを1Passwordから読み、平文の値はそのまま渡す。
+// 子processへ秘密を渡す入口。env fileの`op://`参照だけを1Passwordから読み、値は`op run`と同じく前後の空白も含めそのまま渡す。
 // 読めなければ子を起動しない。子はService Account tokenを受け取らない。
 import { spawn } from 'node:child_process';
 import { realpathSync } from 'node:fs';
@@ -19,7 +19,7 @@ export async function prepare(argv, { env = process.env, readText = (file) => re
   const childEnv = { ...env };
   delete childEnv.OP_SERVICE_ACCOUNT_TOKEN;
   for (const [name, value] of Object.entries(parseEnv(text))) {
-    childEnv[name] = await resolve(value, { env });
+    childEnv[name] = await resolve(value, { env, trim: false });
   }
   return { command: argv[3], args: argv.slice(4), env: childEnv };
 }
