@@ -31,7 +31,7 @@
 | `factory-linux-rabbit-u` | `linux-workstation` | full CI | `factory-linux-rabbit-u`、`factory-linux-rabbit-u2`、`factory-linux-rabbit-u3`、`factory-linux-rabbit-u4`、`factory-linux-rabbit-u5`（5） | 4 / 4 GiB |
 | `factory-windows-fox-u` | `windows-native` | full CI | `factory-windows-fox-u`、`factory-windows-fox-u2`、`factory-windows-fox-u3`、`factory-windows-fox-u4`、`factory-windows-fox-u5`、`factory-windows-fox-u6`、`factory-windows-fox-u7`、`factory-windows-fox-u8`（8、同時4） | 3 / 12 GiB |
 
-poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。CPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
+poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。`windows-native`は各jobを8 CPUの1ブロックに固定する。ほかの席にCPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 
 full CIは`full CI`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと`wsl2` labelは現役集合へ含めない。
 

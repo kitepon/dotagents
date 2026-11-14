@@ -144,7 +144,7 @@ function renderCurrentState(facts) {
 |---|---|---|---|---|
 ${runners.map((runner) => `| \`${runner.name}\` | \`${runner.label}\` | ${runner.fullCi ? 'full CI' : '運用workflow'} | ${runner.instances.map((item) => `\`${item.name}\``).join('、')}（${runner.instances.length}${runner.maxRunning ? `、同時${runner.maxRunning}` : ''}） | ${runner.jobGiB} / ${runner.reserveGiB} GiB |`).join('\n')}
 
-poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。CPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
+poolは同じhost labelと同じ専用利用者で動く登録済みrunnerの集合で、各hostのscalerが実負荷（CPUの空きと使えるメモリ）から1台以上・pool数以下の台数を動かす。${runners.filter((runner) => runner.cpusPerJob).map((runner) => `\`${runner.label}\`は各jobを${runner.cpusPerJob} CPUの1ブロックに固定する。`).join('')}ほかの席にCPUの割り当ては無い。設計と適用手順は[runner capacity](feature-map/runner-capacity.md)。
 
 full CIは\`full CI\`の3席だけで同じ試験を行う。main-serverは運用workflow専用とし、通常CIを実行しない。WSL2 runnerと\`wsl2\` labelは現役集合へ含めない。
 
