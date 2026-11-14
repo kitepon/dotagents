@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { resolveSecret, unattendedToken, unattendedTokenPath, UNATTENDED_KEYCHAIN_SERVICE } from '../../lib/factory/op-secret.mjs';
@@ -63,6 +63,34 @@ test('未保存ならopの本人認証へ任せ、保存済みで読めなけれ
   await assert.rejects(resolveSecret(reference, { platform: 'linux', home, env: {}, execute: async () => ({ ok: false }) }), /OP_UNATTENDED_TOKEN_UNREADABLE/u);
   await assert.rejects(resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, execute: async () => ({ ok: false }) }), /OP_READ_FAILED/u);
   await assert.rejects(resolveSecret(reference, { env: { OP_SERVICE_ACCOUNT_TOKEN: 'x' }, execute: async () => ({ ok: true, stdout: ' ' }) }), /OP_READ_EMPTY/u);
+});
+
+test('MacのSSH席（exit 36）はGUI domainの一度だけのjobからFIFO経由で読み、後片付けする', async (t) => {
+  const tmp = await temporaryHome(t);
+  for (const booted of [true, false]) {
+    const calls = [];
+    let plist;
+    const execute = async (command, args) => {
+      calls.push([command, ...args.slice(0, 2)]);
+      if (command === 'security') return { ok: false, code: 36 };
+      if (command === 'mkfifo') { assert.match(args[2], /[/\\]token$/u); return { ok: true }; }
+      if (command === 'launchctl' && args[0] === 'bootstrap') {
+        plist = await readFile(args[2], 'utf8');
+        return { ok: booted };
+      }
+      if (command === 'cat') return { ok: true, stdout: booted ? 'sa-token\n' : '' };
+      return { ok: true };
+    };
+    const reading = unattendedToken({ platform: 'darwin', env: { USER: 'kite' }, execute, gui: { uid: 501, tmp } });
+    if (!booted) { await assert.rejects(reading, /OP_UNATTENDED_TOKEN_UNREADABLE/u); assert.deepEqual(calls.at(-1), ['launchctl', 'bootstrap', 'gui/501']); continue; } // 入らなかったjobはbootoutしない
+    assert.equal(await reading, 'sa-token');
+    const label = plist.match(/<key>Label<\/key><string>([^<]+)</u)[1];
+    assert.deepEqual(calls, [['security', 'find-generic-password', '-s'], ['mkfifo', '-m', '600'], ['cat', calls[2][1]],
+      ['launchctl', 'bootstrap', 'gui/501'], ['launchctl', 'bootout', `gui/501/${label}`]]);
+    assert.match(plist, /<string>\/bin\/sh<\/string>.*<string>dotagents-1password-unattended<\/string><string>-a<\/string><string>kite<\/string><string>-w<\/string>/u);
+    assert.match(plist, /<key>RunAtLoad<\/key><true\/>/u);
+  }
+  assert.deepEqual(await readdir(tmp), []); // tmp dir（FIFOとplist）は残さない
 });
 
 test('trim:falseはop readの値をそのまま返す（PEMの末尾改行を残す）', async () => {
