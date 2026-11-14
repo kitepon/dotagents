@@ -96,6 +96,19 @@ test('job開始hookの塊選び: 重なりが負荷より先、同数なら空�
   });
 });
 
+test('job開始hookの負荷採取はrunnerのaccount（非管理者・非対話のlogon）でも全CPUの数値を返す', { skip: process.platform !== 'win32' || cpus().length < 8 }, () => {
+  const script = [
+    `. '${HOOK}'`,
+    '$l = Get-CpuLoad 8',
+    "$diag = try { 'CIM=' + @(Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -ErrorAction Stop).Count } catch { 'CIM-ERR=' + $_.Exception.Message }",
+    "[pscustomobject]@{ load = $l; who = (whoami); groups = @(whoami /groups /fo csv | ConvertFrom-Csv | ForEach-Object 'Group Name'); diag = $diag } | ConvertTo-Json -Compress -Depth 3",
+  ].join('\n');
+  const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: ENV });
+  assert.equal(result.status, 0, result.stderr);
+  const value = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
+  assert.ok(Array.isArray(value.load) && value.load.length === 8 && value.load.every((x) => x >= 0 && x <= 100), JSON.stringify(value));
+});
+
 test('job開始hookは対象のprocessが無くても終了値0で注記だけを出す', { skip: process.platform !== 'win32' }, () => {
   const result = spawnSync('pwsh.exe', [...PWSH, '-File', HOOK, '-TargetProcessId', '999999999'], { encoding: 'utf8', env: ENV });
   assert.equal(result.status, 0, result.stderr);
