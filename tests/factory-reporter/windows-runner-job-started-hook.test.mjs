@@ -66,7 +66,34 @@ test('job開始hookは他のjobと重ならないCPU塊を選ぶ', { skip: proce
   t.after(() => rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }));
   const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: ENV });
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /^MASK=65280$/mu, result.stdout); // block 1 (0xFF00), not block 0
+  // Any free block but block 0; which one depends on the live load sample (selection itself is tested below).
+  assert.match(result.stdout, /^MASK=(65280|16711680|4278190080)$/mu, result.stdout);
+  assert.match(result.stdout, /affinity=0x\w+ load=(\d+%|unknown)$/mu, result.stdout);
+});
+
+test('job開始hookの塊選び: 重なりが負荷より先、同数なら空いた塊、採取できなければ大きい番号', { skip: process.platform !== 'win32' }, () => {
+  const block = (b0, b1, b2, b3) => `([double[]](@(${b0})*8 + @(${b1})*8 + @(${b2})*8 + @(${b3})*8))`;
+  const script = [
+    `. '${HOOK}'`,
+    '$pick = { param($others, $load) [string](Select-CpuBlock -Blocks 4 -CpusPerJob 8 -Others $others -Load $load).Mask }',
+    `$r = [ordered]@{
+      overlapFirst = & $pick @([uint64]0xFF00) ${block(90, 0, 50, 20)}
+      leastLoaded = & $pick @() ${block(90, 1, 50, 20)}
+      noSample = & $pick @() $null
+      noSampleBusyTop = & $pick @([uint64]4278190080) $null # 0xFF000000 would parse as a negative int32
+      incomplete = $null -eq (Get-CpuLoad 4096)
+    }`,
+    '$r | ConvertTo-Json -Compress',
+  ].join('\n');
+  const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: ENV });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1)), {
+    overlapFirst: String(0xFF000000), // block 1 is idle but taken by another worker; block 3 is the least loaded free one
+    leastLoaded: String(0xFF00),
+    noSample: String(0xFF000000),
+    noSampleBusyTop: String(0xFF0000),
+    incomplete: true, // fewer CPUs than asked: no sample, so ties fall back to the highest index
+  });
 });
 
 test('job開始hookは対象のprocessが無くても終了値0で注記だけを出す', { skip: process.platform !== 'win32' }, () => {
