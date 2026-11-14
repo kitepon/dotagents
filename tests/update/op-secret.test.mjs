@@ -73,7 +73,7 @@ test('MacのSSH席（exit 36）はGUI domainの一度だけのjobからFIFO経�
     const execute = async (command, args) => {
       calls.push([command, ...args.slice(0, 2)]);
       if (command === 'security') return { ok: false, code: 36 };
-      if (command === 'mkfifo') { assert.match(args[2], /\/token$/u); return { ok: true }; }
+      if (command === 'mkfifo') { assert.match(args[2], /[/\\]token$/u); return { ok: true }; }
       if (command === 'launchctl' && args[0] === 'bootstrap') {
         plist = await readFile(args[2], 'utf8');
         return { ok: booted };
