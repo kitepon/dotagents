@@ -60,8 +60,8 @@ test('job開始hookは他のjobと重ならないCPU塊を選ぶ', { skip: proce
     `$other = Start-Process -FilePath '${exe}' -ArgumentList '-e','setTimeout(()=>{},60000)' -PassThru -WindowStyle Hidden`,
     '$other.ProcessorAffinity = [IntPtr]0xFF',
     `$self = Start-Process -FilePath '${exe}' -ArgumentList '-e','setTimeout(()=>{},60000)' -PassThru -WindowStyle Hidden`,
-    `try { & '${HOOK}' -TargetProcessId $self.Id -WorkerName '${name}' | Out-Host; $self.Refresh(); 'MASK=' + ([int64]$self.ProcessorAffinity) }`,
-    'finally { Stop-Process -Id $other.Id,$self.Id -Force -ErrorAction SilentlyContinue }',
+    // try and finally stay in one element: join('; ') between them is a PowerShell parse error.
+    `try { & '${HOOK}' -TargetProcessId $self.Id -WorkerName '${name}' | Out-Host; $self.Refresh(); 'MASK=' + ([int64]$self.ProcessorAffinity) } finally { Stop-Process -Id $other.Id,$self.Id -Force -ErrorAction SilentlyContinue }`,
   ].join('; ');
   t.after(() => rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }));
   const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: ENV });
