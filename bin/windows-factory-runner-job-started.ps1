@@ -1,11 +1,14 @@
 # GitHub Actions runnerのjob開始hook（Windowsの工場席）。runnerの `.env` の ACTIONS_RUNNER_HOOK_JOB_STARTED で指す。
 # 所有者が対話で使うPCで、jobより所有者の操作を先に動かす。
-# Runner.Workerの優先度を下げると、その後に起動されるstepのprocessが引き継ぐ。CPUは割り当てない（全CPUを使う）。
+# Runner.Workerの優先度とCPU集合（affinity）を設定すると、その後に起動されるstepのprocessが引き継ぐ。
+# 各jobは論理CPUを CpusPerJob 個ずつに区切った塊の1つで動き、他のRunner.Workerと重なりが最も少ない塊を使う（2026-11-14 オーナー裁定）。
 # 同時に動くjobの数は、hostのscalerが実負荷から決める（docs/feature-map/runner-capacity.md）。
 # OpenLogicoolのbuild/publishとCIは並行する。marker引数は互換用に受け取るが読まず、待たない。
 param(
   [int]$TargetProcessId = 0,
   [string]$PriorityClass = 'BelowNormal',
+  [int]$CpusPerJob = 8,
+  [string]$WorkerName = 'Runner.Worker',
   [string]$BusyMarkerPath = '',
   [int]$BusyMarkerMaxWaitSeconds = 300,
   [int]$BusyMarkerStaleMinutes = 15,
@@ -27,8 +30,28 @@ try {
 
   $target = Get-Process -Id $TargetProcessId
   $target.PriorityClass = $PriorityClass
+  $logical = [int](Get-CimInstance Win32_ComputerSystem).NumberOfLogicalProcessors
+  $blocks = [Math]::Floor([Math]::Min($logical, 63) / [Math]::Max($CpusPerJob, 1))
+  if ($blocks -ge 1) {
+    # Named mutex: two jobs starting together must see each other's block.
+    $mutex = [Threading.Mutex]::new($false, 'dotagents-factory-runner-cpuset')
+    $owned = $false
+    try { $owned = $mutex.WaitOne(30000) } catch [Threading.AbandonedMutexException] { $owned = $true }
+    try {
+      # shortcut: masks are 64-bit and one processor group; hosts above 63 logical CPUs need group-aware affinity.
+      $others = @(Get-Process -Name $WorkerName -ErrorAction SilentlyContinue | Where-Object Id -ne $TargetProcessId |
+        ForEach-Object { try { [uint64][int64]$_.ProcessorAffinity } catch { [uint64]::MaxValue } })
+      $best = 0; $bestCount = [int]::MaxValue
+      for ($i = 0; $i -lt $blocks; $i++) {
+        $mask = ([uint64][Math]::Pow(2, $CpusPerJob) - 1) * [uint64][Math]::Pow(2, $i * $CpusPerJob)
+        $count = @($others | Where-Object { ($_ -band $mask) -ne 0 }).Count
+        if ($count -lt $bestCount) { $best = $mask; $bestCount = $count }
+      }
+      $target.ProcessorAffinity = [IntPtr][int64]$best
+    } finally { if ($owned) { $mutex.ReleaseMutex() }; $mutex.Dispose() }
+  }
   $target.Refresh()
-  Write-Host "factory-runner capacity: runner=$env:RUNNER_NAME $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass)"
+  Write-Host "factory-runner capacity: runner=$env:RUNNER_NAME $($target.ProcessName) pid=$TargetProcessId priority=$($target.PriorityClass) affinity=0x$(([int64]$target.ProcessorAffinity).ToString('X'))"
 } catch {
   # hookの失敗でjobを落とさない。下げられなかった事はjobの注記に残す。
   Write-Host "::warning title=factory-runner capacity::The job-started hook could not limit this job: $($_.Exception.Message)"
