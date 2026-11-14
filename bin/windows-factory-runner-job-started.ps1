@@ -30,14 +30,34 @@ function Select-CpuBlock([int]$Blocks, [int]$CpusPerJob, [uint64[]]$Others, [dou
   $best
 }
 
-# One per-CPU sample of CPUs 0..Count-1; $null when the query fails or a CPU is missing. Names are numbers, not localized.
-function Get-CpuLoad([int]$Count) {
+# Per-CPU busy % of CPUs 0..Count-1 over $SampleMs; $null when the read fails or a CPU is missing.
+# NtQuerySystemInformation needs no rights; perf counters (CIM Win32_PerfFormattedData_*, Get-Counter) are denied to the
+# runner account (non-admin, batch logon: not INTERACTIVE, not in Performance Monitor Users; Perflib ACL).
+function Get-CpuLoad([int]$Count, [int]$SampleMs = 250) {
   try {
-    $load = [double[]]::new($Count); $seen = 0
-    foreach ($row in Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -ErrorAction Stop) {
-      if ($row.Name -match '^\d+$' -and [int]$row.Name -lt $Count) { $load[[int]$row.Name] = [double]$row.PercentProcessorTime; $seen++ }
+    if (-not ('DotagentsCpuTimes' -as [type])) {
+      Add-Type -TypeDefinition @"
+using System; using System.Runtime.InteropServices;
+public static class DotagentsCpuTimes {
+  [DllImport("ntdll.dll")] static extern int NtQuerySystemInformation(int cls, long[] info, int len, out int ret);
+  // Class 8 = SystemProcessorPerformanceInformation: per CPU 6 longs (Idle, Kernel incl. idle, User, Dpc, Interrupt, count).
+  public static long[] Read() {
+    var a = new long[6 * 64]; int ret;
+    int status = NtQuerySystemInformation(8, a, a.Length * 8, out ret);
+    if (status != 0) throw new InvalidOperationException("NtQuerySystemInformation 0x" + status.ToString("X"));
+    Array.Resize(ref a, ret / 8); return a;
+  }
+}
+"@
     }
-    if ($seen -eq $Count) { return ,$load }
+    $a = [DotagentsCpuTimes]::Read(); Start-Sleep -Milliseconds $SampleMs; $b = [DotagentsCpuTimes]::Read()
+    if ($b.Length / 6 -lt $Count) { return $null }
+    $load = [double[]]::new($Count)
+    for ($i = 0; $i -lt $Count; $i++) {
+      $total = ($b[6 * $i + 1] - $a[6 * $i + 1]) + ($b[6 * $i + 2] - $a[6 * $i + 2])
+      $load[$i] = if ($total -gt 0) { [Math]::Max(0, 100 * (1 - ($b[6 * $i] - $a[6 * $i]) / $total)) } else { 0 }
+    }
+    return ,$load
   } catch {}
   $null
 }

@@ -96,17 +96,17 @@ test('job開始hookの塊選び: 重なりが負荷より先、同数なら空�
   });
 });
 
-test('job開始hookの負荷採取はrunnerのaccount（非管理者・非対話のlogon）でも全CPUの数値を返す', { skip: process.platform !== 'win32' || cpus().length < 8 }, () => {
+test('job開始hookの負荷採取はrunnerのaccount（非管理者・非対話のlogon）でも全CPUの数値を返す', { skip: process.platform !== 'win32' || cpus().length < 8 }, (t) => {
   const script = [
     `. '${HOOK}'`,
-    '$l = Get-CpuLoad 8',
-    "$diag = try { 'CIM=' + @(Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -ErrorAction Stop).Count } catch { 'CIM-ERR=' + $_.Exception.Message }",
-    "[pscustomobject]@{ load = $l; who = (whoami); groups = @(whoami /groups /fo csv | ConvertFrom-Csv | ForEach-Object 'Group Name'); diag = $diag } | ConvertTo-Json -Compress -Depth 3",
+    // In CI this runs as the runner account, where CIM perf classes return no rows (run 43582300359: CIM=0).
+    "[pscustomobject]@{ load = Get-CpuLoad 8; who = (whoami) } | ConvertTo-Json -Compress",
   ].join('\n');
   const result = spawnSync('pwsh.exe', [...PWSH, '-Command', script], { encoding: 'utf8', env: ENV });
   assert.equal(result.status, 0, result.stderr);
   const value = JSON.parse(result.stdout.trim().split(/\r?\n/u).at(-1));
   assert.ok(Array.isArray(value.load) && value.load.length === 8 && value.load.every((x) => x >= 0 && x <= 100), JSON.stringify(value));
+  t.diagnostic(`runner-context sample: ${JSON.stringify(value)}`);
 });
 
 test('job開始hookは対象のprocessが無くても終了値0で注記だけを出す', { skip: process.platform !== 'win32' }, () => {
@@ -118,7 +118,8 @@ test('job開始hookは対象のprocessが無くても終了値0で注記だけ�
 test('job開始hookはmarker引数を受け取ってもファイルを読まず待たない', async () => {
   const source = await readFile(HOOK, 'utf8');
   assert.match(source, /\$BusyMarkerPath = ''/u);
-  assert.doesNotMatch(source, /Get-Item|LastWriteTime|Start-Sleep|New-Item|Remove-Item|Set-Content|Add-Content|Out-File|Move-Item/u);
+  // The only sleep is the bounded CPU-load sample interval.
+  assert.doesNotMatch(source.replace('Start-Sleep -Milliseconds $SampleMs', ''), /Get-Item|LastWriteTime|Start-Sleep|New-Item|Remove-Item|Set-Content|Add-Content|Out-File|Move-Item/u);
 });
 
 test('job開始hookは鍵が無い時も古い鍵が在る時もそのまま進む', { skip: process.platform !== 'win32' }, async (t) => {
