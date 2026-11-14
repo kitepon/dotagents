@@ -12,14 +12,14 @@
 
 | 面 | 工場の作業ディレクトリ | repo | 工場との接続 |
 |---|---|---|---|
-| Desktop overlay | `~/Developer/grok-build-vscode` | `kitepon/grok-build-desktop-kitepon` | 各席のDesktopとAFKへのuplink |
-| AFK Pilot | `~/Developer/afkpilot` | `kitepon/afkpilot-kitepon` | main-serverの公開relay |
+| Desktop overlay | `~/Developer/grok-build-desktop-kitepon` | `kitepon/grok-build-desktop-kitepon` | 各席のDesktopとAFKへのuplink |
+| AFK Pilot | `~/Developer/afkpilot-kitepon` | `kitepon/afkpilot-kitepon` | main-serverの公開relay |
 
 どちらも自作コア製品ではなく、単独repoの制御をdotagentsへ移さない。
 
 ## 製品側の正本
 
-- Desktop overlay: `grok-build-vscode/KITEPON.md`、`docs/desktop.md`、`docs/desktop-update-spec.md`
+- Desktop overlay: `grok-build-desktop-kitepon/KITEPON.md`、`docs/desktop.md`、`docs/desktop-update-spec.md`
 - AFK Pilot: `afkpilot/docs/repositories.md`、`docs/CICD.md`、`deploy/kitepon/README.md`
 
 製品の操作や障害対応では、上記の製品文書を直接読む。この文書へ手順や可変設定を複製しない。

@@ -2,8 +2,8 @@
 # 工場は接続だけを所有し、更新処理は各製品の正規入口へ委ねる。
 set -euo pipefail
 
-DESKTOP_ROOT="${GROK_COMMUNITY_DESKTOP:-$HOME/Developer/grok-build-vscode}"
-AFK_ROOT="${GROK_COMMUNITY_AFK:-$HOME/Developer/afkpilot}"
+DESKTOP_ROOT="${GROK_COMMUNITY_DESKTOP:-$HOME/Developer/grok-build-desktop-kitepon}"
+AFK_ROOT="${GROK_COMMUNITY_AFK:-$HOME/Developer/afkpilot-kitepon}"
 PUSH_REQUESTED=false
 
 usage() {
@@ -14,8 +14,8 @@ update-grok-community-overlay — 両製品の正規更新入口を呼ぶ
   update-grok-community-overlay --push
 
 環境変数:
-  GROK_COMMUNITY_DESKTOP  既定: ~/Developer/grok-build-vscode
-  GROK_COMMUNITY_AFK      既定: ~/Developer/afkpilot
+  GROK_COMMUNITY_DESKTOP  既定: ~/Developer/grok-build-desktop-kitepon
+  GROK_COMMUNITY_AFK      既定: ~/Developer/afkpilot-kitepon
 
 更新・検証・pushの契約は、各repoの scripts/update-overlay.sh が所有する。
 EOF
