@@ -9,7 +9,7 @@
 | 所有する入口・実関数 | 入力・完了点 | 失敗・保持 |
 | --- | --- | --- |
 | `setup-macos-factory.sh:run_setup` | OS/command/Node/docker/gh読取確認→backup/git identity/toolchain→config→install→LaunchAgent→更新配送→verify | set-eで停止。先行導入/configを全体rollbackしない。Grok未loginはconfig適用をskip |
-| 同`install_launch_agent` | 毎日02:00、RunAtLoad=false、agents-update入口。plist lint/既登録照会/内容比較/登録読戻し | 差替えは旧plist backup、必要時bootout。bootstrap失敗で復元を試みる。復元も成功保証ではなく、最終読戻し失敗は停止 |
+| 同`install_launch_agent` | 毎日02:00、RunAtLoad=false、agents-update入口、StandardErrorPath=更新log隣の`launchd-stderr.log`（log open前の起動失敗を残す）。plist lint/既登録照会/内容比較/登録読戻し | 差替えは旧plist backup、必要時bootout。bootstrap失敗で復元を試みる。復元も成功保証ではなく、最終読戻し失敗は停止 |
 | 同`run_factory_update` | 以前のreport IDと新batchを固定しagents-update --setup、同batch log/fresh report/receipt/製品集合を検査 | 更新子の非0、log/receipt不在/不一致は失敗。古い成功票や画面反映で代替しない |
 | `setup-linux-factory.sh`と`setup-linux-workstation-factory.sh` | 実際のファイルは`setup-linux-factory.sh`と`setup-linux-workstation-factory.sh`。server/linux役割をcommonへexec | workstationだけ旧dotagentから正規pathへ条件付き移動して再exec。WSL再導入はしない |
 | `setup-linux-common.sh:run_setup` | 前提→GitHub認証→runner/SSH→backup/git identity/enrollment/toolchain→config/install→cron→更新配送→verify | variant/OS拒否。途中失敗までのOS/package/config/接続stateは残る。server verifyは配送後にreadinessを検査 |

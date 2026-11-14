@@ -308,7 +308,7 @@ find "$HOME_DIR/Archives" -name 'com.kite.agents-update-pre-macos-setup-*' -type
   || fail '変更前LaunchAgentをbackupしない'
 [ "$(grep -Fc 'launchctl bootout ' "$CALLS")" -eq 1 ] || fail '旧LaunchAgentの停止が一度でない'
 [ "$(grep -Fc 'launchctl bootstrap ' "$CALLS")" -eq 1 ] || fail 'LaunchAgentの登録が一度でない'
-python3 - "$HOME_DIR/Library/LaunchAgents/com.kite.agents-update.plist" "$HOME_DIR/.local/bin/agents-update" <<'PY'
+python3 - "$HOME_DIR/Library/LaunchAgents/com.kite.agents-update.plist" "$HOME_DIR/.local/bin/agents-update" "$HOME_DIR/.local/state/agents-update/launchd-stderr.log" <<'PY'
 import plistlib
 import sys
 
@@ -317,6 +317,7 @@ with open(sys.argv[1], 'rb') as handle:
 assert value['Label'] == 'com.kite.agents-update'
 assert value['ProgramArguments'] == ['/bin/bash', sys.argv[2]]
 assert value['StartCalendarInterval'] == {'Hour': 2, 'Minute': 0}
+assert value['StandardErrorPath'] == sys.argv[3]
 PY
 grep -Fq 'apply-codex-config --apply' "$CALLS" || fail 'Codex設定を適用しない'
 grep -Fq 'apply-claude-config --apply' "$CALLS" || fail 'Claude設定を適用しない'

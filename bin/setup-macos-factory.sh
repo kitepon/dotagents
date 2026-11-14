@@ -190,16 +190,18 @@ install_launch_agent() {
   domain="gui/$(id -u)"
   mkdir -p "$agent_dir" "$(dirname "$UPDATE_LOG")"
   candidate="$(mktemp "$agent_dir/.$LAUNCH_AGENT_LABEL.XXXXXX")"
-  python3 - "$candidate" "$setup_bin" <<'PY'
+  # A start failure before agents-update opens its log (e.g. an unreadable entry) is otherwise lost.
+  python3 - "$candidate" "$setup_bin" "$(dirname "$UPDATE_LOG")/launchd-stderr.log" <<'PY'
 import plistlib
 import sys
 
-target, update = sys.argv[1:]
+target, update, stderr_log = sys.argv[1:]
 value = {
     'Label': 'com.kite.agents-update',
     'ProgramArguments': ['/bin/bash', update],
     'StartCalendarInterval': {'Hour': 2, 'Minute': 0},
     'RunAtLoad': False,
+    'StandardErrorPath': stderr_log,
 }
 with open(target, 'wb') as handle:
     plistlib.dump(value, handle, sort_keys=False)
