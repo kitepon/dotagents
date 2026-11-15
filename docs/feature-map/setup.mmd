@@ -22,3 +22,6 @@ flowchart TB
   auth -- ready --> ready[exit 0]
   auth -- waiting --> waiting[JSON / exit 3 / installed state retained]
   package -. failure .-> held
+  reminderbot[ReminderBOT wrapper / unsets inherited OP_SERVICE_ACCOUNT_TOKEN] -- env-file op:// refs --> oprun[dotagents-op-run / host read-only token / exact values trim:false / token stripped from child]
+  oprun -- resolved env --> child[ReminderBOT command]
+  oprun -. read failure: exit 2, child not started .-> held
