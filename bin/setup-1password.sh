@@ -10,7 +10,6 @@ import json
 import os
 from pathlib import Path
 import queue
-import shlex
 import shutil
 import subprocess
 import sys
@@ -322,86 +321,6 @@ def cli_probe(profile, configure_only):
         return {"cli_authenticated": False, "authentication_error": str(error)}
 
 
-SERVER_PROFILE = '''# dotagents所有: 1Passwordの限定Service Accountを初期環境へ渡す。
-case $- in *x*) _dotagents_op_trace=1; set +x ;; *) _dotagents_op_trace=0 ;; esac
-if OP_SERVICE_ACCOUNT_TOKEN=$(systemd-creds --user --refuse-null --name=op-service-account-token decrypt "$HOME/.config/dotagents/credentials/1password/main-server.cred" -); then
-    export OP_SERVICE_ACCOUNT_TOKEN
-else
-    unset OP_SERVICE_ACCOUNT_TOKEN
-    printf '%s\\n' '1Password Service Accountの復号に失敗しました' >&2
-    if [ "$_dotagents_op_trace" = 1 ]; then unset _dotagents_op_trace; set -x; else unset _dotagents_op_trace; fi
-    return 1
-fi
-if [ "$_dotagents_op_trace" = 1 ]; then unset _dotagents_op_trace; set -x; else unset _dotagents_op_trace; fi
-'''
-
-
-def provision_server(host):
-    # 認証情報の正本は1Password。SSHのstdinには値を渡すが、argv・平文fileには渡さない。
-    tag = "dotagents-1password-main-server"
-    items = json.loads(run(["op", "item", "list", "--tags", tag, "--format", "json"]))
-    if len(items) > 1:
-        raise SetupError("service_account_conflict: サーバー用認証情報が複数あります")
-    if items:
-        token = run(["op", "item", "get", items[0]["id"], "--fields", "credential", "--reveal"], sensitive=True).strip()
-    else:
-        vaults = json.loads(run(["op", "vault", "list", "--format", "json"]))
-        matches = [vault for vault in vaults if vault["name"] == "開発工場"]
-        if len(matches) > 1:
-            raise SetupError("vault_conflict: 開発工場の保管庫が複数あります")
-        vault = matches[0] if matches else json.loads(run(["op", "vault", "create", "開発工場", "--format", "json"]))
-        token = run(["op", "service-account", "create", "dotagents-main-server", "--raw",
-                     "--vault", vault["id"] + ":read_items,write_items"], sensitive=True).strip()
-        item = json.loads(run(["op", "item", "template", "get", "API Credential"]))
-        item.update(title="dotagents / main-server / 1Password", tags=[tag])
-        next(field for field in item["fields"] if field["id"] == "credential")["value"] = token
-        run(["op", "item", "create", "-", "--format", "json"], input=json.dumps(item), sensitive=True)
-    profile_encoded = base64.b64encode(SERVER_PROFILE.encode()).decode()
-    remote = f'''
-import os,sys,subprocess,base64,json,tarfile,time,tempfile
-from pathlib import Path
-home=Path.home()
-credential=home/".config/dotagents/credentials/1password/main-server.cred"
-profile=home/".bashrc.d/1password.sh"
-content=base64.b64decode({profile_encoded!r}).decode()
-token=sys.stdin.read().strip()
-if credential.is_symlink() or profile.is_symlink():
-    raise RuntimeError("credential_owned_elsewhere: symlinkは変更できません")
-if credential.exists() and profile.exists() and profile.read_text()==content:
-    previous=subprocess.run(["systemd-creds","--user","--refuse-null","--name=op-service-account-token","decrypt",str(credential),"-"],capture_output=True,text=True)
-    if previous.returncode:raise RuntimeError(previous.stderr)
-    if previous.stdout.strip()==token:
-        probe=subprocess.run(["bash","-lc","op whoami --format json >/dev/null"],capture_output=True,text=True)
-        if probe.returncode:raise RuntimeError(probe.stderr)
-        print(json.dumps({{"server_authenticated":True,"encrypted_credential":True,"profile_installed":True,"changed":False}}))
-        raise SystemExit(0)
-if profile.exists() and profile.read_text()!=content:
-    raise RuntimeError("profile_conflict: 既存の1Password profileを確認してください")
-archive=home/"Archives"/f"dotagents-1password-server-{{time.time_ns()}}.tar.gz"
-archive.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
-with archive.open("xb") as stream:
-    os.chmod(archive,0o600)
-    with tarfile.open(fileobj=stream,mode="w:gz") as tar:
-        for path in (credential,profile):
-            if path.exists():tar.add(path,arcname=str(path.relative_to(home)))
-credential.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
-with tempfile.TemporaryDirectory(dir=credential.parent) as directory:
-    temporary=Path(directory)/"credential"
-    result=subprocess.run(["systemd-creds","--user","--with-key=host","--name=op-service-account-token","encrypt","-",str(temporary)],input=token,text=True,capture_output=True)
-    if result.returncode:raise RuntimeError(result.stderr)
-    os.chmod(temporary,0o600)
-    os.replace(temporary,credential)
-profile.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
-profile.write_text(content)
-os.chmod(profile,0o600)
-probe=subprocess.run(["bash","-lc","op whoami --format json >/dev/null"],capture_output=True,text=True)
-if probe.returncode:raise RuntimeError(probe.stderr)
-print(json.dumps({{"server_authenticated":True,"encrypted_credential":True,"profile_installed":True}}))
-'''
-    output = run(["ssh", "-o", "BatchMode=yes", "--", host, "python3 -c " + shlex.quote(remote)], input=token, timeout=120, sensitive=True)
-    return json.loads(output)
-
-
 # 無人実行の端末ごとの読取専用Service Account（その端末専用の保管庫だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
 UNATTENDED_SERVICE = "dotagents-1password-unattended"
 DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); '
@@ -465,7 +384,6 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--authenticate", action="store_true", help="公式MCPの本人認証と環境一覧を確認する（既定）")
     mode.add_argument("--configure-only", action="store_true", help="本人不在時に導入・登録だけ行い、認証待ちを返す")
-    parser.add_argument("--server-host", help="指定したLinuxサーバーへ限定Service Accountの暗号化資格情報を接続する")
     parser.add_argument("--store-unattended-token", action="store_true",
                         help="無人実行の端末用Service Account tokenを隠し入力かstdinから受け、OSの暗号化storeへ保存する")
     args = parser.parse_args()
@@ -497,10 +415,6 @@ def main():
         else:
             result["mcp"]["authentication_error"] = "CLIの本人認証後にMCPの認証を確認してください"
     result["ready"] = result["cli_authenticated"] and (command is None or result["mcp"]["authenticated"])
-    if args.server_host:
-        if not result["ready"]:
-            raise SetupError("authentication_required: サーバー用認証を作成する本人認証が必要です")
-        result["server"] = provision_server(args.server_host)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["ready"] else 3
 
