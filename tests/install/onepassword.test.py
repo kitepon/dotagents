@@ -143,41 +143,6 @@ class SetupTests(unittest.TestCase):
             self.assertEqual(setup.run(["op", "whoami"]), "認証済み")
         self.assertEqual(process.call_args.kwargs["encoding"], "utf-8")
 
-    def test_サーバーprofileはxtraceへtokenを出さない(self):
-        if setup.sys.platform == "win32":
-            self.skipTest("Linux認証アダプタはPOSIX shellで検証する")
-        with tempfile.TemporaryDirectory() as directory:
-            home = Path(directory)
-            binary = home / "systemd-creds"
-            binary.write_text("#!/bin/sh\nprintf '%s' 'unit-test-secret-value'\n")
-            binary.chmod(0o700)
-            profile = home / "profile.sh"
-            profile.write_text(setup.SERVER_PROFILE)
-            process = setup.subprocess.run(["bash", "-xc", '. "$HOME/profile.sh"; test "${#OP_SERVICE_ACCOUNT_TOKEN}" -gt 0'],
-                                           env={**os.environ, "HOME": str(home), "PATH": str(home) + os.pathsep + os.environ["PATH"]},
-                                           capture_output=True, text=True)
-            self.assertEqual(process.returncode, 0)
-            self.assertNotIn("unit-test-secret-value", process.stdout + process.stderr)
-
-    def test_サーバーtokenをSSHのargvへ載せない(self):
-        calls = []
-        secret = "unit-test-service-account-token"
-
-        def official(argv, **kwargs):
-            calls.append((argv, kwargs))
-            if argv[:3] == ["op", "item", "list"]:
-                return '[{"id":"stored-service-account"}]'
-            if argv[:3] == ["op", "item", "get"]:
-                return secret
-            if argv[0] == "ssh":
-                return '{"server_authenticated":true}'
-            self.fail(f"想定外の公開コマンド: {argv}")
-
-        with patch.object(setup, "run", side_effect=official):
-            self.assertTrue(setup.provision_server("main-server")["server_authenticated"])
-        self.assertTrue(all(secret not in " ".join(argv) for argv, _ in calls))
-        self.assertEqual(calls[-1][1]["input"], secret)
-
     def test_無人実行tokenはstdinだけで渡しService_Accountを確かめてから保存する(self):
         secret = "ops_unit-test-token"
         for profile in ("linux", "mac", "windows-native"):

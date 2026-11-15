@@ -20,6 +20,7 @@ flowchart TB
   optional[Explicit 1Password setup only] --> package[Install / protocol / register]
   package --> auth[CLI and optional desktop authentication]
   auth -- ready --> ready[exit 0]
+  package -- server profile --> nologin[Server login shell: no 1Password token exported / unattended reads use the host read-only store]
   auth -- waiting --> waiting[JSON / exit 3 / installed state retained]
   package -. failure .-> held
   reminderbot[ReminderBOT wrapper / unsets inherited OP_SERVICE_ACCOUNT_TOKEN] -- env-file op:// refs --> oprun[dotagents-op-run / host read-only token / exact values trim:false / token stripped from child]

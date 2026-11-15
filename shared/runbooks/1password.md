@@ -6,7 +6,7 @@ Environmentsの作成・一覧・変数名の確認には、登録済みの公�
 
 新しい端末への接続設定は、POSIXでは工場の`setup-1password --profile mac|linux|server`、Windows nativeではPowerShell 7でrepoの`bin/setup-1password.ps1`を使う。本人不在時は`--configure-only`で導入と登録だけ行い、認証待ちを明示する。通常入口は認証と一覧取得まで確認し、未認証なら成功にしない。端末の本人認証は1Passwordアプリ、画面のないサーバーの認証は1PasswordのService Accountが所有する。パスワードやSecret Keyを会話へ入力してもらわない。
 
-Linuxサーバーの初回認証接続は、認証済みdesktop端末で同じ入口へ`--server-host <SSH接続先>`を付ける。専用保管庫だけに読書き可能なService Accountを公式CLIで作り、tokenの正本は1Passwordへ保存する。サーバーにはOS標準のユーザー暗号化資格情報を置き、既存login shellの初期環境から公式`OP_SERVICE_ACCOUNT_TOKEN`へ渡す。秘密を平文file・argv・ログに出さない。既存sessionの環境は、新しいlogin sessionで再取得する。
+画面のないLinuxサーバーでは、login shellへ1Passwordのtokenを渡さない。共有保管庫`開発工場`を読むのはBellTeamだけで、サーバーは下の無人実行の端末用読取専用Service Accountだけを使う。
 
 無人実行（cron・ScheduledTask・自動起動）は1Passwordを任意で使える。端末ごとの読取専用Service Account（その端末専用の保管庫だけ）のtokenを、各端末で`setup-1password --profile <profile> --store-unattended-token`（Windowsは`bin/setup-1password.ps1`）へ隠し入力かstdinで渡すと、Mac Keychain・Linux systemd-creds（`~/.config/dotagents/credentials/1password/unattended.cred`）・Windows DPAPI（`%LOCALAPPDATA%\dotagents\credentials\1password\unattended.dpapi`）へ保存する。保存前に`op whoami`でService Accountと確かめ、保存後に読み戻す。利用側はenv fileへ`NAME=op://<保管庫ID>/<項目ID>/<field>`を書き、`dotagents-op-run --env-file <file> -- <command> [args...]`で起動する（Windowsは`node <dotagents>\bin\dotagents-op-run.mjs ...`）。参照だけを読み、平文の値はそのまま渡す。読めない時は子を起動せずexit 2で名前付きのエラーを出し、子はService Account tokenを受け取らない。token漏洩時はその端末のtokenを再発行し、その端末で同じ保存を再実行する。
 
