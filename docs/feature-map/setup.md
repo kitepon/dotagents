@@ -72,6 +72,8 @@ Linux commonからroot前提helperへ、Linux setupから公開runner profile CL
 | `provision_server` | 既認証時だけService Account/保管庫/正本itemと暗号化server資格情報を接続。秘密はstdin経由、sensitive失敗出力は非表示。既profile conflict/symlinkを拒否 |
 | 完了返却 | readyならexit0、認証待ちはJSON付きexit3、所定例外はstderr JSON/exit2。導入/登録/本人認証/利用可能を区別。複数面・外部stateの全rollbackはない |
 
+`dotagents-op-run`の公開入口は`~/.local/bin/dotagents-op-run --env-file <refs> -- <command> [args...]`。上の読取側の行が契約の正本で、外部の使い手はこの入口だけを呼び、内部module・token storeを直接読まない。既知の使い手: ReminderBOT（main-server `/home/kite/reminderbot`、所有グレイブ）。test用`.op.env`と公開用`.op.env.public`の参照を渡し、wrapperは受け継いだ`OP_SERVICE_ACCOUNT_TOKEN`を外してから呼ぶ。複数行PEMを含む値はtrim:falseのまま渡す。
+
 `register`は全4親CLIを必要とし、順次登録/enable後に失敗しても先行登録を戻さない。本人操作・OS credential・外部trustは各担当のまま。任意性の修理は全体リファクタ完了後の別差分に保持し、既選択の任意連携を外さない。
 
 ## 接点・確認・未読
