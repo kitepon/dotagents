@@ -120,9 +120,9 @@ Codex skill は同一端末・同一入口で **official / legacy の一方だ�
 | Codexグローバル規範 | `codex/AGENTS.delta.md` → `codex/AGENTS.md` | 共通憲法＋Codex固有deltaから合成する配布生成物。配置・配線の正典はdocs/02・docs/05 |
 | Grokグローバル規範 | `grok/AGENTS.delta.md` → `grok/AGENTS.md` | 共通憲法＋Grok固有deltaから合成する配布生成物。配置先は`~/.grok/rules/AGENTS.md` |
 | Cursorグローバル規範 | `cursor/AGENTS.delta.md` → `cursor/AGENTS.md` と `cursor/rules/factory.mdc` | 共通憲法＋Cursor固有delta。runtime mountは`~/.cursor/rules/factory.mdc`のみ |
-| Cursor skill | `auto-deploy-on-push` / `gpt-connector` / `polish-github` | `~/.cursor/skills`。`skills-cursor/`は触らない |
+| Cursor skill | `auto-deploy-on-push` / `polish-github` | `~/.cursor/skills`。`skills-cursor/`は触らない |
 | Cursor agent | `implementer` / `refuter` | `~/.cursor/agents`。bundled explore/planは置換えない |
-| Grok skill | `auto-deploy-on-push` / `gpt-connector` / `polish-github` | `~/.grok/skills`が同名のCodex/Claude面に勝つ |
+| Grok skill | `auto-deploy-on-push` / `polish-github` | `~/.grok/skills`が同名のCodex/Claude面に勝つ |
 | Grok agent | `implementer` / `refuter` | `~/.grok/agents`。bundled explore/planは置換えない |
 | bin | `render-global-constitution.mjs` | 共通憲法＋host deltaから4 harness向け完全指示を冪等生成し、driftを検査 |
 | repo内検査 | `bin/render-current-docs.mjs` | 配備契約から現行状態を生成し、ASTで全documentの所有surface、local link、既存evidenceの不変性を検査。`npm ci --ignore-scripts`後にrepo内で実行し、`~/.local/bin`へは配布しない |
@@ -200,16 +200,14 @@ Codex全対応の工程状態はLattice storeが正本で、旧4 host・5入口�
 - 独立CodegraphはPATHに存在してはならない。
 - **1Password（個人連携）**: 3OS・4ハーネスの共通入口は公式CLI、desktop端末には公式MCPも登録する。POSIXは`setup-1password --profile mac|linux|server`、Windows nativeはPowerShell 7で`bin/setup-1password.ps1`を実行する。公式installer・package manager、親の公開MCP登録、Cursorの公開設定だけを使い、限定config applierの対象は増やさない。導入・登録・本人認証の状態は分け、認証待ちは成功にしない。製品設定と認証は1Passwordが所有する。無人実行は任意で、端末ごとの読取専用Service Account tokenを`--store-unattended-token`で各OSの暗号化storeへ保存し、`dotagents-op-run --env-file <file> -- <command>`かenv/credential fileの`op://`参照で読む（工場報告のcredential fileも同じ）。[共通手順](shared/runbooks/1password.md)と[展開時の確認](docs/archive/2026-10_1password-three-os-four-harness.md)を参照する。
 - **CLI（任意）**: Grok Build＝**要 `grok login`（H）**。未認証だと `grok agent` が使えず、`delegate grok` は明示エラーで停止する。一撃展開は未loginでも止まらない（toolchain optional）。login済みの工場設定適用（`apply-grok-config --apply`）は端末への展開承認に含める。現役4席（Mac / main-server / rabbit native Linux / Windows native）は全部本線。Windows nativeのGrok親配線は`setup-windows-native-factory`が書く。旧4席の新規session受入履歴は2026-08-16に閉じたが、rabbitは別hostとして新たに受け入れる。
-- **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`gpt-connector-mcp`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermを登録する。登録・loginは端末configを変えるH操作。
+- **MCP 用 CLI を先に入れる**（下の登録が参照する。`agents-update`が入れる各packageと同源）: `aiterm-mcp`・`caveat`・`lattice-mcp`がPATHにあること。独立Codegraphは登録しない。Codex親もnative枠外の実行用にaitermを登録する。登録・loginは端末configを変えるH操作。
 - **MCP（ユーザースコープ登録。上の CLI 導入後）**:
   ```bash
   claude mcp add --scope user aiterm -- aiterm-mcp
   claude mcp add --scope user caveat -- caveat mcp-server
   claude mcp add --scope user lattice -- lattice-mcp
-  claude mcp add --scope user gpt_connector -- gpt-connector-mcp
   claude mcp add --scope user aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
   codex mcp add aiterm -- aiterm-mcp
-  codex mcp add gpt_connector -- gpt-connector-mcp
   codex mcp add lattice -- lattice-mcp
   codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
   ```

@@ -37,12 +37,15 @@ test('時間切れはcli_timeoutで報告し、製品側の契約違反と区別
   const report = await box.scan(async (command) => command === 'git' ? GIT : TIMED_OUT);
   validateReportV9(report);
 
-  for (const id of ['caveat', 'throughline', 'spotter', 'aiterm-mcp', 'gpt-connector', 'lattice', 'peertable', 'unai']) {
+  for (const id of ['caveat', 'throughline', 'spotter', 'aiterm-mcp', 'lattice', 'peertable', 'unai']) {
     assert.deepEqual(checks(report.products[id]), [['native_diagnostics', 'unverified', 'cli_timeout']], id);
     assert.equal(report.products[id].presence_status, 'unverified', id);
     assert.equal(report.products[id].installed_version, undefined, id);
   }
   assert.deepEqual(checks(report.products.markitdown), [['version', 'unverified', 'cli_timeout']]);
+  // 廃止したgpt-connectorは時間切れでも対象外のまま（工場は実行しない結果を使わない）。
+  assert.equal(report.products['gpt-connector'].presence_status, 'not_applicable');
+  assert.deepEqual(checks(report.products['gpt-connector']), [['factory_management', 'skipped', 'retired_from_factory']]);
   for (const id of ['claude-code', 'codex-cli']) {
     assert.deepEqual(checks(report.products[id]).slice(0, 2), [
       ['installed_version', 'unverified', 'cli_timeout'], ['npm_latest', 'unverified', 'cli_timeout'],
@@ -68,7 +71,7 @@ test('製品が応答した時の理由コードは変えない', { concurrency:
   for (const id of ['caveat', 'throughline', 'spotter', 'aiterm-mcp', 'lattice', 'peertable', 'unai']) {
     assert.deepEqual(checks(report.products[id]), [['native_diagnostics', 'unverified', 'native_schema_invalid']], id);
   }
-  assert.deepEqual(checks(report.products['gpt-connector']), [['native_diagnostics', 'unverified', 'gpt_connector_diagnostics_schema']]);
+  assert.deepEqual(checks(report.products['gpt-connector']), [['factory_management', 'skipped', 'retired_from_factory']]);
   assert.deepEqual(checks(report.products['codex-cli']).slice(0, 2), [
     ['installed_version', 'unverified', 'cli_unavailable'], ['npm_latest', 'unverified', 'registry_unverified'],
   ]);

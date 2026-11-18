@@ -78,6 +78,7 @@ mkdir -p "$OFFICIAL_HOME/.claude/skills" "$OFFICIAL_HOME/.claude/commands" \
   "$OFFICIAL_HOME/.agents/skills" "$OFFICIAL_HOME/.codex/skills" "$OFFICIAL_HOME/.local/bin"
 ln -s "$ROOT/claude/skills/audit-gauntlet" "$OFFICIAL_HOME/.claude/skills/audit-gauntlet"
 ln -s "$ROOT/claude/skills/orchestrate" "$OFFICIAL_HOME/.claude/skills/orchestrate"
+ln -s "$ROOT/claude/skills/gpt-connector" "$OFFICIAL_HOME/.claude/skills/gpt-connector"
 ln -s "$ROOT/claude/commands/audit-gauntlet.md" "$OFFICIAL_HOME/.claude/commands/audit-gauntlet.md"
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.agents/skills/audit-gauntlet"
 ln -s "$ROOT/codex/skills/audit-gauntlet" "$OFFICIAL_HOME/.codex/skills/audit-gauntlet"
@@ -112,7 +113,6 @@ assert_link "$OFFICIAL_HOME/.grok/rules/AGENTS.md" "$ROOT/grok/AGENTS.md"
 assert_link "$OFFICIAL_HOME/.grok/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.grok/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.grok/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $OFFICIAL_HOME/.grok/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.grok/skills/auto-deploy-on-push" "$ROOT/grok/skills/auto-deploy-on-push"
-assert_link "$OFFICIAL_HOME/.grok/skills/gpt-connector" "$ROOT/grok/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.grok/skills/polish-github" "$ROOT/grok/skills/polish-github"
 assert_link "$OFFICIAL_HOME/.grok/agents/implementer.md" "$ROOT/grok/agents/implementer.md"
 assert_link "$OFFICIAL_HOME/.grok/agents/refuter.md" "$ROOT/grok/agents/refuter.md"
@@ -123,7 +123,6 @@ assert_link "$OFFICIAL_HOME/.cursor/runbooks" "$ROOT/shared/runbooks"
 [ ! -e "$OFFICIAL_HOME/.cursor/AGENTS.md" ] || fail 'Cursor AGENTS.md を ~/.cursor へ置いた（mount は factory.mdc のみ）'
 [ ! -e "$OFFICIAL_HOME/.cursor/skills/orchestrate" ] && [ ! -L "$OFFICIAL_HOME/.cursor/skills/orchestrate" ] || fail "廃止したorchestrate skillが残った: $OFFICIAL_HOME/.cursor/skills/orchestrate"
 assert_link "$OFFICIAL_HOME/.cursor/skills/auto-deploy-on-push" "$ROOT/cursor/skills/auto-deploy-on-push"
-assert_link "$OFFICIAL_HOME/.cursor/skills/gpt-connector" "$ROOT/cursor/skills/gpt-connector"
 assert_link "$OFFICIAL_HOME/.cursor/skills/polish-github" "$ROOT/cursor/skills/polish-github"
 assert_link "$OFFICIAL_HOME/.cursor/agents/implementer.md" "$ROOT/cursor/agents/implementer.md"
 assert_link "$OFFICIAL_HOME/.cursor/agents/refuter.md" "$ROOT/cursor/agents/refuter.md"
@@ -186,6 +185,7 @@ grep -Fq 'install.sh を再実行' <<<"$runbook_missing_output" \
 HOME="$OFFICIAL_HOME" "$ROOT/install.sh" --profile official >/dev/null
 assert_link "$OFFICIAL_HOME/.claude/runbooks" "$ROOT/shared/runbooks"
 [ ! -L "$OFFICIAL_HOME/.claude/skills/audit-gauntlet" ] || fail '廃止済みClaude skill linkを除去しない'
+[ ! -L "$OFFICIAL_HOME/.claude/skills/gpt-connector" ] || fail '廃止済みgpt-connector Claude skill linkを除去しない'
 [ ! -L "$OFFICIAL_HOME/.claude/commands/audit-gauntlet.md" ] || fail '廃止済みClaude command linkを除去しない'
 [ ! -L "$OFFICIAL_HOME/.agents/skills/audit-gauntlet" ] || fail '廃止済みofficial Codex skill linkを除去しない'
 [ ! -L "$OFFICIAL_HOME/.codex/skills/audit-gauntlet" ] || fail '廃止済みlegacy Codex skill linkを除去しない'

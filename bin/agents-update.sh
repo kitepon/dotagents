@@ -476,7 +476,7 @@ fi
   if ! node "$SCRIPT_DIR/factory-jev-setup.mjs"; then step_failed jev; fi
 
   # package導入後に、設定・依存準備・製品自身の実動作確認を公開入口へ渡す。
-  for setup_product in aiterm caveat gpt-connector lattice peertable; do
+  for setup_product in aiterm caveat lattice peertable; do
     if [[ "$setup_product" = caveat && "$caveat_update_owner" != factory ]]; then continue; fi
     step_ran "setup.$setup_product"
     if ! node "$SCRIPT_DIR/factory-product-setup.mjs" "$setup_product"; then

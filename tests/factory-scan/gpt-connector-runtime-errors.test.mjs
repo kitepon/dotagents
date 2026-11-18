@@ -11,7 +11,7 @@ const EXITED = Object.freeze({ ok: false, code: 1, reason: 'exit', stdout: '', s
 const ok = (value) => ({ ok: true, code: 0, reason: null, stdout: typeof value === 'string' ? value : JSON.stringify(value), stderr: '' });
 const PROFILE = process.platform === 'darwin' ? 'mac' : process.platform === 'win32' ? 'windows-native' : 'linux';
 
-test('工場のscanはgpt-connectorの実行時エラーを読まず、ackも作らない', async (t) => {
+test('廃止したgpt-connectorは入っていても対象外で報告し、実行時エラーもackも作らない', async (t) => {
   const root = await mkdtemp(join(tmpdir(), 'factory-gpt-runtime-errors-'));
   const home = join(root, 'home');
   await mkdir(home);
@@ -44,9 +44,11 @@ test('工場のscanはgpt-connectorの実行時エラーを読まず、ackも作
   validateReportV9(report);
   assert.deepEqual(calls.filter((line) => line.startsWith('gpt-connector ')), ['gpt-connector factory-diagnostics --json']);
   const product = report.products['gpt-connector'];
-  assert.equal(product.presence_status, 'installed');
-  assert.equal(product.installed_version, '1.2.3');
-  assert.equal(product.compatibility_status, 'compatible');
+  // gpt-connectorは2026-11-18に廃止した。入っていても対象外として報告し、診断の値は載せない。
+  assert.equal(product.presence_status, 'not_applicable');
+  assert.equal(product.installed_version, undefined);
+  assert.equal(product.compatibility_status, 'unsupported');
+  assert.deepEqual(product.checks.map((item) => [item.check_id, item.status, item.reason_code]), [['factory_management', 'skipped', 'retired_from_factory']]);
   assert.deepEqual(product.runtime_errors, []);
   assert.deepEqual(product.resolutions, []);
   assert.deepEqual(product.checks.filter((item) => item.check_id === 'runtime_errors'), []);

@@ -64,18 +64,15 @@ for skill in auto-deploy-on-push polish-github; do
 done
 
 # 現行 Claude surface: 配布される skill / command / agent の入口契約だけを確認する。
-for skill in auto-deploy-on-push gpt-connector; do
-  file="$ROOT/claude/skills/$skill/SKILL.md"
-  [ -f "$file" ] || fail "$file がない"
-  frontmatter_is_name_and_description_only "$file"
-  contains "$file" "name: $skill"
-done
+skill=auto-deploy-on-push
+file="$ROOT/claude/skills/$skill/SKILL.md"
+[ -f "$file" ] || fail "$file がない"
+frontmatter_is_name_and_description_only "$file"
+contains "$file" "name: $skill"
 
-# gpt-connectorは全harnessで同じ製品正本を指し、各面にはrouting差分だけを置く。
+# 廃止したgpt-connector skillは全harnessに置かない（2026-11-18）。
 for harness in claude codex grok cursor; do
-  file="$ROOT/$harness/skills/gpt-connector/SKILL.md"
-  [ -f "$file" ] || fail "$file がない"
-  frontmatter_is_name_and_description_only "$file"
+  [ ! -e "$ROOT/$harness/skills/gpt-connector" ] || fail "廃止したgpt-connector skillが残った: $ROOT/$harness/skills/gpt-connector"
 done
 
 for command in auto-deploy-on-push polish-github; do
@@ -91,7 +88,7 @@ for agent in implementer refuter; do
   contains "$file" "name: $agent"
 done
 
-for skill in auto-deploy-on-push polish-github gpt-connector; do
+for skill in auto-deploy-on-push polish-github; do
   file="$ROOT/cursor/skills/$skill/SKILL.md"
   [ -f "$file" ] || fail "$file がない"
   frontmatter_is_name_and_description_only "$file"

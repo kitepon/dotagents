@@ -81,6 +81,17 @@ remove_retired_link "$HOME/.grok/skills/orchestrate" \
   "$HERE/grok/skills/orchestrate" "$HOME/Developer/dotagent/grok/skills/orchestrate"
 remove_retired_link "$HOME/.cursor/skills/orchestrate" \
   "$HERE/cursor/skills/orchestrate" "$HOME/Developer/dotagent/cursor/skills/orchestrate"
+# 廃止したgpt-connector skill（2026-11-18 オーナー裁定で製品ごと廃止）。
+remove_retired_link "$HOME/.claude/skills/gpt-connector" \
+  "$HERE/claude/skills/gpt-connector" "$HOME/Developer/dotagent/claude/skills/gpt-connector"
+remove_retired_link "$HOME/.agents/skills/gpt-connector" \
+  "$HERE/codex/skills/gpt-connector" "$HOME/Developer/dotagent/codex/skills/gpt-connector"
+remove_retired_link "$HOME/.codex/skills/gpt-connector" \
+  "$HERE/codex/skills/gpt-connector" "$HOME/Developer/dotagent/codex/skills/gpt-connector"
+remove_retired_link "$HOME/.grok/skills/gpt-connector" \
+  "$HERE/grok/skills/gpt-connector" "$HOME/Developer/dotagent/grok/skills/gpt-connector"
+remove_retired_link "$HOME/.cursor/skills/gpt-connector" \
+  "$HERE/cursor/skills/gpt-connector" "$HOME/Developer/dotagent/cursor/skills/gpt-connector"
 
 # Claude
 mkdir -p "$HOME/.claude/skills" "$HOME/.claude/commands" "$HOME/.claude/agents"

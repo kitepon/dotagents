@@ -164,10 +164,15 @@ for (const [major, scan, validate] of WIRES) {
           assert.equal(check.last_seen, check.first_seen, context);
           assert.ok(check.last_seen <= report.observed_at, context);
         } else assert.ok(!('message_template' in check), context);
-        const other = find(report.products['gpt-connector'].checks);
-        assert.equal(other.message_template, 'gpt-connector sync failed', context);
-        assert.equal(other.severity, 'high', context);
-        assert.equal(other.reason_code, 'remote_mismatch', context);
+        if (major === 9) {
+          assert.equal(report.products['gpt-connector'].presence_status, 'not_applicable', context);
+          assert.deepEqual(report.products['gpt-connector'].checks.map((item) => [item.check_id, item.status, item.reason_code]), [['factory_management', 'skipped', 'retired_from_factory']], context);
+        } else {
+          const other = find(report.products['gpt-connector'].checks);
+          assert.equal(other.message_template, 'gpt-connector sync failed', context);
+          assert.equal(other.severity, 'high', context);
+          assert.equal(other.reason_code, 'remote_mismatch', context);
+        }
         assert.equal(calls.filter(({ command }) => command === 'caveat').length, 1, context);
         assert.equal(calls.filter(({ args }) => args.includes('runtime-errors') || args.includes('report') || args.includes('sync')).length, 0, context);
         assert.deepEqual(report.products.caveat.runtime_errors, [], context);
