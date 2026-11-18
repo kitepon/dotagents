@@ -1,13 +1,13 @@
 ---
 name: oracle
-description: "旧Oracleの手動rollback・互換保守を依頼された時だけ使う。通常のChatGPT second opinionはgpt-connectorへ。oracle.consultと旧設定の固定制約を確認する。"
+description: "旧Oracleの手動rollback・互換保守を依頼された時だけ使う。oracle.consultと旧設定の固定制約を確認する。"
 ---
 
 # oracle — 非推奨互換・rollback専用
 
-> 新規のChatGPT second-opinionは `$gpt-connector` と MCP `gpt_connector` を使う。Oracleはv1 client・履歴・手動rollbackの互換期間だけ残す。通常利用や新規MCP登録の入口ではない。
+> Oracleはv1 client・履歴・手動rollbackの互換期間だけ残す。通常利用や新規MCP登録の入口ではない（gpt-connectorは2026-11-18に廃止）。
 
-固定実証前提: oracle 0.15.2・GPT-5.6 世代（2026-07 時点）。rollback記録なので日付を現行へ読み替えない。通常入口はgpt-connectorであり、本スキルは期限付き手動rollbackだけに使う。旧Oracleの固定記録は[archive](../../../docs/archive/2026-08_06_oracle-mcp.md)。
+固定実証前提: oracle 0.15.2・GPT-5.6 世代（2026-07 時点）。rollback記録なので日付を現行へ読み替えない。本スキルは期限付き手動rollbackだけに使う。旧Oracleの固定記録は[archive](../../../docs/archive/2026-08_06_oracle-mcp.md)。
 
 ## 固定方針
 

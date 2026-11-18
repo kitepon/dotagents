@@ -20,7 +20,6 @@ CIは履歴以外の文書のlocal link切れと、生成物のずれだけを�
 | [04_ci.md](04_ci.md) | lint / CI ゲート（`make ci`＝CI同一、`make lint`＝静的部分ゲート）の正典 |
 | [factory-current-state.md](factory-current-state.md) | 配備契約から生成する製品数・区分・現役wire・本番endpoint・rollback先 |
 | [05_codex-fragments.md](05_codex-fragments.md) | Codex 端末設定の断片カタログ（MultiAgent V2 role routing 必須断片・実効値ゲート・親既定はオーナー領分） |
-| [06_gpt-connector.md](06_gpt-connector.md) | ChatGPT製品を工場へ登録する薄い接続pointer（`gpt_connector` / `gpt-connector-mcp`） |
 | [07_grok-fragments.md](07_grok-fragments.md) | Grok 端末設定の工場断片（compat.agents と工場MCP 6。model/login/permissionは触らない） |
 | [08_cursor-fragments.md](08_cursor-fragments.md) | Cursor 端末設定の工場断片（工場MCP 6。cli-config.json の model/login/permissionは触らない） |
 | [09_feature-map.md](09_feature-map.md) | 全体→機能詳細→実ファイル/関数・状態/失敗保持の現状図。調査中の範囲と未確認を明示する |

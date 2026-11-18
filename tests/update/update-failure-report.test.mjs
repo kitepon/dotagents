@@ -70,11 +70,11 @@ test('署名は、BugHubの契約の試験値と一致する', () => {
 });
 
 test('失敗した手順は回数が累計になり、成功した回で解決済みになり、また失敗すれば開き直る', () => {
-  const first = applyRun(emptyState(), { ran: ['setup.gpt-connector', 'typesafe'], failed: ['setup.gpt-connector'], now: '2026-10-01T17:00:30.000Z', version: VERSION });
-  const second = applyRun(first, { ran: ['setup.gpt-connector', 'typesafe'], failed: ['setup.gpt-connector'], now: '2026-10-02T17:00:30.000Z', version: VERSION });
-  assert.deepEqual(Object.keys(second.records), ['setup.gpt-connector']);
-  assert.equal(second.records['setup.gpt-connector'].occurrence_count, 2);
-  assert.equal(second.records['setup.gpt-connector'].first_seen, '2026-10-01T17:00:30.000Z');
+  const first = applyRun(emptyState(), { ran: ['setup.peertable', 'typesafe'], failed: ['setup.peertable'], now: '2026-10-01T17:00:30.000Z', version: VERSION });
+  const second = applyRun(first, { ran: ['setup.peertable', 'typesafe'], failed: ['setup.peertable'], now: '2026-10-02T17:00:30.000Z', version: VERSION });
+  assert.deepEqual(Object.keys(second.records), ['setup.peertable']);
+  assert.equal(second.records['setup.peertable'].occurrence_count, 2);
+  assert.equal(second.records['setup.peertable'].first_seen, '2026-10-01T17:00:30.000Z');
   assert.equal(second.unsent, true);
 
   const report = buildReport(second, { observedAt: '2026-10-02T17:00:31.000Z', version: VERSION, reportId: '00000000-0000-4000-8000-000000000002' });
@@ -85,10 +85,10 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
     installed_version: VERSION,
     observed_at: '2026-10-02T17:00:31.000Z',
     runtime_errors: [{
-      fingerprint: stepFingerprint('setup.gpt-connector'),
+      fingerprint: stepFingerprint('setup.peertable'),
       error_code: 'UPDATE_STEP_FAILED',
-      component: 'setup.gpt-connector',
-      message_template: 'dotagents update step failed: setup.gpt-connector',
+      component: 'setup.peertable',
+      message_template: 'dotagents update step failed: setup.peertable',
       severity: 'warn',
       status: 'open',
       occurrence_count: 2,
@@ -99,26 +99,26 @@ test('失敗した手順は回数が累計になり、成功した回で解決�
     resolutions: [],
   });
   assert.match(report.runtime_errors[0].fingerprint, /^[0-9a-f]{64}$/);
-  assert.notEqual(stepFingerprint('setup.gpt-connector'), stepFingerprint('setup.aiterm'));
+  assert.notEqual(stepFingerprint('setup.peertable'), stepFingerprint('setup.aiterm'));
 
   // 今回動かなかった手順は、解決済みにしない。
   const untouched = applyRun(second, { ran: ['typesafe'], failed: [], now: '2026-10-03T17:00:30.000Z', version: VERSION });
-  assert.equal(untouched.records['setup.gpt-connector'].status, 'open');
+  assert.equal(untouched.records['setup.peertable'].status, 'open');
 
-  const recovered = applyRun(markAccepted(second, report, '2026-10-02T17:00:31.000Z'), { ran: ['setup.gpt-connector'], failed: [], now: '2026-10-03T17:00:30.000Z', version: VERSION });
+  const recovered = applyRun(markAccepted(second, report, '2026-10-02T17:00:31.000Z'), { ran: ['setup.peertable'], failed: [], now: '2026-10-03T17:00:30.000Z', version: VERSION });
   assert.equal(recovered.unsent, true);
   const resolvedReport = buildReport(recovered, { observedAt: '2026-10-03T17:00:31.000Z', version: VERSION });
   assert.equal(resolvedReport.runtime_errors[0].status, 'resolved');
-  assert.deepEqual(resolvedReport.resolutions, [{ fingerprint: stepFingerprint('setup.gpt-connector'), resolved_at: '2026-10-03T17:00:30.000Z', reason_code: 'recovered' }]);
+  assert.deepEqual(resolvedReport.resolutions, [{ fingerprint: stepFingerprint('setup.peertable'), resolved_at: '2026-10-03T17:00:30.000Z', reason_code: 'recovered' }]);
 
   // 受け取られた解決は、もう載せない。また失敗したら、回数を続きから数えて開き直す。
   const delivered = markAccepted(recovered, resolvedReport, '2026-10-03T17:00:31.000Z');
   assert.equal(delivered.unsent, false);
   assert.deepEqual(buildReport(delivered, { observedAt: '2026-10-03T18:00:00.000Z', version: VERSION }).runtime_errors, []);
-  const reopened = applyRun(delivered, { ran: ['setup.gpt-connector'], failed: ['setup.gpt-connector'], now: '2026-10-04T17:00:30.000Z', version: VERSION });
-  assert.equal(reopened.records['setup.gpt-connector'].status, 'open');
-  assert.equal(reopened.records['setup.gpt-connector'].occurrence_count, 3);
-  assert.equal(reopened.records['setup.gpt-connector'].first_seen, '2026-10-01T17:00:30.000Z');
+  const reopened = applyRun(delivered, { ran: ['setup.peertable'], failed: ['setup.peertable'], now: '2026-10-04T17:00:30.000Z', version: VERSION });
+  assert.equal(reopened.records['setup.peertable'].status, 'open');
+  assert.equal(reopened.records['setup.peertable'].occurrence_count, 3);
+  assert.equal(reopened.records['setup.peertable'].first_seen, '2026-10-01T17:00:30.000Z');
 });
 
 const OBSERVED = '2026-10-03T17:00:00.000Z';
@@ -182,7 +182,7 @@ test('根拠は、この回のreportで製品を起動できたかどうかだ�
     'jev-ultrafast': product({ compatibility_status: 'unverified', checks: [{ check_id: 'installation', status: 'pass' }] }),
     'agent-desktop': { presence_status: 'not_applicable', compatibility_status: 'unsupported', checks: [{ check_id: 'platform', status: 'skipped', reason_code: 'upstream_unsupported' }] },
   } };
-  const failed = ['setup.caveat', 'unai', 'markitdown', 'setup.lattice', 'package.throughline', 'jev', 'setup.gpt-connector', 'typesafe', 'npm', 'factory-report', 'package.pnpm'];
+  const failed = ['setup.caveat', 'unai', 'markitdown', 'setup.lattice', 'package.throughline', 'jev', 'setup.peertable', 'typesafe', 'npm', 'factory-report', 'package.pnpm'];
   assert.deepEqual(runEvidence(report, failed), {
     'setup.caveat': launchable(['caveat'], ['caveat:native_diagnostics']),
     unai: launchable(['unai'], ['unai:skill_projection_cursor']),
@@ -307,7 +307,7 @@ test('有効な端末は署名を付けて1か所へ送り、受領されたら�
   await placeCredential(paths, receiver.url);
   assert.equal((await run(env, ['enable'])).json.reporting, 'enabled');
 
-  const failed = await run(env, ['record', '--ran', 'setup.gpt-connector', '--ran', 'setup.aiterm', '--failed', 'setup.gpt-connector', '--failed', 'setup.aiterm']);
+  const failed = await run(env, ['record', '--ran', 'setup.peertable', '--ran', 'setup.aiterm', '--failed', 'setup.peertable', '--failed', 'setup.aiterm']);
   assert.equal(failed.code, 0, failed.stderr);
   assert.equal(failed.json.outcome, 'accepted');
   assert.equal(receiver.requests.length, 1);
@@ -319,17 +319,17 @@ test('有効な端末は署名を付けて1か所へ送り、受領されたら�
   assert.equal(first.report.product_id, 'dotagents');
   assert.match(first.report.installed_version, /^0\.0\.0\+[0-9a-f]{7}$/);
   // 製品ごとに届け先を分けない。1回の送信に、その端末の全手順をまとめて載せる。
-  assert.deepEqual(first.report.runtime_errors.map((item) => item.component), ['setup.aiterm', 'setup.gpt-connector']);
+  assert.deepEqual(first.report.runtime_errors.map((item) => item.component), ['setup.aiterm', 'setup.peertable']);
 
   // 受領済みで変化が無ければ、送らない。
   assert.equal((await run(env, ['flush'])).json.outcome, 'nothing_to_send');
   assert.equal(receiver.requests.length, 1);
 
-  const recovered = await run(env, ['record', '--ran', 'setup.gpt-connector', '--ran', 'setup.aiterm', '--failed', 'setup.aiterm']);
+  const recovered = await run(env, ['record', '--ran', 'setup.peertable', '--ran', 'setup.aiterm', '--failed', 'setup.aiterm']);
   assert.equal(recovered.json.outcome, 'accepted');
   assert.deepEqual(recovered.json.open_steps, ['setup.aiterm']);
   const second = receiver.requests[1].report;
-  assert.deepEqual(second.runtime_errors.map((item) => [item.component, item.status, item.occurrence_count]), [['setup.aiterm', 'open', 2], ['setup.gpt-connector', 'resolved', 1]]);
+  assert.deepEqual(second.runtime_errors.map((item) => [item.component, item.status, item.occurrence_count]), [['setup.aiterm', 'open', 2], ['setup.peertable', 'resolved', 1]]);
   assert.deepEqual(second.resolutions.map((item) => item.reason_code), ['recovered']);
 
   const status = (await run(env, ['status'])).json;
@@ -435,4 +435,12 @@ test('不正な引数と壊れた記録は、既存のファイルを書き換�
   assert.equal(result.code, 1);
   assert.match(result.stderr, /state_invalid/);
   assert.equal(await readFile(paths.state, 'utf8'), '{broken');
+});
+
+test('廃止したgpt-connectorの手順は、動かなくても開いたままの記録を解決済みにする', () => {
+  const stale = { ...emptyState(), records: { 'setup.gpt-connector': { occurrence_count: 3, first_seen: '2026-10-04T19:01:37.069Z', last_seen: '2026-11-17T17:02:23.968Z', status: 'open', resolved_at: null, resolution_unsent: false, product_version: VERSION } } };
+  const next = applyRun(stale, { ran: ['typesafe'], failed: [], now: '2026-11-18T17:00:30.000Z', version: VERSION });
+  assert.equal(next.records['setup.gpt-connector'].status, 'resolved');
+  assert.equal(next.records['setup.gpt-connector'].resolved_at, '2026-11-18T17:00:30.000Z');
+  assert.equal(next.unsent, true);
 });

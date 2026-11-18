@@ -67,10 +67,6 @@ tool_namespace = "agents"
 
 実装根拠: [`MultiAgentV2Config` の hidden 既定](https://github.com/openai/codex/blob/rust-v0.144.1/codex-rs/core/src/config/mod.rs)、[`spawn_agent` schema から4入力を除く処理](https://github.com/openai/codex/blob/rust-v0.144.1/codex-rs/core/src/tools/handlers/multi_agents_spec.rs)、[role 適用後に親 permission profile を再適用する処理](https://github.com/openai/codex/blob/rust-v0.144.1/codex-rs/core/src/tools/handlers/multi_agents_common.rs)。上流既報は [#31814](https://github.com/openai/codex/issues/31814)（hidden routing）・[#20077](https://github.com/openai/codex/issues/20077)（full-history 既定）。
 
-## 3b. gpt-connector MCP（ChatGPT接続・工場コア全端末必須）
-
-ChatGPTの第二意見をCodex親へ接続する工場entryは、server ID `gpt_connector`、command `gpt-connector-mcp`である。MCP登録は限定applierの対象外で、対象hostの製品公開入口`gpt-connector setup`へ委譲する。工場境界は[接続pointer](06_gpt-connector.md)、製品の利用・診断・復旧は[gpt-connectorの正本](https://github.com/kitepon/gpt-connector#readme)に従う。
-
 ## 4. `project_doc_fallback_filenames = ["CLAUDE.md"]`（任意・副作用明記）
 
 CLAUDE.md しか無いリポ（第三者製品など）に指示を届かせるための設定。`project_doc_fallback_filenames` と `project_doc_max_bytes` は config.toml のキーとして実在確認済み（実装文字列に両キー名が連続して実在）。
@@ -157,8 +153,8 @@ MCP は親に応じて入口を分ける。Codex親はnative枠だけを工場�
 
 | 親 | core | 任意 / 認証依存 | 禁止 / 非採用 |
 |---|---|---|---|
-| Claude Code | `aiterm`、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
-| Codex | native subagents、`aiterm`（Codex / Grok / Composer）、`gpt_connector`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
+| Claude Code | `aiterm`、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
+| Codex | native subagents、`aiterm`（Codex / Grok / Composer）、`caveat`、`lattice`、`aishell`（Apple Silicon / macOS 15+） | OpenAI Docs等の認証依存追加面 | 非対応hostのAIShell登録 |
 
 利用可能性はinstalled（CLI存在）→registered（親へconnector登録）→verified（read-only疎通）→execution-verified（実タスク完遂と回収）で区別する。外部writerに使うのはexecution-verifiedだけ。timeoutは状態不明として同じtask IDのsession/jobを回収し、稼働中の重複起動をしない。
 
@@ -175,7 +171,6 @@ codex mcp get caveat --json
 codex mcp add caveat -- caveat mcp-server
 codex mcp add lattice -- lattice-mcp
 codex mcp add aiterm -- aiterm-mcp
-codex mcp add gpt_connector -- gpt-connector-mcp
 codex mcp add aishell --env AISHELL_CAPABILITY_SET=expanded-v1 -- aishell-mcp
 ```
 

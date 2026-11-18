@@ -62,7 +62,7 @@ if [ ! -f "$ENTRY" ]; then
 fi
 
 # ChromeはOracle rollback互換shim経由で起動。hideWindowは送信を壊し、固定負座標も
-# 複数displayでは非可視を保証しないため、通常運用はgpt-connectorを使う。
+# 複数displayでは非可視を保証しないため、通常運用の入口は無い（gpt-connectorは2026-11-18に廃止）。
 export CHROME_PATH="${CHROME_PATH:-$HOME/.local/bin/oracle-chrome-shim}"
 
 exec "$NODE_BIN" --import "$GUARD" "$ENTRY" "$@"

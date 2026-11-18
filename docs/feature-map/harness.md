@@ -48,9 +48,8 @@ sessionStartはstampせず、beforeSubmitPrompt/preToolUseはsession/conversatio
 | --- | --- | --- |
 | auto-deploy-on-push | Claude skillが詳細、Claude commandが入口、他3面skillは親別の実行ゲート | 既範囲で調査→説明→変更→検証。SSH/鍵/Secrets/workflow/pushの例があるが、読み込んだだけで実行許可にならない。本番・Host境界は依頼が所有 |
 | polish-github | Claude commandが詳細、Codex/Grok/Cursor skillはpointer | audit→選択/既GO→変更→公開面確認。正本不在を要約で代替しない。外部変異/公開は現在の依頼・既承認で判断 |
-| gpt-connector | 4面skill→docs/06 pointer→製品正本 | 公開MCP routingだけ。Claude/Codex直接、Grok search_tool/use_tool、Cursor動的tool取得/呼出し。製品内部を複製しない |
 | 1Password | 4面同一skill→shared/runbooks/1password.md | 現在は全skill loopの配置対象。用途description、公式CLI/MCP、未認証と利用可能の区別。skill配置と本体導入/登録/認証を同一視しない |
-| Oracle | Codexだけの互換/rollback skill | 通常second opinionはgpt-connector。旧固定前提・手動rollback以外へ広げない |
+| Oracle | Codexだけの互換/rollback skill | 旧固定前提・手動rollback以外へ広げない |
 | implementer/refuter | Claude/Grok/Cursorの親別agent定義 | 実装者の範囲/挙動不変/統括commit、反証者の読取専用を定義。Grok permission/prompt_mode、Claude runtime model/tool、Cursor native routingの差を保持 |
 | Codex補助YAML | auto-deploy/polishのdisplay/default_prompt、polishのimplicit invocation設定 | 表示/呼出しのmetadataであり、認証や外部変更を実行するscriptではない |
 

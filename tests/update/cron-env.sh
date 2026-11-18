@@ -248,13 +248,13 @@ if env -i DOTAGENTS_SOURCE_UPDATED=1 HOME="$TEST_HOME" PATH="$TEST_HOME/base-bin
 fi
 
 # 既定のfixtureはClaude Code・Codexが最新で、この2つはnpmへ渡らない。
-expected_npm_packages=8
+expected_npm_packages=7
 if [ "$(uname -s)" = Darwin ] && [ "$(uname -m)" = arm64 ]; then
-  expected_npm_packages=9
+  expected_npm_packages=8
 fi
 node --input-type=module - <<'EOF' || fail 'OS/arch別npm package集合がdeployment contractと一致しない'
 import { npmPackagesForHost } from './lib/factory/deployment-contract.mjs';
-const base = ['@anthropic-ai/claude-code','@openai/codex','gpt-connector','@anthropic-ai/sdk','aiterm-mcp','caveat-cli','claude-spotter','@quolu/lattice','peertable','pnpm','throughline'];
+const base = ['@anthropic-ai/claude-code','@openai/codex','@anthropic-ai/sdk','aiterm-mcp','caveat-cli','claude-spotter','@quolu/lattice','peertable','pnpm','throughline'];
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 if (!same(npmPackagesForHost({ os: 'Linux', arch: 'x64' }), base)
  || !same(npmPackagesForHost({ os: 'Windows_NT', arch: 'x64' }), base)
@@ -319,7 +319,7 @@ if grep -q '^retired-stuck:install -g @openai/codex@latest$' "$TEST_HOME/npm-cal
 fi
 grep -Fxq 'FAILED: @openai/codex の退避フォルダを片付けられない（入替を見送る）' "$TEST_HOME/retired-stuck.out" \
   || fail '入替を見送った理由をlogへ残していない'
-grep -q '^retired-stuck:install -g gpt-connector@latest$' "$TEST_HOME/npm-calls.log" \
+grep -q '^retired-stuck:install -g peertable@latest$' "$TEST_HOME/npm-calls.log" \
   || fail '入替を見送った後に独立したpackageの更新を継続しなかった'
 node -e 'const x=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).products["codex-cli"];if(x.operation_status!=="failed"||x.reason_code!=="install_failed"||x.before_version!=="0.144.2"||x.after_version!=="0.144.2")process.exit(1)' \
   "$TEST_HOME/.local/state/agents-update/toolchain-ledger.json" || fail '入替を見送った回を、版を変えずに失敗として台帳へ保存しない'
@@ -877,7 +877,7 @@ grep -Fq 'normal:setup:caveat:init --sync --yes' "$TEST_HOME/update-events.log" 
   || fail 'root不在のCaveat initを省いた'
 grep -Fq 'caveat-managed:install -g peertable@latest' "$TEST_HOME/npm-calls.log" \
   || fail '他製品のnpm更新を省いた'
-grep -Fq 'caveat-managed:setup:gpt-connector:setup' "$TEST_HOME/update-events.log" \
+grep -Fq 'caveat-managed:setup:lattice:setup --host all --json' "$TEST_HOME/update-events.log" \
   || fail '他製品の公開setupを省いた'
 grep -Fq 'SKIPPED: Caveat npm install/init (update owner: managed-v1)' "$TEST_HOME/caveat-managed.out" \
   || fail 'Caveat除外の理由を記録していない'
