@@ -5,7 +5,7 @@
 # ("Rootless Docker"). It never adds factory-runner to a group and never edits the runner/scaler unit.
 # Idempotent. Exit 3 = a Runner.Worker is running: nothing was changed (or the listeners were not recycled); rerun when idle.
 #   bin/linux-factory-runner-docker.sh                     apply
-#   bin/linux-factory-runner-docker.sh --rollback [--purge] remove the unit and every DOCKER_HOST line (--purge: image data too)
+#   bin/linux-factory-runner-docker.sh --rollback [--purge] remove the unit and every DOCKER_HOST/HOME line (--purge: image data and the per-root HOMEs too)
 set -euo pipefail
 set +x
 # apt/dpkg/sysctl output is parsed below; a Japanese Rabbit printed "候補:" for "Candidate:" and the precheck refused (2026-11-22).
@@ -65,9 +65,12 @@ if [ "$mode" = rollback ]; then
   sudo -n systemctl daemon-reload
   sudo -n systemctl restart systemd-binfmt.service || true
   for root in "${roots[@]}"; do
-    sudo -n -u "$RUNNER_USER" -H bash --noprofile --norc -c 'f=$1/.env; [ -f "$f" ] || exit 0; grep -v "^DOCKER_HOST=" "$f" >"$f.new" || true; mv "$f.new" "$f"' _ "$root"
+    sudo -n -u "$RUNNER_USER" -H bash --noprofile --norc -c 'f=$1/.env; [ -f "$f" ] || exit 0; grep -Ev "^(DOCKER_HOST|HOME)=" "$f" >"$f.new" || true; mv "$f.new" "$f"' _ "$root"
   done
-  [ "$purge" = 0 ] || sudo -n rm -rf "$RUNNER_HOME/.local/share/docker" "$RUNNER_HOME/.config/docker"
+  if [ "$purge" = 1 ]; then
+    sudo -n rm -rf "$RUNNER_HOME/.local/share/docker" "$RUNNER_HOME/.config/docker"
+    for root in "${roots[@]}"; do sudo -n rm -rf "$root/home"; done
+  fi
   status=0; recycle_listeners || status=$?
   echo "rollback done (packages, subuid/subgid and, without --purge, image data stay). Revert the dotagents PR too, or setup's rootless-Docker check fails."
   exit "$status"
@@ -159,12 +162,19 @@ sudo -n systemctl restart "$SERVICE"
 for _ in $(seq 60); do runner test -S "$SOCKET" && break; sleep 1; done
 runner test -S "$SOCKET" || { echo "no socket at $SOCKET after 60 s"; sudo -n journalctl -u "$SERVICE" -n 30 --no-pager; exit 1; } >&2
 
-# 6. DOCKER_HOST in every pool root, then recycle idle listeners so the next job inherits it.
+# 6. Per-root HOME (<root>/home, 0700) and DOCKER_HOST in every pool root's .env, then recycle idle listeners so the next job
+#    inherits them. The pool shares one user, so a shared HOME made concurrent jobs race on ~ (pnpm/action-setup, 2026-11-22).
+#    The new HOMEs start empty: only .gitconfig and .npmrc are copied (once, never overwritten); the rest is listed below.
 for root in "${roots[@]}"; do
   runner test -f "$root/.runner" || { echo "pool root is not registered: $root" >&2; exit 2; }
-  { runner cat "$root/.env" 2>/dev/null || true; } | node "$HELPER" set-env \
+  runner install -d -m 700 "$root/home"
+  for f in .gitconfig .npmrc; do
+    if runner test -f "$RUNNER_HOME/$f" && ! runner test -e "$root/home/$f"; then runner cp -p "$RUNNER_HOME/$f" "$root/home/$f"; fi
+  done
+  { runner cat "$root/.env" 2>/dev/null || true; } | node "$HELPER" set-env "$root" \
     | sudo -n -u "$RUNNER_USER" -H bash --noprofile --norc -c 'cat >"$1.new" && mv "$1.new" "$1"' _ "$root/.env"
 done
+echo "not copied into the per-root HOMEs (they start empty): $(runner find "$RUNNER_HOME" -maxdepth 1 -name '.*' ! -name . ! -name .gitconfig ! -name .npmrc -printf '%f ' | tr -s ' ')"
 status=0; recycle_listeners || status=$?
 
 # 7. Readback (the job-side readback is in docs/feature-map/runner-capacity.md).
@@ -175,5 +185,5 @@ echo "$info"
 case "$info" in *name=rootless*) ;; *) echo 'docker info does not report rootless' >&2; exit 1 ;; esac
 head -n 3 "$ARM64_PROC"
 echo "groups: $(id -nG "$RUNNER_USER")"
-for root in "${roots[@]}"; do runner grep -H '^DOCKER_HOST=' "$root/.env"; done
+for root in "${roots[@]}"; do runner grep -H -E '^(DOCKER_HOST|HOME)=' "$root/.env"; done
 exit "$status"

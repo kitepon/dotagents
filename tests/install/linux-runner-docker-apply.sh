@@ -122,4 +122,45 @@ rm_line="$(grep -n '50-cgroupfs.conf' "$fixture/unit_calls" | head -1 | cut -d: 
   source "$fixture/rollback.sh" || true
 )
 grep -Fxq 'sudo -n rm -rf /etc/systemd/system/factory-runner-dockerd.service.d' "$fixture/rollback_calls" || { echo 'FAIL: rollbackがdrop-inのdirを消さない' >&2; exit 1; }
+grep -Fq '(DOCKER_HOST|HOME)=' "$fixture/rollback_calls" || { echo 'FAIL: rollbackがHOME行を外さない' >&2; exit 1; }
+if grep -Fq 'nonexistent-root/home' "$fixture/rollback_calls"; then echo 'FAIL: --purgeなしでroot別HOMEを消した' >&2; exit 1; fi
+(
+  calls="$fixture/purge_calls"; : >"$calls"
+  mode=rollback HELPER=x UNITS=/etc/systemd/system SERVICE=factory-runner-dockerd.service ARM64_CONF=/nonexistent ROOTLESSKIT_PROFILE=/nonexistent MARK=m purge=1 RUNNER_USER=factory-runner RUNNER_HOME=/home/factory-runner roots=(/nonexistent-root)
+  sudo() { printf 'sudo %s\n' "$*" >>"$calls"; }
+  runner() { :; }
+  recycle_listeners() { :; }
+  # shellcheck disable=SC1091 # 検査対象から取り出した実処理。
+  source "$fixture/rollback.sh" || true
+)
+grep -Fxq 'sudo -n rm -rf /nonexistent-root/home' "$fixture/purge_calls" || { echo 'FAIL: --purgeがroot別HOMEを消さない' >&2; exit 1; }
+# Step 6: every pool root gets its own HOME dir (0700) created before its .env is written, a one-time copy of .gitconfig/.npmrc, and
+# an .env with DOCKER_HOST plus HOME=<root>/home; no two roots share a HOME.
+awk '/^# 6\. Per-root HOME/ { capture=1 } /^echo "not copied/ { capture=0 } capture' "$ROOT/bin/linux-factory-runner-docker.sh" >"$fixture/env.sh"
+[ -s "$fixture/env.sh" ] || { echo 'FAIL: step 6が見つかりません' >&2; exit 1; }
+(
+  calls="$fixture/env_calls"; : >"$calls"
+  HELPER="$ROOT/bin/factory-runner-docker.mjs" RUNNER_USER=factory-runner RUNNER_HOME=/home/factory-runner
+  roots=(/home/factory-runner/actions-runner /home/factory-runner/actions-runner-2)
+  runner() {
+    printf 'runner %s\n' "$*" >>"$calls"
+    case "$1 $2" in
+      'test -f') case "$3" in */.runner|/home/factory-runner/.gitconfig) return 0 ;; *) return 1 ;; esac ;;
+      'test -e') return 1 ;;
+      'cat '*) printf 'LANG=C\n' ;;
+    esac
+  }
+  sudo() { local last="${*: -1}"; cat >"$fixture/env.${last//\//_}"; }
+  # shellcheck disable=SC1091 # 検査対象から取り出した実処理。
+  source "$fixture/env.sh"
+)
+for n in "" -2; do
+  root="/home/factory-runner/actions-runner$n"
+  grep -Fxq "runner install -d -m 700 $root/home" "$fixture/env_calls" || { echo "FAIL: $root のHOMEを0700で作らない" >&2; exit 1; }
+  grep -Fxq "runner cp -p /home/factory-runner/.gitconfig $root/home/.gitconfig" "$fixture/env_calls" || { echo 'FAIL: .gitconfigを写さない' >&2; exit 1; }
+  [ "$(grep -c "^runner install -d -m 700 $root/home" "$fixture/env_calls")" -eq 1 ]
+  [ "$(cat "$fixture/env.${root//\//_}_.env")" = "$(printf 'LANG=C\nDOCKER_HOST=unix:///run/factory-runner-docker/docker.sock\nHOME=%s/home' "$root")" ] \
+    || { echo "FAIL: $root の.envが違う" >&2; cat "$fixture/env.${root//\//_}_.env" >&2; exit 1; }
+done
+if grep -Fq '.npmrc' "$fixture/env_calls" && grep -Fq 'runner cp -p /home/factory-runner/.npmrc' "$fixture/env_calls"; then echo 'FAIL: 無い.npmrcを写した' >&2; exit 1; fi
 echo 'linux-runner-docker-apply: OK（docker.io/docker-ceの選択・Ubuntu archiveの部品・欠品は名指しで変更前に停止）'

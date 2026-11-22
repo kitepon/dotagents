@@ -108,7 +108,8 @@ dedicated_runner_profile() {
 }
 
 # Jobs reach Docker through the runner principal's own rootless daemon (docs/feature-map/runner-capacity.md), never a docker
-# group: the daemon unit is active as the principal, its socket belongs to the principal, every pool root's .env has DOCKER_HOST.
+# group: the daemon unit is active as the principal, its socket belongs to the principal, every pool root's .env has DOCKER_HOST
+# and its own HOME (<root>/home, so distinct per root).
 verify_runner_rootless_docker() {
   local runner_user="$1" profile="$2" service socket root
   IFS=$'\t' read -r service socket _ < <(node "$ROOT/bin/factory-runner-docker.mjs" config) \
@@ -119,8 +120,8 @@ verify_runner_rootless_docker() {
   [ "$(sudo -n -u "$runner_user" stat -c '%U %F' "$socket" 2>/dev/null)" = "$runner_user socket" ] \
     || die "rootless Dockerのsocketが専用runner所有でない: $socket"
   while IFS= read -r root; do
-    sudo -n -u "$runner_user" cat "$root/.env" 2>/dev/null | node "$ROOT/bin/factory-runner-docker.mjs" has-env \
-      || die "pool rootの.envにDOCKER_HOSTが無い（または複数ある）: $root"
+    sudo -n -u "$runner_user" cat "$root/.env" 2>/dev/null | node "$ROOT/bin/factory-runner-docker.mjs" has-env "$root" \
+      || die "pool rootの.envにDOCKER_HOSTまたはroot専用のHOME（$root/home）が無い（または複数ある）: $root"
   done < <(node -e 'for (const item of JSON.parse(process.argv[1]).instances) console.log(item.root)' "$profile")
 }
 
