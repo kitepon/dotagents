@@ -1,0 +1,140 @@
+#!/usr/bin/env bash
+# Rabbit host apply (run by the host owner as the existing operator with sudo): rootless Docker owned by factory-runner,
+# host arm64 binfmt with the F flag, DOCKER_HOST in every pool root's .env. Contract: docs/feature-map/runner-capacity.md
+# ("Rootless Docker"). It never adds factory-runner to a group and never edits the runner/scaler unit.
+# Idempotent. Exit 3 = a Runner.Worker is running: nothing was changed (or the listeners were not recycled); rerun when idle.
+#   bin/linux-factory-runner-docker.sh                     apply
+#   bin/linux-factory-runner-docker.sh --rollback [--purge] remove the unit and every DOCKER_HOST line (--purge: image data too)
+set -euo pipefail
+set +x
+ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+HELPER="$ROOT/bin/factory-runner-docker.mjs"
+RUNNER_USER=factory-runner
+RUNNER_HOME=/home/factory-runner
+UNITS=/etc/systemd/system
+ROOTLESSKIT_PROFILE=/etc/apparmor.d/usr.bin.rootlesskit
+ARM64_CONF=/etc/binfmt.d/qemu-aarch64.conf
+ARM64_PROC=/proc/sys/fs/binfmt_misc/qemu-aarch64
+MARK='# dotagents factory-runner rootless Docker'
+
+mode=apply
+purge=0
+case "${1:-}" in
+  '') ;;
+  --rollback) mode=rollback; [ "${2:-}" != --purge ] || purge=1; [ "$#" -le $((1 + purge)) ] || { echo 'usage: see header' >&2; exit 2; } ;;
+  *) echo 'usage: see header' >&2; exit 2 ;;
+esac
+
+IFS=$'\t' read -r SERVICE SOCKET DOCKER_HOST_VALUE < <(node "$HELPER" config)
+mapfile -t roots < <(node --input-type=module -e '
+  const { POOL_INSTANCES } = await import(process.argv[1]);
+  for (const item of POOL_INSTANCES) console.log(item.root);
+' "$ROOT/lib/factory/runner-profile.mjs")
+[ "${#roots[@]}" -gt 0 ] || { echo 'no pool roots in the contract' >&2; exit 2; }
+
+runner() { sudo -n -u "$RUNNER_USER" -H "$@"; }
+workers_running() { pgrep -u "$RUNNER_USER" -x Runner.Worker >/dev/null; }
+dpkg_ok() { dpkg-query -W -f='${db:Status-Abbrev}' "$1" 2>/dev/null | grep -Fq 'ii '; }
+arm64_flags() { sed -n 's/^flags: //p' "$ARM64_PROC" 2>/dev/null || true; }
+# Listeners read .env only at start; the scaler restarts a stopped one on its next tick (minimum 1), so recycle idle ones.
+recycle_listeners() {
+  if workers_running; then
+    echo 'a Runner.Worker is running: listeners keep the old environment until each restarts; rerun when idle (exit 3)'
+    return 3
+  fi
+  sudo -n pkill -u "$RUNNER_USER" -INT -x Runner.Listener || true
+}
+
+sudo -n true
+[ "$(id -nG "$RUNNER_USER")" = "$RUNNER_USER" ] || { echo 'factory-runner has extra groups; refuse' >&2; exit 2; }
+if runner sudo -n true 2>/dev/null; then echo 'factory-runner can sudo; refuse' >&2; exit 2; fi
+if workers_running; then echo 'swap pending (a Runner.Worker is running); nothing changed; rerun when idle'; exit 3; fi
+
+if [ "$mode" = rollback ]; then
+  sudo -n systemctl disable --now "$SERVICE" 2>/dev/null || true
+  sudo -n rm -f "$UNITS/$SERVICE"
+  if grep -Fqx "$MARK" "$ARM64_CONF" 2>/dev/null; then sudo -n rm -f "$ARM64_CONF"; fi
+  if grep -Fqx "$MARK" "$ROOTLESSKIT_PROFILE" 2>/dev/null; then sudo -n rm -f "$ROOTLESSKIT_PROFILE"; sudo -n systemctl reload apparmor.service || true; fi
+  sudo -n systemctl daemon-reload
+  sudo -n systemctl restart systemd-binfmt.service || true
+  for root in "${roots[@]}"; do
+    sudo -n -u "$RUNNER_USER" -H bash --noprofile --norc -c 'f=$1/.env; [ -f "$f" ] || exit 0; grep -v "^DOCKER_HOST=" "$f" >"$f.new" || true; mv "$f.new" "$f"' _ "$root"
+  done
+  [ "$purge" = 0 ] || sudo -n rm -rf "$RUNNER_HOME/.local/share/docker" "$RUNNER_HOME/.config/docker"
+  status=0; recycle_listeners || status=$?
+  echo "rollback done (packages, subuid/subgid and, without --purge, image data stay). Revert the dotagents PR too, or setup's rootless-Docker check fails."
+  exit "$status"
+fi
+
+# 1. Packages: only what is missing. docker-ce-rootless-extras exists only in Docker's own apt repository, at the Engine's version.
+dpkg_ok docker-ce || { echo 'docker-ce is not the installed Engine (docker-ce-rootless-extras comes only from download.docker.com); report: dpkg -l | grep -i docker' >&2; exit 2; }
+engine_version=$(dpkg-query -W -f='${Version}' docker-ce)
+need=()
+for package in uidmap slirp4netns qemu-user-static; do dpkg_ok "$package" || need+=("$package"); done
+dpkg_ok docker-ce-rootless-extras || need+=("docker-ce-rootless-extras=$engine_version")
+if [ "${#need[@]}" -gt 0 ]; then
+  sudo -n apt-get update
+  sudo -n env DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y --no-remove "${need[@]}"
+fi
+[ -x /usr/bin/dockerd-rootless.sh ] || { echo '/usr/bin/dockerd-rootless.sh is missing after install' >&2; exit 2; }
+
+# 2. subuid/subgid: 65536 ids for factory-runner after every existing range.
+add_subid() {
+  local start status=0
+  start=$(node "$HELPER" subid-start <"$1") || status=$?
+  case $status in
+    0) sudo -n usermod "$2" "$start-$((start + 65535))" "$RUNNER_USER" ;;
+    3) ;;
+    *) echo "cannot read $1" >&2; exit 2 ;;
+  esac
+}
+add_subid /etc/subuid --add-subuids
+add_subid /etc/subgid --add-subgids
+
+# 3. Ubuntu 24.04+ denies user namespaces to unprivileged programs unless an AppArmor profile allows them (Docker rootless docs).
+if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ] && [ ! -f "$ROOTLESSKIT_PROFILE" ]; then
+  printf '%s\n' "$MARK" 'abi <abi/4.0>,' 'include <tunables/global>' '' '/usr/bin/rootlesskit flags=(unconfined) {' '  userns,' '' '  include if exists <local/usr.bin.rootlesskit>' '}' \
+    | sudo -n tee "$ROOTLESSKIT_PROFILE" >/dev/null
+  sudo -n apparmor_parser -r "$ROOTLESSKIT_PROFILE"
+fi
+
+# 4. arm64 emulation on the host with the F (fix-binary) flag: the interpreter is opened at registration, so containers in
+#    the rootless user namespace need no qemu copy and no --privileged setup-qemu-action. Keep the packaged flags, add F.
+case "$(arm64_flags)" in
+  *F*) ;;
+  *)
+    [ -f /usr/lib/binfmt.d/qemu-aarch64.conf ] || { echo 'qemu-aarch64 is not registered and /usr/lib/binfmt.d/qemu-aarch64.conf is missing' >&2; exit 2; }
+    sudo -n install -d -m 755 /etc/binfmt.d
+    { printf '%s\n' "$MARK"; sed -E '/:[A-Z]*F[A-Z]*$/! s/:([A-Z]*)$/:\1F/' /usr/lib/binfmt.d/qemu-aarch64.conf; } | sudo -n tee "$ARM64_CONF" >/dev/null
+    sudo -n systemctl restart systemd-binfmt.service
+    ;;
+esac
+case "$(arm64_flags)" in *F*) ;; *) echo "qemu-aarch64 is not registered with the F flag: $(cat "$ARM64_PROC" 2>&1 | head -n 3)" >&2; exit 1 ;; esac
+
+# 5. The daemon unit (no NoNewPrivileges: newuidmap is setuid) and its socket.
+node "$HELPER" unit | sudo -n tee "$UNITS/$SERVICE" >/dev/null
+sudo -n chmod 644 "$UNITS/$SERVICE"
+sudo -n systemctl daemon-reload
+sudo -n systemctl enable "$SERVICE"
+sudo -n systemctl restart "$SERVICE"
+for _ in $(seq 60); do runner test -S "$SOCKET" && break; sleep 1; done
+runner test -S "$SOCKET" || { echo "no socket at $SOCKET after 60 s"; sudo -n journalctl -u "$SERVICE" -n 30 --no-pager; exit 1; } >&2
+
+# 6. DOCKER_HOST in every pool root, then recycle idle listeners so the next job inherits it.
+for root in "${roots[@]}"; do
+  runner test -f "$root/.runner" || { echo "pool root is not registered: $root" >&2; exit 2; }
+  { runner cat "$root/.env" 2>/dev/null || true; } | node "$HELPER" set-env \
+    | sudo -n -u "$RUNNER_USER" -H bash --noprofile --norc -c 'cat >"$1.new" && mv "$1.new" "$1"' _ "$root/.env"
+done
+status=0; recycle_listeners || status=$?
+
+# 7. Readback (the job-side readback is in docs/feature-map/runner-capacity.md).
+systemctl is-active "$SERVICE"
+runner stat -c '%U %F %n' "$SOCKET"
+info=$(runner env DOCKER_HOST="$DOCKER_HOST_VALUE" docker info --format '{{json .SecurityOptions}} cgroup={{.CgroupDriver}} root={{.DockerRootDir}}')
+echo "$info"
+case "$info" in *name=rootless*) ;; *) echo 'docker info does not report rootless' >&2; exit 1 ;; esac
+head -n 3 "$ARM64_PROC"
+echo "groups: $(id -nG "$RUNNER_USER")"
+for root in "${roots[@]}"; do runner grep -H '^DOCKER_HOST=' "$root/.env"; done
+exit "$status"

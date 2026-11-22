@@ -56,7 +56,19 @@ sudo() { printf 'sudo %s\n' "$*" >>"$fixture/server-calls"; }
 
 # 移行済みのworkstationでsetupを再実行しても、旧利用者のrunnerを起こさない。
 dedicated_runner_profile() {
-  printf '{"mode":"dedicated","user":"factory-runner","instances":[{"name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service"},{"name":"factory-linux-rabbit-u2","service":"actions.runner.kitepon.factory-linux-rabbit-u2.service"}]}\n'
+  printf '{"mode":"dedicated","user":"factory-runner","instances":[{"name":"factory-linux-rabbit-u","service":"actions.runner.kitepon.factory-linux-rabbit-u.service","root":"/home/factory-runner/actions-runner"},{"name":"factory-linux-rabbit-u2","service":"actions.runner.kitepon.factory-linux-rabbit-u2.service","root":"/home/factory-runner/actions-runner-2"}]}\n'
+}
+# The rootless Docker check reads the socket owner and each root's .env as factory-runner (docs/feature-map/runner-capacity.md).
+sudo() {
+  [ "$1 $2 $3" = '-n -u factory-runner' ] || { echo "FAIL: 想定外のsudo: $*" >&2; return 1; }
+  shift 3
+  case "$1" in
+    stat) printf '%s\n' "${fixture_socket:-factory-runner socket}" ;;
+    cat)
+      printf 'LANG=C\n'
+      [ "$2" = "${fixture_env_bad_root:-none}/.env" ] || printf 'DOCKER_HOST=unix:///run/factory-runner-docker/docker.sock\n' ;;
+    *) echo "FAIL: 想定外の読み取り: $*" >&2; return 1 ;;
+  esac
 }
 verify_any_org_runner_online() { printf 'verify-any %s\n' "$*" >>"$fixture/dedicated-calls"; }
 id() { printf '%s\n' "${fixture_groups:-factory-runner}"; }
@@ -80,6 +92,24 @@ systemctl() {
 )
 # A scaled pool needs one online member, not all (docs/feature-map/runner-capacity.md).
 grep -Fxq 'verify-any linux-workstation factory-linux-rabbit-u factory-linux-rabbit-u2' "$fixture/dedicated-calls"
+# Rootless Docker: the daemon unit is checked next to the runner units; the principal keeps no extra group (checked above).
+grep -Fxq 'systemctl is-active --quiet factory-runner-dockerd.service' "$fixture/dedicated-calls"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_stopped_service=factory-runner-dockerd.service ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 停止中のrootless Dockerを許容した' >&2; exit 1
+fi
+grep -Fq 'rootless Docker' "$fixture/dedicated-error"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_socket='kite socket' ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 専用runner以外が所有するDocker socketを許容した' >&2; exit 1
+fi
+grep -Fq 'socketが専用runner所有でない' "$fixture/dedicated-error"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_socket='factory-runner regular file' ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: socketでない物を許容した' >&2; exit 1
+fi
+grep -Fq 'socketが専用runner所有でない' "$fixture/dedicated-error"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_env_bad_root=/home/factory-runner/actions-runner-2 ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: DOCKER_HOSTの無いpool rootを許容した' >&2; exit 1
+fi
+grep -Fq 'DOCKER_HOSTが無い（または複数ある）: /home/factory-runner/actions-runner-2' "$fixture/dedicated-error"
 if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_stopped_service=factory-linux-rabbit-u2.service ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
   echo 'FAIL: 停止中の追加instanceを許容した' >&2; exit 1
 fi
@@ -104,4 +134,4 @@ if (HOST_PROFILE=linux ensure_github_actions_runner) 2>"$fixture/dedicated-error
   echo 'FAIL: 不正な専用profileから旧runnerへ戻した' >&2; exit 1
 fi
 [ ! -e "$fixture/server-calls" ] || { echo 'FAIL: 不正なprofileから旧runnerを操作した' >&2; exit 1; }
-echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作・専用runnerの再作成防止）'
+echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作・専用runnerの再作成防止・rootless Dockerの稼働/所有/DOCKER_HOST）'

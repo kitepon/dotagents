@@ -1,0 +1,28 @@
+#!/usr/bin/env node
+// Helper for the Rabbit rootless-Docker apply script and the setup check. Reads stdin where noted; prints to stdout.
+//   config        service<TAB>socket<TAB>DOCKER_HOST
+//   unit          the factory-runner-dockerd.service unit text
+//   set-env       stdin = a root's .env  -> the same file with exactly one DOCKER_HOST line
+//   has-env       stdin = a root's .env  -> exit 0 only when it has exactly the expected DOCKER_HOST line
+//   subid-start   stdin = /etc/subuid or /etc/subgid -> first free id; exit 3 when factory-runner already has a range
+import fs from 'node:fs';
+import {
+  DOCKER_HOST, DOCKER_SERVICE, DOCKER_SOCKET, hasDockerHost, hasSubidRange, nextSubidStart, renderDockerdUnit, setDockerHost,
+} from '../lib/factory/runner-docker.mjs';
+
+const stdin = () => fs.readFileSync(0, 'utf8');
+const command = process.argv[2];
+if (process.argv.length !== 3) { console.error('FAIL: usage: factory-runner-docker.mjs config|unit|set-env|has-env|subid-start'); process.exit(2); }
+switch (command) {
+  case 'config': console.log([DOCKER_SERVICE, DOCKER_SOCKET, DOCKER_HOST].join('\t')); break;
+  case 'unit': process.stdout.write(renderDockerdUnit()); break;
+  case 'set-env': process.stdout.write(setDockerHost(stdin())); break;
+  case 'has-env': process.exit(hasDockerHost(stdin()) ? 0 : 1); break;
+  case 'subid-start': {
+    const source = stdin();
+    if (hasSubidRange(source)) process.exit(3);
+    console.log(nextSubidStart(source));
+    break;
+  }
+  default: console.error(`FAIL: unknown command: ${command}`); process.exit(2);
+}
