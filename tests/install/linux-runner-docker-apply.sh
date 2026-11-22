@@ -5,7 +5,7 @@
 set -euo pipefail
 # Git Bash on Windows rewrites POSIX-looking arguments passed to node (/c/... -> C:\...), which the script paths need, but the data paths
 # below (launcher, pool roots) are not Windows files and must stay as written.
-export MSYS2_ARG_CONV_EXCL='/usr/share/*;/home/*;/nonexistent*'
+export MSYS2_ARG_CONV_EXCL='/usr/share/;/home/;/nonexistent'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
