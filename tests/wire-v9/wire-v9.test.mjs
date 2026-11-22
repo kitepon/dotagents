@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, readdir, rm, utimes, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
@@ -210,4 +210,39 @@ test('413は期限を過ぎたv9原本もoutboxに保持し、全受理するま
   const accepted = await run(reporter, ['flush', '--config', configPath], env);
   assert.equal(accepted.code, 0, accepted.stderr); assert.equal(accepted.json.sent, 1); assert.equal(accepted.json.count, 0);
   assert.deepEqual(received, [payload, payload]);
+});
+
+test('op://の認証情報は毎時runごとに読まず、受け側が拒否した次のrunだけ読み直す', { skip: process.platform === 'win32' }, async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'wire-v9-op-once-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const reporter = resolve(import.meta.dirname, '../../bin/factory-reporter-v9.mjs');
+  const bin = join(root, 'bin'); const count = join(root, 'op-reads');
+  await mkdir(bin); await writeFile(count, '');
+  await writeFile(join(bin, 'op'), `#!/bin/sh\necho x >> '${count}'\nprintf 'token-%s' "$(wc -l < '${count}' | tr -d ' ')"\n`, { mode: 0o755 });
+  const reads = async () => (await readFile(count, 'utf8')).split('\n').filter(Boolean).length;
+  let status = 200; const auth = [];
+  const server = createServer((req, res) => {
+    auth.push(req.headers.authorization); let body = '';
+    req.on('data', (chunk) => { body += chunk; });
+    req.on('end', () => { res.statusCode = status; res.setHeader('content-type', 'application/json'); res.end(JSON.stringify({ accepted: status === 200, report_id: JSON.parse(body).report_id })); });
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done)); t.after(() => server.close());
+  const credentialPath = join(root, 'credential'); const configPath = join(root, 'config.json');
+  await writeFile(credentialPath, 'op://vault/item/token\n', { mode: 0o600 });
+  await writeFile(configPath, JSON.stringify({ schema_version: '1.0', host: { id: 'mac-kite', profile: 'mac' }, collection: { enabled: false }, reporting: { enabled: true, endpoint: `http://127.0.0.1:${server.address().port}/api/factory/v9/reports`, credential_file: credentialPath } }));
+  const env = { XDG_STATE_HOME: join(root, 'state'), PATH: `${bin}:${process.env.PATH}`, OP_SERVICE_ACCOUNT_TOKEN: 'service-account' };
+  const send = async (n) => {
+    await writeFile(join(root, 'report.json'), JSON.stringify({ ...reportV9(), report_id: `019f57f0-6bb7-7bc1-b94a-18f648f2d90${n}` }));
+    assert.equal((await run(reporter, ['enqueue', '--report', join(root, 'report.json'), '--config', configPath], env)).code, 0);
+    return run(reporter, ['flush', '--config', configPath], env);
+  };
+  assert.equal((await send(1)).json.sent, 1);
+  assert.equal((await send(2)).json.sent, 1);
+  assert.equal(await reads(), 1); // 2回目のrunは読まない
+  status = 401;
+  assert.equal((await send(3)).code, 1); // 拒否: 値を捨てる
+  status = 200;
+  await run(reporter, ['flush', '--config', configPath], env); // 3は再送待ちのこともあるため、送られたかは問わない
+  assert.equal(await reads(), 2); // 捨てた後の次のrunで一度だけ読み直した
+  assert.deepEqual(auth.slice(0, 3), ['Bearer token-1', 'Bearer token-1', 'Bearer token-1']); // 拒否までは最初に読んだ値
+  assert.ok(auth.slice(3).every((value) => value === 'Bearer token-2')); // 読み直した後は新しい値
 });
