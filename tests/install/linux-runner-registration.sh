@@ -2,6 +2,8 @@
 # runnerの公開応答だけを置き換え、GitHubへ書き込まず再設定条件を検証する。
 # shellcheck disable=SC2329,SC2317,SC2034 # sourceする製品関数がfixtureを消費する。SC2317は旧shellcheck用。
 set -euo pipefail
+# Git Bash on Windows rewrites POSIX-looking arguments passed to node; the pool roots here are data, not Windows files (prefixes, not globs).
+export MSYS2_ARG_CONV_EXCL='/home/'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
@@ -65,8 +67,14 @@ sudo() {
   case "$1" in
     stat) printf '%s\n' "${fixture_socket:-factory-runner socket}" ;;
     cat)
+      root="${2%/.env}"
       printf 'LANG=C\n'
-      [ "$2" = "${fixture_env_bad_root:-none}/.env" ] || printf 'DOCKER_HOST=unix:///run/factory-runner-docker/docker.sock\n' ;;
+      if [ "$root" != "${fixture_env_bad_root:-none}" ]; then printf 'DOCKER_HOST=unix:///run/factory-runner-docker/docker.sock\n'; fi
+      case "$root" in
+        "${fixture_env_shared_home_root:-none}") printf 'HOME=/home/factory-runner\n' ;;
+        "${fixture_env_no_home_root:-none}") ;;
+        *) printf 'HOME=%s/home\n' "$root" ;;
+      esac ;;
     *) echo "FAIL: 想定外の読み取り: $*" >&2; return 1 ;;
   esac
 }
@@ -109,7 +117,16 @@ grep -Fq 'socketが専用runner所有でない' "$fixture/dedicated-error"
 if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_env_bad_root=/home/factory-runner/actions-runner-2 ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
   echo 'FAIL: DOCKER_HOSTの無いpool rootを許容した' >&2; exit 1
 fi
-grep -Fq 'DOCKER_HOSTが無い（または複数ある）: /home/factory-runner/actions-runner-2' "$fixture/dedicated-error"
+grep -Fq '/home/factory-runner/actions-runner-2' "$fixture/dedicated-error"
+# Each pool root has its own HOME (<root>/home): missing or the shared one is refused, naming the root.
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_env_no_home_root=/home/factory-runner/actions-runner ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: HOMEの無いpool rootを許容した' >&2; exit 1
+fi
+grep -Fq 'root専用のHOME' "$fixture/dedicated-error"
+if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_env_shared_home_root=/home/factory-runner/actions-runner-2 ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
+  echo 'FAIL: 共有HOMEのpool rootを許容した' >&2; exit 1
+fi
+grep -Fq 'root専用のHOME' "$fixture/dedicated-error"
 if (HOST_PROFILE=linux ACTIONS_RUNNER_LABEL=linux-workstation fixture_stopped_service=factory-linux-rabbit-u2.service ensure_github_actions_runner) 2>"$fixture/dedicated-error"; then
   echo 'FAIL: 停止中の追加instanceを許容した' >&2; exit 1
 fi
@@ -134,4 +151,4 @@ if (HOST_PROFILE=linux ensure_github_actions_runner) 2>"$fixture/dedicated-error
   echo 'FAIL: 不正な専用profileから旧runnerへ戻した' >&2; exit 1
 fi
 [ ! -e "$fixture/server-calls" ] || { echo 'FAIL: 不正なprofileから旧runnerを操作した' >&2; exit 1; }
-echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作・専用runnerの再作成防止・rootless Dockerの稼働/所有/DOCKER_HOST）'
+echo 'linux-runner-registration: OK（再設定条件・API失敗・server非操作・専用runnerの再作成防止・rootless Dockerの稼働/所有/DOCKER_HOST/root別HOME）'

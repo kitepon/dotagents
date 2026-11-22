@@ -2,29 +2,52 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import {
-  DOCKER_HOST, DOCKER_SERVICE, DOCKER_SOCKET, ROOTLESS_SCRIPTS, hasDockerHost, hasSubidRange, nextSubidStart, renderDockerdUnit, setDockerHost,
+  DOCKER_HOST, DOCKER_SERVICE, DOCKER_SOCKET, ROOTLESS_SCRIPTS, hasRootEnv, hasSubidRange, nextSubidStart, renderDockerdUnit, rootHome, setRootEnv,
 } from '../../lib/factory/runner-docker.mjs';
 
 // docs/feature-map/runner-capacity.md "Rootless Docker": the .env writer, the check's reader, the unit and the id allocation.
 const helper = (args, input = '') => spawnSync(process.execPath, ['bin/factory-runner-docker.mjs', ...args], { input, encoding: 'utf8' });
 
-test('set-env adds one DOCKER_HOST line, replaces any other, keeps the rest, and is idempotent', () => {
-  const once = setDockerHost('LANG=C.UTF-8\nHOME=/home/factory-runner');
-  assert.equal(once, `LANG=C.UTF-8\nHOME=/home/factory-runner\nDOCKER_HOST=${DOCKER_HOST}\n`);
-  assert.equal(setDockerHost(once), once);
-  assert.equal(setDockerHost(''), `DOCKER_HOST=${DOCKER_HOST}\n`);
-  const replaced = setDockerHost('DOCKER_HOST=unix:///var/run/docker.sock\nA=1\nDOCKER_HOST=tcp://x:1\n');
-  assert.equal(replaced, `A=1\nDOCKER_HOST=${DOCKER_HOST}\n`);
+const ROOT_A = '/home/factory-runner/actions-runner';
+const ROOT_B = '/home/factory-runner/actions-runner-2';
+
+test('set-env writes one DOCKER_HOST and one per-root HOME, replaces any other, keeps the rest, and is idempotent', () => {
+  const once = setRootEnv('LANG=C.UTF-8', ROOT_A);
+  assert.equal(once, `LANG=C.UTF-8\nDOCKER_HOST=${DOCKER_HOST}\nHOME=${ROOT_A}/home\n`);
+  assert.equal(setRootEnv(once, ROOT_A), once);
+  assert.equal(setRootEnv('', ROOT_A), `DOCKER_HOST=${DOCKER_HOST}\nHOME=${ROOT_A}/home\n`);
+  assert.equal(setRootEnv('HOME=/home/factory-runner\nDOCKER_HOST=unix:///var/run/docker.sock\nA=1\nDOCKER_HOST=tcp://x:1\nHOME=/x\n', ROOT_B),
+    `A=1\nDOCKER_HOST=${DOCKER_HOST}\nHOME=${ROOT_B}/home\n`);
+  // moving a root's file to another root (the pool copies the first root's .env) is repaired by the next write
+  assert.equal(setRootEnv(setRootEnv('A=1', ROOT_A), ROOT_B), `A=1\nDOCKER_HOST=${DOCKER_HOST}\nHOME=${ROOT_B}/home\n`);
 });
 
-test('has-env accepts exactly one expected line (the check refuses a missing, wrong or duplicated one)', () => {
-  assert.equal(hasDockerHost(setDockerHost('A=1')), true);
-  assert.equal(hasDockerHost('A=1\n'), false);
-  assert.equal(hasDockerHost('DOCKER_HOST=unix:///var/run/docker.sock\n'), false);
-  assert.equal(hasDockerHost(`DOCKER_HOST=${DOCKER_HOST}\nDOCKER_HOST=${DOCKER_HOST}\n`), false);
-  assert.equal(hasDockerHost(`# DOCKER_HOST=${DOCKER_HOST}\n`), false);
-  assert.equal(helper(['has-env'], setDockerHost('A=1')).status, 0);
-  assert.equal(helper(['has-env'], 'A=1\n').status, 1);
+test('has-env accepts exactly one expected DOCKER_HOST and one expected HOME for that root (missing, wrong, shared or duplicated: refused)', () => {
+  const ok = setRootEnv('A=1', ROOT_A);
+  assert.equal(hasRootEnv(ok, ROOT_A), true);
+  assert.equal(hasRootEnv(ok, ROOT_B), false, 'another root\'s HOME is not this root\'s');
+  assert.equal(hasRootEnv('A=1\n', ROOT_A), false);
+  assert.equal(hasRootEnv(`DOCKER_HOST=${DOCKER_HOST}\n`, ROOT_A), false, 'HOME missing');
+  assert.equal(hasRootEnv(`HOME=${ROOT_A}/home\n`, ROOT_A), false, 'DOCKER_HOST missing');
+  assert.equal(hasRootEnv(`DOCKER_HOST=unix:///var/run/docker.sock\nHOME=${ROOT_A}/home\n`, ROOT_A), false);
+  assert.equal(hasRootEnv('DOCKER_HOST=' + DOCKER_HOST + '\nHOME=/home/factory-runner\n', ROOT_A), false, 'the shared HOME is refused');
+  assert.equal(hasRootEnv(`${ok}HOME=${ROOT_A}/home\n`, ROOT_A), false, 'duplicate HOME');
+  assert.equal(hasRootEnv(`${ok}DOCKER_HOST=${DOCKER_HOST}\n`, ROOT_A), false, 'duplicate DOCKER_HOST');
+  assert.equal(hasRootEnv(`# HOME=${ROOT_A}/home\nDOCKER_HOST=${DOCKER_HOST}\n`, ROOT_A), false);
+  assert.equal(helper(['has-env', ROOT_A], setRootEnv('A=1', ROOT_A)).status, 0);
+  assert.equal(helper(['has-env', ROOT_B], setRootEnv('A=1', ROOT_A)).status, 1);
+  assert.equal(helper(['set-env', ROOT_B], 'A=1\n').stdout, setRootEnv('A=1', ROOT_B));
+});
+
+test('every pool root of the contract gets a distinct HOME inside the root, and bad roots are refused', async () => {
+  const { POOL_INSTANCES } = await import('../../lib/factory/runner-profile.mjs');
+  const homes = POOL_INSTANCES.map((item) => rootHome(item.root));
+  assert.equal(new Set(homes).size, POOL_INSTANCES.length);
+  for (const [index, home] of homes.entries()) assert.equal(home, `${POOL_INSTANCES[index].root}/home`);
+  for (const bad of ['', 'relative/root', '/a/../b', '/a//b', '/a/', '/a b', '/a\nHOME=/x']) assert.throws(() => rootHome(bad), /invalid pool root/);
+  assert.equal(helper(['set-env'], 'A=1\n').status, 2);
+  assert.equal(helper(['set-env', '/a/../b'], 'A=1\n').status, 2);
+  assert.equal(helper(['has-env', 'x'], '').status, 2);
 });
 
 test('the socket is a fixed runtime path outside /var/run/docker.sock, and the unit creates exactly that directory', () => {
