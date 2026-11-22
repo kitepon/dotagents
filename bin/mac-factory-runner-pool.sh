@@ -5,7 +5,8 @@
 # Registers the runner pool from FACTORY_RUNNERS (the registration token is read from stdin, only when a pool root is
 # unregistered) and replaces the per-runner LaunchDaemon with the one load-driven scaler.
 # Contract: docs/feature-map/runner-capacity.md. Idempotent; exit 3 = a Runner.Worker was running before the first
-# supervisor swap, so the swap is pending and a rerun completes it. After the swap a rerun only restarts the scaler.
+# supervisor swap, so the swap is pending and a rerun completes it. After the swap a rerun only restarts the scaler (and
+# recycles idle listeners; exit 3 also when a Worker kept that pending).
 # Work folder `_work.noindex`: Spotlight skips `*.noindex` folders (`.metadata_never_index` is ignored for folders).
 set -euo pipefail
 set +x
@@ -96,7 +97,7 @@ cat >"$PLIST.new" <<EOF
 	<key>EnvironmentVariables</key><dict><key>HOME</key><string>$RUNNER_HOME</string><key>PATH</key><string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string></dict>
 	<key>ProcessType</key><string>Interactive</string>
 	<key>Nice</key><integer>10</integer>
-	<key>Umask</key><integer>63</integer>
+	<key>Umask</key><integer>18</integer>
 	<key>RunAtLoad</key><true/>
 	<key>KeepAlive</key><true/>
 	<key>AbandonProcessGroup</key><true/>
@@ -119,7 +120,18 @@ launchctl bootout "system/$LABEL" 2>/dev/null || true
 mv "$PLIST.new" "$PLIST"
 launchctl bootstrap system "$PLIST"
 
+# 4b. A process keeps the umask it started with and adopted listeners outlive the scaler, so stop idle listeners: the scaler
+#     starts them again under the plist's Umask (022, as GitHub-hosted runners). Never with a Worker running; then report it.
+recycle_pending=
+if pgrep -u "$RUNNER_USER" -x Runner.Worker >/dev/null; then
+  echo 'listeners started before this apply keep their old umask until they restart; rerun when idle'
+  recycle_pending=1
+else
+  pkill -u "$RUNNER_USER" -INT -x Runner.Listener || true
+fi
+
 # 5. Readback: scaler running and its first decisions.
 sleep 40
 launchctl print "system/$LABEL" | grep -E '^\s*(state|pid) ='
 as_runner tail -n 5 "$LOG"
+[ -z "$recycle_pending" ] || exit 3

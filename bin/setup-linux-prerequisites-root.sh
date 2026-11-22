@@ -26,6 +26,13 @@ packages=(
   ca-certificates cron curl gh git jq make openssh-client openssh-server
   python3 python3-venv ripgrep shellcheck tmux xz-utils
 )
+# Linux workstation (Rabbit) only: GUI integration tests (xvfb-run, xdotool) and Linux app packaging (squashfs, AppImage fuse,
+# desktop-file-validate, AppArmor tools). The dedicated runner has NoNewPrivileges, so jobs cannot apt-get these themselves.
+if [ "$setup_variant" = linux ]; then
+  packages+=(xvfb xauth xdotool squashfs-tools desktop-file-utils apparmor)
+  # Ubuntu 24.04 renamed libfuse2 to libfuse2t64 (64-bit time_t transition).
+  if [ "${VERSION_ID%%.*}" -ge 24 ]; then packages+=(libfuse2t64); else packages+=(libfuse2); fi
+fi
 missing_packages=()
 for package_name in "${packages[@]}"; do
   if ! dpkg-query -W -f='${db:Status-Abbrev}' "$package_name" 2>/dev/null | grep -Fq 'ii '; then
