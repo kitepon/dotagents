@@ -14,6 +14,6 @@ grep -Fq "umask 077 && mkdir -p" "$script" || { echo 'FAIL: pool rootの明示um
 recycle="$(awk '/^recycle_pending=/ { capture=1 } /^# 5\. Readback/ { capture=0 } capture' "$script")"
 grep -Fq 'pgrep -u "$RUNNER_USER" -x Runner.Worker' <<<"$recycle"
 grep -Fq 'else' <<<"$recycle"
-grep -Fq 'pkill -u "$RUNNER_USER" -INT -x Runner.Listener' <<<"$recycle"
+grep -Fq 'pkill -INT -u "$RUNNER_USER" -x Runner.Listener' <<<"$recycle"
 [ "$(grep -n 'pgrep' <<<"$recycle" | head -1 | cut -d: -f1)" -lt "$(grep -n 'pkill' <<<"$recycle" | head -1 | cut -d: -f1)" ]
 echo 'mac-runner-umask: OK（Umask 022・pool rootは明示077・Workerが居ない時だけlistener再起動）'
