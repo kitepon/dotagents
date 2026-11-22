@@ -8,6 +8,8 @@
 #   bin/linux-factory-runner-docker.sh --rollback [--purge] remove the unit and every DOCKER_HOST line (--purge: image data too)
 set -euo pipefail
 set +x
+# apt/dpkg/sysctl output is parsed below; a Japanese Rabbit printed "候補:" for "Candidate:" and the precheck refused (2026-11-22).
+export LC_ALL=C
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 HELPER="$ROOT/bin/factory-runner-docker.mjs"
 RUNNER_USER=factory-runner
@@ -57,6 +59,7 @@ if workers_running; then echo 'swap pending (a Runner.Worker is running); nothin
 if [ "$mode" = rollback ]; then
   sudo -n systemctl disable --now "$SERVICE" 2>/dev/null || true
   sudo -n rm -f "$UNITS/$SERVICE"
+  sudo -n rm -rf "$UNITS/$SERVICE.d"   # a host-made drop-in (e.g. 50-cgroupfs.conf) goes with the unit
   if grep -Fqx "$MARK" "$ARM64_CONF" 2>/dev/null; then sudo -n rm -f "$ARM64_CONF"; fi
   if grep -Fqx "$MARK" "$ROOTLESSKIT_PROFILE" 2>/dev/null; then sudo -n rm -f "$ROOTLESSKIT_PROFILE"; sudo -n systemctl reload apparmor.service || true; fi
   sudo -n systemctl daemon-reload
@@ -92,7 +95,7 @@ else
   dpkg_ok docker-buildx || dpkg_ok docker-buildx-plugin || need+=(docker-buildx)
   [ -x "$launcher" ] || { echo "docker.io does not ship $launcher; stop (nothing changed)" >&2; exit 2; }
 fi
-has_candidate() { [ -n "$(apt-cache policy "${1%%=*}" 2>/dev/null | awk '/Candidate:/ && $2 != "(none)" { print $2 }')" ]; }
+has_candidate() { [ -n "$(LC_ALL=C apt-cache policy "${1%%=*}" 2>/dev/null | awk '/Candidate:/ && $2 != "(none)" { print $2 }')" ]; }
 missing=()
 # Arrays are only expanded when non-empty: bash 3.2 (the macOS CI that runs this script's test) aborts on an empty one under set -u.
 if [ "${#need[@]}" -gt 0 ]; then
@@ -145,6 +148,10 @@ case "$(arm64_flags)" in *F*) ;; *) echo "qemu-aarch64 is not registered with th
 
 # 5. The daemon unit (no NoNewPrivileges: newuidmap is setuid) and its socket.
 node "$HELPER" unit "$launcher" | sudo -n tee "$UNITS/$SERVICE" >/dev/null
+# The generated unit carries the cgroupfs option itself; the 2026-11-22 host drop-in that added it is redundant, so it goes
+# (any other drop-in file stays, and keeps the directory).
+sudo -n rm -f "$UNITS/$SERVICE.d/50-cgroupfs.conf"
+if [ -d "$UNITS/$SERVICE.d" ]; then sudo -n rmdir --ignore-fail-on-non-empty "$UNITS/$SERVICE.d"; fi
 sudo -n chmod 644 "$UNITS/$SERVICE"
 sudo -n systemctl daemon-reload
 sudo -n systemctl enable "$SERVICE"

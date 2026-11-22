@@ -38,7 +38,7 @@ test('daemon unit: runs as factory-runner with its own runtime dir; no NoNewPriv
   const unit = renderDockerdUnit();
   assert.equal(helper(['unit']).stdout, unit);
   for (const line of ['User=factory-runner', 'Group=factory-runner', 'RuntimeDirectory=factory-runner-docker', 'RuntimeDirectoryMode=0700',
-    'Environment=XDG_RUNTIME_DIR=/run/factory-runner-docker', `ExecStart=/usr/bin/dockerd-rootless.sh --host ${DOCKER_HOST}`, 'Nice=10', 'CPUWeight=20']) {
+    'Environment=XDG_RUNTIME_DIR=/run/factory-runner-docker', `ExecStart=/usr/bin/dockerd-rootless.sh --host ${DOCKER_HOST} --exec-opt native.cgroupdriver=cgroupfs`, 'Nice=10', 'CPUWeight=20']) {
     assert.ok(unit.split('\n').includes(line), line);
   }
   assert.doesNotMatch(unit.replace(/^#.*$/gm, ''), /NoNewPrivileges|CapabilityBoundingSet/);
@@ -48,13 +48,21 @@ test('daemon unit: runs as factory-runner with its own runtime dir; no NoNewPriv
 test('the launcher is the Engine\'s own: docker-ce default, Ubuntu docker.io contrib path, nothing else', () => {
   assert.equal(ROOTLESS_SCRIPTS['docker-ce'], '/usr/bin/dockerd-rootless.sh');
   assert.equal(ROOTLESS_SCRIPTS['docker.io'], '/usr/share/docker.io/contrib/dockerd-rootless.sh');
-  assert.ok(renderDockerdUnit().includes(`ExecStart=${ROOTLESS_SCRIPTS['docker-ce']} --host ${DOCKER_HOST}`));
+  assert.ok(renderDockerdUnit().includes(`ExecStart=${ROOTLESS_SCRIPTS['docker-ce']} --host ${DOCKER_HOST} --exec-opt native.cgroupdriver=cgroupfs`));
   const io = renderDockerdUnit(ROOTLESS_SCRIPTS['docker.io']);
-  assert.ok(io.includes(`ExecStart=${ROOTLESS_SCRIPTS['docker.io']} --host ${DOCKER_HOST}`));
+  assert.ok(io.includes(`ExecStart=${ROOTLESS_SCRIPTS['docker.io']} --host ${DOCKER_HOST} --exec-opt native.cgroupdriver=cgroupfs`));
   assert.equal(helper(['unit', ROOTLESS_SCRIPTS['docker.io']]).stdout, io);
   assert.throws(() => renderDockerdUnit('/bin/sh'), /unknown rootless launcher/);
   assert.equal(helper(['unit', '/bin/sh']).status, 2);
   assert.deepEqual(helper(['scripts']).stdout.trimEnd().split('\n').map((line) => line.split('\t')), Object.entries(ROOTLESS_SCRIPTS));
+});
+
+test('every launcher starts the daemon with the cgroupfs driver (no user session, so the systemd driver cannot work)', () => {
+  for (const script of Object.values(ROOTLESS_SCRIPTS)) {
+    const exec = renderDockerdUnit(script).split('\n').filter((line) => line.startsWith('ExecStart='));
+    assert.equal(exec.length, 1);
+    assert.match(exec[0], /--exec-opt native\.cgroupdriver=cgroupfs$/);
+  }
 });
 
 test('subuid/subgid: allocate after every existing range; leave a runner that already has 65536 ids alone', () => {
