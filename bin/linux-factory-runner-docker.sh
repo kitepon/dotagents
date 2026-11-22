@@ -94,12 +94,15 @@ else
 fi
 has_candidate() { [ -n "$(apt-cache policy "${1%%=*}" 2>/dev/null | awk '/Candidate:/ && $2 != "(none)" { print $2 }')" ]; }
 missing=()
-for attempt in 1 2; do
-  missing=()
-  for package in "${need[@]}"; do has_candidate "$package" || missing+=("$package"); done
-  if [ "${#missing[@]}" -eq 0 ]; then break; fi
-  if [ "$attempt" = 1 ]; then sudo -n apt-get update; fi   # refreshes the package index only; the second look is final
-done
+# Arrays are only expanded when non-empty: bash 3.2 (the macOS CI that runs this script's test) aborts on an empty one under set -u.
+if [ "${#need[@]}" -gt 0 ]; then
+  for attempt in 1 2; do
+    missing=()
+    for package in "${need[@]}"; do has_candidate "$package" || missing+=("$package"); done
+    if [ "${#missing[@]}" -eq 0 ]; then break; fi
+    if [ "$attempt" = 1 ]; then sudo -n apt-get update; fi   # refreshes the package index only; the second look is final
+  done
+fi
 [ "${#missing[@]}" -eq 0 ] || { echo "not installable from the configured apt sources (nothing changed): ${missing[*]}" >&2; exit 2; }
 if [ "${#need[@]}" -gt 0 ]; then
   sudo -n env DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y --no-remove "${need[@]}"
