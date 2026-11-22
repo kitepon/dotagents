@@ -3,6 +3,9 @@
 # are fixtures. Nothing touches the host. Contract: docs/feature-map/runner-capacity.md ("Rootless Docker").
 # shellcheck disable=SC2329,SC2317,SC2034,SC2154 # sourceするapply処理がfixtureの関数と変数を消費する。
 set -euo pipefail
+# Git Bash on Windows rewrites POSIX-looking arguments passed to node (/c/... -> C:\...), which the script paths need, but the data paths
+# below (launcher, pool roots) are not Windows files and must stay as written.
+export MSYS2_ARG_CONV_EXCL='/usr/share/;/home/;/nonexistent'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
@@ -24,7 +27,10 @@ run_case() { # name; env: installed, nocandidate, no_binfmt_pkg, launcher_io
     apt-cache() {
       case "$1" in
         show) [ "${no_binfmt_pkg:-0}" != 1 ] ;;
-        policy) printf '%s:\n  Installed: (none)\n  Candidate: %s\n' "$2" "$([[ " ${nocandidate:-} " == *" $2 "* ]] && echo '(none)' || echo 1.0)" ;;
+        # A Japanese Rabbit prints "候補:" unless the script forces LC_ALL=C (2026-11-22: the precheck refused every package).
+        policy)
+          if [ "${LC_ALL:-}" = C ]; then label='Candidate'; else label='候補'; fi
+          printf '%s:\n  Installed: (none)\n  %s: %s\n' "$2" "$label" "$([[ " ${nocandidate:-} " == *" $2 "* ]] && echo '(none)' || echo 1.0)" ;;
       esac
     }
     sudo() { printf '%s\n' "$*" >>"$calls"; }
@@ -85,4 +91,35 @@ rc=0; pkill_rc=2 recycle r-broken || rc=$?
 [ "$rc" -eq 1 ] || { echo 'FAIL: pkillの実エラーを握りつぶした' >&2; exit 1; }
 rc=0; worker=1 recycle r-busy || rc=$?
 [ "$rc" -eq 3 ] && [ ! -s "$fixture/r-busy.calls" ] || { echo 'FAIL: Worker実行中にlistenerへ信号を送った' >&2; exit 1; }
+# The script itself pins the locale for everything it parses.
+grep -Fxq 'export LC_ALL=C' "$ROOT/bin/linux-factory-runner-docker.sh" || { echo 'FAIL: scriptがLC_ALL=Cを固定していない' >&2; exit 1; }
+
+# Step 5 installs the generated unit (with the cgroupfs option) and drops the redundant 2026-11-22 host drop-in; rollback removes
+# the whole drop-in directory.
+awk '/^# 5\. The daemon unit/ { capture=1 } /^for _ in \$\(seq 60\)/ { capture=0 } capture' "$ROOT/bin/linux-factory-runner-docker.sh" >"$fixture/unit.sh"
+awk '/^if \[ "\$mode" = rollback \]; then/ { capture=1 } capture { print } capture && /^fi$/ { capture=0 }' "$ROOT/bin/linux-factory-runner-docker.sh" >"$fixture/rollback.sh"
+[ -s "$fixture/unit.sh" ] && [ -s "$fixture/rollback.sh" ] || { echo 'FAIL: unit/rollbackの処理が見つかりません' >&2; exit 1; }
+(
+  calls="$fixture/unit_calls"; : >"$calls"
+  HELPER="$ROOT/bin/factory-runner-docker.mjs" UNITS="$fixture/units" SERVICE=factory-runner-dockerd.service launcher=/usr/share/docker.io/contrib/dockerd-rootless.sh
+  mkdir -p "$UNITS/$SERVICE.d"
+  sudo() { printf 'sudo %s\n' "$*" >>"$calls"; case "$*" in *' tee '*) cat >"$fixture/unit.out" ;; esac; }
+  # shellcheck disable=SC1091 # 検査対象から取り出した実処理。
+  source "$fixture/unit.sh"
+)
+grep -Fq -- '--exec-opt native.cgroupdriver=cgroupfs' "$fixture/unit.out" || { echo 'FAIL: 生成unitにcgroupfsが無い' >&2; exit 1; }
+grep -Fxq 'sudo -n rm -f '"$fixture"'/units/factory-runner-dockerd.service.d/50-cgroupfs.conf' "$fixture/unit_calls"
+grep -Fxq 'sudo -n rmdir --ignore-fail-on-non-empty '"$fixture"'/units/factory-runner-dockerd.service.d' "$fixture/unit_calls"
+rm_line="$(grep -n '50-cgroupfs.conf' "$fixture/unit_calls" | head -1 | cut -d: -f1)"; reload_line="$(grep -n 'daemon-reload' "$fixture/unit_calls" | head -1 | cut -d: -f1)"
+[ "$rm_line" -lt "$reload_line" ] || { echo 'FAIL: drop-inを消す前にdaemon-reloadした' >&2; exit 1; }
+(
+  calls="$fixture/rollback_calls"; : >"$calls"
+  mode=rollback HELPER=x UNITS=/etc/systemd/system SERVICE=factory-runner-dockerd.service ARM64_CONF=/nonexistent ROOTLESSKIT_PROFILE=/nonexistent MARK=m purge=0 RUNNER_USER=factory-runner RUNNER_HOME=/home/factory-runner roots=(/nonexistent-root)
+  sudo() { printf 'sudo %s\n' "$*" >>"$calls"; }
+  runner() { :; }
+  recycle_listeners() { :; }
+  # shellcheck disable=SC1091 # 検査対象から取り出した実処理。
+  source "$fixture/rollback.sh" || true
+)
+grep -Fxq 'sudo -n rm -rf /etc/systemd/system/factory-runner-dockerd.service.d' "$fixture/rollback_calls" || { echo 'FAIL: rollbackがdrop-inのdirを消さない' >&2; exit 1; }
 echo 'linux-runner-docker-apply: OK（docker.io/docker-ceの選択・Ubuntu archiveの部品・欠品は名指しで変更前に停止）'
