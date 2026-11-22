@@ -2,6 +2,8 @@
 # runnerの公開応答だけを置き換え、GitHubへ書き込まず再設定条件を検証する。
 # shellcheck disable=SC2329,SC2317,SC2034 # sourceする製品関数がfixtureを消費する。SC2317は旧shellcheck用。
 set -euo pipefail
+# Git Bash on Windows rewrites POSIX-looking arguments passed to node; the pool roots here are data, not Windows files (prefixes, not globs).
+export MSYS2_ARG_CONV_EXCL='/home/'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
