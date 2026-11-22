@@ -3,6 +3,8 @@
 # are fixtures. Nothing touches the host. Contract: docs/feature-map/runner-capacity.md ("Rootless Docker").
 # shellcheck disable=SC2329,SC2317,SC2034,SC2154 # sourceするapply処理がfixtureの関数と変数を消費する。
 set -euo pipefail
+# Git Bash on Windows rewrites POSIX-looking arguments (/usr/share/...) passed to node; these paths are data, not Windows files.
+export MSYS_NO_PATHCONV=1
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
