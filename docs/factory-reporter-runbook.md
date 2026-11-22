@@ -38,6 +38,8 @@ v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id�
 
 credential fileの中身が`op://`参照の時、reporterは読んだ値を`<state dir>/credential-cache.json`（0600、Windowsはstate dirの所有者限定ACL、参照のSHA-256付き）へ置き、同じ参照の間は毎時のrunで1Passwordを読まない。参照を変えるか、BugHubが401/403で拒否した次のrunで読み直す。rotation後に旧値が残ったら、このfileを消せば次のrunで読み直す。平文のcredential fileはこの対象外（元から読まない）。
 
+Windowsの1Password無人実行token（`%LOCALAPPDATA%\dotagents\credentials\1password\unattended.dpapi`）は、machine範囲のDPAPI（`dpapi-machine:v1:<base64>`）で保存し、fileのACLを席のuserとAdministratorsだけにする（`setup-1password --store-unattended-token --profile windows-native`）。user範囲のDPAPIは、再起動後にパスワードで入り直すまで開かないことがあり、Foxで毎時のreporterと夜間更新が止まった（2026-11-21。`OP_UNATTENDED_TOKEN_UNREADABLE`、Windowsの記録はDPAPI 8198/3）。以前のCurrentUser形式のfileも読めるが同じ問題が残るので、`--store-unattended-token`で置き直す。machine範囲は、同じ端末の他のローカルアカウントがfileを読めればtokenを開ける。ACLがその境目である。
+
 ## 正規実行順序
 
 現役majorを`v<N>`として、次の一方向だけを使う。
