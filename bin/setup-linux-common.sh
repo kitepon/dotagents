@@ -107,6 +107,23 @@ dedicated_runner_profile() {
   node "$ROOT/bin/factory-runner-profile.mjs"
 }
 
+# Jobs reach Docker through the runner principal's own rootless daemon (docs/feature-map/runner-capacity.md), never a docker
+# group: the daemon unit is active as the principal, its socket belongs to the principal, every pool root's .env has DOCKER_HOST.
+verify_runner_rootless_docker() {
+  local runner_user="$1" profile="$2" service socket root
+  IFS=$'\t' read -r service socket _ < <(node "$ROOT/bin/factory-runner-docker.mjs" config) \
+    || die '専用runnerのrootless Docker設定を読めない'
+  [ -n "$service" ] && [ -n "$socket" ] || die '専用runnerのrootless Docker設定が空'
+  systemctl is-active --quiet "$service" || die '専用runnerのrootless Dockerが停止中。bin/linux-factory-runner-docker.shで適用する'
+  [ "$(systemctl show "$service" --property=User --value)" = "$runner_user" ] || die 'rootless Dockerの実行利用者が不一致'
+  [ "$(sudo -n -u "$runner_user" stat -c '%U %F' "$socket" 2>/dev/null)" = "$runner_user socket" ] \
+    || die "rootless Dockerのsocketが専用runner所有でない: $socket"
+  while IFS= read -r root; do
+    sudo -n -u "$runner_user" cat "$root/.env" 2>/dev/null | node "$ROOT/bin/factory-runner-docker.mjs" has-env \
+      || die "pool rootの.envにDOCKER_HOSTが無い（または複数ある）: $root"
+  done < <(node -e 'for (const item of JSON.parse(process.argv[1]).instances) console.log(item.root)' "$profile")
+}
+
 ensure_github_actions_runner() {
   [ "${DOTAGENTS_SETUP_SKIP_ACTIONS_RUNNER:-0}" != 1 ] || return 0
   # main-serverの共通runnerは停止済み。serverのsetupは登録・起動・online確認をしない。
@@ -132,6 +149,7 @@ ensure_github_actions_runner() {
       systemctl is-active --quiet "$profile_service" || die '専用runnerは停止中。setupでは起動しない'
       profile_names+=("$profile_name")
     done < <(node -e 'for (const item of JSON.parse(process.argv[1]).instances) console.log([item.name, item.service].join("\t"))' "$profile")
+    verify_runner_rootless_docker "$profile_user" "$profile"
     verify_any_org_runner_online "$ACTIONS_RUNNER_LABEL" "${profile_names[@]}"
     echo "INFO: 専用runnerは外部管理。setupは登録・起動・label更新を行わない"
     return 0
