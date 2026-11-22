@@ -117,8 +117,16 @@ if [ -f "/Library/LaunchDaemons/$old_label.plist" ]; then
   mv "/Library/LaunchDaemons/$old_label.plist" "/Library/LaunchDaemons/$old_label.plist.disabled"
 fi
 launchctl bootout "system/$LABEL" 2>/dev/null || true
+# bootout can return while the service is still tearing down; a bootstrap right after failed with 5 (Input/output error) on
+# 2026-11-22. Wait (bounded) until the label is gone, then retry the bootstrap a few times and fail loudly.
+for _ in $(seq 30); do launchctl print "system/$LABEL" >/dev/null 2>&1 || break; sleep 1; done
 mv "$PLIST.new" "$PLIST"
-launchctl bootstrap system "$PLIST"
+bootstrapped=
+for _ in 1 2 3 4 5; do
+  if launchctl bootstrap system "$PLIST"; then bootstrapped=1; break; fi
+  sleep 3
+done
+[ -n "$bootstrapped" ] || { echo "launchctl bootstrap system $PLIST failed after 5 tries" >&2; exit 1; }
 
 # 4b. A process keeps the umask it started with and adopted listeners outlive the scaler, so stop idle listeners: the scaler
 #     starts them again under the plist's Umask (022, as GitHub-hosted runners). Never with a Worker running; then report it.
@@ -127,7 +135,10 @@ if pgrep -u "$RUNNER_USER" -x Runner.Worker >/dev/null; then
   echo 'listeners started before this apply keep their old umask until they restart; rerun when idle'
   recycle_pending=1
 else
-  pkill -u "$RUNNER_USER" -INT -x Runner.Listener || true
+  # The signal goes first (BSD pkill rejects `-u user -INT`: "illegal option -- N"). Exit 1 = no listener matched; anything else fails.
+  pkill_status=0
+  pkill -INT -u "$RUNNER_USER" -x Runner.Listener || pkill_status=$?
+  [ "$pkill_status" -le 1 ] || { echo "pkill Runner.Listener failed ($pkill_status)" >&2; exit 1; }
 fi
 
 # 5. Readback: scaler running and its first decisions.
