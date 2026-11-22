@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Rabbit host apply (run by the host owner as the existing operator with sudo): rootless Docker owned by factory-runner,
+# Rabbit host apply (run by the host owner as the existing operator with sudo): rootless Docker owned by factory-runner (for the
+# installed Engine, docker-ce or Ubuntu's docker.io; the Engine itself is never replaced),
 # host arm64 binfmt with the F flag, DOCKER_HOST in every pool root's .env. Contract: docs/feature-map/runner-capacity.md
 # ("Rootless Docker"). It never adds factory-runner to a group and never edits the runner/scaler unit.
 # Idempotent. Exit 3 = a Runner.Worker is running: nothing was changed (or the listeners were not recycled); rerun when idle.
@@ -42,7 +43,10 @@ recycle_listeners() {
     echo 'a Runner.Worker is running: listeners keep the old environment until each restarts; rerun when idle (exit 3)'
     return 3
   fi
-  sudo -n pkill -u "$RUNNER_USER" -INT -x Runner.Listener || true
+  # Signal first (procps and BSD agree); exit 1 = no listener matched, anything else is a real failure.
+  local status=0
+  sudo -n pkill -INT -u "$RUNNER_USER" -x Runner.Listener || status=$?
+  [ "$status" -le 1 ] || { echo "pkill Runner.Listener failed ($status)" >&2; return 1; }
 }
 
 sudo -n true
@@ -66,17 +70,45 @@ if [ "$mode" = rollback ]; then
   exit "$status"
 fi
 
-# 1. Packages: only what is missing. docker-ce-rootless-extras exists only in Docker's own apt repository, at the Engine's version.
-dpkg_ok docker-ce || { echo 'docker-ce is not the installed Engine (docker-ce-rootless-extras comes only from download.docker.com); report: dpkg -l | grep -i docker' >&2; exit 2; }
-engine_version=$(dpkg-query -W -f='${Version}' docker-ce)
+# 1. Engine and packages. The existing Engine is kept (docker-ce from Docker's apt repository, or Ubuntu's docker.io); the rootless
+#    pieces come from the same origin: docker-ce-rootless-extras (pinned to the Engine's version), or for docker.io Ubuntu's own
+#    rootlesskit + docker-buildx with the launcher shipped under /usr/share/docker.io/contrib. Everything missing is named and the
+#    apply stops before any change.
+if dpkg_ok docker-ce; then engine=docker-ce; elif dpkg_ok docker.io; then engine=docker.io
+else echo 'neither docker-ce nor docker.io is installed; report: dpkg -l | grep -i docker' >&2; exit 2; fi
+launcher=$(node "$HELPER" scripts | awk -F'\t' -v engine="$engine" '$1 == engine { print $2 }')
+[ -n "$launcher" ] || { echo "no rootless launcher known for $engine" >&2; exit 2; }
 need=()
-for package in uidmap slirp4netns qemu-user-static; do dpkg_ok "$package" || need+=("$package"); done
-dpkg_ok docker-ce-rootless-extras || need+=("docker-ce-rootless-extras=$engine_version")
+for package in uidmap slirp4netns; do dpkg_ok "$package" || need+=("$package"); done
+# qemu-user-static is a virtual package on Ubuntu 26.04 (provided by qemu-user-binfmt, which depends on the static qemu-user).
+if ! dpkg_ok qemu-user-static && ! dpkg_ok qemu-user-binfmt; then
+  if apt-cache show qemu-user-binfmt >/dev/null 2>&1; then need+=(qemu-user-binfmt); else need+=(qemu-user-static); fi
+fi
+if [ "$engine" = docker-ce ]; then
+  engine_version=$(dpkg-query -W -f='${Version}' docker-ce)
+  dpkg_ok docker-ce-rootless-extras || need+=("docker-ce-rootless-extras=$engine_version")
+else
+  dpkg_ok rootlesskit || need+=(rootlesskit)
+  dpkg_ok docker-buildx || dpkg_ok docker-buildx-plugin || need+=(docker-buildx)
+  [ -x "$launcher" ] || { echo "docker.io does not ship $launcher; stop (nothing changed)" >&2; exit 2; }
+fi
+has_candidate() { [ -n "$(apt-cache policy "${1%%=*}" 2>/dev/null | awk '/Candidate:/ && $2 != "(none)" { print $2 }')" ]; }
+missing=()
+# Arrays are only expanded when non-empty: bash 3.2 (the macOS CI that runs this script's test) aborts on an empty one under set -u.
 if [ "${#need[@]}" -gt 0 ]; then
-  sudo -n apt-get update
+  for attempt in 1 2; do
+    missing=()
+    for package in "${need[@]}"; do has_candidate "$package" || missing+=("$package"); done
+    if [ "${#missing[@]}" -eq 0 ]; then break; fi
+    if [ "$attempt" = 1 ]; then sudo -n apt-get update; fi   # refreshes the package index only; the second look is final
+  done
+fi
+[ "${#missing[@]}" -eq 0 ] || { echo "not installable from the configured apt sources (nothing changed): ${missing[*]}" >&2; exit 2; }
+if [ "${#need[@]}" -gt 0 ]; then
   sudo -n env DEBIAN_FRONTEND=noninteractive NEEDRESTART_SUSPEND=1 apt-get install -y --no-remove "${need[@]}"
 fi
-[ -x /usr/bin/dockerd-rootless.sh ] || { echo '/usr/bin/dockerd-rootless.sh is missing after install' >&2; exit 2; }
+[ -x "$launcher" ] || { echo "$launcher is missing after install" >&2; exit 2; }
+command -v rootlesskit >/dev/null || { echo 'rootlesskit is not on PATH after install' >&2; exit 2; }
 
 # 2. subuid/subgid: 65536 ids for factory-runner after every existing range.
 add_subid() {
@@ -92,7 +124,7 @@ add_subid /etc/subuid --add-subuids
 add_subid /etc/subgid --add-subgids
 
 # 3. Ubuntu 24.04+ denies user namespaces to unprivileged programs unless an AppArmor profile allows them (Docker rootless docs).
-if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ] && [ ! -f "$ROOTLESSKIT_PROFILE" ]; then
+if [ "$(sysctl -n kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || echo 0)" = 1 ] && ! grep -rqs '/usr/bin/rootlesskit' /etc/apparmor.d; then
   printf '%s\n' "$MARK" 'abi <abi/4.0>,' 'include <tunables/global>' '' '/usr/bin/rootlesskit flags=(unconfined) {' '  userns,' '' '  include if exists <local/usr.bin.rootlesskit>' '}' \
     | sudo -n tee "$ROOTLESSKIT_PROFILE" >/dev/null
   sudo -n apparmor_parser -r "$ROOTLESSKIT_PROFILE"
@@ -112,7 +144,7 @@ esac
 case "$(arm64_flags)" in *F*) ;; *) echo "qemu-aarch64 is not registered with the F flag: $(cat "$ARM64_PROC" 2>&1 | head -n 3)" >&2; exit 1 ;; esac
 
 # 5. The daemon unit (no NoNewPrivileges: newuidmap is setuid) and its socket.
-node "$HELPER" unit | sudo -n tee "$UNITS/$SERVICE" >/dev/null
+node "$HELPER" unit "$launcher" | sudo -n tee "$UNITS/$SERVICE" >/dev/null
 sudo -n chmod 644 "$UNITS/$SERVICE"
 sudo -n systemctl daemon-reload
 sudo -n systemctl enable "$SERVICE"
