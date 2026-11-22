@@ -43,7 +43,10 @@ recycle_listeners() {
     echo 'a Runner.Worker is running: listeners keep the old environment until each restarts; rerun when idle (exit 3)'
     return 3
   fi
-  sudo -n pkill -u "$RUNNER_USER" -INT -x Runner.Listener || true
+  # Signal first (procps and BSD agree); exit 1 = no listener matched, anything else is a real failure.
+  local status=0
+  sudo -n pkill -INT -u "$RUNNER_USER" -x Runner.Listener || status=$?
+  [ "$status" -le 1 ] || { echo "pkill Runner.Listener failed ($status)" >&2; return 1; }
 }
 
 sudo -n true

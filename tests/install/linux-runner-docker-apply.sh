@@ -63,4 +63,26 @@ installed='docker.io uidmap' nocandidate='docker-buildx' expect_fail io-nobuildx
 installed='docker.io uidmap' nocandidate='rootlesskit slirp4netns' expect_fail io-norootlesskit 'slirp4netns rootlesskit'
 installed='docker.io uidmap slirp4netns qemu-user-binfmt rootlesskit docker-buildx' launcher_io="$fixture/absent" expect_fail io-nolauncher 'does not ship'
 installed='uidmap' expect_fail none 'neither docker-ce nor docker.io'
+# Listener recycle: signal first, no match is fine, a real pkill error fails, a running Worker stops it before any signal.
+awk '/^recycle_listeners\(\)/ { capture=1 } capture { print } capture && /^}/ { capture=0 }' "$ROOT/bin/linux-factory-runner-docker.sh" >"$fixture/recycle.sh"
+[ -s "$fixture/recycle.sh" ] || { echo 'FAIL: recycle_listenersが見つかりません' >&2; exit 1; }
+recycle() { # name; env: worker, pkill_rc
+  local calls="$fixture/$1.calls"; : >"$calls"
+  (
+    RUNNER_USER=factory-runner
+    workers_running() { [ "${worker:-0}" = 1 ]; }
+    sudo() { shift; "$@"; }
+    pkill() { printf 'pkill %s\n' "$*" >>"$calls"; case "$1" in -INT) return "${pkill_rc:-0}" ;; *) echo "pkill: invalid option" >&2; return 2 ;; esac; }
+    # shellcheck disable=SC1091 # 検査対象から取り出した実処理。
+    source "$fixture/recycle.sh"
+    recycle_listeners
+  ) 2>"$fixture/$1.err"
+}
+recycle r-ok
+grep -Fxq 'pkill -INT -u factory-runner -x Runner.Listener' "$fixture/r-ok.calls"
+pkill_rc=1 recycle r-nomatch
+rc=0; pkill_rc=2 recycle r-broken || rc=$?
+[ "$rc" -eq 1 ] || { echo 'FAIL: pkillの実エラーを握りつぶした' >&2; exit 1; }
+rc=0; worker=1 recycle r-busy || rc=$?
+[ "$rc" -eq 3 ] && [ ! -s "$fixture/r-busy.calls" ] || { echo 'FAIL: Worker実行中にlistenerへ信号を送った' >&2; exit 1; }
 echo 'linux-runner-docker-apply: OK（docker.io/docker-ceの選択・Ubuntu archiveの部品・欠品は名指しで変更前に停止）'
