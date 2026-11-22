@@ -111,7 +111,7 @@ rm_line="$(grep -n '50-cgroupfs.conf' "$fixture/unit_calls" | head -1 | cut -d: 
 [ "$rm_line" -lt "$reload_line" ] || { echo 'FAIL: drop-inを消す前にdaemon-reloadした' >&2; exit 1; }
 (
   calls="$fixture/rollback_calls"; : >"$calls"
-  mode=rollback HELPER=x UNITS=/etc/systemd/system SERVICE=factory-runner-dockerd.service ARM64_CONF=/nonexistent ROOTLESSKIT_PROFILE=/nonexistent MARK=m purge=0 roots=()
+  mode=rollback HELPER=x UNITS=/etc/systemd/system SERVICE=factory-runner-dockerd.service ARM64_CONF=/nonexistent ROOTLESSKIT_PROFILE=/nonexistent MARK=m purge=0 RUNNER_USER=factory-runner RUNNER_HOME=/home/factory-runner roots=(/nonexistent-root)
   sudo() { printf 'sudo %s\n' "$*" >>"$calls"; }
   runner() { :; }
   recycle_listeners() { :; }
