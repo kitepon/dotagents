@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import {
-  DOCKER_HOST, DOCKER_SERVICE, DOCKER_SOCKET, hasDockerHost, hasSubidRange, nextSubidStart, renderDockerdUnit, setDockerHost,
+  DOCKER_HOST, DOCKER_SERVICE, DOCKER_SOCKET, ROOTLESS_SCRIPTS, hasDockerHost, hasSubidRange, nextSubidStart, renderDockerdUnit, setDockerHost,
 } from '../../lib/factory/runner-docker.mjs';
 
 // docs/feature-map/runner-capacity.md "Rootless Docker": the .env writer, the check's reader, the unit and the id allocation.
@@ -43,6 +43,18 @@ test('daemon unit: runs as factory-runner with its own runtime dir; no NoNewPriv
   }
   assert.doesNotMatch(unit.replace(/^#.*$/gm, ''), /NoNewPrivileges|CapabilityBoundingSet/);
   assert.doesNotMatch(unit, /SupplementaryGroups=|Group=docker/);
+});
+
+test('the launcher is the Engine\'s own: docker-ce default, Ubuntu docker.io contrib path, nothing else', () => {
+  assert.equal(ROOTLESS_SCRIPTS['docker-ce'], '/usr/bin/dockerd-rootless.sh');
+  assert.equal(ROOTLESS_SCRIPTS['docker.io'], '/usr/share/docker.io/contrib/dockerd-rootless.sh');
+  assert.ok(renderDockerdUnit().includes(`ExecStart=${ROOTLESS_SCRIPTS['docker-ce']} --host ${DOCKER_HOST}`));
+  const io = renderDockerdUnit(ROOTLESS_SCRIPTS['docker.io']);
+  assert.ok(io.includes(`ExecStart=${ROOTLESS_SCRIPTS['docker.io']} --host ${DOCKER_HOST}`));
+  assert.equal(helper(['unit', ROOTLESS_SCRIPTS['docker.io']]).stdout, io);
+  assert.throws(() => renderDockerdUnit('/bin/sh'), /unknown rootless launcher/);
+  assert.equal(helper(['unit', '/bin/sh']).status, 2);
+  assert.deepEqual(helper(['scripts']).stdout.trimEnd().split('\n').map((line) => line.split('\t')), Object.entries(ROOTLESS_SCRIPTS));
 });
 
 test('subuid/subgid: allocate after every existing range; leave a runner that already has 65536 ids alone', () => {
