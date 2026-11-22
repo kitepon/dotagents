@@ -3,8 +3,9 @@
 # are fixtures. Nothing touches the host. Contract: docs/feature-map/runner-capacity.md ("Rootless Docker").
 # shellcheck disable=SC2329,SC2317,SC2034,SC2154 # sourceするapply処理がfixtureの関数と変数を消費する。
 set -euo pipefail
-# Git Bash on Windows rewrites POSIX-looking arguments (/usr/share/...) passed to node; these paths are data, not Windows files.
-export MSYS_NO_PATHCONV=1
+# Git Bash on Windows rewrites POSIX-looking arguments passed to node (/c/... -> C:\...), which the script paths need, but the data paths
+# below (launcher, pool roots) are not Windows files and must stay as written.
+export MSYS2_ARG_CONV_EXCL='/usr/share/*;/home/*;/nonexistent*'
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 fixture="$(mktemp -d)"
 trap 'rm -rf "$fixture"' EXIT
