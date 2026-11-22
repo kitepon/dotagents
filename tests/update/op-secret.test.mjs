@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { resolveSecret, unattendedToken, unattendedTokenPath, UNATTENDED_KEYCHAIN_SERVICE } from '../../lib/factory/op-secret.mjs';
+import { dropSecretCache, resolveSecret, resolveSecretCached, unattendedToken, unattendedTokenPath, UNATTENDED_KEYCHAIN_SERVICE } from '../../lib/factory/op-secret.mjs';
 import { prepare } from '../../bin/dotagents-op-run.mjs';
 
 const reference = 'op://vault/item/credential';
@@ -116,4 +116,23 @@ test('dotagents-op-runは参照を解決し、子へService Account tokenを渡�
   }
   await assert.rejects(prepare(['--env-file', 'x', '--', 'app'], { readText: async () => { throw Object.assign(new Error('x'), { code: 'ENOENT' }); } }), /OP_RUN_ENV_FILE_UNREADABLE: ENOENT/u);
   await assert.rejects(prepare(['--env-file', 'x', '--', 'app'], { readText: async () => `A=${reference}`, resolve: async () => { throw new Error('OP_READ_FAILED'); } }), /OP_READ_FAILED/u);
+});
+
+test('同じ参照の間は1Passwordを読み直さず、参照が変わるか捨てた時だけ読む', async (t) => {
+  const home = await temporaryHome(t);
+  const cacheFile = join(home, 'credential-cache.json');
+  let reads = 0;
+  const execute = async () => { reads += 1; return { ok: true, stdout: `secret-${reads}\n` }; };
+  const env = { OP_SERVICE_ACCOUNT_TOKEN: 'x' };
+  assert.equal(await resolveSecretCached(' plain ', { cacheFile, execute: async () => assert.fail('opを呼んだ') }), 'plain');
+  await assert.rejects(readFile(cacheFile), { code: 'ENOENT' }); // 平文は置かない
+  assert.equal(await resolveSecretCached(reference, { cacheFile, env, execute }), 'secret-1');
+  assert.equal(await resolveSecretCached(reference, { cacheFile, env, execute }), 'secret-1');
+  assert.equal(reads, 1);
+  assert.equal(await resolveSecretCached('op://vault/item/other', { cacheFile, env, execute }), 'secret-2');
+  await dropSecretCache(cacheFile);
+  assert.equal(await resolveSecretCached('op://vault/item/other', { cacheFile, env, execute }), 'secret-3');
+  assert.equal(reads, 3);
+  if (process.platform !== 'win32') assert.equal((await stat(cacheFile)).mode & 0o777, 0o600);
+  assert.deepEqual((await readdir(home)).filter((name) => name.endsWith('.tmp')), []);
 });

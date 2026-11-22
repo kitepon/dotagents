@@ -36,6 +36,8 @@ v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id�
 
 配置後は内容を表示せず、fileが空でないこととpermissionだけを確認する。hostごとにcredentialを分け、rabbitとWindows nativeのtokenを共用しない。rabbitの初回導入は`setup-linux-workstation-factory.sh`がcredential発行・転送・config作成まで一撃内で行うため、平文tokenを手で表示・転記しない。
 
+credential fileの中身が`op://`参照の時、reporterは読んだ値を`<state dir>/credential-cache.json`（0600、Windowsはstate dirの所有者限定ACL、参照のSHA-256付き）へ置き、同じ参照の間は毎時のrunで1Passwordを読まない。参照を変えるか、BugHubが401/403で拒否した次のrunで読み直す。rotation後に旧値が残ったら、このfileを消せば次のrunで読み直す。平文のcredential fileはこの対象外（元から読まない）。
+
 ## 正規実行順序
 
 現役majorを`v<N>`として、次の一方向だけを使う。
