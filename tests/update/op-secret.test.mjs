@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { dropSecretCache, resolveSecret, resolveSecretCached, unattendedToken, unattendedTokenPath, UNATTENDED_KEYCHAIN_SERVICE } from '../../lib/factory/op-secret.mjs';
+import { DPAPI_MACHINE_PREFIX, dropSecretCache, resolveSecret, resolveSecretCached, unattendedToken, unattendedTokenPath, UNATTENDED_KEYCHAIN_SERVICE } from '../../lib/factory/op-secret.mjs';
 import { prepare } from '../../bin/dotagents-op-run.mjs';
 
 const reference = 'op://vault/item/credential';
@@ -135,4 +136,20 @@ test('同じ参照の間は1Passwordを読み直さず、参照が変わるか�
   assert.equal(reads, 3);
   if (process.platform !== 'win32') assert.equal((await stat(cacheFile)).mode & 0o777, 0o600);
   assert.deepEqual((await readdir(home)).filter((name) => name.endsWith('.tmp')), []);
+});
+
+// Windows CI（windows-native）だけで実際のDPAPIを通す。Linux/Macにはpwshもmachine DPAPIも無い。
+test('Windows: machine範囲の保存と、以前のCurrentUser形式の両方を読める', { skip: process.platform !== 'win32' }, async (t) => {
+  const home = await temporaryHome(t);
+  const env = { ...process.env, LOCALAPPDATA: join(home, 'Local') };
+  const file = unattendedTokenPath('win32', { home, env });
+  await mkdir(dirname(file), { recursive: true });
+  const pwsh = (script) => {
+    const result = spawnSync('pwsh.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { encoding: 'utf8', env: { ...env, DOTAGENTS_UNATTENDED_TOKEN_FILE: file } });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  pwsh(`$p=[Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes('ops_machine'),$null,[Security.Cryptography.DataProtectionScope]::LocalMachine); Set-Content -NoNewline -LiteralPath $env:DOTAGENTS_UNATTENDED_TOKEN_FILE -Value ('${DPAPI_MACHINE_PREFIX}'+[Convert]::ToBase64String($p))`);
+  assert.equal(await unattendedToken({ platform: 'win32', home, env }), 'ops_machine');
+  pwsh("ConvertTo-SecureString 'ops_legacy' -AsPlainText -Force | ConvertFrom-SecureString | Set-Content -NoNewline -LiteralPath $env:DOTAGENTS_UNATTENDED_TOKEN_FILE");
+  assert.equal(await unattendedToken({ platform: 'win32', home, env }), 'ops_legacy');
 });

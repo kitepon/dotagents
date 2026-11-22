@@ -323,13 +323,20 @@ def cli_probe(profile, configure_only):
 
 # 無人実行の端末ごとの読取専用Service Account（その端末専用の保管庫だけ）。readerはlib/factory/op-secret.mjsと同じ場所を読む。
 UNATTENDED_SERVICE = "dotagents-1password-unattended"
-DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); '
-               'New-Item -ItemType Directory -Force -Path (Split-Path $env:DOTAGENTS_UNATTENDED_TOKEN_FILE) | Out-Null; '
-               'ConvertTo-SecureString $t -AsPlainText -Force | ConvertFrom-SecureString | '
-               'Set-Content -NoNewline -LiteralPath ($env:DOTAGENTS_UNATTENDED_TOKEN_FILE + ".tmp"); '
-               'Move-Item -Force -LiteralPath ($env:DOTAGENTS_UNATTENDED_TOKEN_FILE + ".tmp") -Destination $env:DOTAGENTS_UNATTENDED_TOKEN_FILE')
-DPAPI_READ = ('$ErrorActionPreference="Stop"; Get-Content -Raw -LiteralPath $env:DOTAGENTS_UNATTENDED_TOKEN_FILE'
-              ' | ConvertTo-SecureString | ConvertFrom-SecureString -AsPlainText')
+# Windowsはmachine範囲のDPAPI。user鍵は再起動後にパスワードで入り直すまで開かないことがあるため使わない（2026-11-21 Fox）。
+# 読めるのはfileのACLで席のuserとAdministratorsだけに絞る。readerは同じ書式を読む（lib/factory/op-secret.mjs）。
+DPAPI_PREFIX = "dpapi-machine:v1:"
+DPAPI_WRITE = ('$ErrorActionPreference="Stop"; $t=[Console]::In.ReadToEnd().Trim(); $f=$env:DOTAGENTS_UNATTENDED_TOKEN_FILE; '
+               'New-Item -ItemType Directory -Force -Path (Split-Path $f) | Out-Null; '
+               '$p=[Security.Cryptography.ProtectedData]::Protect([Text.Encoding]::UTF8.GetBytes($t),$null,[Security.Cryptography.DataProtectionScope]::LocalMachine); '
+               f'Set-Content -NoNewline -LiteralPath ($f+".tmp") -Value ("{DPAPI_PREFIX}"+[Convert]::ToBase64String($p)); '
+               '$me=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value; '
+               'icacls ($f+".tmp") /inheritance:r /grant:r ("*"+$me+":(M)") "*S-1-5-32-544:(F)" | Out-Null; '
+               'if ($LASTEXITCODE -ne 0) { Remove-Item -Force ($f+".tmp"); throw "acl_failed" }; '
+               'Move-Item -Force -LiteralPath ($f+".tmp") -Destination $f')
+DPAPI_READ = ('$ErrorActionPreference="Stop"; $t=(Get-Content -Raw -LiteralPath $env:DOTAGENTS_UNATTENDED_TOKEN_FILE).Trim(); '
+              f'if ($t.StartsWith("{DPAPI_PREFIX}")) {{ [Text.Encoding]::UTF8.GetString([Security.Cryptography.ProtectedData]::Unprotect([Convert]::FromBase64String($t.Substring({len(DPAPI_PREFIX)})),$null,[Security.Cryptography.DataProtectionScope]::LocalMachine)) }} '
+              'else { $t | ConvertTo-SecureString | ConvertFrom-SecureString -AsPlainText }')
 
 
 def unattended_path(profile):
