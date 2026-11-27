@@ -4,6 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { parseEnv } from 'node:util';
 
 const STORE = new URL('../../bin/factory-reporter-credential-store.mjs', import.meta.url).pathname;
 const PUSH = new URL('../../bin/factory-reporter-credential-push.sh', import.meta.url).pathname;
@@ -64,4 +65,27 @@ test('pushはtokenをsshの標準入力だけで渡し、argvへ出さない', a
   assert.equal(await readFile(credential, 'utf8'), TOKEN);
   assert.equal(spawnSync('sh', [PUSH, 'nowhere'], { env, encoding: 'utf8' }).status, 2);
   assert.equal(spawnSync('sh', [PUSH, 'rabbit'], { env: { ...env, DOTAGENTS_REPORTER_TOKEN: '' }, encoding: 'utf8' }).status, 2);
+});
+
+test('typesafe: api.envへTYPESAFE_API_KEY=値で置き、parseEnvで読み戻せる。引数のhostへだけsshする', async (t) => {
+  const { dir } = await box(t);
+  const run = spawnSync(process.execPath, [STORE, '--typesafe'], { input: TOKEN, encoding: 'utf8', env: { ...process.env, HOME: dir } });
+  assert.equal(run.status, 0, run.stderr);
+  const file = join(dir, '.config', 'dotagents', 'credentials', 'typesafe', 'api.env');
+  assert.equal(parseEnv(await readFile(file, 'utf8')).TYPESAFE_API_KEY, TOKEN);
+  assert.equal((await stat(file)).mode & 0o777, 0o600);
+  for (const input of ['a#b', 'a"b', 'a b', 'op://v/i/c']) {
+    assert.equal(spawnSync(process.execPath, [STORE, '--typesafe'], { input, encoding: 'utf8', env: { ...process.env, HOME: dir } }).status, 1, input);
+  }
+  assert.equal(parseEnv(await readFile(file, 'utf8')).TYPESAFE_API_KEY, TOKEN);
+  const fake = join(dir, 'ssh');
+  await writeFile(fake, `#!/bin/sh\nprintf '%s\\n' "$@" > '${dir}/argv'\ncat > '${dir}/stdin'\n`);
+  await chmod(fake, 0o755);
+  const env = { ...process.env, PATH: `${dir}:${process.env.PATH}`, TYPESAFE_API_KEY: TOKEN };
+  assert.equal(spawnSync('sh', [PUSH, 'typesafe', 'rabbit'], { env, encoding: 'utf8' }).status, 0);
+  assert.equal(await readFile(join(dir, 'stdin'), 'utf8'), TOKEN);
+  const argv = await readFile(join(dir, 'argv'), 'utf8');
+  assert.ok(!argv.includes(TOKEN) && argv.includes('--typesafe'));
+  assert.equal(spawnSync('sh', [PUSH, 'typesafe', 'nowhere'], { env, encoding: 'utf8' }).status, 2);
+  assert.equal(spawnSync('sh', [PUSH, 'typesafe', 'rabbit'], { env: { ...env, TYPESAFE_API_KEY: '' }, encoding: 'utf8' }).status, 2);
 });
