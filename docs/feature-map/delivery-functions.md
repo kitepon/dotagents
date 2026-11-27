@@ -10,6 +10,7 @@
 | preview | 同`previewReport` | WIRE reader→identity→JSON。identity不一致をOFFでも拒否 |
 | ローカル受付 | 同`enqueueReport` | report読取後、OFFならACK/identityに進まずstatsを返す。ONだけidentity/ACK/enqueue、原本を上書きしない |
 | flushの起動と表示 | 同`flushReports` | OFFはstatsだけ。ONはstate→credential（fileの中身が`op://`参照なら`resolveSecretCached`: state dirの`credential-cache.json`（0600、参照のSHA-256付き）が同じ参照なら1Passwordを読まず、無い・参照が違う時だけ`resolveSecret`で読んで置く。任意）→lock→巡回（`flushQueue`が401/403/fragment-401/403の保留で`dropSecretCache`し、次のrunで読み直す）→stats/JSON/診断/exit。最終statsはlock外のまま |
+| credential file設置 | `bin/factory-reporter-credential-store.mjs`（端末側）、`bin/factory-reporter-credential-push.sh`（main-server側） | 1Passwordを読まない端末の経路。main-serverの呼び手（認証仲介の`auth exec`、品目名=`sh <push> <rabbit\|mac-kite\|fox>`、変数`DOTAGENTS_REPORTER_TOKEN`）が、端末ごとのsshの標準入力へtokenだけを渡す。端末側はconfigの`reporting.credential_file`へ平文で置く（空・空白入り・`op://`は拒否、一時file→0600/Windows所有者限定ACL→rename、argv・出力へtokenを出さない）。`typesafe`付き（品目名=`sh <push> typesafe`、変数`TYPESAFE_API_KEY`、端末は`auth exec`の`--`の後ろの引数）はTypeSafeのapi.env（`typeSafeKeyPath`、`TYPESAFE_API_KEY=値`、同じ原子置換）へ置く。読取側の`loadTypeSafeKey`は変えず、平文値は`resolveSecret`が素通しする。reporterの読取は変えない（平文fileは`credential`が読み、`resolveSecretCached`は素通し）。rotation後は同じ品目を再実行する（401/403で読み直す経路は`op://`の時だけ） |
 | queue巡回 | 同`flushQueue` | lock内でexpire→entry→retry日時→postOne→処分/counter。途中例外は残りを成功扱いせず上位へ |
 | 一件配送とACK | 同`postOne`と既closure | 本文を変更していない。受理/分割/ACK/keep/dead/holdの状態は配送・保持の現状図を参照 |
 | reportの共通読取 | `lib/factory/contract.mjs:readValidatedReport` | private。file errorは元error、UTF8/JSONだけ既文言へ、validator errorは元のまま。元Buffer/reportを返す |
