@@ -36,6 +36,8 @@ v9のfull/fragment送信は、実行中のNode自身のpath/版/pid、report_id�
 
 配置後は内容を表示せず、fileが空でないこととpermissionだけを確認する。hostごとにcredentialを分け、rabbitとWindows nativeのtokenを共用しない。rabbitの初回導入は`setup-linux-workstation-factory.sh`がcredential発行・転送・config作成まで一撃内で行うため、平文tokenを手で表示・転記しない。
 
+1Passwordを使わない端末（rabbit・mac-kite・fox）では、credential fileへ平文のtokenを置く。置くのはmain-serverの呼び手で、認証仲介の品目`sh <dotagents clone>/bin/factory-reporter-credential-push.sh <rabbit|mac-kite|fox>`（変数`DOTAGENTS_REPORTER_TOKEN`）を`auth exec`で走らせると、tokenがsshの標準入力だけで端末の`factory-reporter-credential-store`へ渡り、configの`reporting.credential_file`へ0600（Windowsは所有者限定ACL）で置かれる。端末へsocketもopも要らない。rotationの時は同じ品目を走らせ直す。
+
 credential fileの中身が`op://`参照の時、reporterは読んだ値を`<state dir>/credential-cache.json`（0600、Windowsはstate dirの所有者限定ACL、参照のSHA-256付き）へ置き、同じ参照の間は毎時のrunで1Passwordを読まない。参照を変えるか、BugHubが401/403で拒否した次のrunで読み直す。rotation後に旧値が残ったら、このfileを消せば次のrunで読み直す。平文のcredential fileはこの対象外（元から読まない）。
 
 Windowsの1Password無人実行token（`%LOCALAPPDATA%\dotagents\credentials\1password\unattended.dpapi`）は、machine範囲のDPAPI（`dpapi-machine:v1:<base64>`）で保存し、fileのACLを席のuserとAdministratorsだけにする（`setup-1password --store-unattended-token --profile windows-native`）。user範囲のDPAPIは、再起動後にパスワードで入り直すまで開かないことがあり、Foxで毎時のreporterと夜間更新が止まった（2026-11-21。`OP_UNATTENDED_TOKEN_UNREADABLE`、Windowsの記録はDPAPI 8198/3）。以前のCurrentUser形式のfileも読めるが同じ問題が残るので、`--store-unattended-token`で置き直す。machine範囲は、同じ端末の他のローカルアカウントがfileを読めればtokenを開ける。ACLがその境目である。
