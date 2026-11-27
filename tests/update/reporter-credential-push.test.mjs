@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmod, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -43,7 +43,7 @@ test('storeは空・空白入り・op://参照・設定なしでは既存のfile
 });
 
 test('pushはtokenをsshの標準入力だけで渡し、argvへ出さない', async (t) => {
-  const { dir } = await box(t);
+  const { dir, credential } = await box(t);
   const fake = join(dir, 'ssh');
   await writeFile(fake, `#!/bin/sh\nprintf '%s\\n' "$@" > '${dir}/argv'\ncat > '${dir}/stdin'\n`);
   await chmod(fake, 0o755);
@@ -56,6 +56,12 @@ test('pushはtokenをsshの標準入力だけで渡し、argvへ出さない', a
     assert.ok(!argv.includes(TOKEN));
     assert.match(argv, new RegExp(`^-o\\nBatchMode=yes\\n-o\\nConnectTimeout=15\\n${target}\\n.*factory-reporter-credential-store`, 's'));
   }
+  // main-serverはsshを使わず、同じclone内のstoreをそのまま走らせる。
+  await mkdir(join(dir, 'dotagents'));
+  await copyFile(join(dir, 'factory-reporter.json'), join(dir, 'dotagents', 'factory-reporter.json'));
+  const local = spawnSync('sh', [PUSH, 'main-server'], { env: { ...env, XDG_CONFIG_HOME: dir }, encoding: 'utf8' });
+  assert.equal(local.status, 0, local.stderr);
+  assert.equal(await readFile(credential, 'utf8'), TOKEN);
   assert.equal(spawnSync('sh', [PUSH, 'nowhere'], { env, encoding: 'utf8' }).status, 2);
   assert.equal(spawnSync('sh', [PUSH, 'rabbit'], { env: { ...env, DOTAGENTS_REPORTER_TOKEN: '' }, encoding: 'utf8' }).status, 2);
 });
