@@ -40,12 +40,12 @@ test('経路fileがlocalならこの端末の中継scriptを直接走らせる',
   assert.deepEqual(calls[0][1].slice(1), ['typesafe', 'POST', '/v1/systemone']);
 });
 
-test('Windowsの端末はGit for WindowsのOpenSSHを使う', async (t) => {
+test('Windowsの端末は標準のOpenSSH（名前付きpipeのagentが使える）を使う', async (t) => {
   const home = await temporaryHome(t);
   const calls = [];
   const execute = async (...call) => { calls.push(call); return { ok: true, stdout: '{}', stderr: '' }; };
-  await moduleRequest('bughub-reporter', { basePath: '/api/factory/v9', execute, home, env: { ProgramFiles: 'C:\\Program Files' }, platform: 'win32' })('http://x/a', { method: 'POST', body: '{}' });
-  assert.equal(calls[0][0], 'C:\\Program Files\\Git\\usr\\bin\\ssh.exe');
+  await moduleRequest('bughub-reporter', { basePath: '/api/factory/v9', execute, home, env: { SystemRoot: 'C:\\Windows' }, platform: 'win32' })('http://x/a', { method: 'POST', body: '{}' });
+  assert.equal(calls[0][0], 'C:\\Windows\\System32\\OpenSSH\\ssh.exe');
 });
 
 test('4xxはstderrのHTTP codeを返し、拒否・不達は到達不能として投げる', async (t) => {
