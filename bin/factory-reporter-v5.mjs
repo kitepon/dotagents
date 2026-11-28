@@ -10,6 +10,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 import { dropSecretCache, resolveSecretCached } from '../lib/factory/op-secret.mjs';
+import { BUGHUB_BASE_PATH, BUGHUB_ITEM, moduleRequest } from '../lib/factory/auth-module-http.mjs';
 import { createFragmentManifest, sendReportFragments, validateFragmentManifest } from '../lib/factory/report-fragments.mjs';
 import { logRuntimeContext } from '../lib/factory/runtime-context.mjs';
 import {
@@ -188,6 +189,8 @@ async function postOne(config, token, loc, entry) {
     return { action: 'hold', reason: 'one_observation_attempt_consumed_or_expired' };
   }
   const oneShot = IS_V9 && RABBIT_OBSERVATION_ONCE.isControlled(decoded.report);
+  // via_module: 鍵は認証仲介の中にあり、この端末は鍵を持たない（tokenはnull）。
+  const request = config.reporting.via_module ? moduleRequest(BUGHUB_ITEM, { basePath: BUGHUB_BASE_PATH }) : fetch;
   const runtimeLog = platform() === 'win32' ? { logFile: join(loc.stateDir, 'scheduler.log'), secureFile: ownerOnlyAcl } : {};
   const retainFailure = reason => {
     if (!oneShot) return { action: 'keep', reason };
@@ -199,7 +202,7 @@ async function postOne(config, token, loc, entry) {
     return { action: 'delete' };
   };
   const sendFragments = async manifest => {
-    const result = await sendReportFragments(config, token, decoded.report, decoded.bytes, manifest, runtimeLog);
+    const result = await sendReportFragments(config, token, decoded.report, decoded.bytes, manifest, runtimeLog, request);
     if (result.accepted) return complete();
     diagnostic(`分割報告は未受理です (${result.reason})。原reportと固定manifestを保持しました`);
     return retainFailure(result.reason);
@@ -213,7 +216,7 @@ async function postOne(config, token, loc, entry) {
   const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     if (IS_V9) logRuntimeContext({ consumer: 'reporter', reportId: decoded.report.report_id, endpoint: config.reporting.endpoint, source: SOURCE }, runtimeLog);
-    const response = await fetch(config.reporting.endpoint, { method: 'POST', headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', 'x-factory-sent-at': new Date().toISOString() }, body: decoded.bytes, signal: controller.signal, ...(oneShot ? { redirect: 'error' } : {}) });
+    const response = await request(config.reporting.endpoint, { method: 'POST', headers: { ...(token === null ? {} : { authorization: `Bearer ${token}` }), 'content-type': 'application/json', 'x-factory-sent-at': new Date().toISOString() }, body: decoded.bytes, signal: controller.signal, ...(oneShot ? { redirect: 'error' } : {}) });
     let body = null; try { body = await response.json(); } catch {}
     const accepted = response.ok && body?.accepted === true && body.report_id === decoded.report.report_id;
     if (IS_V9) RABBIT_OBSERVATION_ONCE.recordSend(decoded.report, decoded.bytes, { httpStatus: response.status, accepted });
@@ -311,7 +314,7 @@ async function flushReports(config, loc) {
     return;
   }
   await ensureState(loc);
-  const token = await credential(config, loc);
+  const token = config.reporting.via_module ? null : await credential(config, loc);
   const outcome = await withLock(loc, () => flushQueue(config, token, loc));
   const failed = outcome.retained > 0 || outcome.dead_lettered > 0 || outcome.deferred > 0 || outcome.ack_failed > 0 || (outcome.held_observation_reports ?? 0) > 0;
   emit({ ok: !failed, command, reporting_enabled: true, ...outcome, ...(await stats(loc)) });

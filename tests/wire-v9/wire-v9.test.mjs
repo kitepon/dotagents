@@ -89,6 +89,29 @@ test('混在queueは受理/保留/不正/延期を個別集計し、lockと原�
 });
 
 
+test('via_moduleは鍵を持たずmain-serverの中継へsshで本文を渡し、受理でoutboxを消す', { skip: process.platform === 'win32' }, async t => {
+  const root = await mkdtemp(join(tmpdir(), 'wire-v9-module-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const config = join(root, 'config.json'), file = join(root, 'report.json'), bin = join(root, 'bin'), log = join(root, 'ssh.log'), input = join(root, 'ssh.stdin');
+  const reporter = resolve(import.meta.dirname, '../../bin/factory-reporter-v9.mjs');
+  await mkdir(bin);
+  await writeFile(join(bin, 'ssh'), `#!/usr/bin/env node
+const fs = require('fs'); fs.writeFileSync(${JSON.stringify(log)}, JSON.stringify(process.argv.slice(2)));
+const body = fs.readFileSync(0); fs.writeFileSync(${JSON.stringify(input)}, body);
+process.stderr.write('HTTP 200\\n'); process.stdout.write(JSON.stringify({ accepted: true, report_id: JSON.parse(body).report_id }));
+`, { mode: 0o755 });
+  const env = { XDG_STATE_HOME: join(root, 'state'), LOCALAPPDATA: join(root, 'state'), HOME: root, PATH: `${bin}:${process.env.PATH}` };
+  await writeFile(config, JSON.stringify({ schema_version: '1.0', host: { id: 'mac-kite', profile: 'mac' }, collection: { enabled: true },
+    reporting: { enabled: true, endpoint: 'http://192.168.1.2:39310/api/factory/v9/reports', via_module: true } }));
+  await writeFile(file, JSON.stringify(reportV9()));
+  assert.equal((await run(reporter, ['enqueue', '--report', file, '--config', config], env)).code, 0);
+  const flushed = await run(reporter, ['flush', '--config', config], env);
+  assert.equal(flushed.code, 0, flushed.stderr); assert.equal(flushed.json.sent, 1); assert.equal(flushed.json.count, 0);
+  const argv = JSON.parse(await readFile(log, 'utf8'));
+  assert.match(argv.at(-1), /^'sh' '.*factory-relay-http\.sh' 'bughub-reporter' 'POST' '\/reports'$/u);
+  assert.equal(JSON.parse(await readFile(input, 'utf8')).report_id, reportV9().report_id);
+  assert.equal(argv.join(' ').includes('Bearer'), false);
+});
+
 test('v9は両第三者製品を必須にし、旧v8の集合を変更しない', () => {
   assert.deepEqual(V9_PRODUCT_IDS, EXPECTED);
   const report = reportV9();

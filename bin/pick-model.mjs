@@ -2,11 +2,19 @@
 // 使い方: pick-model "<任務>"
 //         pick-model --closed <codex|claude-code|grok-build|cursor> --until <時刻>
 import { join, resolve } from 'node:path';
+import { TYPESAFE_ITEM, moduleRequest } from '../lib/factory/auth-module-http.mjs';
 import { loadTypeSafeKey } from '../lib/factory/typesafe-credentials.mjs';
 import { closuresPath, codexUsage, pickModel, readClosures, recordClosure } from '../lib/pick-model.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const USAGE = 'usage: pick-model "<任務>" | pick-model --closed <harness> --until <time>';
+
+async function typeSafeAccess() {
+  try { return { key: await loadTypeSafeKey() }; } catch (error) {
+    if (error.message !== 'TYPESAFE_CREDENTIAL_ABSENT') throw error;
+    return { key: null, request: moduleRequest(TYPESAFE_ITEM) };
+  }
+}
 
 async function main(argv) {
   if (argv[0] === '--closed') {
@@ -21,7 +29,8 @@ async function main(argv) {
     modelsPath: join(ROOT, 'shared', 'runbooks', '02_models.md'),
     closures: await readClosures(closuresPath()),
     codex: await codexUsage(),
-    key: await loadTypeSafeKey(),
+    // 鍵がenv/api.envに無い端末は、認証仲介の品目`typesafe`に鍵を使わせる（鍵は端末へ来ない）。
+    ...await typeSafeAccess(),
   });
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }

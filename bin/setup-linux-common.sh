@@ -452,19 +452,22 @@ REMOTE
 }
 
 reporter_config_ready() {
-  [ -s "$REPORT_CONFIG" ] && [ -s "$FACTORY_CREDENTIAL_FILE" ] || return 1
+  [ -s "$REPORT_CONFIG" ] || return 1
   node - "$REPORT_CONFIG" "$HOST_PROFILE" "$FACTORY_CREDENTIAL_FILE" <<'NODE'
 const fs = require('fs');
 const [path, profile, credential] = process.argv.slice(2);
 try {
   const value = JSON.parse(fs.readFileSync(path, 'utf8'));
   const endpoint = new URL(value?.reporting?.endpoint);
+  // 鍵は認証仲介の中にあり、端末のcredential fileは要らない（via_module）。旧configはfileが空でない時だけ有効とする。
+  const credentialReady = value?.reporting?.via_module === true
+    || (value?.reporting?.credential_file === credential && fs.statSync(credential).size > 0);
   process.exit(value?.schema_version === '1.0'
     && value?.host?.id === 'rabbit' && value?.host?.profile === profile
     && value?.collection?.enabled === true && value?.reporting?.enabled === true
     && endpoint.origin === 'http://192.168.1.2:39310'
     && endpoint.pathname === '/api/factory/v9/reports'
-    && value?.reporting?.credential_file === credential ? 0 : 1);
+    && credentialReady ? 0 : 1);
 } catch { process.exit(1); }
 NODE
 }
@@ -474,33 +477,20 @@ ensure_factory_reporter_enrollment() {
   [ "$HOST_PROFILE" = linux ] || return 0
   reporter_config_ready && return 0
   ensure_main_server_ssh
-  local config_dir credential_dir staging_tmp config_tmp
+  local config_dir config_tmp
   config_dir="$(dirname "$REPORT_CONFIG")"
-  credential_dir="$(dirname "$FACTORY_CREDENTIAL_FILE")"
-  install -d -m 700 "$config_dir" "$credential_dir"
-  echo 'INFO: main-serverのBugHub管理CLIでrabbit/linux credentialを発行します'
-  ssh "$MAIN_SERVER_SSH_TARGET" \
-    'set -e; install -d -m 700 /home/kite/bughub/data/credentials; if test ! -s /home/kite/bughub/data/credentials/rabbit.token; then cd /home/kite/bughub && docker compose exec -T bughub node src/factory-admin.js provision --host-id rabbit --profile linux --token-output /app/data/credentials/rabbit.token; fi'
-  staging_tmp="$(mktemp "$credential_dir/factory.token.XXXXXX")"
-  if ! ssh "$MAIN_SERVER_SSH_TARGET" 'cat /home/kite/bughub/data/credentials/rabbit.token' >"$staging_tmp"; then
-    rm -f "$staging_tmp"
-    die 'rabbit credentialをmain-serverから転送できない'
-  fi
-  [ -s "$staging_tmp" ] || { rm -f "$staging_tmp"; die 'rabbit credentialが空'; }
-  chmod 600 "$staging_tmp"
-  mv -f "$staging_tmp" "$FACTORY_CREDENTIAL_FILE"
-  ssh "$MAIN_SERVER_SSH_TARGET" 'rm -f /home/kite/bughub/data/credentials/rabbit.token'
-
+  install -d -m 700 "$config_dir"
+  echo 'INFO: rabbitのBugHub credentialは認証仲介の品目bughub-reporter-rabbitが使う。端末へcredentialを置かない'
   config_tmp="$(mktemp "$config_dir/factory-reporter.json.XXXXXX")"
-  node - "$ROOT/examples/factory-reporter/rabbit.json" "$config_tmp" "$FACTORY_CREDENTIAL_FILE" <<'NODE'
+  node - "$ROOT/examples/factory-reporter/rabbit.json" "$config_tmp" <<'NODE'
 const fs = require('fs');
-const [source, output, credential] = process.argv.slice(2);
+const [source, output] = process.argv.slice(2);
 const value = JSON.parse(fs.readFileSync(source, 'utf8'));
 value.collection.enabled = true;
 value.reporting = {
   enabled: true,
   endpoint: 'http://192.168.1.2:39310/api/factory/v9/reports',
-  credential_file: credential,
+  via_module: true,
 };
 fs.writeFileSync(output, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
 NODE
