@@ -18,12 +18,12 @@ test('端末はmain-serverの中継をsshで呼び、本文は標準入力で渡
   const calls = [];
   const execute = async (...call) => { calls.push(call); return { ok: true, stdout: '{"accepted":true}', stderr: '' }; };
   const response = await moduleRequest('bughub-reporter-mac-kite', { execute, home, env: {}, platform: 'linux' })(
-    'http://192.168.1.2:39310/api/factory/v9/reports?a=b', { method: 'POST', body: '{"x":1}', headers: { authorization: 'Bearer NOT-SENT' } });
+    'http://192.168.1.2:39310/api/factory/v9/reports?a=b', { method: 'POST', body: '{"x":1}', headers: { authorization: 'Bearer NOT-SENT', 'x-factory-sent-at': '2026-11-28T07:00:00.123Z' } });
   assert.deepEqual([response.ok, response.status, await response.json()], [true, 200, { accepted: true }]);
   const [command, args, options] = calls[0];
   assert.equal(command, 'ssh');
   assert.deepEqual(args.slice(0, 5), ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', 'kite@192.168.1.2']);
-  assert.equal(args[5], "'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'bughub-reporter-mac-kite' 'POST' '/api/factory/v9/reports?a=b'");
+  assert.equal(args[5], "'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'bughub-reporter-mac-kite' 'POST' '/api/factory/v9/reports?a=b' '2026-11-28T07:00:00.123Z'");
   assert.equal(options.input, '{"x":1}');
   assert.equal(JSON.stringify(calls).includes('NOT-SENT'), false);
 });
