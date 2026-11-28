@@ -60,14 +60,15 @@ test('4xxはstderrのHTTP codeを返し、拒否・不達は到達不能とし�
   }
 });
 
-test('moduleSignはsshで署名中継を呼び、base64の署名を小文字hexで返す', async (t) => {
+test('moduleSignはsshで署名中継を呼び、ES256の署名（raw r||sのbase64、88字）をそのまま返す', async (t) => {
   const home = await temporaryHome(t);
   const calls = [];
-  const execute = async (...call) => { calls.push(call); return { ok: true, stdout: Buffer.from('abc').toString('base64') + '\n', stderr: '' }; };
-  assert.equal(await moduleSign('bughub-product-dotagents-rabbit', '1790000000\nabcd', { execute, home, env: {}, platform: 'linux' }), '616263');
+  const signature = Buffer.alloc(64, 7).toString('base64');
+  const execute = async (...call) => { calls.push(call); return { ok: true, stdout: signature + '\n', stderr: '' }; };
+  assert.equal(await moduleSign('bughub-product-dotagents-rabbit', '1790000000\nabcd', { execute, home, env: {}, platform: 'linux' }), signature);
   assert.equal(calls[0][1].at(-1), "'sh' '/home/kite/Developer/dotagents/bin/factory-relay-sign.sh' 'bughub-product-dotagents-rabbit'");
   assert.equal(calls[0][2].input, '1790000000\nabcd');
-  for (const result of [{ ok: false, code: 1, stdout: '', stderr: 'Refused.\n' }, { ok: true, stdout: 'not base64!', stderr: '' }]) {
+  for (const result of [{ ok: false, code: 1, stdout: '', stderr: 'Refused.\n' }, { ok: true, stdout: 'not base64!', stderr: '' }, { ok: true, stdout: Buffer.from('abc').toString('base64'), stderr: '' }]) {
     await assert.rejects(moduleSign('bughub-product-dotagents-rabbit', 'x', { execute: async () => result, home, env: {}, platform: 'linux' }), /AUTH_MODULE_UNREACHABLE/u);
   }
 });

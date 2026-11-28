@@ -4,21 +4,37 @@ import { createServer } from 'node:http';
 import { chmod, mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { createHash, generateKeyPairSync, sign, verify } from 'node:crypto';
 import test from 'node:test';
 import {
-  applyRun, buildReport, emptyState, markAccepted, messageTemplate, requestSignature, responseSignature,
-  runEvidence, stepFingerprint, updateFailurePaths, versionFromRevision,
+  applyRun, buildReport, emptyState, markAccepted, messageTemplate, requestSigningText, responseVerified,
+  BUGHUB_RESPONSE_KEY, runEvidence, stepFingerprint, updateFailurePaths, versionFromRevision,
 } from '../../lib/factory/update-failure-report.mjs';
 
 const CLI = resolve('bin/factory-update-failure-report.mjs');
-const SECRET = 'bughub-test-secret-do-not-use-0123456789abcdef';
+// 認証仲介（要求の署名）とBugHub（応答の署名）の代わりの試験用の鍵。実際の鍵は端末に来ない。
+const keyPair = () => generateKeyPairSync('ec', { namedCurve: 'P-256' });
+const REQUEST_KEYS = keyPair();
+const RESPONSE_KEYS = keyPair();
+const pem = (key) => key.export({ type: 'spki', format: 'pem' });
+const SIGN_OPTIONS = (key) => ({ key, dsaEncoding: 'ieee-p1363' });
+const esSign = (privateKey, text) => sign('sha256', Buffer.from(text, 'utf8'), SIGN_OPTIONS(privateKey)).toString('base64');
+const ITEM = 'bughub-product-dotagents-test-host';
 const VERSION = '0.0.0+e31ce55';
 const posixOnly = { skip: process.platform === 'win32' };
 
 async function workspace(t) {
   const home = await mkdtemp(join(tmpdir(), 'update-failure-'));
   t.after(() => rm(home, { recursive: true, force: true }));
-  const env = { PATH: process.env.PATH, HOME: home, USERPROFILE: home, LOCALAPPDATA: join(home, 'AppData', 'Local') };
+  const bin = join(home, 'bin');
+  await mkdir(bin);
+  // 認証仲介の中継（main-serverへのssh）の代わり。標準入力を試験用の鍵でES256署名し、呼ばれた命令をssh.logへ残す。
+  await writeFile(join(bin, 'ssh'), `#!/usr/bin/env node
+const fs = require('fs'); const crypto = require('crypto');
+fs.appendFileSync(${JSON.stringify(join(home, 'ssh.log'))}, process.argv.at(-1) + '\\n');
+process.stdout.write(crypto.sign('sha256', fs.readFileSync(0), { key: ${JSON.stringify(REQUEST_KEYS.privateKey.export({ type: 'pkcs8', format: 'pem' }))}, dsaEncoding: 'ieee-p1363' }).toString('base64'));
+`, { mode: 0o755 });
+  const env = { PATH: `${bin}:${process.env.PATH}`, HOME: home, USERPROFILE: home, LOCALAPPDATA: join(home, 'AppData', 'Local') };
   return { home, env, paths: updateFailurePaths(env) };
 }
 
@@ -35,7 +51,7 @@ function run(env, args) {
 
 async function placeCredential(paths, url, mode = 0o600) {
   await mkdir(join(paths.credential, '..'), { recursive: true, mode: 0o700 });
-  await writeFile(paths.credential, JSON.stringify({ url, key_id: 'test-host.dotagents.0001', secret: SECRET }), { mode });
+  await writeFile(paths.credential, JSON.stringify({ url, key_id: 'test-host.dotagents.es256-0001', sign_item: ITEM, response_key: pem(RESPONSE_KEYS.publicKey) }), { mode });
   await chmod(paths.credential, mode);
 }
 
@@ -59,14 +75,26 @@ async function intake(t, reply) {
 }
 
 const accepted = (report, receivedAt = '2026-10-03T12:00:00.000Z') => ({
-  payload: { accepted: true, report_id: report.report_id, duplicate: false, received_at: receivedAt, sig: responseSignature(SECRET, report.report_id, receivedAt) },
+  payload: { accepted: true, report_id: report.report_id, duplicate: false, received_at: receivedAt, sig: esSign(RESPONSE_KEYS.privateKey, `${report.report_id}\n${receivedAt}`), sig_alg: 'ES256' },
 });
 
-test('署名は、BugHubの契約の試験値と一致する', () => {
-  const body = Buffer.from('{"schema_version":"1.0","report_id":"00000000-0000-4000-8000-000000000001","product_id":"caveat","installed_version":"0.19.13","observed_at":"2026-09-21T14:13:20.000Z","runtime_errors":[],"resolutions":[]}', 'utf8');
-  assert.equal(body.length, 205);
-  assert.equal(requestSignature(SECRET, '1790000000', body), 'e4ba0355c9d9058286a82d9622747eae264f780aa575e74859c40a6e529fa73a');
-  assert.equal(responseSignature(SECRET, '00000000-0000-4000-8000-000000000001', '2026-09-21T14:13:21.000Z'), 'cc4ebb409cdd6a2be5f69f6acf8ebcd7f18acbe14b9ac82836797572f74a64bb');
+test('応答の署名は、BugHubの公開鍵でES256として確かめる。方式・本文・鍵・形が違えば受領にしない', () => {
+  const text = '00000000-0000-4000-8000-000000000001\n2026-09-21T14:13:21.000Z';
+  const good = esSign(RESPONSE_KEYS.privateKey, text);
+  const key = pem(RESPONSE_KEYS.publicKey);
+  assert.equal(good.length, 88);
+  assert.equal(responseVerified(key, good, 'ES256', text), true);
+  assert.equal(responseVerified(key, good, 'ES256', text.replace('13:21', '13:22')), false);
+  assert.equal(responseVerified(key, good, 'HS256', text), false);
+  assert.equal(responseVerified(key, good, undefined, text), false);
+  assert.equal(responseVerified(key, esSign(REQUEST_KEYS.privateKey, text), 'ES256', text), false);
+  assert.equal(responseVerified(key, 'f'.repeat(64), 'ES256', text), false);
+  assert.equal(responseVerified('not a key', good, 'ES256', text), false);
+  // 要求の署名文字列は、tsと本文のSHA-256（HMAC時代と同じ）。
+  assert.equal(requestSigningText('1790000000', Buffer.from('x')), `1790000000\n${createHash('sha256').update('x').digest('hex')}`);
+  // 配るBugHubの公開鍵は、P-256の公開鍵として読める。
+  assert.match(BUGHUB_RESPONSE_KEY, /^-----BEGIN PUBLIC KEY-----\n/);
+  assert.equal(responseVerified(BUGHUB_RESPONSE_KEY, good, 'ES256', text), false);
 });
 
 test('失敗した手順は回数が累計になり、成功した回で解決済みになり、また失敗すれば開き直る', () => {
@@ -293,27 +321,18 @@ test('送信を有効にしていない端末では、記録だけして何も�
   if (process.platform !== 'win32') assert.equal((await stat(paths.state)).mode & 0o777, 0o600);
 });
 
-test('鍵を認証仲介に預けた端末は、署名を中継経由で作り、secretを持たずに送って検証する', posixOnly, async (t) => {
+test('鍵を認証仲介に預けた端末は、署名を中継経由で作り、秘密を持たずに送って検証する', posixOnly, async (t) => {
   const { env, paths, home } = await workspace(t);
-  const bin = join(home, 'bin'); const log = join(home, 'ssh.log');
-  await mkdir(bin);
-  await writeFile(join(bin, 'ssh'), `#!/usr/bin/env node
-const fs = require('fs'); fs.appendFileSync(${JSON.stringify(log)}, process.argv.at(-1) + '\\n');
-process.stdout.write(require('crypto').createHmac('sha256', ${JSON.stringify(SECRET)}).update(fs.readFileSync(0)).digest('base64'));
-`, { mode: 0o755 });
   const receiver = await intake(t, accepted);
-  await mkdir(join(paths.credential, '..'), { recursive: true, mode: 0o700 });
-  await writeFile(paths.credential, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.0001', sign_item: 'bughub-product-dotagents-test-host' }), { mode: 0o600 });
-  const moduleEnv = { ...env, PATH: `${bin}:${env.PATH}` };
-  assert.equal((await run(moduleEnv, ['enable'])).json.reporting, 'enabled');
-  const failed = await run(moduleEnv, ['record', '--ran', 'setup.aiterm', '--failed', 'setup.aiterm']);
+  await placeCredential(paths, receiver.url);
+  assert.equal((await run(env, ['enable'])).json.reporting, 'enabled');
+  const failed = await run(env, ['record', '--ran', 'setup.aiterm', '--failed', 'setup.aiterm']);
   assert.equal(failed.json.outcome, 'accepted', failed.stderr);
-  const header = /sig=([0-9a-f]{64})$/.exec(receiver.requests[0].authorization);
-  assert.equal(header[1], requestSignature(SECRET, /ts=(\d+)/.exec(receiver.requests[0].authorization)[1], receiver.requests[0].body));
-  const calls = (await readFile(log, 'utf8')).trim().split('\n');
-  assert.equal(calls.length, 2); // 要求の署名と、応答の署名の確認
-  assert.ok(calls.every((call) => call.endsWith("'factory-relay-sign.sh' 'bughub-product-dotagents-test-host'") || / 'bughub-product-dotagents-test-host'$/.test(call)));
-  assert.equal(JSON.stringify(await readFile(paths.credential, 'utf8')).includes('secret'), false);
+  const calls = (await readFile(join(home, 'ssh.log'), 'utf8')).trim().split('\n');
+  assert.equal(calls.length, 1); // 署名は要求の1回だけ。応答の確認は端末の中で公開鍵で行う
+  assert.match(calls[0], /factory-relay-sign\.sh' 'bughub-product-dotagents-test-host'$/);
+  const credential = JSON.parse(await readFile(paths.credential, 'utf8'));
+  assert.deepEqual(Object.keys(credential).sort(), ['key_id', 'response_key', 'sign_item', 'url']);
 });
 
 test('失敗が無く記録も無い端末では、記録のファイルを作らない', async (t) => {
@@ -324,7 +343,7 @@ test('失敗が無く記録も無い端末では、記録のファイルを作�
   await assert.rejects(stat(paths.state));
 });
 
-test('有効な端末は署名を付けて1か所へ送り、受領されたら解決まで届ける', async (t) => {
+test('有効な端末は署名を付けて1か所へ送り、受領されたら解決まで届ける', posixOnly, async (t) => {
   const { env, paths } = await workspace(t);
   const receiver = await intake(t, accepted);
   await placeCredential(paths, receiver.url);
@@ -335,9 +354,9 @@ test('有効な端末は署名を付けて1か所へ送り、受領されたら�
   assert.equal(failed.json.outcome, 'accepted');
   assert.equal(receiver.requests.length, 1);
   const [first] = receiver.requests;
-  const header = /^BugHub-HMAC-SHA256 key_id=test-host\.dotagents\.0001, ts=(\d+), sig=([0-9a-f]{64})$/.exec(first.authorization);
+  const header = /^BugHub-ES256 key_id=test-host\.dotagents\.es256-0001, ts=(\d+), sig=([A-Za-z0-9+/]{86}==)$/.exec(first.authorization);
   assert.ok(header, first.authorization);
-  assert.equal(header[2], requestSignature(SECRET, header[1], first.body));
+  assert.equal(verify('sha256', Buffer.from(requestSigningText(header[1], first.body), 'utf8'), SIGN_OPTIONS(REQUEST_KEYS.publicKey), Buffer.from(header[2], 'base64')), true);
   assert.ok(Math.abs(Date.parse(first.report.observed_at) - Number(header[1]) * 1000) < 1000);
   assert.equal(first.report.product_id, 'dotagents');
   assert.match(first.report.installed_version, /^0\.0\.0\+[0-9a-f]{7}$/);
@@ -362,7 +381,7 @@ test('有効な端末は署名を付けて1か所へ送り、受領されたら�
   assert.deepEqual(status.open_steps, ['setup.aiterm']);
 });
 
-test('verifyは記録に触れず、空の報告で合鍵と宛先と応答の署名を確かめる', async (t) => {
+test('verifyは記録に触れず、空の報告で合鍵と宛先と応答の署名を確かめる', posixOnly, async (t) => {
   const { env, paths } = await workspace(t);
   let reply = accepted;
   const receiver = await intake(t, (report) => reply(report));
@@ -382,15 +401,20 @@ test('verifyは記録に触れず、空の報告で合鍵と宛先と応答の�
   assert.deepEqual(receiver.requests[0].report.resolutions, []);
   await assert.rejects(stat(paths.state));
 
-  reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: 'f'.repeat(64) } });
+  reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: 'f'.repeat(64), sig_alg: 'ES256' } });
   const forged = await run(env, ['verify']);
   assert.equal(forged.code, 1);
   assert.equal(forged.json.outcome, 'response_unverified');
+  // 署名を付けられなかった200（sigなし）と、方式の違う署名も、受領にしない。
+  reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, duplicate: false, received_at: '2026-10-03T12:00:00.000Z' } });
+  assert.equal((await run(env, ['verify'])).json.outcome, 'response_unverified');
+  reply = (report) => { const ok = accepted(report); return { payload: { ...ok.payload, sig_alg: 'HS256' } }; };
+  assert.equal((await run(env, ['verify'])).json.outcome, 'response_unverified');
 });
 
-test('受領を確かめられない応答では、送信待ちのまま残す', async (t) => {
+test('受領を確かめられない応答では、送信待ちのまま残す', posixOnly, async (t) => {
   const { env, paths } = await workspace(t);
-  let reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: '0'.repeat(64) } });
+  let reply = (report) => ({ payload: { accepted: true, report_id: report.report_id, received_at: '2026-10-03T12:00:00.000Z', sig: '0'.repeat(64), sig_alg: 'ES256' } });
   const receiver = await intake(t, (report) => reply(report));
   await placeCredential(paths, receiver.url);
   await run(env, ['enable']);
@@ -412,7 +436,7 @@ test('受領を確かめられない応答では、送信待ちのまま残す',
   assert.equal(state.records.jev.occurrence_count, 1);
 });
 
-test('届かない宛先でも記録は残り、次に送れる', async (t) => {
+test('届かない宛先でも記録は残り、次に送れる', posixOnly, async (t) => {
   const { env, paths } = await workspace(t);
   await placeCredential(paths, 'http://127.0.0.1:1/api/products/v1/runtime-errors');
   await run(env, ['enable']);
@@ -435,12 +459,12 @@ test('合鍵が本人だけのものでない時は送らない', posixOnly, asy
 
   await rm(paths.credential);
   const target = join(paths.credential, '..', 'target.json');
-  await writeFile(target, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.0001', secret: SECRET }), { mode: 0o600 });
+  await writeFile(target, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.es256-0001', sign_item: ITEM }), { mode: 0o600 });
   await symlink(target, paths.credential);
   assert.equal((await run(env, ['status'])).json.reporting, 'credential_unsafe');
 
   await rm(paths.credential);
-  await writeFile(paths.credential, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.0001', secret: 'short' }), { mode: 0o600 });
+  await writeFile(paths.credential, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.0001', secret: 'a-shared-secret-is-no-longer-accepted' }), { mode: 0o600 });
   assert.equal((await run(env, ['status'])).json.reporting, 'credential_invalid');
   assert.equal(receiver.requests.length, 0);
 });
