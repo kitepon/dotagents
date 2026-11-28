@@ -43,7 +43,7 @@ updater自体は全工程を一括transactionにしない。途中失敗/強制�
 
 `applyRun`は今回failedのstepをopen/回数増加、今回ranで成功した既openだけをresolved/resolution_unsentにする。今回動かなかったstepは触らない。古い重大度は新しい起動根拠が無ければ保持し、再発の最初の1回には古い根拠を持ち越さない。`readRunReport`は同run evidence候補に型/サイズ/6時間の鮮度上限を適用し、読めなければ根拠なしで記録を続ける。
 
-設定OFF/credentialなしはnot_sentで原状態を保持。設定ON時は現在のopen/resolutionをHMAC署名し1回送信、200/accepted/同report ID/応答署名一致の時だけmarkAcceptedする。到達不能/拒否/署名未検証はmarkFailedでunsentを保持し、次のrecord/flushへ渡す。受理後は送れたresolutionを再送対象から外す。製品本体のsource/診断の成功だけでこの状態を消さない。
+設定OFF/credentialなしはnot_sentで原状態を保持。設定ON時は現在のopen/resolutionをHMAC署名し1回送信（署名は`readCredential`が返す`sign`が作る: 鍵を持つ形は端末内のHMAC、`sign_item`の形は`auth-module-http.mjs:moduleSign`が`bin/factory-relay-sign.sh`（main-serverの認証仲介`auth sign`）へ要求し、鍵は端末に来ない。応答署名の確認も同じ`sign`で作って比べる。署名を作れない時は`unreachable`で送らず次回へ）、200/accepted/同report ID/応答署名一致の時だけmarkAcceptedする。到達不能/拒否/署名未検証はmarkFailedでunsentを保持し、次のrecord/flushへ渡す。受理後は送れたresolutionを再送対象から外す。製品本体のsource/診断の成功だけでこの状態を消さない。
 
 ## caller・test/fixture・config・export
 

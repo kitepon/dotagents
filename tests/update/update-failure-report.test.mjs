@@ -293,6 +293,29 @@ test('送信を有効にしていない端末では、記録だけして何も�
   if (process.platform !== 'win32') assert.equal((await stat(paths.state)).mode & 0o777, 0o600);
 });
 
+test('鍵を認証仲介に預けた端末は、署名を中継経由で作り、secretを持たずに送って検証する', posixOnly, async (t) => {
+  const { env, paths, home } = await workspace(t);
+  const bin = join(home, 'bin'); const log = join(home, 'ssh.log');
+  await mkdir(bin);
+  await writeFile(join(bin, 'ssh'), `#!/usr/bin/env node
+const fs = require('fs'); fs.appendFileSync(${JSON.stringify(log)}, process.argv.at(-1) + '\\n');
+process.stdout.write(require('crypto').createHmac('sha256', ${JSON.stringify(SECRET)}).update(fs.readFileSync(0)).digest('base64'));
+`, { mode: 0o755 });
+  const receiver = await intake(t, accepted);
+  await mkdir(join(paths.credential, '..'), { recursive: true, mode: 0o700 });
+  await writeFile(paths.credential, JSON.stringify({ url: receiver.url, key_id: 'test-host.dotagents.0001', sign_item: 'bughub-product-dotagents-test-host' }), { mode: 0o600 });
+  const moduleEnv = { ...env, PATH: `${bin}:${env.PATH}` };
+  assert.equal((await run(moduleEnv, ['enable'])).json.reporting, 'enabled');
+  const failed = await run(moduleEnv, ['record', '--ran', 'setup.aiterm', '--failed', 'setup.aiterm']);
+  assert.equal(failed.json.outcome, 'accepted', failed.stderr);
+  const header = /sig=([0-9a-f]{64})$/.exec(receiver.requests[0].authorization);
+  assert.equal(header[1], requestSignature(SECRET, /ts=(\d+)/.exec(receiver.requests[0].authorization)[1], receiver.requests[0].body));
+  const calls = (await readFile(log, 'utf8')).trim().split('\n');
+  assert.equal(calls.length, 2); // 要求の署名と、応答の署名の確認
+  assert.ok(calls.every((call) => call.endsWith("'factory-relay-sign.sh' 'bughub-product-dotagents-test-host'") || / 'bughub-product-dotagents-test-host'$/.test(call)));
+  assert.equal(JSON.stringify(await readFile(paths.credential, 'utf8')).includes('secret'), false);
+});
+
 test('失敗が無く記録も無い端末では、記録のファイルを作らない', async (t) => {
   const { env, paths } = await workspace(t);
   const result = await run(env, ['record', '--ran', 'typesafe']);
