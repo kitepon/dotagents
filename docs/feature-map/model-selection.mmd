@@ -3,7 +3,7 @@ flowchart TB
   command -- closed --> validate[Validate harness and expiry]
   validate --> file[Read current closures / direct write]
   file --> out[JSON result / caller]
-  command -- task --> inputs[Read closures / recorded Codex usage / credential]
+  command -- task --> inputs[Read closures / recorded Codex usage / credential or auth-module route]
   inputs --> models[Read 02 roles / ranking / model specs]
   models --> role[Jev role request / 60s]
   role --> candidates[Role candidates minus closed harnesses]

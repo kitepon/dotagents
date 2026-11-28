@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { setupTypeSafe } from '../../lib/factory/typesafe-setup.mjs';
@@ -63,57 +63,35 @@ async function temporaryHome(t) {
   return home;
 }
 
-test('未配布端末はSSHで受け取り、次回は保存済みキーを使う', async (t) => {
+test('端末に鍵が無ければABSENTで止まり、鍵を端末へ写す経路を持たない', async (t) => {
   const home = await temporaryHome(t);
-  const calls = [];
-  const execute = async (...args) => {
-    calls.push(args);
-    return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
-  };
-  assert.equal(await loadTypeSafeKey({ home, env: {}, execute, platform: 'linux' }), secret);
-  assert.deepEqual(calls[0].slice(0, 2), ['ssh', ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10',
-    'kite@192.168.1.2', 'cat .config/dotagents/credentials/typesafe/api.env']]);
-  assert.equal(await loadTypeSafeKey({ home, env: {}, execute }), secret);
-  assert.equal(calls.length, 1);
-  if (process.platform !== 'win32') {
-    assert.equal((await stat(typeSafeKeyPath(home))).mode & 0o777, 0o600);
-    assert.equal((await stat(dirname(typeSafeKeyPath(home)))).mode & 0o777, 0o700);
-  }
+  await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => assert.fail('外部commandへ進んだ') }), /TYPESAFE_CREDENTIAL_ABSENT/u);
+  await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
 });
 
-test('環境変数は明示指定として優先し、不正な保存済みキーは転送で隠さない', async (t) => {
+test('鍵が無い端末のsetupは認証仲介の品目`typesafe`で実API確認まで進む', async () => {
+  const calls = [];
+  const execute = async (command, args, options) => {
+    calls.push([command, args]);
+    if (command === 'ssh') {
+      assert.equal(args.at(-1).startsWith("'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'typesafe' 'POST' '/v1/systemone'"), true);
+      assert.match(options.input, /purchase_advice/u);
+      return { ok: true, stdout: JSON.stringify({ answers: { intent: { type: 'choice', choice: 'purchase_advice' } } }), stderr: 'HTTP 200\n' };
+    }
+    return success;
+  };
+  const receipt = await setupTypeSafe({ loadKey: async () => { throw new Error('TYPESAFE_CREDENTIAL_ABSENT'); }, execute, env: {}, output: quiet });
+  assert.deepEqual(receipt, { schema: 'dotagents.typesafe-setup.v1', installed: true, state: 'ready' });
+  assert.equal(calls.filter(([command]) => command === 'ssh').length, 1);
+});
+
+test('環境変数は明示指定として優先し、不正な保存済みキーは別経路で隠さない', async (t) => {
   const home = await temporaryHome(t);
-  const execute = async () => assert.fail('転送へ進んだ');
+  const execute = async () => assert.fail('外部commandへ進んだ');
   assert.equal(await loadTypeSafeKey({ home, env: { TYPESAFE_API_KEY: secret }, execute }), secret);
   await mkdir(dirname(typeSafeKeyPath(home)), { recursive: true });
   await writeFile(typeSafeKeyPath(home), 'OTHER=value');
   await assert.rejects(loadTypeSafeKey({ home, env: {}, execute }), /TYPESAFE_CREDENTIAL_READ_FAILED/u);
-});
-
-test('転送失敗と不正な内容ではキーを保存しない', async (t) => {
-  const home = await temporaryHome(t);
-  for (const result of [{ ok: false, stdout: secret }, { ok: true, stdout: 'OTHER=value' }]) {
-    await assert.rejects(loadTypeSafeKey({ home, env: {}, execute: async () => result }), /TYPESAFE_CREDENTIAL_/u);
-    await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
-  }
-});
-
-test('Windowsではキー書込前に所有者ACLを適用し、失敗時は保存しない', async (t) => {
-  const home = await temporaryHome(t);
-  const calls = [];
-  const gitSsh = 'C:\\Program Files\\Git\\usr\\bin\\ssh.exe';
-  const execute = async (command, args, options) => {
-    calls.push(command);
-    if (command === gitSsh) return { ok: true, stdout: `TYPESAFE_API_KEY=${secret}\n` };
-    assert.equal(command, 'pwsh.exe');
-    assert.equal(options.env.DOTAGENTS_FACTORY_ACL_TARGET, dirname(typeSafeKeyPath(home)));
-    assert.match(args.at(-1), /SetAccessRuleProtection/u);
-    await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
-    return { ok: false };
-  };
-  await assert.rejects(loadTypeSafeKey({ home, env: { ProgramFiles: 'C:\\Program Files' }, execute, platform: 'win32' }), /TYPESAFE_CREDENTIAL_ACL_FAILED/u);
-  assert.deepEqual(calls, [gitSsh, 'pwsh.exe']);
-  await assert.rejects(readFile(typeSafeKeyPath(home)), { code: 'ENOENT' });
 });
 
 const reference = 'op://vault/item/credential';

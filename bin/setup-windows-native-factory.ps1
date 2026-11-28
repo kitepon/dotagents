@@ -442,9 +442,12 @@ function Assert-ReporterConfig {
   if ($config.collection.enabled -ne $true -or $config.reporting.enabled -ne $true) { throw 'factory collection and reporting must be enabled' }
   $endpoint = [uri]$config.reporting.endpoint
   if ($endpoint.AbsolutePath -ne '/api/factory/v9/reports') { throw 'factory reporter endpoint must use wire v9' }
-  $credential = [string]$config.reporting.credential_file
-  if ([string]::IsNullOrWhiteSpace($credential) -or -not (Test-Path -LiteralPath $credential -PathType Leaf)) {
-    throw 'Windows-native BugHub credential is missing'
+  # 鍵は認証仲介の中にあり、端末にcredential fileは要らない（via_module）。
+  if ($config.reporting.via_module -ne $true) {
+    $credential = [string]$config.reporting.credential_file
+    if ([string]::IsNullOrWhiteSpace($credential) -or -not (Test-Path -LiteralPath $credential -PathType Leaf)) {
+      throw 'Windows-native BugHub credential is missing'
+    }
   }
 }
 
@@ -461,22 +464,25 @@ function Restore-ScheduledReporterConfigFromCodexCache {
 
   $sourceConfig = $candidates[0].FullName
   $sourceDirectory = Split-Path -Parent $sourceConfig
-  $sourceCredential = Join-Path $sourceDirectory 'credential'
-  if (-not (Test-Path -LiteralPath $sourceCredential -PathType Leaf) -or (Get-Item -LiteralPath $sourceCredential).Length -lt 1) {
-    throw 'Codex AppContainer BugHub credential is missing'
-  }
+  $sourceValue = Get-Content -Raw -LiteralPath $sourceConfig | ConvertFrom-Json
   $destinationDirectory = Split-Path -Parent $ConfigPath
   $destinationCredential = Join-Path $destinationDirectory 'credential'
-  $sourceValue = Get-Content -Raw -LiteralPath $sourceConfig | ConvertFrom-Json
-  if ([IO.Path]::GetFullPath([string]$sourceValue.reporting.credential_file) -ne [IO.Path]::GetFullPath($destinationCredential)) {
-    throw 'Codex AppContainer factory reporter credential path is not canonical'
+  $viaModule = $sourceValue.reporting.via_module -eq $true
+  if (-not $viaModule) {
+    $sourceCredential = Join-Path $sourceDirectory 'credential'
+    if (-not (Test-Path -LiteralPath $sourceCredential -PathType Leaf) -or (Get-Item -LiteralPath $sourceCredential).Length -lt 1) {
+      throw 'Codex AppContainer BugHub credential is missing'
+    }
+    if ([IO.Path]::GetFullPath([string]$sourceValue.reporting.credential_file) -ne [IO.Path]::GetFullPath($destinationCredential)) {
+      throw 'Codex AppContainer factory reporter credential path is not canonical'
+    }
   }
 
   New-Item -ItemType Directory -Force -Path $destinationDirectory | Out-Null
-  Copy-Item -LiteralPath $sourceCredential -Destination $destinationCredential -Force
+  if (-not $viaModule) { Copy-Item -LiteralPath $sourceCredential -Destination $destinationCredential -Force }
   Copy-Item -LiteralPath $sourceConfig -Destination $ConfigPath -Force
   Set-OwnerOnlyAcl $destinationDirectory
-  Set-OwnerOnlyAcl $destinationCredential
+  if (-not $viaModule) { Set-OwnerOnlyAcl $destinationCredential }
   Set-OwnerOnlyAcl $ConfigPath
   Write-Step 'factory-reporter-config: restored from Codex AppContainer cache'
 }
@@ -502,9 +508,10 @@ function Normalize-WindowsReporterConfig {
     reporting = [ordered]@{
       enabled = [bool]$config.reporting.enabled
       endpoint = [string]$config.reporting.endpoint
-      credential_file = [string]$config.reporting.credential_file
     }
   }
+  if ($config.reporting.via_module -eq $true) { $canonical.reporting['via_module'] = $true }
+  else { $canonical.reporting['credential_file'] = [string]$config.reporting.credential_file }
   $temporary = "$ConfigPath.$RunId.tmp"
   [IO.File]::WriteAllText(
     $temporary,
@@ -513,7 +520,7 @@ function Normalize-WindowsReporterConfig {
   )
   Move-Item -LiteralPath $temporary -Destination $ConfigPath -Force
   Set-OwnerOnlyAcl $ConfigPath
-  Set-OwnerOnlyAcl ([string]$canonical.reporting.credential_file)
+  if ($config.reporting.via_module -ne $true) { Set-OwnerOnlyAcl ([string]$canonical.reporting.credential_file) }
 
   $bytes = [IO.File]::ReadAllBytes($ConfigPath)
   if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {

@@ -46,7 +46,8 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 4096
-        }
+        },
+        "via_module": { "const": true }
       },
       "allOf": [
         {
@@ -55,7 +56,8 @@
             "required": ["enabled"]
           },
           "then": {
-            "required": ["endpoint", "credential_file"]
+            "required": ["endpoint"],
+            "oneOf": [{ "required": ["credential_file"] }, { "required": ["via_module"] }]
           }
         }
       ]

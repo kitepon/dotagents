@@ -161,6 +161,19 @@ test('config host profile/additional fieldと旧reporting.host_idを拒否する
   }
 });
 
+test('via_moduleはcredential_fileと同時に置けず、enabledならどちらか一方が要る', async () => {
+  const box = await sandbox(); await writeReport(box);
+  const endpoint = 'http://192.168.1.2:39310/api/factory/v9/reports';
+  const preview = async (reporting) => {
+    await writeFile(box.config, JSON.stringify({ schema_version: '1.0', host: { id: 'test-host', profile: 'mac' }, collection: { enabled: false }, reporting }));
+    return run(box, ['preview', '--report', box.report, '--config', box.config]);
+  };
+  assert.equal((await preview({ enabled: true, endpoint, via_module: true })).code, 0);
+  for (const reporting of [{ enabled: true, endpoint, via_module: true, credential_file: box.credential }, { enabled: true, endpoint, via_module: false }, { enabled: true, endpoint }]) {
+    assert.equal((await preview(reporting)).code, 1);
+  }
+});
+
 test('accepted responseのみoutboxから削除する', async () => {
   const box = await sandbox(); const payload = await writeReport(box);
   const server = await startServer((req, res) => accepted(res, report().report_id)); await writeConfig(box, server.endpoint);
