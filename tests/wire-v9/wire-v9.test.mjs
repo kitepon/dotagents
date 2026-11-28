@@ -107,7 +107,7 @@ process.stderr.write('HTTP 200\\n'); process.stdout.write(JSON.stringify({ accep
   const flushed = await run(reporter, ['flush', '--config', config], env);
   assert.equal(flushed.code, 0, flushed.stderr); assert.equal(flushed.json.sent, 1); assert.equal(flushed.json.count, 0);
   const argv = JSON.parse(await readFile(log, 'utf8'));
-  assert.match(argv.at(-1), /^'sh' '.*factory-relay-http\.sh' 'bughub-reporter' 'POST' '\/reports'$/u);
+  assert.match(argv.at(-1), /^'sh' '.*factory-relay-http\.sh' 'bughub-reporter' 'POST' '\/api\/factory\/v9\/reports'$/u);
   assert.equal(JSON.parse(await readFile(input, 'utf8')).report_id, reportV9().report_id);
   assert.equal(argv.join(' ').includes('Bearer'), false);
 });

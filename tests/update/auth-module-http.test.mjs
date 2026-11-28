@@ -17,13 +17,13 @@ test('端末はmain-serverの中継をsshで呼び、本文は標準入力で渡
   const home = await temporaryHome(t);
   const calls = [];
   const execute = async (...call) => { calls.push(call); return { ok: true, stdout: '{"accepted":true}', stderr: '' }; };
-  const response = await moduleRequest('bughub-reporter', { basePath: '/api/factory/v9', execute, home, env: {}, platform: 'linux' })(
+  const response = await moduleRequest('bughub-reporter', { execute, home, env: {}, platform: 'linux' })(
     'http://192.168.1.2:39310/api/factory/v9/reports?a=b', { method: 'POST', body: '{"x":1}', headers: { authorization: 'Bearer NOT-SENT' } });
   assert.deepEqual([response.ok, response.status, await response.json()], [true, 200, { accepted: true }]);
   const [command, args, options] = calls[0];
   assert.equal(command, 'ssh');
   assert.deepEqual(args.slice(0, 5), ['-o', 'BatchMode=yes', '-o', 'ConnectTimeout=10', 'kite@192.168.1.2']);
-  assert.equal(args[5], "'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'bughub-reporter' 'POST' '/reports?a=b'");
+  assert.equal(args[5], "'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'bughub-reporter' 'POST' '/api/factory/v9/reports?a=b'");
   assert.equal(options.input, '{"x":1}');
   assert.equal(JSON.stringify(calls).includes('NOT-SENT'), false);
 });
@@ -44,13 +44,13 @@ test('Windowsの端末は標準のOpenSSH（名前付きpipeのagentが使える
   const home = await temporaryHome(t);
   const calls = [];
   const execute = async (...call) => { calls.push(call); return { ok: true, stdout: '{}', stderr: '' }; };
-  await moduleRequest('bughub-reporter', { basePath: '/api/factory/v9', execute, home, env: { SystemRoot: 'C:\\Windows' }, platform: 'win32' })('http://x/a', { method: 'POST', body: '{}' });
+  await moduleRequest('bughub-reporter', { execute, home, env: { SystemRoot: 'C:\\Windows' }, platform: 'win32' })('http://x/a', { method: 'POST', body: '{}' });
   assert.equal(calls[0][0], 'C:\\Windows\\System32\\OpenSSH\\ssh.exe');
 });
 
 test('4xxはstderrのHTTP codeを返し、拒否・不達は到達不能として投げる', async (t) => {
   const home = await temporaryHome(t);
-  const answer = (result) => moduleRequest('bughub-reporter', { basePath: '/api/factory/v9', execute: async () => result, home, env: {}, platform: 'linux' })('http://x/a', { method: 'POST', body: '{}' });
+  const answer = (result) => moduleRequest('bughub-reporter', { execute: async () => result, home, env: {}, platform: 'linux' })('http://x/a', { method: 'POST', body: '{}' });
   const conflict = await answer({ ok: false, code: 22, stdout: '{"error":"x"}', stderr: 'HTTP 409\n' });
   assert.deepEqual([conflict.ok, conflict.status], [false, 409]);
   const partial = await answer({ ok: true, stdout: '{}', stderr: 'HTTP 202\n' });

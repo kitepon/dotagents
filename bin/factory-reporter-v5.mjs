@@ -10,7 +10,7 @@ import { basename, join } from 'node:path';
 import process from 'node:process';
 import { resolveWindowsPowerShell7 } from '../lib/factory/windows-powershell.mjs';
 import { dropSecretCache, resolveSecretCached } from '../lib/factory/op-secret.mjs';
-import { BUGHUB_BASE_PATH, BUGHUB_ITEM, moduleRequest } from '../lib/factory/auth-module-http.mjs';
+import { BUGHUB_ITEM, moduleRequest } from '../lib/factory/auth-module-http.mjs';
 import { createFragmentManifest, sendReportFragments, validateFragmentManifest } from '../lib/factory/report-fragments.mjs';
 import { logRuntimeContext } from '../lib/factory/runtime-context.mjs';
 import {
@@ -190,7 +190,7 @@ async function postOne(config, token, loc, entry) {
   }
   const oneShot = IS_V9 && RABBIT_OBSERVATION_ONCE.isControlled(decoded.report);
   // via_module: 鍵は認証仲介の中にあり、この端末は鍵を持たない（tokenはnull）。
-  const request = config.reporting.via_module ? moduleRequest(BUGHUB_ITEM, { basePath: BUGHUB_BASE_PATH }) : fetch;
+  const request = config.reporting.via_module ? moduleRequest(BUGHUB_ITEM) : fetch;
   const runtimeLog = platform() === 'win32' ? { logFile: join(loc.stateDir, 'scheduler.log'), secureFile: ownerOnlyAcl } : {};
   const retainFailure = reason => {
     if (!oneShot) return { action: 'keep', reason };
