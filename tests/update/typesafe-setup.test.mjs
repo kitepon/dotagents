@@ -73,7 +73,7 @@ test('鍵が無い端末のsetupは認証仲介の品目`typesafe`で実API確�
   const calls = [];
   const execute = async (command, args, options) => {
     calls.push([command, args]);
-    if (command === 'ssh') {
+    if (/ssh(\.exe)?$/u.test(command)) {
       assert.equal(args.at(-1).startsWith("'sh' '/home/kite/Developer/dotagents/bin/factory-relay-http.sh' 'typesafe' 'POST' '/v1/systemone'"), true);
       assert.match(options.input, /purchase_advice/u);
       return { ok: true, stdout: JSON.stringify({ answers: { intent: { type: 'choice', choice: 'purchase_advice' } } }), stderr: 'HTTP 200\n' };
@@ -82,7 +82,7 @@ test('鍵が無い端末のsetupは認証仲介の品目`typesafe`で実API確�
   };
   const receipt = await setupTypeSafe({ loadKey: async () => { throw new Error('TYPESAFE_CREDENTIAL_ABSENT'); }, execute, env: {}, output: quiet });
   assert.deepEqual(receipt, { schema: 'dotagents.typesafe-setup.v1', installed: true, state: 'ready' });
-  assert.equal(calls.filter(([command]) => command === 'ssh').length, 1);
+  assert.equal(calls.filter(([command]) => /ssh(\.exe)?$/u.test(command)).length, 1);
 });
 
 test('環境変数は明示指定として優先し、不正な保存済みキーは別経路で隠さない', async (t) => {
